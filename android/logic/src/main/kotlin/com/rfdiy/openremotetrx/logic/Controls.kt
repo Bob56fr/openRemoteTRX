@@ -154,7 +154,7 @@ object Controls {
         lv["ALC"]?.let { val f = it.coerceIn(0.0, 1.0); out += Meter("ALC", "ALC", "${(f * 100).roundToInt()} %", f.toFloat()) }
         lv["COMP_METER"]?.let { out += Meter("COMP", "COMP", "%.1f dB".format(Locale.ROOT, it), (it / 30).coerceIn(0.0, 1.0).toFloat()) }
         lv["VD_METER"]?.let { out += Meter("VD", "Vd", "%.1f V".format(Locale.ROOT, it), ((it - 10) / 6).coerceIn(0.0, 1.0).toFloat()) }
-        lv["TEMP_METER"]?.let { out += Meter("TEMP", "Temp", "${it.roundToInt()} °C", ((it - 20) / 50).coerceIn(0.0, 1.0).toFloat()) }
+        lv["TEMP_METER"]?.let { out += Meter("TEMP", Tr.t("controls.temp_meter"), "${it.roundToInt()} °C", ((it - 20) / 50).coerceIn(0.0, 1.0).toFloat()) }
         return out
     }
 }

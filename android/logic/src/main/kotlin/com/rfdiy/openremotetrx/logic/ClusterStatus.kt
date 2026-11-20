@@ -25,15 +25,12 @@ data class BandDot(val count: Int, val level: Int)
  * pastilles des boutons de bande, repris de la page (client.js : clusterStatusView, bandSpotLevels).
  */
 object ClusterStatus {
-    private val TITLES = mapOf(
-        "green" to "Les flux arrivent", "orange" to "Une partie des flux seulement", "red" to "Aucun flux reçu",
-        "off" to "Cluster DX désactivé sur la station",
-    )
-    private val TYPES = mapOf("rbn" to "RBN", "telnet" to "cluster", "web" to "page CB")
-    private val VERDICTS = mapOf(
-        "ok" to ("green" to "reçoit"), "calme" to ("orange" to "connecté, mais calme"), "reserve" to ("" to "en réserve (secours)"),
-        "echec" to ("red" to "refusé"), "attente" to ("orange" to "connexion en cours"),
-    )
+    /** Santés connues (titre : clé `clusterstatus.title_<santé>`). */
+    private val HEALTHS = setOf("green", "orange", "red", "off")
+    /** Types de flux (libellé : clé `clusterstatus.type_<type>`). */
+    private val TYPES = setOf("rbn", "telnet", "web")
+    /** Verdicts du protocole -> pastille (libellé : clé `clusterstatus.verdict_<verdict>`). */
+    private val VERDICTS = mapOf("ok" to "green", "calme" to "orange", "reserve" to "", "echec" to "red", "attente" to "orange")
     const val STALE_S = 45
     private val DOT_STEPS = listOf(15 to 3, 5 to 2, 1 to 1)      // >= 15 spots : rouge ; >= 5 : orange ; >= 1 : gris
 
@@ -41,9 +38,9 @@ object ClusterStatus {
         if (seconds == null || !seconds.isFinite()) return null
         val s = max(0, seconds.roundToInt())
         return when {
-            s < 90 -> "$s s"
-            s < 5400 -> "${(s / 60.0).roundToInt()} min"
-            else -> "${(s / 3600.0).roundToInt()} h"
+            s < 90 -> "$s s" // i18n-ok
+            s < 5400 -> "${(s / 60.0).roundToInt()} min" // i18n-ok
+            else -> "${(s / 3600.0).roundToInt()} h" // i18n-ok
         }
     }
 
@@ -53,25 +50,27 @@ object ClusterStatus {
     /** `elapsedS` : secondes depuis la réception du message (les âges s'y ajoutent). */
     fun view(data: JsonObject, elapsedS: Double): ClusterView {
         val elapsed = max(0.0, elapsedS)
-        val health = data.text("health").takeIf { it in TITLES } ?: "red"
+        val health = data.text("health").takeIf { it in HEALTHS } ?: "red"
         val lines = ((data["sources"] as? JsonArray) ?: JsonArray(emptyList())).take(12).mapNotNull { it as? JsonObject }.map { s ->
             val verdict = s.text("verdict").orEmpty()
-            val (dot, word) = VERDICTS[verdict] ?: ("" to verdict.ifEmpty { "?" })
+            val dot = VERDICTS[verdict] ?: ""
+            val word = if (verdict in VERDICTS) Tr.t("clusterstatus.verdict_$verdict") else verdict.ifEmpty { "?" }
             val n = s.number("last_10min")?.roundToInt() ?: 0
-            val rate = if (n >= 10) "${(n / 10.0).roundToInt()} spots/min" else "$n spot${if (n > 1) "s" else ""} en 10 min"
+            val rate = if (n >= 10) Tr.t("clusterstatus.rate_per_min", "n" to (n / 10.0).roundToInt())
+            else Tr.plural("clusterstatus.rate_10min", n)
             val age = shortAge(s.number("last_spot_age_s")?.plus(elapsed))
             val parts = mutableListOf(word)
-            if (verdict == "ok" || verdict == "calme") parts += listOf(rate, age?.let { "dernier il y a $it" } ?: "aucun spot reçu")
+            if (verdict == "ok" || verdict == "calme") parts += listOf(rate, age?.let { Tr.t("clusterstatus.last_ago", "age" to it) } ?: Tr.t("clusterstatus.no_spot"))
             val retry = s.number("retry_in_s")
-            if (verdict == "attente" && retry != null && retry > 0) parts += "nouvel essai dans ${shortAge(retry)}"
-            if (verdict == "echec") s.text("code")?.takeIf { it.isNotEmpty() }?.let { parts += it.take(40) + " : voir TRX Console, menu 5.1" }
-            val type = TYPES[s.text("type")] ?: "flux"
-            ClusterLine(dot, (s.text("name") ?: "?").take(40) + " ($type) : " + parts.joinToString(" · "))
+            if (verdict == "attente" && retry != null && retry > 0) parts += Tr.t("clusterstatus.retry_in", "age" to shortAge(retry))
+            if (verdict == "echec") s.text("code")?.takeIf { it.isNotEmpty() }?.let { parts += Tr.t("clusterstatus.failed_code", "code" to it.take(40)) }
+            val type = s.text("type")?.takeIf { it in TYPES }?.let { Tr.t("clusterstatus.type_$it") } ?: Tr.t("clusterstatus.type_other")
+            ClusterLine(dot, Tr.t("clusterstatus.line", "name" to (s.text("name") ?: "?").take(40), "type" to type, "parts" to parts.joinToString(" · ")))
         }
         val stale = elapsed > STALE_S
         return ClusterView(
-            health, TITLES.getValue(health), lines, stale,
-            if (stale) "Plus de nouvelles du module Cluster DX depuis ${shortAge(elapsed)} : arrêté ? (TRX Console, menu 6.1)" else "",
+            health, Tr.t("clusterstatus.title_$health"), lines, stale,
+            if (stale) Tr.t("clusterstatus.stale", "age" to shortAge(elapsed)) else "",
         )
     }
 

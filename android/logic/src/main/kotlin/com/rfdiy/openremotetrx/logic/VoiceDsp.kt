@@ -93,7 +93,7 @@ class VoiceDsp(private val rate: Int) {
                     for (f in eq) x = f.run(x)
                     x = chorus.run(x)
                     x = reverb.run(x)
-                    if (!x.isFinite()) throw ArithmeticException("calcul divergent")
+                    if (!x.isFinite()) throw ArithmeticException(Tr.t("voicedsp.diverging"))
                 }
                 buf[i] = x.toFloat()
             }
@@ -125,7 +125,7 @@ class VoiceDsp(private val rate: Int) {
             scrambleMode = null
             scrambled = null
             s.set(null, 0)
-            onFail?.invoke("Scrambler en erreur (${e.message ?: e.javaClass.simpleName}) : voix en CLAIR.")
+            onFail?.invoke(Tr.t("voicedsp.scrambler_failed", "why" to (e.message ?: e.javaClass.simpleName)))
         }
     }
 
@@ -158,7 +158,7 @@ class VoiceDsp(private val rate: Int) {
         if (failed) return
         failed = true
         chorus.clear(); reverb.clear()
-        onFail?.invoke("Égaliseur en erreur ($why) : voix envoyée sans traitement (limiteur seul).")
+        onFail?.invoke(Tr.t("voicedsp.eq_failed", "why" to why))
     }
 
     companion object {

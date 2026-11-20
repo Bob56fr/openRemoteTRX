@@ -28,17 +28,18 @@ object Scramblers {
     const val HI_HZ = 3000.0
     const val OFFSET_MAX_HZ = 300
 
-    val MODES = linkedMapOf(
-        "inv1" to ScramblerMode("Inversion simple (1 bande)", listOf(0), listOf(1)),
-        "inv2" to ScramblerMode("2 bandes inversées", listOf(0, 1), listOf(1, 1)),
-        "inv3" to ScramblerMode("3 bandes inversées", listOf(0, 1, 2), listOf(1, 1, 1)),
-        "inv4" to ScramblerMode("4 bandes inversées", listOf(0, 1, 2, 3), listOf(1, 1, 1, 1)),
-        "inv5" to ScramblerMode("5 bandes inversées", listOf(0, 1, 2, 3, 4), listOf(1, 1, 1, 1, 1)),
-        "mix2" to ScramblerMode("2 bandes échangées", listOf(1, 0), listOf(0, 0)),
-        "mix3" to ScramblerMode("3 bandes mélangées", listOf(2, 0, 1), listOf(1, 0, 1)),
-        "mix4" to ScramblerMode("4 bandes mélangées", listOf(1, 3, 0, 2), listOf(1, 1, 0, 0)),
-        "mix5a" to ScramblerMode("5 bandes mélangées A", listOf(4, 2, 0, 3, 1), listOf(1, 1, 1, 1, 1)),
-        "mix5b" to ScramblerMode("5 bandes mélangées B", listOf(2, 4, 1, 0, 3), listOf(0, 1, 0, 1, 1)),
+    /** Modes (clé enregistrée -> mode ; libellé lu à l'affichage, clé `scrambler.mode_<clé>`). */
+    val MODES: LinkedHashMap<String, ScramblerMode> get() = linkedMapOf(
+        "inv1" to ScramblerMode(Tr.t("scrambler.mode_inv1"), listOf(0), listOf(1)),
+        "inv2" to ScramblerMode(Tr.t("scrambler.mode_inv2"), listOf(0, 1), listOf(1, 1)),
+        "inv3" to ScramblerMode(Tr.t("scrambler.mode_inv3"), listOf(0, 1, 2), listOf(1, 1, 1)),
+        "inv4" to ScramblerMode(Tr.t("scrambler.mode_inv4"), listOf(0, 1, 2, 3), listOf(1, 1, 1, 1)),
+        "inv5" to ScramblerMode(Tr.t("scrambler.mode_inv5"), listOf(0, 1, 2, 3, 4), listOf(1, 1, 1, 1, 1)),
+        "mix2" to ScramblerMode(Tr.t("scrambler.mode_mix2"), listOf(1, 0), listOf(0, 0)),
+        "mix3" to ScramblerMode(Tr.t("scrambler.mode_mix3"), listOf(2, 0, 1), listOf(1, 0, 1)),
+        "mix4" to ScramblerMode(Tr.t("scrambler.mode_mix4"), listOf(1, 3, 0, 2), listOf(1, 1, 0, 0)),
+        "mix5a" to ScramblerMode(Tr.t("scrambler.mode_mix5a"), listOf(4, 2, 0, 3, 1), listOf(1, 1, 1, 1, 1)),
+        "mix5b" to ScramblerMode(Tr.t("scrambler.mode_mix5b"), listOf(2, 4, 1, 0, 3), listOf(0, 1, 0, 1, 1)),
     )
 
     /** Réglages relus : seuls le mode et le décalage sont repris (tx et rx toujours éteints). */
@@ -58,7 +59,7 @@ object Scramblers {
 
     /** dest[k] = bin où va le bin k (-1 : supprimé) ; conj[k] = retourné. `tx` brouille, sinon débrouille. */
     fun binMap(modeKey: String, tx: Boolean, rate: Int, frame: Int = FRAME): Pair<IntArray, BooleanArray> {
-        val mode = MODES[modeKey] ?: throw IllegalArgumentException("mode de scrambler inconnu : $modeKey")
+        val mode = MODES[modeKey] ?: throw IllegalArgumentException("mode de scrambler inconnu : $modeKey") // i18n-ok (erreur de programmation)
         val half = frame / 2 + 1
         val dest = IntArray(half) { -1 }
         val conj = BooleanArray(half)

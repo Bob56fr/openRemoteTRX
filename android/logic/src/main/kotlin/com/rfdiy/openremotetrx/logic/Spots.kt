@@ -74,7 +74,8 @@ object Spots {
     private const val FADE_TO = 0.35
     private const val DEFAULT_TTL_S = 900
     val KINDS = mapOf("cluster" to "DX", "rbn" to "RBN", "cb" to "CB")
-    private val MODE_NAMES = mapOf("SSB" to "BLU", "AM" to "AM", "FM" to "FM", "FREEDV" to "FreeDV", "CW" to "CW")
+    /** Noms des modes (BLU pour SSB : clé `spots.mode_ssb`, lue à l'affichage). */
+    private val MODE_NAMES: Map<String, String> get() = mapOf("SSB" to Tr.t("spots.mode_ssb"), "AM" to "AM", "FM" to "FM", "FREEDV" to "FreeDV", "CW" to "CW")
     private val CONTROL = Regex("[\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]")
 
     private fun text(obj: JsonObject, key: String, maxLen: Int): String =
@@ -112,7 +113,8 @@ object Spots {
     fun recent(spots: List<Spot>, n: Int = 30): List<Spot> = spots.sortedByDescending { arrivalMs(it) }.take(n)
 
     /** Source d'un spot : type (DX, RBN, CB…) et indicatif de celui qui l'a signalé. */
-    fun sourceLabel(spot: Spot): String = kindLabel(spot.kind) + if (spot.de.isNotEmpty()) " de ${spot.de}" else ""
+    fun sourceLabel(spot: Spot): String =
+        if (spot.de.isNotEmpty()) Tr.t("spots.source_by", "kind" to kindLabel(spot.kind), "de" to spot.de) else kindLabel(spot.kind)
 
     fun ageSeconds(spot: Spot, nowMs: Long): Double = spot.age0 + max(0.0, (nowMs - spot.receivedMs) / 1000.0)
 
@@ -125,14 +127,15 @@ object Spots {
     }
 
     fun ageLabel(ageS: Double): String {
-        if (ageS < 60) return "à l'instant"
+        if (ageS < 60) return Tr.t("spots.age_now")
         val min = (ageS / 60).toInt()
-        return if (min < 60) "il y a $min min" else "il y a ${min / 60} h ${"%02d".format(min % 60)}"
+        return if (min < 60) Tr.t("spots.age_min", "min" to min)
+        else Tr.t("spots.age_hours", "h" to min / 60, "min" to "%02d".format(min % 60))
     }
 
     fun modeLabel(spot: Spot): String {
         val name = MODE_NAMES[spot.mode] ?: spot.mode.ifEmpty { "?" }
-        return if (spot.modeGuessed) "$name (supposé)" else name
+        return if (spot.modeGuessed) Tr.t("spots.mode_guessed", "name" to name) else name
     }
 
     fun kindLabel(kind: String): String = KINDS[kind] ?: "DX"
@@ -143,10 +146,10 @@ object Spots {
 
     /** Texte de la santé des sources (page : healthLabel). */
     fun healthLabel(state: String?): String = when (state) {
-        "green" -> "Cluster DX : toutes les sources connectées"
-        "orange" -> "Cluster DX : sources en partie connectées"
-        "red" -> "Cluster DX : aucune source connectée"
-        "off" -> "Cluster DX désactivé"
+        "green" -> Tr.t("spots.health_green")
+        "orange" -> Tr.t("spots.health_orange")
+        "red" -> Tr.t("spots.health_red")
+        "off" -> Tr.t("spots.health_off")
         else -> ""
     }
 

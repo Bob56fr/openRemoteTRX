@@ -33,19 +33,18 @@ data class PttView(
     val lastCut: String,
 ) {
     companion object {
-        private val LOCAL_REASONS = mapOf(
-            "tx" to "émission au micro du poste",
-            "frequency" to "fréquence changée sur le poste",
-            "mode" to "mode changé sur le poste",
-        )
+        /** Causes du blocage « poste utilisé sur place » (clés `pttview.local_<cause>`). */
+        private val LOCAL_REASONS = setOf("tx", "frequency", "mode")
 
         fun of(ptt: PttStatus, clientId: String): PttView {
             val active = ptt.state in Protocol.ACTIVE_STATES
             val left = ptt.localRemainingS
             val local = left?.let {
                 val s = max(0, ceil(it).toInt())
-                val time = if (ptt.localTx) "pendant l'émission locale" else "encore %d:%02d".format(s / 60, s % 60)
-                "POSTE UTILISÉ SUR PLACE (${LOCAL_REASONS[ptt.localReason] ?: "action sur le poste"}) : PTT à distance bloqué $time"
+                val time = if (ptt.localTx) Tr.t("pttview.during_local_tx")
+                else Tr.t("pttview.time_left", "time" to "%d:%02d".format(s / 60, s % 60))
+                val cause = Tr.t("pttview.local_" + (ptt.localReason.takeIf { it in LOCAL_REASONS } ?: "other"))
+                Tr.t("pttview.local_banner", "cause" to cause, "time" to time)
             }
             return PttView(
                 transmitting = active,

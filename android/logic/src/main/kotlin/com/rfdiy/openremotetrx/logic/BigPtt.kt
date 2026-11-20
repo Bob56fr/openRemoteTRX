@@ -30,11 +30,11 @@ object BigPtt {
 
     /** Texte sous « PTT » (mêmes mots que le PTT habituel). */
     fun caption(look: Look): String = when (look) {
-        Look.MINE_TX -> "FIN D'ÉMISSION"
-        Look.CUTTING -> "COUPURE…"
-        Look.OTHER -> "AUTRE CLIENT EN ÉMISSION"
-        Look.DISARMED -> "AUTORISER D'ABORD"
-        Look.OFF -> "INDISPONIBLE"
-        Look.READY -> "ÉMETTRE"
+        Look.MINE_TX -> Tr.t("bigptt.caption_mine_tx")
+        Look.CUTTING -> Tr.t("bigptt.caption_cutting")
+        Look.OTHER -> Tr.t("bigptt.caption_other")
+        Look.DISARMED -> Tr.t("bigptt.caption_disarmed")
+        Look.OFF -> Tr.t("bigptt.caption_off")
+        Look.READY -> Tr.t("bigptt.caption_ready")
     }
 }

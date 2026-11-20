@@ -49,23 +49,24 @@ object VoiceEq {
     const val RECORD_MAX_S = 30
     const val FORMAT = "openremotetrx-voice"
 
-    val CHORUS_TYPES = linkedMapOf(
-        "classic" to EffectType("Classique", voices = 1, delayMs = 18.0),
-        "ensemble" to EffectType("Ensemble 3 voix", voices = 3, delayMs = 22.0),
-        "double" to EffectType("Doublage", voices = 1, delayMs = 32.0),
+    /** Types de chorus (clé enregistrée -> libellé lu à l'affichage, langue de l'application). */
+    val CHORUS_TYPES: LinkedHashMap<String, EffectType> get() = linkedMapOf(
+        "classic" to EffectType(Tr.t("voiceeq.chorus_classic"), voices = 1, delayMs = 18.0),
+        "ensemble" to EffectType(Tr.t("voiceeq.chorus_ensemble"), voices = 3, delayMs = 22.0),
+        "double" to EffectType(Tr.t("voiceeq.chorus_double"), voices = 1, delayMs = 32.0),
     )
-    val REVERB_TYPES = linkedMapOf(
-        "room" to EffectType("Pièce", seconds = 0.5, bright = 0.5),
-        "hall" to EffectType("Salle", seconds = 1.8, bright = 0.35),
-        "plate" to EffectType("Plaque", seconds = 1.2, bright = 0.8),
-        "spring" to EffectType("Ressort", seconds = 0.9, bright = 0.6),
+    val REVERB_TYPES: LinkedHashMap<String, EffectType> get() = linkedMapOf(
+        "room" to EffectType(Tr.t("voiceeq.reverb_room"), seconds = 0.5, bright = 0.5),
+        "hall" to EffectType(Tr.t("voiceeq.reverb_hall"), seconds = 1.8, bright = 0.35),
+        "plate" to EffectType(Tr.t("voiceeq.reverb_plate"), seconds = 1.2, bright = 0.8),
+        "spring" to EffectType(Tr.t("voiceeq.reverb_spring"), seconds = 0.9, bright = 0.6),
     )
 
     /** Préréglages de la page (voice.js, PRESETS), même ordre et mêmes valeurs. */
-    val PRESETS: LinkedHashMap<String, Pair<String, () -> VoiceSettings>> = linkedMapOf(
-        "neutre" to ("Neutre" to { VoiceSettings(enabled = true) }),
-        "dx" to ("DX (aigus présents)" to { withGains(VoiceSettings(enabled = true, highpassHz = 250.0, lowpassHz = 2800.0), listOf(-6, -4, -2, 0, 0, 1, 3, 5, 4, 0)) }),
-        "ragchew" to ("Ragchew (voix chaude)" to { withGains(VoiceSettings(enabled = true, highpassHz = 100.0, lowpassHz = 3000.0), listOf(2, 3, 2, 1, 0, 0, 1, 1, 0, -2)) }),
+    val PRESETS: LinkedHashMap<String, Pair<String, () -> VoiceSettings>> get() = linkedMapOf(
+        "neutre" to (Tr.t("voiceeq.preset_neutral") to { VoiceSettings(enabled = true) }),
+        "dx" to (Tr.t("voiceeq.preset_dx") to { withGains(VoiceSettings(enabled = true, highpassHz = 250.0, lowpassHz = 2800.0), listOf(-6, -4, -2, 0, 0, 1, 3, 5, 4, 0)) }),
+        "ragchew" to (Tr.t("voiceeq.preset_ragchew") to { withGains(VoiceSettings(enabled = true, highpassHz = 100.0, lowpassHz = 3000.0), listOf(2, 3, 2, 1, 0, 0, 1, 1, 0, -2)) }),
     )
 
     private fun withGains(s: VoiceSettings, gains: List<Int>) = s.copy(bands = s.bands.mapIndexed { i, b -> b.copy(gainDb = gains[i].toDouble()) })
@@ -127,7 +128,7 @@ object VoiceEq {
     /** Fichier importé ; IllegalArgumentException s'il n'est pas un réglage de voix openRemoteTRX. */
     fun importJson(text: String): VoiceSettings {
         val raw = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull()
-        require(raw != null && text(raw["format"]) == FORMAT) { "ce fichier n'est pas un réglage de voix openRemoteTRX" }
+        require(raw != null && text(raw["format"]) == FORMAT) { Tr.t("voiceeq.not_voice_file") }
         return validate(raw)
     }
 
@@ -147,7 +148,7 @@ object VoiceEq {
             }
             "highpass" -> doubleArrayOf((1 + c) / 2, -(1 + c), (1 + c) / 2) to doubleArrayOf(1 + alpha, -2 * c, 1 - alpha)
             "lowpass" -> doubleArrayOf((1 - c) / 2, 1 - c, (1 - c) / 2) to doubleArrayOf(1 + alpha, -2 * c, 1 - alpha)
-            else -> throw IllegalArgumentException("filtre inconnu : $type")
+            else -> throw IllegalArgumentException("filtre inconnu : $type") // i18n-ok (erreur de programmation)
         }
         return doubleArrayOf(b[0] / den[0], b[1] / den[0], b[2] / den[0], den[1] / den[0], den[2] / den[0])
     }
@@ -200,19 +201,19 @@ object VoiceEq {
         val lows = mean(0, 4)
         val mids = mean(4, 7)
         val highs = mean(7, 10)
-        if (!s.enabled) out += "Égaliseur éteint : ces réglages ne s'appliquent pas encore."
-        if (lows >= 2) out += "Graves renforcés : voix plus chaude et ronde, moins lisible en DX."
-        else if (lows <= -2) out += "Graves réduits : voix plus légère, moins de ronflement."
-        if (mids >= 2) out += "Médiums renforcés : voix plus présente, un peu nasale."
-        else if (mids <= -2) out += "Médiums creusés : voix plus douce, moins d'énergie."
-        if (highs >= 2) out += "Aigus renforcés : plus de clarté et de punch, idéal en DX."
-        else if (highs <= -2) out += "Aigus réduits : voix plus sombre, moins de sifflantes."
-        if (s.highpassHz >= 200) out += "Coupe-bas à ${Math.round(s.highpassHz)} Hz : la puissance va à la parole."
-        if (s.lowpassHz <= 2700) out += "Coupe-haut à ${Math.round(s.lowpassHz)} Hz : bande étroite, plus de punch, moins de fidélité."
-        if (s.chorus.on) out += "Chorus : voix doublée, effet studio (à éviter en DX)."
-        if (s.reverb.on) out += "Réverbération : effet de salle (à éviter en DX)."
-        if (s.bands.any { kotlin.math.abs(it.gainDb) >= 9 }) out += "Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive."
-        if (out.isEmpty()) out += "Réglage neutre : votre voix part telle quelle."
+        if (!s.enabled) out += Tr.t("voiceeq.hint_off")
+        if (lows >= 2) out += Tr.t("voiceeq.hint_lows_up")
+        else if (lows <= -2) out += Tr.t("voiceeq.hint_lows_down")
+        if (mids >= 2) out += Tr.t("voiceeq.hint_mids_up")
+        else if (mids <= -2) out += Tr.t("voiceeq.hint_mids_down")
+        if (highs >= 2) out += Tr.t("voiceeq.hint_highs_up")
+        else if (highs <= -2) out += Tr.t("voiceeq.hint_highs_down")
+        if (s.highpassHz >= 200) out += Tr.t("voiceeq.hint_highpass", "hz" to Math.round(s.highpassHz))
+        if (s.lowpassHz <= 2700) out += Tr.t("voiceeq.hint_lowpass", "hz" to Math.round(s.lowpassHz))
+        if (s.chorus.on) out += Tr.t("voiceeq.hint_chorus")
+        if (s.reverb.on) out += Tr.t("voiceeq.hint_reverb")
+        if (s.bands.any { kotlin.math.abs(it.gainDb) >= 9 }) out += Tr.t("voiceeq.hint_strong_gain")
+        if (out.isEmpty()) out += Tr.t("voiceeq.hint_neutral")
         return out
     }
 }

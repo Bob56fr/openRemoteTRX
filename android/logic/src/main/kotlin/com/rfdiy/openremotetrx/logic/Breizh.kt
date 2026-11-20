@@ -46,13 +46,9 @@ object Breizhs {
     const val GAIN_MIN = -20.0
     const val GAIN_MAX = 6.0
 
-    val STATES = linkedMapOf(
-        "connecting" to "recherche de Breizh…",
-        "ready" to "prêt : prochaines émissions par Breizh",
-        "active" to "émission par Breizh",
-        "fallback" to "REPLI : Breizh ne répond plus, émissions en direct",
-        "refused" to "liaison refusée par Breizh (voir le journal)",
-    )
+    /** États de la liaison (codes de state.breizh.state, textes `breizh.state_<code>`). */
+    private val STATE_KEYS = listOf("connecting", "ready", "active", "fallback", "refused")
+    val STATES: Map<String, String> get() = STATE_KEYS.associateWith { Tr.t("breizh.state_$it") }
 
     /** « −3,5 dB », « +6 dB », « 0 dB » (signe moins typographique, comme la page). */
     fun gainText(gain: Double): String {
@@ -66,7 +62,7 @@ object Breizhs {
 
     fun view(b: BreizhStatus?): BreizhView? {
         if (b == null) return null
-        val state = if (b.state in STATES) b.state else "connecting"
+        val state = if (b.state in STATE_KEYS) b.state else "connecting"
         val level = when {
             b.bypass -> BreizhLevel.OFF
             state == "ready" || state == "active" -> BreizhLevel.OK
@@ -75,14 +71,14 @@ object Breizhs {
         }
         val details = buildList {
             if (b.peer.isNotEmpty()) add(b.peer.take(64))
-            b.rttMs?.let { add("aller-retour $it ms") }
-            if (b.late > 0) add("${b.late} bloc(s) partis sans traitement")
-            b.reactivateInS?.let { add("retour de Breizh dans $it s") }
+            b.rttMs?.let { add(Tr.t("breizh.rtt", "rtt" to it)) }
+            if (b.late > 0) add(Tr.t("breizh.late", "late" to b.late))
+            b.reactivateInS?.let { add(Tr.t("breizh.reactivate_in", "seconds" to it)) }
         }.joinToString(" · ")
         val text = STATES.getValue(state)
         return BreizhView(
             state = state, route = if (b.route == "breizh") "breizh" else "direct", bypass = b.bypass, level = level,
-            text = if (b.bypass) "« Direct » choisi : Breizh ignoré ($text)" else text,
+            text = if (b.bypass) Tr.t("breizh.bypass", "state" to text) else text,
             details = details, returnGainDb = b.returnGainDb, returnGainText = gainText(b.returnGainDb),
             canReactivate = !b.bypass && (state == "fallback" || state == "refused"),
             effectsOff = b.route == "breizh",

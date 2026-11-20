@@ -22,6 +22,7 @@ import com.rfdiy.openremotetrx.logic.Radio
 class RigAutoService : MediaBrowserService() {
     override fun onCreate() {
         super.onCreate()
+        AppLang.apply(this)
         RigMedia.acquire(this, RigMedia.USER_CAR)
         sessionToken = RigMedia.token
         RigMedia.onBrowseChanged = { listOf(ROOT, FAVORITES, STATIONS).forEach { runCatching { notifyChildrenChanged(it) } } }

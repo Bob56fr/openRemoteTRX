@@ -60,11 +60,12 @@ object Spatials {
     internal val DECOR_MS = doubleArrayOf(1.3, 2.1, 2.9, 3.7, 4.9, 6.7)
     internal const val DECOR_G = 0.5
 
-    val PRESETS = linkedMapOf(
-        "mono" to SpatialPreset("Mono", null, 0, 0),
-        "comfort" to SpatialPreset("Confort", "decor", 70, 40),
-        "dx" to SpatialPreset("DX BLU", "binaural", 80, 25),
-        "cw" to SpatialPreset("CW binaural", "binaural", 100, 0),
+    /** Préréglages (clé enregistrée -> préréglage ; libellé lu à l'affichage, clé `spatial.preset_<clé>`). */
+    val PRESETS: LinkedHashMap<String, SpatialPreset> get() = linkedMapOf(
+        "mono" to SpatialPreset(Tr.t("spatial.preset_mono"), null, 0, 0),
+        "comfort" to SpatialPreset(Tr.t("spatial.preset_comfort"), "decor", 70, 40),
+        "dx" to SpatialPreset(Tr.t("spatial.preset_dx"), "binaural", 80, 25),
+        "cw" to SpatialPreset(Tr.t("spatial.preset_cw"), "binaural", 100, 0),
     )
 
     private fun JsonObject.int(key: String, lo: Int, hi: Int, dflt: Int): Int {
@@ -103,7 +104,7 @@ object Spatials {
         return p.engine != null && (s.width != p.width || s.presence != p.presence)
     }
 
-    fun label(s: SpatialSettings): String = PRESETS[s.preset]?.let { it.label + if (isModified(s)) " (modifié)" else "" } ?: "?"
+    fun label(s: SpatialSettings): String = PRESETS[s.preset]?.let { if (isModified(s)) Tr.t("spatial.label_modified", "label" to it.label) else it.label } ?: "?"
 
     /** Bypass : ST éteint, préréglage Mono, sortie mono, ou A/B maintenu. */
     fun params(s: SpatialSettings, abMono: Boolean = false): SpatialParams {

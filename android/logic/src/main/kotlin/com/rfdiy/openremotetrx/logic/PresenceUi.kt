@@ -44,20 +44,20 @@ data class PresenceUi(
             val operator = !listener
             val people = p.people.map {
                 Person(it.pseudo.take(32) + if (it.count > 1) " ×${it.count}" else "",
-                    if (it.role == "listener") "Visiteur" else "Opérateur", duration(it.sinceS))
+                    Tr.t(if (it.role == "listener") "presenceui.role_listener" else "presenceui.role_operator"), duration(it.sinceS))
             }
             val kick = if (!operator) emptyList() else p.connections.filter { it.role == "listener" }.map {
-                Kick(it.id, it.pseudo.ifBlank { it.id }.take(32), "${it.id} · ${it.source.ifBlank { "?" }} · ${duration(it.sinceS)}")
+                Kick(it.id, it.pseudo.ifBlank { it.id }.take(32), "${it.id} · ${it.source.ifBlank { "?" }} · ${duration(it.sinceS)}")   // i18n-ok
             }
             val grace = p.graceRemainingS?.let {
-                "Opérateur momentanément déconnecté : fin de l'écoute des visiteurs dans ${maxOf(0, Math.round(it).toInt())} s."
+                Tr.t("presenceui.grace", "seconds" to maxOf(0, Math.round(it).toInt()))
             } ?: ""
-            val suspended = p.suspended?.let { it.message.ifBlank { "Écoute des visiteurs suspendue." }.take(300) } ?: ""
+            val suspended = p.suspended?.let { it.message.ifBlank { Tr.t("presenceui.suspended") }.take(300) } ?: ""
             val available = p.maxListeners > 0
             val note = when {
-                !available -> "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 4.2)."
-                p.open == true -> "Ouverte : ${p.listeners} visiteur(s) sur ${p.maxListeners} au plus."
-                else -> "Fermée : aucun visiteur ne peut se connecter."
+                !available -> Tr.t("presenceui.closed_station")
+                p.open == true -> Tr.t("presenceui.open", "listeners" to p.listeners, "max" to p.maxListeners)
+                else -> Tr.t("presenceui.closed")
             }
             return PresenceUi(
                 count = p.listeners, label = if (p.listeners > 0) "🎧 ${p.listeners}" else "", people = people, kick = kick,

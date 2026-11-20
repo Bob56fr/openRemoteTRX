@@ -52,8 +52,8 @@ data class BeepSettings(
         }
 
         /** Libellés de la page (ui.js : TONE_LABELS). */
-        fun toneLabel(tone: String): String = if (tone == "duo") "deux tons montants" else "$tone Hz"
+        fun toneLabel(tone: String): String = if (tone == "duo") Tr.t("beeps.tone_duo") else "$tone Hz"
 
-        fun patternLabel(n: Int): String = "$n bip" + if (n > 1) "s" else ""
+        fun patternLabel(n: Int): String = Tr.plural("beeps.pattern", n)
     }
 }

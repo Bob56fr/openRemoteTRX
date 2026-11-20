@@ -78,7 +78,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rfdiy.openremotetrx.core.AppLang
 import com.rfdiy.openremotetrx.core.RigHub
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.core.VoiceHub
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.logic.Band
@@ -109,6 +111,32 @@ private val SQL_OPEN = Page.SUCCES
 private val HEALTH = mapOf("green" to Page.SUCCES, "orange" to Page.ALERTE, "red" to Page.TX, "off" to Page.TEXTE_2)
 private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX)    // pastilles des bandes (page : lvl1..3)
 
+/** Noms des langues dans leur propre langue (jamais traduits). */
+private val LANG_NAMES = mapOf("fr" to "Français", "en" to "English", "de" to "Deutsch", "es" to "Español")
+
+/**
+ * Réglages > Langue : langue du téléphone ou une langue proposée ; refusée pendant une émission. L'écran se redessine
+ * avec la nouvelle langue ; la station envoie ses textes dans cette langue à la connexion suivante.
+ */
+@Composable
+private fun LanguageSection(transmitting: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var chosen by remember { mutableStateOf(AppLang.stored(context)) }
+    Text(Tr.t("settings.language"), style = MaterialTheme.typography.titleSmall)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        val choices = listOf<String?>(null) + Tr.OFFERED
+        for (lang in choices) {
+            FilterChip(
+                selected = chosen == lang, enabled = !transmitting,
+                onClick = { if (AppLang.choose(context, lang, transmitting)) chosen = lang },
+                label = { Text(lang?.let { LANG_NAMES[it] ?: it } ?: Tr.t("settings.language_phone")) },
+            )
+            Spacer(Modifier.width(6.dp))
+        }
+    }
+    if (transmitting) Text(Tr.t("settings.language_tx"), style = MaterialTheme.typography.bodySmall)
+}
+
 /** Onglet Réglages : journal, préférences, sections du téléphone, outils de la station. */
 @Composable
 internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit = {}) {
@@ -126,6 +154,8 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                     steps = 5,
                 )
             }
+            // Langue (lot T2) : montrée dès que l'application en propose plus d'une (lot T5)
+            if (Tr.OFFERED.size > 1) Panel { LanguageSection(transmitting = rig.ptt?.transmitting == true) }
             // Journal
             Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {

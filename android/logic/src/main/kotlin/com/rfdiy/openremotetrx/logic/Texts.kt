@@ -17,24 +17,16 @@ object Texts {
      * Causes d'une connexion perdue ou impossible (client.js : LOSS_REASONS, titres). « pin » et « untrusted » sont
      * propres à l'application (empreinte différente ; certificat auto-signé sans empreinte).
      */
-    val LOSSES: Map<String, String> = mapOf(
-        "datachannel_closed" to "Canal de contrôle fermé",
-        "connection_failed" to "Liaison réseau échouée",
-        "connection_closed" to "Liaison fermée",
-        "ice_failed" to "Liaison réseau échouée (ICE)",
-        "silence" to "Plus de nouvelles de la station",
-        "no_hello" to "Canal de contrôle jamais ouvert (UDP bloqué ?)",
-        "network" to "Station injoignable",
-        "auth" to "Identifiants refusés (ou trop d'essais : attends quelques minutes)",
-        "busy" to "Station occupée (trop de connexions)",
-        "refused" to "Accès refusé par la station (compte désactivé ou expiré, visiteurs complets, opérateur absent)",
-        "http" to "Réponse inattendue de la station",
-        "client_error" to "Erreur dans l'application",
-        "pin" to "Empreinte du certificat DIFFÉRENTE : ce n'est peut-être pas ta station, connexion bloquée",
-        "untrusted" to "Certificat de la station non reconnu : saisis son empreinte (TRX Console, menu 4.1) ou scanne son QR code",
+    val LOSSES: Map<String, String> get() = LOSS_CODES.associateWith { Tr.t("texts.loss_$it") }
+
+    /** Codes de [LOSSES] (textes `texts.loss_<code>`). */
+    private val LOSS_CODES = listOf(
+        "datachannel_closed", "connection_failed", "connection_closed", "ice_failed", "silence", "no_hello", "network",
+        "auth", "busy", "refused", "http", "client_error", "pin", "untrusted",
     )
 
-    val PTT_LABELS = mapOf("RX" to "RÉCEPTION", "KEYING" to "PRISE D'ÉMISSION", "TX" to "ÉMISSION", "UNKEYING" to "COUPURE EN COURS")
+    /** États du PTT -> libellé (textes `texts.ptt_<état en minuscules>`). */
+    val PTT_LABELS: Map<String, String> get() = listOf("RX", "KEYING", "TX", "UNKEYING").associateWith { Tr.t("texts.ptt_" + it.lowercase()) }
 
     /** Refus d'une commande : texte connu, sinon le détail donné par la station, sinon le code. */
     fun refusal(reason: String, detail: String = ""): String =

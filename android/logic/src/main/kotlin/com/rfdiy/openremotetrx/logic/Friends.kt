@@ -22,14 +22,18 @@ object Friends {
     const val OFFLINE_AFTER_S = 240L
     const val REFRESH_MS = 30_000L
     private val ORDER = mapOf("Q" to 0, "R" to 1, "S" to 2, "A" to 3, "O" to 4)
-    val LABELS = mapOf("Q" to "En QSO", "R" to "En RX", "S" to "Au shack", "A" to "Absent", "O" to "Hors ligne")
-    val ROLES = mapOf("a" to "administrateur", "c" to "co-administrateur", "m" to "membre")
-    val STATUS = mapOf("member" to "", "pending" to "adhésion en attente de validation", "removed" to "exclu ou groupe supprimé")
-    val LEVELS = linkedMapOf("f" to "Fréquence et mode", "o" to "« On Air » seulement", "x" to "Un court texte")
-    val CONSENT = listOf(
-        "L'administrateur du groupe verra des statistiques d'activité AGRÉGÉES de votre station : jours actifs, temps approximatif en QSO et en réception par semaine, date d'adhésion, version de la station. Jamais un emploi du temps détaillé.",
-        "Les membres du groupe verront votre statut (en QSO, en réception, au shack, absent, hors ligne) et ce que vous choisissez de partager ci-dessous ; vous pourrez le changer, ou devenir invisible, à tout moment.",
-        "Le relais de présence ne voit que des états chiffrés : ni fréquence, ni mode, ni texte, ni statut.",
+    /** Textes lus à chaque usage (la langue peut changer pendant la vie de l'application). */
+    val LABELS: Map<String, String> get() = mapOf("Q" to Tr.t("friends.label_q"), "R" to Tr.t("friends.label_r"),
+        "S" to Tr.t("friends.label_s"), "A" to Tr.t("friends.label_a"), "O" to Tr.t("friends.label_o"))
+    val ROLES: Map<String, String> get() = mapOf("a" to Tr.t("friends.role_a"), "c" to Tr.t("friends.role_c"), "m" to Tr.t("friends.role_m"))
+    val STATUS: Map<String, String> get() = mapOf("member" to "", "pending" to Tr.t("friends.status_pending"),
+        "removed" to Tr.t("friends.status_removed"))
+    val LEVELS: LinkedHashMap<String, String> get() = linkedMapOf("f" to Tr.t("friends.level_f"), "o" to Tr.t("friends.level_o"),
+        "x" to Tr.t("friends.level_x"))
+    val CONSENT: List<String> get() = listOf(
+        Tr.t("friends.consent_admin"),
+        Tr.t("friends.consent_members"),
+        Tr.t("friends.consent_relay"),
     )
     private val PSEUDO_RE = Regex("^[A-Za-z0-9](?:[A-Za-z0-9 ./_-]{0,14}[A-Za-z0-9./_-])?$")
     private val TEXT_RE = Regex("^[A-Za-z0-9./-](?:[A-Za-z0-9 ./-]{0,14}[A-Za-z0-9./-])?$")
@@ -46,7 +50,7 @@ object Friends {
         return when {
             s < 3600 -> "${maxOf(1, s / 60)} min"
             s < 86400 -> "${s / 3600} h"
-            else -> "${s / 86400} j"
+            else -> Tr.t("friends.age_days", "days" to s / 86400)
         }
     }
 
@@ -95,19 +99,19 @@ object Friends {
         val sd = m.long("sd"); val lt = m.long("lt"); val su = m.long("su"); val updated = m.long("updated")
         val lv = m.str("lv"); val hz = m.long("f"); val mode = m.str("m"); val text = m.str("x")
         val detail = when {
-            code == "O" -> "Hors ligne"
-            code == "S" -> if (su != null) "Au shack jusqu'à " + clock(su, zone) else "Au shack"
-            code == "A" -> if (sd != null) "Absent depuis " + formatAge(nowS - sd) else "Absent"
+            code == "O" -> Tr.t("friends.label_o")
+            code == "S" -> if (su != null) Tr.t("friends.shack_until", "time" to clock(su, zone)) else Tr.t("friends.label_s")
+            code == "A" -> if (sd != null) Tr.t("friends.absent_since", "age" to formatAge(nowS - sd)) else Tr.t("friends.label_a")
             lv == "f" && hz != null -> frequencyText(hz) + (if (mode != null) " $mode" else "")
-            lv == "x" && !text.isNullOrEmpty() -> "« $text »"
-            else -> if (code == "Q") "On Air" else label
+            lv == "x" && !text.isNullOrEmpty() -> Tr.t("friends.quoted", "text" to text)
+            else -> if (code == "Q") Tr.t("friends.on_air") else label
         }
         val lines = buildList {
             if (code != "O") {
-                if (sd != null) add("$label depuis " + formatAge(nowS - sd))
-                if (lt != null) add("Dernière émission il y a " + formatAge(nowS - lt))
-                if (updated != null) add("Mis à jour il y a " + freshness(updated + e))
-            } else add("Dernière nouvelle il y a " + formatAge(age + e))
+                if (sd != null) add(Tr.t("friends.since", "label" to label, "age" to formatAge(nowS - sd)))
+                if (lt != null) add(Tr.t("friends.last_tx", "age" to formatAge(nowS - lt)))
+                if (updated != null) add(Tr.t("friends.updated", "age" to freshness(updated + e)))
+            } else add(Tr.t("friends.last_news", "age" to formatAge(age + e)))
         }
         return Member(
             id = m.str("id").orEmpty(), pseudo = m.str("pseudo") ?: "?", code = code, letter = if (code == "O") "" else code,
@@ -131,10 +135,10 @@ object Friends {
         val once = me.long("once")?.takeIf { it > nowS }
         val su = me.long("su")
         val text = when {
-            once == null -> "Automatique : vos amis vous voient « $label »" +
-                (if (code == "S" && su != null) " jusqu'à " + clock(su, zone) else "") + "."
-            code == "S" -> "Au shack jusqu'à " + clock(once, zone) + " : vos amis vous voient « Au shack »."
-            else -> "Au shack jusqu'à " + clock(once, zone) + " : vos amis vous voient « $label » tant que la station est active, puis « Au shack »."
+            once == null -> if (code == "S" && su != null) Tr.t("friends.me_auto_until", "label" to label, "time" to clock(su, zone))
+                else Tr.t("friends.me_auto", "label" to label)
+            code == "S" -> Tr.t("friends.me_shack", "time" to clock(once, zone))
+            else -> Tr.t("friends.me_shack_active", "time" to clock(once, zone), "label" to label)
         }
         val choice = when { once == null -> "auto"; once - nowS > 3600 -> "120"; else -> "60" }
         return Me(code, label, text, choice, once != null)
@@ -188,16 +192,16 @@ object Friends {
 
     /** Ce que demande le QSY vers un ami : refus, ou texte de confirmation et avertissements (comme friends.js qsyPlan). */
     fun qsyPlan(member: Member?, pttState: String?, rigHz: Long?, selfCode: String? = null): QsyPlan {
-        if (pttState != null && pttState != "RX") return QsyPlan(false, "tx_active", "Émission en cours : pas de QSY.")
-        if (member == null || !member.qsy) return QsyPlan(false, "no_frequency", "Ce membre ne partage pas sa fréquence.")
+        if (pttState != null && pttState != "RX") return QsyPlan(false, "tx_active", Tr.t("friends.qsy_tx"))
+        if (member == null || !member.qsy) return QsyPlan(false, "no_frequency", Tr.t("friends.qsy_no_frequency"))
         val hz = member.hz!!
         val warnings = buildList {
-            if (selfCode == "Q") add(Warning("strong", "Vous êtes en QSO : votre correspondant ne vous entendra plus sur votre fréquence actuelle."))
+            if (selfCode == "Q") add(Warning("strong", Tr.t("friends.warn_qso")))
             if (member.lines.isNotEmpty()) add(Warning("info", member.lines.joinToString(" · ")))
-            if (rigHz != null && bandOf(rigHz) != bandOf(hz)) add(Warning("warn", "Changement de bande : vérifiez l'accord de l'antenne avant d'émettre."))
-            if (member.txOk == false) add(Warning("warn", "Hors des bandes d'émission de cette station : réception seulement."))
+            if (rigHz != null && bandOf(rigHz) != bandOf(hz)) add(Warning("warn", Tr.t("friends.warn_band")))
+            if (member.txOk == false) add(Warning("warn", Tr.t("friends.warn_rx_only")))
         }
-        return QsyPlan(true, text = "Aller sur ${frequencyText(hz)} ${member.mode} ?", hz = hz, mode = member.mode, warnings = warnings)
+        return QsyPlan(true, text = Tr.t("friends.qsy_confirm", "frequency" to frequencyText(hz), "mode" to member.mode), hz = hz, mode = member.mode, warnings = warnings)
     }
 
     data class StatsRow(val id: String, val pseudo: String, val lastActive: String, val days: Int, val qsoMin: Long, val rxMin: Long)

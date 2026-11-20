@@ -92,7 +92,7 @@ object Car {
     }
 
     /** Cadenas d'une liaison absente ou perdue : état d'émission inconnu. */
-    val LOCK_UNKNOWN = CarButton(CarAction.LOCK_INFO, "État d'émission inconnu", CarIcon.LOCK_UNKNOWN)
+    val LOCK_UNKNOWN: CarButton get() = CarButton(CarAction.LOCK_INFO, Tr.t("car.tx_state_unknown"), CarIcon.LOCK_UNKNOWN)
 
     /**
      * `eq` : égaliseur de la voix émise en service (F3) ; `preview` : favori choisi au volant, pas encore envoyé (F1,
@@ -102,16 +102,17 @@ object Car {
         rig: RigState, station: String?, muted: Boolean, micAllowed: Boolean, notice: String = "",
         eq: Boolean = false, preview: Memory? = null, selcall: SelcallStatus? = null,
     ): CarScreen {
-        val name = station ?: "openRemoteTRX"
+        val name = station ?: "openRemoteTRX" // i18n-ok
         val ptt = rig.ptt
         when (rig.status) {
             LinkStatus.DISCONNECTED -> return CarScreen(
-                "Déconnecté", if (notice.isNotEmpty()) notice else "Choisir une station : Parcourir > Stations",
+                Tr.t("car.disconnected"), if (notice.isNotEmpty()) notice else Tr.t("car.choose_station"),
                 playing = false, connecting = false, connected = false, buttons = listOf(LOCK_UNKNOWN), error = notice,
             )
-            LinkStatus.CONNECTING -> return CarScreen("Connexion…", name, false, connecting = true, connected = false, buttons = listOf(LOCK_UNKNOWN))
+            LinkStatus.CONNECTING -> return CarScreen(Tr.t("car.connecting"), name, false, connecting = true, connected = false, buttons = listOf(LOCK_UNKNOWN))
             LinkStatus.RECONNECTING -> return CarScreen(
-                "Reconnexion…" + (rig.reconnect?.let { " ${it.remainingS} s" } ?: ""), "$name — réception seule au retour",
+                rig.reconnect?.let { Tr.t("car.reconnecting_in", "s" to it.remainingS) } ?: Tr.t("car.reconnecting"),
+                Tr.t("car.reconnecting_sub", "name" to name),
                 playing = false, connecting = true, connected = false, buttons = listOf(LOCK_UNKNOWN),
             )
             LinkStatus.CONNECTED -> Unit
@@ -128,17 +129,18 @@ object Car {
         val title = when {
             // Poste éteint ou qui s'allume (fonction « power ») : état seul en titre, aucun bouton d'allumage (décision v4)
             rig.powerCarTitle != null && !mine -> rig.powerCarTitle
-            mine -> "$freq ÉMISSION" + (ptt?.totSeconds?.let { " ${Format.duration(it)}" } ?: "")
-            ptt?.transmitting == true -> "$freq Émission : ${ptt.label}"
+            mine -> ptt?.totSeconds?.let { Tr.t("car.title_tx_tot", "freq" to freq, "tot" to Format.duration(it)) }
+                ?: Tr.t("car.title_tx", "freq" to freq)
+            ptt?.transmitting == true -> Tr.t("car.title_other_tx", "freq" to freq, "label" to ptt.label)
             else -> freq
         }.trim()
         val parts = buildList {
             r?.mode?.let { add(Radio.modeLabel(it)) }
-            ptt?.local?.let { add("poste utilisé sur place") }
-            if (!micAllowed) add("réception seule")
-            else if (!rig.armed && !mine) add("émission non autorisée")
-            if (muted) add("muet")
-            if (selcall?.open == true) add("SELCALL ouvert")
+            ptt?.local?.let { add(Tr.t("car.local_use")) }
+            if (!micAllowed) add(Tr.t("car.rx_only"))
+            else if (!rig.armed && !mine) add(Tr.t("car.tx_not_allowed"))
+            if (muted) add(Tr.t("car.muted"))
+            if (selcall?.open == true) add(Tr.t("car.selcall_open"))
             rig.freedv?.takeIf { it.on || it.level == FreeDvLevel.BAD }?.let { add(it.text) }
             add(name)
         }
@@ -146,24 +148,24 @@ object Car {
             val other = ptt?.transmitting == true && !mine
             if (micAllowed && rig.protocolOk) {
                 when {
-                    mine -> add(CarButton(CarAction.PTT, "FIN D'ÉMISSION"))
-                    rig.armed && !other -> add(CarButton(CarAction.PTT, "ÉMETTRE"))
+                    mine -> add(CarButton(CarAction.PTT, Tr.t("car.button_end_tx")))
+                    rig.armed && !other -> add(CarButton(CarAction.PTT, Tr.t("car.button_tx")))
                 }
             }
-            add(CarButton(CarAction.STOP, "STOP"))
+            add(CarButton(CarAction.STOP, "STOP")) // i18n-ok
             // Cadenas = état actuel (pictogramme et libellé) ; un appui le bascule, l'icône suit l'état relu (jamais supposé).
             when {
-                !micAllowed || !rig.protocolOk -> add(CarButton(CarAction.LOCK_INFO, "Réception seule", CarIcon.LOCK_CLOSED))
-                mine -> add(CarButton(CarAction.LOCK_INFO, "En émission", CarIcon.LOCK_TX))
-                rig.armed -> add(CarButton(CarAction.DISARM, "Émission autorisée", CarIcon.LOCK_OPEN))
-                else -> add(CarButton(CarAction.ARM, "Émission verrouillée", CarIcon.LOCK_CLOSED))
+                !micAllowed || !rig.protocolOk -> add(CarButton(CarAction.LOCK_INFO, Tr.t("car.lock_rx_only"), CarIcon.LOCK_CLOSED))
+                mine -> add(CarButton(CarAction.LOCK_INFO, Tr.t("car.lock_in_tx"), CarIcon.LOCK_TX))
+                rig.armed -> add(CarButton(CarAction.DISARM, Tr.t("car.lock_tx_allowed"), CarIcon.LOCK_OPEN))
+                else -> add(CarButton(CarAction.ARM, Tr.t("car.lock_tx_locked"), CarIcon.LOCK_CLOSED))
             }
-            if (ptt?.canReleaseLocal == true) add(CarButton(CarAction.RELEASE_LOCAL, "Reprendre la main"))
+            if (ptt?.canReleaseLocal == true) add(CarButton(CarAction.RELEASE_LOCAL, Tr.t("car.release_local")))
         }
         val canSkip = !rig.listener && favorites.isNotEmpty()
         // Sous-titre (la voiture n'affiche pas la ligne secondaire) : niveau, puis « M: <nom du favori> » ou « VFO », puis
         // les réglages (exemples de l'utilisateur : « S3  M: 430  NB NR  Preamp 100w », « S4  VFO  NB NR  100w »).
-        val place = memory?.let { "M: ${it.name.take(NAME_MAX)}" } ?: "VFO"
+        val place = memory?.let { "M: ${it.name.take(NAME_MAX)}" } ?: "VFO" // i18n-ok
         val signal = if (mine) null else r?.strengthDb?.let { Format.sMeter(it) }
         // Sonde réseau : liaison rouge = « Liaison faible » en TÊTE du sous-titre (cahier § 9.3), sans bip ni voix
         val weak = if (rig.net?.weak == true) WEAK_LINK else null
@@ -187,7 +189,7 @@ object Car {
         val ptt = buttons.filter { it.action == CarAction.PTT }.ifEmpty { buttons.filter { it.icon.name.startsWith("LOCK") } }
         val stop = buttons.filter { it.action == CarAction.STOP }
         val rest = buttons - (ptt + stop).toSet()
-        val mem = if (canSkip) listOf(CarButton(CarAction.MEM_PREV, "Mémoire précédente"), CarButton(CarAction.MEM_NEXT, "Mémoire suivante")) else emptyList()
+        val mem = if (canSkip) listOf(CarButton(CarAction.MEM_PREV, Tr.t("car.mem_prev")), CarButton(CarAction.MEM_NEXT, Tr.t("car.mem_next"))) else emptyList()
         return order(ptt, stop, mem, rest)
     }
 
@@ -204,16 +206,16 @@ object Car {
      */
     fun selcallParts(s: SelcallStatus?): Pair<String?, String?> = when {
         s == null -> null to null
-        s.sending.isNotEmpty() -> "SEL " + (if (SENDING_STEP.matches(s.sending)) s.sending else "ENVOI") to null
-        s.open -> "SEL OUVERT" to null
-        s.state == SelcallStatus.STANDBY && s.code.isNotEmpty() -> null to "SEL ${s.code}"
+        s.sending.isNotEmpty() -> (if (SENDING_STEP.matches(s.sending)) "SEL ${s.sending}" else Tr.t("car.sel_sending")) to null // i18n-ok
+        s.open -> Tr.t("car.sel_open") to null
+        s.state == SelcallStatus.STANDBY && s.code.isNotEmpty() -> null to "SEL ${s.code}" // i18n-ok
         else -> null to null
     }
 
     /** Longueur maximale du sous-titre (F3) et du nom de mémoire qu'il montre. */
     const val SETTINGS_MAX = 40
     /** Sonde réseau : liaison rouge (coupure en cours ou seuils d'alerte), en Android Auto et en mode conduite. */
-    const val WEAK_LINK = "Liaison faible"
+    val WEAK_LINK: String get() = Tr.t("car.weak_link")
     const val NAME_MAX = 12
 
     /**
@@ -234,7 +236,7 @@ object Car {
             val preamp = lv["PREAMP"] ?: 0.0
             when {
                 att > 0 -> add("ATT")
-                preamp > 0 -> add("Preamp" + Indicators.preampNumber(preamp, hello?.capabilities?.preamps.orEmpty()).let { if (it > 1) "$it" else "" })
+                preamp > 0 -> add("Preamp" + Indicators.preampNumber(preamp, hello?.capabilities?.preamps.orEmpty()).let { if (it > 1) "$it" else "" }) // i18n-ok
             }
             if (fn["TUNER"] == true) add("TUNER")                     // coupleur en service : juste avant la puissance
             lv["RFPOWER"]?.takeIf { it > 0 }?.let { f ->

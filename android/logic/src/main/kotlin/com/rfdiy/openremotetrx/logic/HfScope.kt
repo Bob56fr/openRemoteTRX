@@ -68,7 +68,8 @@ object HfScope {
     private val TICK_STEPS = listOf(1e3, 2e3, 2.5e3, 5e3, 1e4, 2e4, 2.5e4, 5e4, 1e5, 2e5, 2.5e5, 5e5, 1e6, 2e6, 5e6)
     val SPANS_HZ = listOf(2500L, 5000L, 10_000L, 25_000L, 50_000L, 100_000L, 250_000L, 500_000L)
     private val MODE_LABELS = mapOf("center" to "CENT", "fixed" to "FIX", "scroll_center" to "SCR-C", "scroll_fixed" to "SCR-F")
-    private val SPEED_LABELS = mapOf("fast" to "VIT RAP", "mid" to "VIT MOY", "slow" to "VIT LENT")
+    /** Libellés des vitesses, lus à l'affichage (clé `hfscope.speed_<vitesse>`). */
+    private val SPEED_LABELS: Map<String, String> get() = SPEED_ORDER.associateWith { Tr.t("hfscope.speed_$it") }
     private val SPEED_ORDER = listOf("fast", "mid", "slow")
     private const val REF_MIN = -20.0
     private const val REF_MAX = 20.0
@@ -85,11 +86,11 @@ object HfScope {
     fun waitText(state: State?): String {
         val sp = spectrum(state)
         return when (text(sp, "state")) {
-            "ok" -> "En attente du spectre du poste…"
-            "waiting", "starting" -> "Mise en route du spectre du poste…"
+            "ok" -> Tr.t("hfscope.wait_ok")
+            "waiting", "starting" -> Tr.t("hfscope.wait_starting")
             else -> {
-                val why = text(sp, "message")?.takeIf { it.isNotEmpty() }?.take(300) ?: text(sp, "code")?.takeIf { it.isNotEmpty() } ?: "raison inconnue"
-                "Le poste n'envoie pas de spectre : $why Nouvel essai à chaque ouverture de cette vue."
+                val why = text(sp, "message")?.takeIf { it.isNotEmpty() }?.take(300) ?: text(sp, "code")?.takeIf { it.isNotEmpty() } ?: Tr.t("hfscope.reason_unknown")
+                Tr.t("hfscope.no_spectrum", "why" to why)
             }
         }
     }
@@ -220,7 +221,7 @@ object HfScope {
     }
 
     fun gainLabel(v: Int) = "GAIN " + if (v > 0) "+$v" else "$v"
-    fun rangeLabel(v: Int) = "PLAGE $v dB"
+    fun rangeLabel(v: Int) = Tr.t("hfscope.range", "db" to v)
     fun nextGain(v: Int) = GAINS[(GAINS.indexOf(v) + 1) % GAINS.size]
     fun nextRange(v: Int) = RANGES_DB[(RANGES_DB.indexOf(v) + 1) % RANGES_DB.size]
 
@@ -230,7 +231,7 @@ object HfScope {
     fun spanSettingLabel(hz: Long?): String =
         if (hz == null) "SPAN ?" else "±" + if (hz >= 1000) (hz / 1000.0).let { if (it % 1.0 == 0.0) "${it.toLong()}" else "$it".replace('.', ',') } + "k" else "$hz"
     fun nextSpan(hz: Long?) = SPANS_HZ[(SPANS_HZ.indexOf(hz ?: -1) + 1) % SPANS_HZ.size]
-    fun speedSettingLabel(s: String?) = SPEED_LABELS[s] ?: "VIT ?"
+    fun speedSettingLabel(s: String?) = SPEED_LABELS[s] ?: Tr.t("hfscope.speed_unknown")
     fun nextSpeed(s: String?) = SPEED_ORDER[(SPEED_ORDER.indexOf(s ?: "") + 1) % SPEED_ORDER.size]
     fun refLabel(db: Double?): String =
         if (db == null) "REF ?" else "REF " + (if (db > 0) "+" else "") + String.format(Locale.ROOT, "%.1f", db).replace('.', ',')

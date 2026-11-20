@@ -53,7 +53,7 @@ class HeadsetMic(private val timeoutMs: Long = TIMEOUT_MS) {
             HeadsetMicStep.OpenMic
         }
         phase == Phase.OPEN && !headset ->                         // geste normal : appui sur le bouton du casque
-            stop("Bouton du casque (ou casque perdu) : fin d'émission.", failure = false)
+            stop(Tr.t("headsetmic.button_end"), failure = false)
         else -> HeadsetMicStep.None                                // passage transitoire pendant l'ouverture : attendre
     }
 
@@ -63,7 +63,7 @@ class HeadsetMic(private val timeoutMs: Long = TIMEOUT_MS) {
 
     fun tick(now: Long): HeadsetMicStep =
         if (phase == Phase.OPENING && now - since >= timeoutMs) {
-            stop("Le casque n'est pas passé en mode appel en ${timeoutMs / 1000} s : retour en réception (micro resté fermé).")
+            stop(Tr.t("headsetmic.no_call_mode", "seconds" to timeoutMs / 1000))
         } else {
             HeadsetMicStep.None
         }

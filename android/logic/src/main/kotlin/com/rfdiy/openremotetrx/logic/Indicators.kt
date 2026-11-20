@@ -38,7 +38,7 @@ object Indicators {
         fn["NB"]?.let { out += Indicator("NB", it) }
         fn["NR"]?.let { out += Indicator("NR", it) }
         // ALC en surcharge pendant une émission, quel que soit l'usage (même seuil que la page et la station)
-        rig.levels["ALC"]?.let { if (it >= ALC_OVERLOAD) out += Indicator("OVERLOAD ALC", on = true, alert = true) }
+        rig.levels["ALC"]?.let { if (it >= ALC_OVERLOAD) out += Indicator("OVERLOAD ALC", on = true, alert = true) }   // i18n-ok : voyant du poste, comme la page
         return out
     }
 
@@ -47,7 +47,7 @@ object Indicators {
 
     /** VFO actif -> texte du voyant (comme la page : vfoLabel) ; vide si absent ou sans signification (currVFO). */
     fun vfoLabel(vfo: String?): String {
-        if (vfo == null || !VFO_RE.matches(vfo) || vfo.equals("currVFO", true) || vfo.equals("None", true)) return ""
+        if (vfo == null || !VFO_RE.matches(vfo) || vfo.equals("currVFO", true) || vfo.equals("None", true)) return ""   // i18n-ok : valeurs de Hamlib
         val up = vfo.uppercase(Locale.ROOT)
         return VFO_NAMES[up] ?: up
     }

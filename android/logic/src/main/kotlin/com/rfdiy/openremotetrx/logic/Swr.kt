@@ -33,11 +33,11 @@ object Swr {
         TableBand("70cm", "amateur", 430_000_000, 440_000_000),
         TableBand("CB", "cb", 26_000_000, 28_000_000),
         TableBand("45m", "45m", 6_620_000, 6_700_000), TableBand("85m", "45m", 3_410_000, 3_490_000),
-        TableBand("marine 4 MHz", "marine", 4_063_000, 4_438_000), TableBand("marine 6 MHz", "marine", 6_200_000, 6_525_000),
-        TableBand("marine 8 MHz", "marine", 8_195_000, 8_815_000), TableBand("marine 12 MHz", "marine", 12_230_000, 13_200_000),
-        TableBand("marine 16 MHz", "marine", 16_360_000, 17_410_000), TableBand("marine 18 MHz", "marine", 18_780_000, 18_900_000),
-        TableBand("marine 19 MHz", "marine", 19_680_000, 19_800_000), TableBand("marine 22 MHz", "marine", 22_000_000, 22_855_000),
-        TableBand("marine 25 MHz", "marine", 25_070_000, 25_210_000), TableBand("marine 26 MHz", "marine", 26_100_000, 26_175_000),
+        TableBand("marine 4 MHz", "marine", 4_063_000, 4_438_000), TableBand("marine 6 MHz", "marine", 6_200_000, 6_525_000), // i18n-ok (noms de la table commune swr_plans.json)
+        TableBand("marine 8 MHz", "marine", 8_195_000, 8_815_000), TableBand("marine 12 MHz", "marine", 12_230_000, 13_200_000), // i18n-ok (noms de la table commune swr_plans.json)
+        TableBand("marine 16 MHz", "marine", 16_360_000, 17_410_000), TableBand("marine 18 MHz", "marine", 18_780_000, 18_900_000), // i18n-ok (noms de la table commune swr_plans.json)
+        TableBand("marine 19 MHz", "marine", 19_680_000, 19_800_000), TableBand("marine 22 MHz", "marine", 22_000_000, 22_855_000), // i18n-ok (noms de la table commune swr_plans.json)
+        TableBand("marine 25 MHz", "marine", 25_070_000, 25_210_000), TableBand("marine 26 MHz", "marine", 26_100_000, 26_175_000), // i18n-ok (noms de la table commune swr_plans.json)
     )
 
     /** Bande de la table qui contient `hz` (radioamateur d'abord), ou null. */

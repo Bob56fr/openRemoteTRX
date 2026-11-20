@@ -27,7 +27,7 @@ object ProblemReport {
         val device: String, val screen: String, val rttMs: Int?, val log: List<LogLine>, val zone: ZoneId = ZoneId.systemDefault(),
     )
 
-    private val DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")
+    private val DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")   // i18n-ok
     private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
 
     /** 7074000 -> « 7 074 000 Hz » (formatFrequency de la page). */
@@ -39,8 +39,9 @@ object ProblemReport {
         state ?: return null
         val r = state.rig
         val p = state.ptt
-        return frequency(r.frequencyHz) + " " + (r.mode ?: "?") + ", liaison CAT " + (if (r.connected) "active" else "PERDUE") +
-            ", PTT " + p.state + (if ((p.localRemainingS ?: 0.0) > 0) ", poste utilisé sur place" else "")
+        return Tr.t("problemreport.rig_line", "frequency" to frequency(r.frequencyHz), "mode" to (r.mode ?: "?"),
+            "cat" to Tr.t(if (r.connected) "problemreport.cat_active" else "problemreport.cat_lost"), "ptt" to p.state) +
+            (if ((p.localRemainingS ?: 0.0) > 0) Tr.t("problemreport.local_use") else "")
     }
 
     private fun spectrumLine(hello: Hello?, state: State?): String? {
@@ -53,17 +54,18 @@ object ProblemReport {
         fun at(ms: Long, f: DateTimeFormatter) = f.format(Instant.ofEpochMilli(ms).atZone(d.zone))
         val h = d.hello
         val lines = mutableListOf(
-            "=== Rapport de problème TRX distant ===", "Date : " + at(d.nowMs, DATE), "",
-            "Ce qui s'est passé :", d.description.trim().ifEmpty { "(non décrit)" }.take(DESCRIPTION_MAX), "",
-            "Station : " + (if (!h?.version.isNullOrEmpty()) "v" + h!!.version else "version inconnue") +
-                (h?.let { ", protocole ${it.protocol}" } ?: "") + (h?.clientId?.let { ", compte $it" } ?: "") +
-                (if (d.connected) ", connecté" else ", NON connecté"),
-            "Appareil : " + d.device.ifEmpty { "?" }, "Écran : " + d.screen.ifEmpty { "?" },
+            Tr.t("problemreport.header"), Tr.t("problemreport.date", "date" to at(d.nowMs, DATE)), "",
+            Tr.t("problemreport.what_happened"), d.description.trim().ifEmpty { Tr.t("problemreport.not_described") }.take(DESCRIPTION_MAX), "",
+            Tr.t("problemreport.station", "version" to (if (!h?.version.isNullOrEmpty()) "v" + h!!.version else Tr.t("problemreport.version_unknown"))) +
+                (h?.let { Tr.t("problemreport.protocol", "protocol" to it.protocol) } ?: "") +
+                (h?.clientId?.let { Tr.t("problemreport.account", "account" to it) } ?: "") +
+                Tr.t(if (d.connected) "problemreport.connected" else "problemreport.not_connected"),
+            Tr.t("problemreport.device", "device" to d.device.ifEmpty { "?" }), Tr.t("problemreport.screen", "screen" to d.screen.ifEmpty { "?" }),
         )
-        rigLine(d.state)?.let { lines += "Poste : $it" }
-        spectrumLine(h, d.state)?.let { lines += "Spectre HF : $it" }
-        d.rttMs?.let { lines += "Dernier temps de réponse : $it ms" }
-        lines += listOf("", "Journal de l'application (dernières lignes) :")
+        rigLine(d.state)?.let { lines += Tr.t("problemreport.rig", "rig" to it) }
+        spectrumLine(h, d.state)?.let { lines += Tr.t("problemreport.spectrum", "spectrum" to it) }
+        d.rttMs?.let { lines += Tr.t("problemreport.rtt", "rtt" to it) }
+        lines += listOf("", Tr.t("problemreport.log_header"))
         for (l in d.log.takeLast(LOG_LINES)) lines += "  " + at(l.atMs, TIME) + "  " + l.text.take(200)
         return lines.joinToString("\n").take(MAX_CHARS)
     }

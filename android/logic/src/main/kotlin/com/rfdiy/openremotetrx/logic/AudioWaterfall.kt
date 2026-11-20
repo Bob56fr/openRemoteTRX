@@ -17,7 +17,7 @@ import kotlin.math.sqrt
  * mêmes niveaux, donc mêmes couleurs. Les échantillons arrivent d'un autre fil : `push` et `analyse` sont synchronisés.
  */
 class SpectrumAnalyser(val fftSize: Int = 4096, private val smoothing: Double = 0.35) {
-    init { require(fftSize >= 32 && fftSize and (fftSize - 1) == 0) { "fftSize : puissance de 2" } }
+    init { require(fftSize >= 32 && fftSize and (fftSize - 1) == 0) { "fftSize : puissance de 2" } } // i18n-ok (erreur de programmation)
 
     private val ring = FloatArray(fftSize)
     private var write = 0
@@ -117,13 +117,13 @@ object AudioWaterfall {
     const val RANGE_DB = 55.0
     const val GRID_HZ = 500
 
-    fun speedLabel(v: Int) = "VIT $v"
-    fun widthLabel(v: Int) = "LARG " + (v / 1000.0).let { if (it % 1.0 == 0.0) "${it.toInt()}" else "$it" } + "k"
+    fun speedLabel(v: Int) = Tr.t("audiowaterfall.speed", "v" to v)
+    fun widthLabel(v: Int) = Tr.t("audiowaterfall.width", "khz" to (v / 1000.0).let { if (it % 1.0 == 0.0) "${it.toInt()}" else "$it" })
     fun gainLabel(v: Int) = "GAIN " + if (v > 0) "+$v" else "$v"
     fun peakLabel(v: Double) = when {
-        v == 0.0 -> "PIC OFF"
-        v.isInfinite() -> "PIC MAX"
-        else -> "PIC " + (if (v % 1.0 == 0.0) "${v.toInt()}" else "$v") + "s"
+        v == 0.0 -> Tr.t("audiowaterfall.peak_off")
+        v.isInfinite() -> Tr.t("audiowaterfall.peak_max")
+        else -> Tr.t("audiowaterfall.peak", "s" to (if (v % 1.0 == 0.0) "${v.toInt()}" else "$v"))
     }
 
     private fun <T> cycle(list: List<T>, value: T): T = list[(list.indexOf(value) + 1) % list.size]

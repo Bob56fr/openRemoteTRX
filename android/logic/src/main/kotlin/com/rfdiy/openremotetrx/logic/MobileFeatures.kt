@@ -10,29 +10,34 @@ package com.rfdiy.openremotetrx.logic
  * - le micro (onglet Audio) est toujours visible.
  * Kotlin pur : l'écran lit `shown`, les préférences sont lues et écrites par l'application.
  */
-enum class MobileFeature(val key: String, val label: String, val where: String, val default: Boolean) {
-    ROGER("roger", "Bips de fin d'émission (roger bip)", "onglet Audio", false),
-    EQ("eq", "Égaliseur", "bouton EQ, onglet Audio", false),
-    CHORUS_REVERB("chorus_reverb", "Chorus et réverbération", "onglet Audio", false),
-    SELCALL("selcall", "SELCALL", "bouton SEL", false),
-    WATERFALL("waterfall", "Petit waterfall", "bouton WF, onglet Station", true),
-    SPATIAL("spatial", "Spatialisation stéréo", "bouton ST", true),
-    BREIZH("breizh", "Breizh Audio Box", "voyant BZH", true),
-    FREEDV("freedv", "FreeDV", "voyant FDV", true),
-    DIFFUSION("diffusion", "Diffusion en direct", "voyant DIF", true),
-    LISTEN("listen", "S'écouter sans émettre", "onglet Audio", true),
-    SCRAMBLER("scrambler", "Scrambler", "onglet Audio", true),
-    REPLAY("replay", "Rediffusion d'un enregistrement", "onglet Audio", true),
-    FRIENDS("friends", "Amis", "onglet Amis", true),
-    BIG_PTT("big_ptt", "Gros PTT rond", "appui long sur le PTT", true);
+enum class MobileFeature(val key: String, val default: Boolean) {
+    ROGER("roger", false),
+    EQ("eq", false),
+    CHORUS_REVERB("chorus_reverb", false),
+    SELCALL("selcall", false),
+    WATERFALL("waterfall", true),
+    SPATIAL("spatial", true),
+    BREIZH("breizh", true),
+    FREEDV("freedv", true),
+    DIFFUSION("diffusion", true),
+    LISTEN("listen", true),
+    SCRAMBLER("scrambler", true),
+    REPLAY("replay", true),
+    FRIENDS("friends", true),
+    BIG_PTT("big_ptt", true);
+
+    /** Nom de la fonction (clé `mobilefeatures.<clé>_label`), lu à l'affichage. */
+    val label: String get() = Tr.t("mobilefeatures." + key + "_label")
+    /** Où la fonction apparaît (clé `mobilefeatures.<clé>_where`). */
+    val where: String get() = Tr.t("mobilefeatures." + key + "_where")
 
     val prefKey: String get() = "feature_$key"
 }
 
 object MobileFeatures {
     /** Texte de la ligne « toujours visible » de la rubrique. */
-    const val ALWAYS = "Toujours visibles : micro, PTT, STOP, armement, compte à rebours du TOT et bandeaux de sécurité."
-    const val IN_SERVICE = "en service : reste affiché"
+    val ALWAYS: String get() = Tr.t("mobilefeatures.always")
+    val IN_SERVICE: String get() = Tr.t("mobilefeatures.in_service")
 
     /** Choix de l'opérateur (`stored`, null = jamais réglé => défaut) ; une fonction en service est toujours affichée. */
     fun shown(feature: MobileFeature, stored: Boolean?, inService: Boolean = false): Boolean =

@@ -63,28 +63,29 @@ object SwrUi {
         val out = mutableListOf<String>()
         if (r != null) {
             (r["frequency_hz"] as? JsonPrimitive)?.longOrNull?.let {
-                out += "Fréquence : " + String.format(Locale.ROOT, "%.4f", it / 1e6).replace('.', ',') + " MHz"
+                out += Tr.t("swrui.restored_frequency", "mhz" to String.format(Locale.ROOT, "%.4f", it / 1e6).replace('.', ','))
             }
             r.text("mode").takeIf { it.isNotEmpty() }?.let { mode ->
                 val pb = (r["passband_hz"] as? JsonPrimitive)?.longOrNull ?: 0
-                out += "Mode : " + Radio.modeLabel(mode) + if (pb > 0) " ($pb Hz)" else ""
+                out += if (pb > 0) Tr.t("swrui.restored_mode_passband", "mode" to Radio.modeLabel(mode), "hz" to pb)
+                else Tr.t("swrui.restored_mode", "mode" to Radio.modeLabel(mode))
             }
-            r.num("rfpower")?.let { out += "Puissance : ${Math.round(it * 100)} %" }
-            (r["tuner"] as? JsonPrimitive)?.booleanOrNull?.let { out += "Coupleur : " + if (it) "en service" else "arrêté" }
+            r.num("rfpower")?.let { out += Tr.t("swrui.restored_power", "pct" to Math.round(it * 100)) }
+            (r["tuner"] as? JsonPrimitive)?.booleanOrNull?.let { out += Tr.t(if (it) "swrui.restored_tuner_on" else "swrui.restored_tuner_off") }
         }
-        if (out.isEmpty()) out += "État du poste non relu : vérifie fréquence, mode, puissance et coupleur."
+        if (out.isEmpty()) out += Tr.t("swrui.not_restored")
         return out to result?.differences.orEmpty()
     }
 
     /** Pied de l'image exportée (ANONYME : ni indicatif ni station) ; page : legendLines. */
     fun legendLines(result: SwrResult?, name: String, `when`: String): List<String> {
-        val lines = mutableListOf(name.trim().ifEmpty { "Mesure de TOS" })
+        val lines = mutableListOf(name.trim().ifEmpty { Tr.t("swrui.legend_title") })
         val parts = mutableListOf<String>()
         if (`when`.isNotEmpty()) parts += `when`
         if (result != null) {
-            parts += (result.powerW?.let { w -> (if (w == Math.floor(w)) w.toLong().toString() else w.toString()) + " W" } ?: "${Math.round(result.powerPct)} %") +
-                " en " + Radio.modeLabel(result.fmMode)
-            result.best?.swr?.let { parts += "meilleur TOS " + swrText(it) + " à " + freqLabel(result.best.hz) + " MHz" }
+            val power = result.powerW?.let { w -> (if (w == Math.floor(w)) w.toLong().toString() else w.toString()) + " W" } ?: "${Math.round(result.powerPct)} %"
+            parts += Tr.t("swrui.legend_power_mode", "power" to power, "mode" to Radio.modeLabel(result.fmMode))
+            result.best?.swr?.let { parts += Tr.t("swrui.legend_best", "swr" to swrText(it), "mhz" to freqLabel(result.best.hz)) }
         }
         if (parts.isNotEmpty()) lines += parts.joinToString(" · ")
         return lines
@@ -95,20 +96,27 @@ object SwrUi {
         if (plan == null) return null
         val skipped = (plan["points"] as? JsonArray).orEmpty().count { ((it as? JsonObject)?.get("status") as? JsonPrimitive)?.contentOrNull == "out_of_band" }
         val fm = (plan["fm_mode"] as? JsonPrimitive)?.contentOrNull
-        val text = (plan.num("power_w")?.let { w -> " ; " + (if (w == Math.floor(w)) w.toLong().toString() else w.toString()) + " W" } ?: "") +
-            (fm?.let { " en " + Radio.modeLabel(it) } ?: "") +
-            (if (skipped > 0) " ; $skipped point(s) hors des bandes de la station, sautés" else "") +
-            (plan.num("estimated_s")?.let { " ; environ ${Math.round(it)} s" } ?: "") +
-            (if ((plan["calibration_needed"] as? JsonPrimitive)?.booleanOrNull == true) " (étalonnage du poste compris)" else "")
+        val watts = plan.num("power_w")?.let { w -> (if (w == Math.floor(w)) w.toLong().toString() else w.toString()) + " W" }
+        val mode = fm?.let { Radio.modeLabel(it) }
+        val text = when {
+            watts != null && mode != null -> " ; " + Tr.t("swrui.plan_power_mode", "power" to watts, "mode" to mode)
+            watts != null -> " ; $watts"
+            mode != null -> " " + Tr.t("swrui.plan_mode", "mode" to mode)
+            else -> ""
+        } +
+            (if (skipped > 0) " ; " + Tr.t("swrui.plan_skipped", "n" to skipped) else "") +
+            (plan.num("estimated_s")?.let { " ; " + Tr.t("swrui.plan_duration", "s" to Math.round(it)) } ?: "") +
+            (if ((plan["calibration_needed"] as? JsonPrimitive)?.booleanOrNull == true) " " + Tr.t("swrui.plan_calibration") else "")
         return SwrPlanView(text, plan.num("max_power_pct") ?: 50.0)
     }
 
     /** Résumé sous le graphique (page : swrSummary). */
     fun summary(result: SwrResult?): String {
         val best = result?.best
-        val head = if (best?.swr != null) "Meilleur TOS : " + swrText(best.swr) + " à " + freqLabel(best.hz) + " MHz." else "Aucun point mesuré."
-        val why = if (result != null && result.reason != "done") " Mesure interrompue (" + Texts.cut(result.detail) + ")." else ""
-        val unstable = if (result?.warning == "swr_unstable") " Lecture du TOS instable sur ce poste." else ""
+        val head = if (best?.swr != null) Tr.t("swrui.summary_best", "swr" to swrText(best.swr), "mhz" to freqLabel(best.hz))
+        else Tr.t("swrui.summary_none")
+        val why = if (result != null && result.reason != "done") " " + Tr.t("swrui.summary_cut", "why" to Texts.cut(result.detail)) else ""
+        val unstable = if (result?.warning == "swr_unstable") " " + Tr.t("swrui.summary_unstable") else ""
         return head + why + unstable
     }
 }

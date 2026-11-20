@@ -101,6 +101,7 @@ class RigService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        AppLang.apply(this)                                          // langue des textes (notification, refus)
         sounds = LinkSounds(this)
         VoiceHub.load(this)
         val prefs = getSharedPreferences(RigHub.PREFS, MODE_PRIVATE)

@@ -32,11 +32,12 @@ data class FreeDvView(
     /** Ligne de détails de la rubrique (comme la page) : dernier indicatif, relances, dernière panne. */
     val details: String get() = buildList {
         lastCall?.let { c ->
-            add("Dernier indicatif : " + c.callsign + (if (c.snrText.isNotEmpty()) " (${c.snrText})" else "") +
-                (if (c.whenText.isNotEmpty()) ", ${c.whenText}" else ""))
+            add(Tr.t("freedv.last_call", "callsign" to c.callsign,
+                "snr" to (if (c.snrText.isNotEmpty()) " (${c.snrText})" else ""),
+                "when" to (if (c.whenText.isNotEmpty()) ", ${c.whenText}" else "")))
         }
-        if (restarts > 0) add("$restarts relance(s) des décodeurs")
-        if (cause.isNotEmpty()) add("dernière panne : $cause")
+        if (restarts > 0) add(Tr.t("freedv.restarts", "restarts" to restarts))
+        if (cause.isNotEmpty()) add(Tr.t("freedv.last_fault", "cause" to cause))
     }.joinToString(" · ")
 }
 
@@ -45,13 +46,9 @@ data class FreeDvView(
  * Copie de freedvView, freedvStars, freedvDb et FREEDV_ENGINE de la page : les textes sont comparés à client.js.
  */
 object FreeDvs {
-    val ENGINE = linkedMapOf(
-        "demarrage" to "démarrage des décodeurs…",
-        "ecoute" to "écoute",
-        "relance" to "relance des décodeurs…",
-        "panne" to "décodeurs en panne",
-        "arret" to "arrêté",
-    )
+    /** États du moteur (codes de state.freedv.engine, textes `freedv.engine_<code>`). */
+    private val ENGINE_KEYS = listOf("demarrage", "ecoute", "relance", "panne", "arret")
+    val ENGINE: Map<String, String> get() = ENGINE_KEYS.associateWith { Tr.t("freedv.engine_$it") }
 
     fun stars(note: Double?): String {
         val n = Math.round(note ?: 0.0).toInt().coerceIn(0, 5)
@@ -75,24 +72,24 @@ object FreeDvs {
         val on = f.on == true
         val confirmed = on && f.confirmed
         val snr = if (on) f.snrDb?.takeIf { it.isFinite() } else null
-        val engine = if (f.engine in ENGINE) f.engine else "arret"
+        val engine = if (f.engine in ENGINE_KEYS) f.engine else "arret"
         val fault = f.fault.orEmpty()
         val cause = f.cause.orEmpty()
         fun ago(t: Double?): String =
-            if (t != null && t.isFinite() && nowS != null) "il y a " + durationText(nowS - t) else ""
+            if (t != null && t.isFinite() && nowS != null) Tr.t("freedv.ago", "duration" to durationText(nowS - t)) else ""
         val level: FreeDvLevel
         val text: String
         when {
             !on -> {
                 level = if (fault.isNotEmpty()) FreeDvLevel.BAD else FreeDvLevel.OFF
-                text = if (fault.isNotEmpty()) "FreeDV abandonné : " + fault.take(200) + " (son du poste remis)"
-                       else "Son du poste : mode FreeDV non choisi"
+                text = if (fault.isNotEmpty()) Tr.t("freedv.abandoned", "fault" to fault.take(200))
+                       else Tr.t("freedv.rig_audio")
             }
             engine == "demarrage" || engine == "relance" || engine == "panne" -> {
-                level = FreeDvLevel.WARN; text = "FreeDV : " + ENGINE.getValue(engine)
+                level = FreeDvLevel.WARN; text = Tr.t("freedv.engine_text", "state" to ENGINE.getValue(engine))
             }
-            confirmed -> { level = FreeDvLevel.OK; text = "Voix FreeDV" + (snr?.let { " · SNR " + db(it) } ?: "") }
-            else -> { level = FreeDvLevel.WARN; text = "FreeDV : recherche d'un signal…" }
+            confirmed -> { level = FreeDvLevel.OK; text = Tr.t("freedv.voice") + (snr?.let { " · SNR " + db(it) } ?: "") }
+            else -> { level = FreeDvLevel.WARN; text = Tr.t("freedv.searching") }
         }
         val calls = f.calls.mapNotNull { c -> c.callsign?.let { it to c } }.take(10).map { (callsign, it) ->
             FreeDvView.Call(callsign.take(12), it.snrDb?.takeIf { d -> d.isFinite() }?.let { d -> jsNumber(d) + " dB" } ?: "", ago(it.t))
@@ -117,8 +114,8 @@ object FreeDvs {
      */
     fun carPart(v: FreeDvView?): String? = when {
         v == null -> null
-        !v.on -> if (v.level == FreeDvLevel.BAD) "FDV PANNE" else null
+        !v.on -> if (v.level == FreeDvLevel.BAD) Tr.t("freedv.car_fault") else null
         v.level == FreeDvLevel.OK -> "FDV"
-        else -> "FDV …"
+        else -> "FDV …"                                                      // i18n-ok
     }
 }

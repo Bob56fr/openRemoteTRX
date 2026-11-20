@@ -41,6 +41,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rfdiy.openremotetrx.core.AccountStore
+import com.rfdiy.openremotetrx.core.AppLang
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.LinkStatus
 
@@ -75,6 +76,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLang.apply(this)                                       // langue choisie, sinon celle du téléphone
         enableEdgeToEdge()
         volumeControlStream = AudioManager.STREAM_MUSIC          // touches de volume = volume de la réception
         val store = AccountStore(this)

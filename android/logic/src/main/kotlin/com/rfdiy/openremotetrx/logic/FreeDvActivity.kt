@@ -22,12 +22,12 @@ data class FreeDvActivityView(val status: String, val text: String, val rows: Li
  */
 object FreeDvActivities {
     const val STALE_S = 60.0
-    const val STALE_TEXT = "Liste périmée : le module Activité FreeDV ne répond plus."
-    const val CONNECTING_TEXT = "Connexion à FreeDV Reporter…"
-    const val DEFAULT_ERROR = "FreeDV Reporter injoignable"
-    const val NO_LOCATOR = " · distances absentes ([freedv] locator)"
-    const val HERE = " ◀ poste"
-    const val EMPTY = "aucune activité HF"
+    val STALE_TEXT: String get() = Tr.t("freedvactivity.stale")
+    val CONNECTING_TEXT: String get() = Tr.t("freedvactivity.connecting")
+    val DEFAULT_ERROR: String get() = Tr.t("freedvactivity.unreachable")
+    val NO_LOCATOR: String get() = Tr.t("freedvactivity.no_locator")
+    val HERE: String get() = Tr.t("freedvactivity.here")
+    val EMPTY: String get() = Tr.t("freedvactivity.empty")
 
     /** 14 236 000 Hz -> « 14236,0 kHz » (arrondi à 100 Hz). */
     fun freqText(hz: Long): String =
@@ -49,8 +49,7 @@ object FreeDvActivities {
             stale -> STALE_TEXT
             status == "connexion" -> CONNECTING_TEXT
             status == "erreur" -> a.message.ifEmpty { DEFAULT_ERROR }.take(200)
-            else -> "$total station" + (if (total > 1) "s" else "") + " connectée" + (if (total > 1) "s" else "") +
-                " à FreeDV Reporter" + (if (a.locator) "" else NO_LOCATOR)
+            else -> Tr.plural("freedvactivity.connected", total) + (if (a.locator) "" else NO_LOCATOR)
         }
         fun km(k: Int?) = if (k != null) " $k km" else ""
         fun other(m: String?) = if (!m.isNullOrEmpty() && m != "RADEV1") m.take(12) else ""
@@ -58,9 +57,11 @@ object FreeDvActivities {
         val rows = if (stale) emptyList() else a.freqs.take(20).map { g ->
             val tx = g.tx.take(8).map { t ->
                 val m = other(t.m)
-                FreeDvActivityView.Tx(call(t.c) + km(t.km) +
-                    (if (t.on) " ÉMET" + (if (m.isNotEmpty()) " $m" else "")
-                     else " (" + (t.min?.toString() ?: "?") + " min" + (if (m.isNotEmpty()) ", $m" else "") + ")"), t.on)
+                val who = call(t.c) + km(t.km)
+                FreeDvActivityView.Tx(
+                    if (t.on) Tr.t("freedvactivity.tx_on", "who" to who, "mode" to (if (m.isNotEmpty()) " $m" else ""))
+                    else Tr.t("freedvactivity.tx_off", "who" to who, "min" to (t.min?.toString() ?: "?"),
+                              "mode" to (if (m.isNotEmpty()) ", $m" else "")), t.on)
             }
             val rx = g.rx.take(6).map { r ->
                 call(r.c) + km(r.km) + (r.snr?.let { " " + js(it) + " dB" } ?: "") +

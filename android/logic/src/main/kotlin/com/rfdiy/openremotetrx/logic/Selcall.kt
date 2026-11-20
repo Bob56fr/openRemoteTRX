@@ -40,8 +40,8 @@ data class SelcallStatus(
 
     /** Indicateur de l'afficheur : « SEL 4721 » (veille), « SEL OUVERT » ; null si désactivé (comme la page). */
     val indicator: String? get() = when (state) {
-        OPEN -> "SEL OUVERT"
-        STANDBY -> "SEL $code"
+        OPEN -> Tr.t("selcall.indicator_open")
+        STANDBY -> "SEL $code" // i18n-ok
         else -> null
     }
 
@@ -49,11 +49,10 @@ data class SelcallStatus(
         const val DISABLED = "disabled"
         const val STANDBY = "standby"
         const val OPEN = "open"
-        val STATE_LABELS = mapOf(
-            DISABLED to "désactivé : son reçu normal", STANDBY to "VEILLE : son coupé jusqu'à l'appel du code",
-            OPEN to "OUVERT : appel reçu, son transmis",
-        )
-        val FILTER_MODES = listOf("attenuate" to "atténuées", "mute" to "coupées", "chime" to "coupées + carillon")
+        /** États du protocole -> libellé lu à l'affichage (clé `selcall.state_<état>`). */
+        val STATE_LABELS: Map<String, String> get() = listOf(DISABLED, STANDBY, OPEN).associateWith { Tr.t("selcall.state_$it") }
+        /** Modes de filtrage (valeur du protocole -> libellé lu à l'affichage, clé `selcall.filter_<mode>`). */
+        val FILTER_MODES: List<Pair<String, String>> get() = listOf("attenuate", "mute", "chime").map { it to Tr.t("selcall.filter_$it") }
 
         private fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
 
@@ -99,7 +98,7 @@ object SelcallTones {
 
     /** Chiffres puis contrôle (somme modulo 10), chaque répétition remplacée par R : « 4477 » -> 4 R 7 R 2. */
     fun symbols(code: String): List<String> {
-        require(validCode(code)) { "code SELCALL : 3 à 8 chiffres" }
+        require(validCode(code)) { "code SELCALL : 3 à 8 chiffres" } // i18n-ok (erreur de programmation : code déjà vérifié)
         val raw = code.map { it.toString() } + (code.sumOf { it - '0' } % 10).toString()
         return raw.mapIndexed { i, s -> if (i > 0 && s == raw[i - 1]) REPEAT else s }
     }

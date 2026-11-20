@@ -50,11 +50,11 @@ object MediaKeys {
 
     /** Pourquoi une touche a été ignorée (journal de l'application, pour les essais). */
     fun ignoredWhy(key: MediaKey, repeat: Int, mine: Boolean, sinceDeviceMs: Long?, sinceLastMs: Long?): String = when {
-        key == MediaKey.OTHER -> "touche non utilisée"
-        repeat > 0 -> "appui maintenu"
-        sinceLastMs != null && sinceLastMs < DEBOUNCE_MS -> "rebond"
-        !mine && key == MediaKey.STOP -> "« stop » ne prend jamais l'émission"
-        !mine && sinceDeviceMs != null && sinceDeviceMs < DEVICE_GRACE_MS -> "appareil audio arrivé à l'instant (touche automatique ?)"
+        key == MediaKey.OTHER -> Tr.t("mediakeys.ignored_unused")
+        repeat > 0 -> Tr.t("mediakeys.ignored_held")
+        sinceLastMs != null && sinceLastMs < DEBOUNCE_MS -> Tr.t("mediakeys.ignored_bounce")
+        !mine && key == MediaKey.STOP -> Tr.t("mediakeys.ignored_stop")
+        !mine && sinceDeviceMs != null && sinceDeviceMs < DEVICE_GRACE_MS -> Tr.t("mediakeys.ignored_new_device")
         else -> ""
     }
 }

@@ -27,12 +27,11 @@ object Driving {
     fun touchPttAllowed(reason: DrivingReason) = !active(reason)
 
     fun label(reason: DrivingReason): String = when (reason) {
-        DrivingReason.MANUAL -> "Mode conduite (réglage)"
-        DrivingReason.CAR -> "Mode conduite : voiture connectée"
-        DrivingReason.PASSENGER -> "Voiture connectée : mode passager"
+        DrivingReason.MANUAL -> Tr.t("driving.label_manual")
+        DrivingReason.CAR -> Tr.t("driving.label_car")
+        DrivingReason.PASSENGER -> Tr.t("driving.label_passenger")
         DrivingReason.OFF -> ""
     }
 
-    const val PTT_HINT = "En conduite, le PTT de l'écran est désactivé : émettez par l'écran de la voiture, les touches du " +
-        "volant ou un bouton Bluetooth (réglage « PTT par le bouton »). STOP reste toujours disponible."
+    val PTT_HINT: String get() = Tr.t("driving.ptt_hint")
 }

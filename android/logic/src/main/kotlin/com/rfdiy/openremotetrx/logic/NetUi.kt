@@ -21,20 +21,24 @@ import kotlin.math.roundToInt
  * (client.js : netView, netStatsModel, vpnText, NET_DIAGNOSES), vérifiés par NetUiTest.
  */
 object NetUi {
-    val DIAGNOSES = linkedMapOf(
-        "app_station" to "application ou machine de la station", "lan" to "réseau local ou machine de la station",
-        "box_internet" to "connexion Internet de la box", "webrtc" to "WebRTC ou passerelle", "phone_radio" to "radio du téléphone",
-        "vpn_shared" to "profil VPN probablement partagé par un autre appareil", "mobile_or_tunnel" to "téléphone, réseau mobile ou tunnel",
-        "unknown" to "indéterminé",
+    /** Textes lus à chaque usage (la langue peut changer pendant la vie de l'application). */
+    val DIAGNOSES: LinkedHashMap<String, String> get() = linkedMapOf(
+        "app_station" to Tr.t("netui.diag_app_station"), "lan" to Tr.t("netui.diag_lan"),
+        "box_internet" to Tr.t("netui.diag_box_internet"), "webrtc" to Tr.t("netui.diag_webrtc"), "phone_radio" to Tr.t("netui.diag_phone_radio"),
+        "vpn_shared" to Tr.t("netui.diag_vpn_shared"), "mobile_or_tunnel" to Tr.t("netui.diag_mobile_or_tunnel"),
+        "unknown" to Tr.t("netui.diag_unknown"),
     )
-    val TYPES = linkedMapOf("lan" to "réseau local", "wifi" to "Wi-Fi", "4g" to "4G", "5g" to "5G", "mobile" to "mobile", "unknown" to "inconnu")
-    val LEVELS = linkedMapOf("gray" to "mesure en cours", "green" to "liaison bonne", "orange" to "liaison moyenne", "red" to "liaison faible")
+    val TYPES: LinkedHashMap<String, String> get() = linkedMapOf("lan" to Tr.t("netui.type_lan"), "wifi" to "Wi-Fi", "4g" to "4G", "5g" to "5G",
+        "mobile" to Tr.t("netui.type_mobile"), "unknown" to Tr.t("netui.type_unknown"))
+    val LEVELS: LinkedHashMap<String, String> get() = linkedMapOf("gray" to Tr.t("netui.level_gray"), "green" to Tr.t("netui.level_green"),
+        "orange" to Tr.t("netui.level_orange"), "red" to Tr.t("netui.level_red"))
     private val BARS = mapOf("gray" to 0, "red" to 1, "orange" to 2, "green" to 3)
-    private val BASIS = mapOf("backlog" to "mesures du client", "health_ok" to "/health répondait", "radio_weak" to "signal faible",
-                              "cell_changed" to "changement de cellule", "network_switched" to "bascule de réseau",
-                              "regular_pattern" to "coupures régulières", "lan_probe_down" to "box injoignable",
-                              "internet_probe_down" to "Internet injoignable")
-    private val PROBES = linkedMapOf("lan" to "Box", "internet" to "Internet")
+    private val BASIS: Map<String, String> get() = mapOf("backlog" to Tr.t("netui.basis_backlog"), "health_ok" to Tr.t("netui.basis_health_ok"),
+                              "radio_weak" to Tr.t("netui.basis_radio_weak"),
+                              "cell_changed" to Tr.t("netui.basis_cell_changed"), "network_switched" to Tr.t("netui.basis_network_switched"),
+                              "regular_pattern" to Tr.t("netui.basis_regular_pattern"), "lan_probe_down" to Tr.t("netui.basis_lan_probe_down"),
+                              "internet_probe_down" to Tr.t("netui.basis_internet_probe_down"))
+    private val PROBES: LinkedHashMap<String, String> get() = linkedMapOf("lan" to Tr.t("netui.probe_lan"), "internet" to Tr.t("netui.probe_internet"))
 
     data class Vpn(val address: String, val kind: String, val text: String)
 
@@ -61,39 +65,41 @@ object NetUi {
     fun vpnText(w: NetVpnWarning): String {
         val agents = w.agents.joinToString(" / ")
         if (w.kind == "pattern") {
-            return "Coupures très régulières (toutes les ~${((w.periodMs ?: 0) / 1000.0).roundToInt()} s) sur $agents" +
-                " : un autre appareil partage probablement le même profil VPN. Créez un profil par appareil."
+            return Tr.t("netui.vpn_pattern", "period" to ((w.periodMs ?: 0) / 1000.0).roundToInt(), "agents" to agents)
         }
-        return "Deux appareils ($agents) arrivent " + (if (w.kind == "same_time") "en même temps" else "à quelques minutes d'écart") +
-            " par la même adresse ${w.address} : s'ils passent par un VPN, ils partagent probablement le même profil. Créez un profil par appareil."
+        return Tr.t(if (w.kind == "same_time") "netui.vpn_same_time" else "netui.vpn_minutes_apart", "agents" to agents, "address" to w.address)
     }
 
     /** state.net -> pastille et panneau ; null = station sans sonde. */
     fun view(net: NetState?): View? {
         if (net == null || net.level !in LEVELS) return null
         val rows = mutableListOf(
-            "Perte (60 s / 10 s)" to number(net.lossPct, "%") + " / " + number(net.lossPct10, "%"),
-            "Aller-retour (p95 / moyen)" to number(net.rttMs, "ms") + " / " + number(net.rttMeanMs, "ms"),
-            "Gigue" to number(net.jitterMs, "ms"),
-            "Réseau du client" to (TYPES[net.netType] ?: "inconnu"),
+            Tr.t("netui.row_loss") to number(net.lossPct, "%") + " / " + number(net.lossPct10, "%"),
+            Tr.t("netui.row_rtt") to number(net.rttMs, "ms") + " / " + number(net.rttMeanMs, "ms"),
+            Tr.t("netui.row_jitter") to number(net.jitterMs, "ms"),
+            Tr.t("netui.row_client_net") to (TYPES[net.netType] ?: Tr.t("netui.type_unknown")),
         )
-        if (net.outage) rows.add(0, "COUPURE EN COURS" to (net.outageS?.let { "depuis " + duration(it.toDouble()) } ?: ""))
+        if (net.outage) rows.add(0, Tr.t("netui.row_outage_now") to (net.outageS?.let { Tr.t("netui.since", "duration" to duration(it.toDouble())) } ?: ""))
         net.lastOutage?.let { last ->
-            rows.add("Dernière coupure" to duration(last.durationS.toDouble()) + ", il y a " + duration(last.agoS.toDouble()) + " — " +
-                (last.diagnosis?.let { "tronçon probable : " + (DIAGNOSES[it] ?: it) } ?: "diagnostic en cours…"))
+            val diagnosis = last.diagnosis?.let { Tr.t("netui.probable_segment", "diagnosis" to (DIAGNOSES[it] ?: it)) } ?: Tr.t("netui.diagnosis_pending")
+            rows.add(Tr.t("netui.row_last_outage") to Tr.t("netui.last_outage", "duration" to duration(last.durationS.toDouble()),
+                "ago" to duration(last.agoS.toDouble()), "diagnosis" to diagnosis))
         }
         val probes = net.probes.filterKeys { it in PROBES }.map { (name, p) ->
             "${PROBES[name]} (" + (if (p.method == "tcp") "TCP" else "ping") + ")" to
-                (when (p.ok) { false -> "NE RÉPOND PAS"; true -> "répond"; null -> "—" }) + " · perte " + number(p.lossPct, "%") + " · " + number(p.rttMs, "ms")
+                Tr.t("netui.probe_line", "answer" to (when (p.ok) { false -> Tr.t("netui.probe_no_answer"); true -> Tr.t("netui.probe_answers"); null -> "—" }),
+                    "loss" to number(p.lossPct, "%"), "rtt" to number(p.rttMs, "ms"))
         }
         val th = net.thresholds
         return View(
             level = net.level, bars = BARS.getValue(net.level), outage = net.outage, weak = net.level == "red",
-            title = "Liaison avec la station : " + LEVELS[net.level] + (if (net.outage) " (COUPURE)" else "") +
-                (net.rttMs?.let { ", aller-retour ${number(it, "ms")}" } ?: "") + (net.lossPct?.let { ", perte ${number(it, "%")}" } ?: ""),
+            title = Tr.t("netui.title", "level" to LEVELS[net.level]) + (if (net.outage) Tr.t("netui.title_outage") else "") +
+                (net.rttMs?.let { Tr.t("netui.title_rtt", "rtt" to number(it, "ms")) } ?: "") +
+                (net.lossPct?.let { Tr.t("netui.title_loss", "loss" to number(it, "%")) } ?: ""),
             rows = rows, probes = probes,
             vpn = net.vpn.filter { it.address.isNotEmpty() }.map { Vpn(it.address, it.kind, vpnText(it)) },
-            thresholds = th?.let { "Seuils : orange à ${number(it.rttWarn, "ms")} ou ${number(it.lossWarn, "%")}, rouge à ${number(it.rttAlert, "ms")} ou ${number(it.lossAlert, "%")}" } ?: "",
+            thresholds = th?.let { Tr.t("netui.thresholds", "rtt_warn" to number(it.rttWarn, "ms"), "loss_warn" to number(it.lossWarn, "%"),
+                "rtt_alert" to number(it.rttAlert, "ms"), "loss_alert" to number(it.lossAlert, "%")) } ?: "",
             netType = TYPES[net.netType] ?: "—",
         )
     }
@@ -138,26 +144,28 @@ object NetUi {
         val totalDiag = maxOf(1, diag.sumOf { it.value })
         return Stats(
             summary = listOf(
-                "Coupures" to s.i("outages").toString(), "Durée cumulée" to duration(s.d("outage_s")),
-                "Plus longue" to duration(s.d("longest_s")), "Temps connecté" to duration(s.d("connected_s")),
-                "Disponibilité" to number(s.d("availability_pct"), "%"), "Perte moyenne" to number(s.d("loss_pct"), "%"),
+                Tr.t("netui.sum_outages") to s.i("outages").toString(), Tr.t("netui.sum_total") to duration(s.d("outage_s")),
+                Tr.t("netui.sum_longest") to duration(s.d("longest_s")), Tr.t("netui.sum_connected") to duration(s.d("connected_s")),
+                Tr.t("netui.sum_availability") to number(s.d("availability_pct"), "%"), Tr.t("netui.sum_loss") to number(s.d("loss_pct"), "%"),
             ),
             days = days.map { d ->
                 val n = d.i("outages")
                 Day(d.s("date"), n, n.toDouble() / maxDay, "$n · " + duration(d.d("outage_s")),
-                    duration(d.d("outage_s")) + " · perte " + number(d.d("loss_pct"), "%") + " · aller-retour p95 " + number(d.d("rtt_p95_ms"), "ms"),
+                    Tr.t("netui.day_detail", "duration" to duration(d.d("outage_s")), "loss" to number(d.d("loss_pct"), "%"),
+                        "rtt" to number(d.d("rtt_p95_ms"), "ms")),
                     d.a("hours").map { h -> val c = (h as? JsonPrimitive)?.intOrNull ?: 0; c to c.toDouble() / maxCell })
             },
             diagnoses = diag.map { Diagnosis(it.key, DIAGNOSES[it.key] ?: it.key, it.value, it.value.toDouble() / totalDiag) },
             types = (stats.o("by_net_type") ?: JsonObject(emptyMap())).map { (k, v) ->
                 val o = v as? JsonObject ?: JsonObject(emptyMap())
-                (TYPES[k] ?: k) to duration(o.i("windows") * 10.0) + " mesurés · " + o.i("outages") + " coupure(s) · perte " + number(o.d("loss_pct"), "%")
+                (TYPES[k] ?: k) to Tr.t("netui.type_line", "duration" to duration(o.i("windows") * 10.0), "outages" to o.i("outages"),
+                    "loss" to number(o.d("loss_pct"), "%"))
             },
             outages = stats.a("outages_list").mapNotNull { it as? JsonObject }.map { o ->
                 Outage((o["start_ms"] as? JsonPrimitive)?.longOrNull ?: 0, duration((o.d("duration_ms") ?: 0.0) / 1000),
-                       DIAGNOSES[o.s("diagnosis")] ?: "indéterminé", o.s("agent"),
+                       DIAGNOSES[o.s("diagnosis")] ?: Tr.t("netui.diag_unknown"), o.s("agent"),
                        o.a("basis").mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.joinToString(", ") { BASIS[it] ?: it },
-                       if (o.s("kind") == "disconnect") "déconnexion" else "liaison ouverte", TYPES[o.s("net_type")] ?: "")
+                       if (o.s("kind") == "disconnect") Tr.t("netui.kind_disconnect") else Tr.t("netui.kind_open"), TYPES[o.s("net_type")] ?: "")
             },
             devices = stats.a("devices").mapNotNull { it as? JsonObject }.map { Device(it.s("device"), it.s("agent")) },
             thresholds = (stats.o("thresholds") ?: JsonObject(emptyMap())).map { (k, v) ->
@@ -178,8 +186,8 @@ object NetUi {
         val r = NetProbe.simulate(t.rttHist, rttEdges, rttWarn, rttAlert)
         val l = NetProbe.simulate(t.lossHist, lossEdges, lossWarn, lossAlert)
         fun pct(x: Double?) = if (x == null) "—" else x.toString().replace(".", ",").removeSuffix(",0") + " %"
-        return "Sur l'historique — aller-retour : orange ${pct(r.orangePct)} du temps, rouge ${pct(r.redPct)} ; son dégradé dans " +
-            "${pct(r.degradedRedPct)} des moments rouges et ${pct(r.degradedGreenPct)} des moments verts. Perte : orange ${pct(l.orangePct)}, rouge ${pct(l.redPct)}."
+        return Tr.t("netui.simulation", "rtt_orange" to pct(r.orangePct), "rtt_red" to pct(r.redPct), "degraded_red" to pct(r.degradedRedPct),
+            "degraded_green" to pct(r.degradedGreenPct), "loss_orange" to pct(l.orangePct), "loss_red" to pct(l.redPct))
     }
 }
 
@@ -194,8 +202,8 @@ data class RadioSample(
     val cellChanged: Boolean = false, val netSwitched: Boolean = false,
 ) {
     /** Ligne lisible (détail de la liaison) : « 4G · −98 dBm · S/B 12 dB · niveau 3/4 ». */
-    fun text(): String = listOfNotNull(NetUi.TYPES[netType] ?: netType, rsrpDbm?.let { "$it dBm" }, sinrDb?.let { "S/B $it dB" },
-                                       level?.let { "niveau $it/4" }).joinToString(" · ").ifEmpty { "—" }
+    fun text(): String = listOfNotNull(NetUi.TYPES[netType] ?: netType, rsrpDbm?.let { "$it dBm" }, sinrDb?.let { Tr.t("netui.radio_snr", "snr" to it) },
+                                       level?.let { Tr.t("netui.radio_level", "level" to it) }).joinToString(" · ").ifEmpty { "—" }
 
     companion object {
         /** Bornes acceptées par la station (netprobe/report.py) : hors bornes = valeur jetée, jamais le résumé. */

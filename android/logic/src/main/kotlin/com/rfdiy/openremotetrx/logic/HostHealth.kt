@@ -21,12 +21,12 @@ data class HostHealth(val fraction: Float, val level: String, val summary: Strin
             val load = host?.load ?: return null
             if (listener) return null
             val parts = listOfNotNull(
-                host.cpuPct?.let { "processeur $it %" }, host.memPct?.let { "mémoire $it %" },
-                host.diskPct?.let { "disque $it %" }, host.tempC?.let { "$it °C" },
-                if (host.throttled == true) "Pi RALENTI (alimentation ou chaleur)" else null,
+                host.cpuPct?.let { Tr.t("hosthealth.cpu", "pct" to it) }, host.memPct?.let { Tr.t("hosthealth.mem", "pct" to it) },
+                host.diskPct?.let { Tr.t("hosthealth.disk", "pct" to it) }, host.tempC?.let { "$it °C" },
+                if (host.throttled == true) Tr.t("hosthealth.throttled") else null,
             )
             return HostHealth(load.coerceIn(0.0, 1.0).toFloat(), if (host.level in LEVELS) host.level else "ok",
-                parts.joinToString(", ").ifEmpty { "mesures indisponibles" })
+                parts.joinToString(", ").ifEmpty { Tr.t("hosthealth.unavailable") })
         }
     }
 }

@@ -324,14 +324,15 @@ class RigSession(
             lastAttemptError = text
             // identifiants refusés, ou accès refusé (visiteurs) : on n'insiste jamais
             if (r.attemptFailed(now, authRefused = code == "auth" || code == "refused") == ReconnectOutcome.AUTH) {
-                giveUp(now, if (code == "refused") "accès refusé par la station" + (if (detail.isNotBlank()) " ($detail)" else "")
-                            else "identifiants refusés par la station")
+                giveUp(now, if (code == "refused") (if (detail.isNotBlank()) Tr.t("rigsession.giveup_refused_detail", "detail" to detail)
+                                                    else Tr.t("rigsession.giveup_refused"))
+                            else Tr.t("rigsession.giveup_auth"))
             }
             publish(now)
             return
         }
         status = LinkStatus.DISCONNECTED
-        log("Connexion impossible : $text.", LogLevel.BAD)
+        log(Tr.t("rigsession.connect_failed", "cause" to text), LogLevel.BAD)
         publish(now)
     }
 
@@ -347,19 +348,19 @@ class RigSession(
         val title = Texts.loss(code)
         if (farewell != null) {                                  // la station a dit pourquoi : pas de reconnexion automatique
             status = LinkStatus.DISCONNECTED
-            log("La station a fermé la connexion : ${farewell.message.ifBlank { farewell.reason }}", LogLevel.BAD)
+            log(Tr.t("rigsession.closed_by_station", "reason" to farewell.message.ifBlank { farewell.reason }), LogLevel.BAD)
             link.alert(LinkAlert.FAILED)
         } else if (windowS > 0) {
             reconnect = ReconnectPolicy(windowS, now)
             lastReconnectAlert = now
             lastAttemptError = ""
             status = LinkStatus.RECONNECTING
-            log("Connexion perdue : $title." + (if (mine) " Ton émission est coupée par la station." else "") +
-                " Reconnexion automatique pendant $windowS s.", LogLevel.BAD)
+            log(Tr.t(if (mine) "rigsession.lost_reconnect_mine" else "rigsession.lost_reconnect",
+                     "cause" to title, "seconds" to windowS), LogLevel.BAD)
             link.alert(LinkAlert.LOST)
         } else {
             status = LinkStatus.DISCONNECTED
-            log("Connexion perdue : $title. L'émission éventuelle est coupée par la station.", LogLevel.BAD)
+            log(Tr.t("rigsession.lost", "cause" to title), LogLevel.BAD)
             link.alert(LinkAlert.FAILED)
         }
         publish(now)
@@ -373,7 +374,7 @@ class RigSession(
         net.forget()
         netOffered = false
         status = LinkStatus.DISCONNECTED
-        if (was) log("Déconnecté.", LogLevel.INFO)
+        if (was) log(Tr.t("rigsession.disconnected"), LogLevel.INFO)
         publish(now)
     }
 
@@ -389,7 +390,7 @@ class RigSession(
         watch.onMessage(now)
         if (silenceAlerted) {
             silenceAlerted = false
-            log("La station répond de nouveau.", LogLevel.INFO)
+            log(Tr.t("rigsession.station_back"), LogLevel.INFO)
             link.alert(LinkAlert.RESTORED)
         }
         when (msg) {
@@ -401,7 +402,8 @@ class RigSession(
                 if (bands.observe(now, msg.rig.frequencyHz, msg.rig.mode)) onBandSpots?.invoke(bands.spots)
             }
             is Result -> onResult(now, msg)
-            is ErrorMessage -> log("Erreur de la station : ${msg.code}" + (if (msg.detail.isNotEmpty()) " (${msg.detail})" else ""), LogLevel.WARN)
+            is ErrorMessage -> log(if (msg.detail.isNotEmpty()) Tr.t("rigsession.station_error_detail", "code" to msg.code, "detail" to msg.detail)
+                                  else Tr.t("rigsession.station_error", "code" to msg.code), LogLevel.WARN)
             is Memories -> memories = Radio.sortMemories(msg.items)
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
@@ -419,7 +421,7 @@ class RigSession(
             }
             is Bye -> {
                 bye = msg
-                log("La station va fermer la connexion : ${msg.message.ifBlank { msg.reason }}", LogLevel.BAD)
+                log(Tr.t("rigsession.bye", "reason" to msg.message.ifBlank { msg.reason }), LogLevel.BAD)
             }
             is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
                 spotBook.apply(msg.data, wall())
@@ -485,14 +487,15 @@ class RigSession(
         powerOffered = protocolOk && !msg.listener && msg.offers("power")
         powerRun = null; powerOffNotice = ""
         if (!protocolOk) {
-            log("La station parle le protocole ${msg.protocol}, l'application le ${Protocol.VERSION} : réception et STOP seulement. Mets à jour l'application ou la station.", LogLevel.BAD)
+            log(Tr.t("rigsession.protocol_mismatch", "station" to msg.protocol, "app" to Protocol.VERSION), LogLevel.BAD)
         } else {
-            log("Connecté à la station" + (if (msg.version.isNotEmpty()) " ${msg.version}" else "") + ".", LogLevel.INFO)
+            log(if (msg.version.isNotEmpty()) Tr.t("rigsession.connected_version", "version" to msg.version)
+                else Tr.t("rigsession.connected"), LogLevel.INFO)
         }
         val r = reconnect
         if (r != null) {
             reconnect = null
-            log("Reconnecté après ${r.elapsedS(now)} s (${r.attempts} essai${if (r.attempts > 1) "s" else ""}). Réactive « Émission autorisée » pour émettre.", LogLevel.INFO)
+            log(Tr.plural("rigsession.reconnected", r.attempts, "seconds" to r.elapsedS(now)), LogLevel.INFO)
             link.alert(LinkAlert.RESTORED)                       // la station est en RÉCEPTION : rien ne reprend tout seul
         }
         afterState()
@@ -514,7 +517,7 @@ class RigSession(
                 }
                 if (entry.cmd == "swr_last") SwrUi.result(msg.raw["last"])?.let { swrLast = it }
             } else {
-                log("Mesure de TOS : " + refusalOf(msg), LogLevel.WARN)
+                log(Tr.t("rigsession.swr_refused", "detail" to refusalOf(msg)), LogLevel.WARN)
                 if (entry.cmd == "swr_start") swr = null
             }
             publish(now)
@@ -522,13 +525,13 @@ class RigSession(
         }
         if (entry.cmd.startsWith("voice_profile")) {              // liste à jour après lecture, ajout ou suppression
             if (msg.ok) voiceProfiles = parseVoiceProfiles(msg.raw["profiles"]) ?: voiceProfiles
-            else log("Profils de voix : " + msg.detail.ifEmpty { refusalOf(msg) }, LogLevel.WARN)
+            else log(Tr.t("rigsession.voice_profiles_refused", "detail" to msg.detail.ifEmpty { refusalOf(msg) }), LogLevel.WARN)
             publish(now)
             return
         }
         if (entry.cmd.startsWith("breizh_")) {                  // Breizh Audio Box : journal, réactivation, réglages
             if (!msg.ok) {
-                log("Breizh : " + refusalOf(msg), LogLevel.WARN)
+                log(Tr.t("rigsession.breizh_refused", "detail" to refusalOf(msg)), LogLevel.WARN)
             } else if (entry.cmd == "breizh_log") {
                 (msg.raw["entries"] as? kotlinx.serialization.json.JsonArray)?.let { list ->
                     breizhEvents = list.mapNotNull { item ->
@@ -540,7 +543,7 @@ class RigSession(
                 }
             } else if (entry.cmd == "breizh_reactivate") {
                 val pending = (msg.raw["pending"] as? JsonPrimitive)?.contentOrNull == "true"
-                log(if (pending) "Breizh sera repris dès qu'il répondra (à la prochaine émission)." else "Breizh repris : la prochaine émission passera par Breizh.", LogLevel.INFO)
+                log(Tr.t(if (pending) "rigsession.breizh_pending" else "rigsession.breizh_resumed"), LogLevel.INFO)
             }
             publish(now)
             return
@@ -548,10 +551,10 @@ class RigSession(
         if (entry.cmd == "freedv_set") {                        // mode FreeDV : refus montré dans sa fenêtre
             if (msg.ok) {
                 freedvNotice = ""
-                log(if (entry.tag == "true") "Mode FreeDV : voix décodée par la station." else "Mode FreeDV quitté : son du poste.", LogLevel.INFO)
+                log(Tr.t(if (entry.tag == "true") "rigsession.freedv_on" else "rigsession.freedv_off"), LogLevel.INFO)
             } else {
                 freedvNotice = refusalOf(msg)
-                log("FreeDV : $freedvNotice", LogLevel.WARN)
+                log(Tr.t("rigsession.freedv_refused", "detail" to freedvNotice), LogLevel.WARN)
             }
             publish(now)
             return
@@ -584,10 +587,10 @@ class RigSession(
         if (entry.cmd == "bug_report") {
             if (msg.ok) {
                 val name = (msg.raw["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
-                log("Rapport envoyé à la station" + (if (name.isNotEmpty()) " ($name)" else "") +
-                    " : il sera joint au rapport de dépannage (TRX Console, menu 6.3).", LogLevel.INFO)
+                log(if (name.isNotEmpty()) Tr.t("rigsession.bug_report_sent_name", "name" to name)
+                    else Tr.t("rigsession.bug_report_sent"), LogLevel.INFO)
             } else {
-                log("Rapport non envoyé : " + refusalOf(msg), LogLevel.WARN)
+                log(Tr.t("rigsession.bug_report_refused", "detail" to refusalOf(msg)), LogLevel.WARN)
             }
             publish(now)
             return
@@ -599,7 +602,7 @@ class RigSession(
         }
         if (entry.tag == FDVA_TAG) {                                // QSY depuis la liste d'activité FreeDV
             if (!msg.ok) freedvActivityNotice = refusalOf(msg)
-            else if (entry.cmd == "set_frequency") log("QSY FreeDV : $fdvaTargetText.", LogLevel.INFO)
+            else if (entry.cmd == "set_frequency") log(Tr.t("rigsession.freedv_qsy", "freq" to fdvaTargetText), LogLevel.INFO)
         }
         if (!msg.ok) {
             if (entry.cmd == "toggle") heartbeat.cancelGrace()
@@ -631,16 +634,21 @@ class RigSession(
         val entry = BreizhEntry.of(msg)
         breizhEvents = (breizhEvents + entry).takeLast(Breizhs.EVENTS_MAX)
         val alarm = entry.event == "fallback" && mineActive()
-        log("Breizh Audio Box : " + entry.detail, if (alarm) LogLevel.BAD else if (entry.warn) LogLevel.WARN else LogLevel.INFO)
+        log(Tr.t("rigsession.breizh_event", "detail" to entry.detail), if (alarm) LogLevel.BAD else if (entry.warn) LogLevel.WARN else LogLevel.INFO)
         if (alarm) link.alert(LinkAlert.BREIZH_FALLBACK)
     }
 
     /** Indicatif décodé et abandon après panne : journal (la séquence notée s'affiche par state.freedv), comme la page. */
     private fun onFreedvEvent(msg: FreedvEvent) {
         when (msg.kind) {
-            "callsign" -> if (msg.callsign.isNotEmpty()) log("FreeDV : indicatif " + msg.callsign.take(12) + " décodé" +
-                (msg.snrDb?.takeIf { it.isFinite() }?.let { " (SNR " + jsNumber(it) + " dB)." } ?: "."), LogLevel.INFO)
-            "fault" -> log("FreeDV abandonné : " + msg.cause.ifEmpty { "décodeurs en panne" }.take(200) + ". Son du poste remis.", LogLevel.WARN)
+            "callsign" -> if (msg.callsign.isNotEmpty()) {
+                val callsign = msg.callsign.take(12)
+                val snr = msg.snrDb?.takeIf { it.isFinite() }?.let { jsNumber(it) }
+                log(if (snr != null) Tr.t("rigsession.freedv_callsign_snr", "callsign" to callsign, "snr" to snr)
+                    else Tr.t("rigsession.freedv_callsign", "callsign" to callsign), LogLevel.INFO)
+            }
+            "fault" -> log(Tr.t("rigsession.freedv_fault",
+                                "cause" to msg.cause.ifEmpty { Tr.t("rigsession.freedv_fault_default") }.take(200)), LogLevel.WARN)
         }
     }
 
@@ -652,8 +660,10 @@ class RigSession(
             val ms = (o["duration_ms"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull() ?: 0.0
             val diag = (o["diagnosis"] as? JsonPrimitive)?.contentOrNull
             val agent = (o["agent"] as? JsonPrimitive)?.contentOrNull.orEmpty()
-            log("Coupure réseau de ${NetUi.duration(ms / 1000)}" + (if (agent.isNotEmpty()) " ($agent)" else "") +
-                " — tronçon probable : ${NetUi.DIAGNOSES[diag] ?: "indéterminé"}.", LogLevel.WARN)
+            val duration = NetUi.duration(ms / 1000)
+            val diagnosis = NetUi.DIAGNOSES[diag] ?: Tr.t("rigsession.net_diagnosis_unknown")
+            log(if (agent.isNotEmpty()) Tr.t("rigsession.net_outage_agent", "duration" to duration, "agent" to agent, "diagnosis" to diagnosis)
+                else Tr.t("rigsession.net_outage", "duration" to duration, "diagnosis" to diagnosis), LogLevel.WARN)
         } else if (msg.event == "vpn_shared") {
             val w = msg.raw["warning"] as? JsonObject ?: return
             val warning = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
@@ -664,22 +674,22 @@ class RigSession(
 
     private fun onNetResult(now: Long, cmd: String, msg: Result) {
         if (!msg.ok) {
-            netStatus = when (cmd) {
-                "net_stats" -> "Statistiques indisponibles : "
-                "net_export" -> "Export impossible : "
-                else -> "Refusé : "
-            } + refusalOf(msg)
+            netStatus = Tr.t(when (cmd) {
+                "net_stats" -> "rigsession.net_stats_refused"
+                "net_export" -> "rigsession.net_export_refused"
+                else -> "rigsession.net_refused"
+            }, "detail" to refusalOf(msg))
             if (cmd == "net_export") netExport = null
             return
         }
         when (cmd) {
             "net_stats" -> {
                 netStats = NetUi.stats(msg.raw["stats"] as? JsonObject)
-                netStatus = if (netStats != null) "Mesures de tous les appareils ; heures locales de la station." else "Réponse illisible."
+                netStatus = Tr.t(if (netStats != null) "rigsession.net_stats_ok" else "rigsession.net_stats_unreadable")
             }
-            "net_clear" -> { netStatus = "Historique réseau effacé (les seuils choisis sont gardés)."; netStats(now) }
-            "net_thresholds" -> { netStatus = "Seuils enregistrés sur la station."; netStats(now) }
-            "net_vpn_ignore" -> netStatus = "Avertissement ignoré pour cette adresse."
+            "net_clear" -> { netStatus = Tr.t("rigsession.net_cleared"); netStats(now) }
+            "net_thresholds" -> { netStatus = Tr.t("rigsession.net_thresholds_saved"); netStats(now) }
+            "net_vpn_ignore" -> netStatus = Tr.t("rigsession.net_vpn_ignored")
             "net_export" -> {
                 val current = netExport ?: return
                 val data = (msg.raw["data"] as? JsonPrimitive)?.contentOrNull ?: return
@@ -692,7 +702,7 @@ class RigSession(
                     send(now, Command.NetExport(part + 1))
                 } else {
                     netExport = null
-                    netStatus = "Export prêt : $name (anonyme)."
+                    netStatus = Tr.t("rigsession.net_export_ready", "name" to name)
                     onNetExport?.invoke(name, current.second.toByteArray())
                 }
             }
@@ -722,16 +732,17 @@ class RigSession(
         if (cmd == "power_off") {
             if (msg.ok) {
                 powerOffNotice = ""
-                log("Poste éteint à distance.", LogLevel.INFO)
+                log(Tr.t("rigsession.power_off_done"), LogLevel.INFO)
             } else {
                 powerOffNotice = refusalOf(msg)
-                log("Arrêt du poste refusé : $powerOffNotice", LogLevel.WARN)
+                log(Tr.t("rigsession.power_off_refused", "detail" to powerOffNotice), LogLevel.WARN)
             }
             return
         }
         val run = powerRun ?: return
         if (msg.ok) {
-            val done = if (text("result") == "already_on") "Le poste était déjà allumé." else "TRX allumé : " + text("rig").take(120)
+            val done = if (text("result") == "already_on") Tr.t("rigsession.power_already_on")
+                       else Tr.t("rigsession.power_on_done", "rig" to text("rig").take(120))
             powerRun = run.copy(status = "done", done = done)
             log(done, LogLevel.INFO)
         } else {
@@ -741,8 +752,9 @@ class RigSession(
             val step = text("step")
             var steps = run.steps
             if (step.isNotEmpty() && steps[step]?.status != "error") steps = steps + (step to PowerStep("error", msg.detail, ort))
-            powerRun = run.copy(status = "error", error = "Allumage impossible : $detail", steps = steps)
-            log("Allumage impossible : $detail", LogLevel.BAD)
+            val failed = Tr.t("rigsession.power_on_failed", "detail" to detail)
+            powerRun = run.copy(status = "error", error = failed, steps = steps)
+            log(failed, LogLevel.BAD)
         }
     }
 
@@ -788,7 +800,7 @@ class RigSession(
         }
         if (r != null && !attemptActive) {
             if (r.expired(now)) {
-                giveUp(now, "plus de liaison après ${r.windowS} s")
+                giveUp(now, Tr.t("rigsession.giveup_timeout", "seconds" to r.windowS))
                 publish(now)
                 return
             }
@@ -813,7 +825,7 @@ class RigSession(
                 LinkVerdict.STALE -> { onLinkClosed(now, "silence"); return }
                 LinkVerdict.TX_SILENCE -> {
                     silenceAlerted = true
-                    log("Plus de nouvelles de la station depuis 1,5 s pendant ton émission : arrête de parler.", LogLevel.BAD)
+                    log(Tr.t("rigsession.tx_silence"), LogLevel.BAD)
                     link.alert(LinkAlert.LOST)
                 }
                 LinkVerdict.OK -> Unit
@@ -835,9 +847,9 @@ class RigSession(
             }
             for ((id, entry) in expired) {
                 pending.remove(id)
-                if (entry.cmd != "get_state") log("Pas de réponse de la station à « ${entry.cmd} ».", LogLevel.WARN)
+                if (entry.cmd != "get_state") log(Tr.t("rigsession.no_response", "cmd" to entry.cmd), LogLevel.WARN)
                 if (entry.cmd == "power_on") powerRun = powerRun?.copy(status = "error",
-                    error = "Allumage impossible : pas de réponse de la station")
+                    error = Tr.t("rigsession.power_on_no_response"))
             }
         }
         publish(now)
@@ -861,9 +873,9 @@ class RigSession(
         val mine = mineActive()
         val ptt = state?.ptt
         when {
-            !protocolOk -> log("Version de protocole inconnue : émission impossible (STOP reste permis).", LogLevel.WARN)
-            !mine && !arming.armed -> log("Active d'abord « Émission autorisée ».", LogLevel.WARN)
-            !mine && ptt != null && ptt.state != "RX" -> log("Une émission est en cours (${ptt.owner ?: "?"}) : utilise STOP pour couper.", LogLevel.WARN)
+            !protocolOk -> log(Tr.t("rigsession.protocol_unknown_tx"), LogLevel.WARN)
+            !mine && !arming.armed -> log(Tr.t("rigsession.arm_first"), LogLevel.WARN)
+            !mine && ptt != null && ptt.state != "RX" -> log(Tr.t("rigsession.tx_busy", "owner" to (ptt.owner ?: "?")), LogLevel.WARN)
             else -> {
                 heartbeat.onToggleSent(now)                      // battements dès la demande, avant la confirmation
                 send(now, Command.Toggle)
@@ -964,8 +976,11 @@ class RigSession(
         selcall = status ?: return
         if (before?.state == SelcallStatus.STANDBY && status.open) {
             val c = status.lastCall
-            log("SELCALL : appel ${c?.code ?: status.code} reçu" +
-                (c?.let { " (décalage ${if (it.deltaHz > 0) "+" else ""}${it.deltaHz} Hz, SNR ${it.snrDb} dB)" } ?: "") + " : son ouvert.", LogLevel.INFO)
+            val code = c?.code ?: status.code
+            log(c?.let {
+                val offset = (if (it.deltaHz > 0) "+" else "") + it.deltaHz
+                Tr.t("rigsession.selcall_call_detail", "code" to code, "offset" to offset, "snr" to it.snrDb)
+            } ?: Tr.t("rigsession.selcall_call", "code" to code), LogLevel.INFO)
             link.alert(LinkAlert.SELCALL_CALL)
         }
     }
@@ -979,7 +994,7 @@ class RigSession(
 
     fun selcallActivate(now: Long, code: String) {
         if (!SelcallTones.validCode(code)) {
-            log("Code SELCALL : 3 à 8 chiffres.", LogLevel.WARN)
+            log(Tr.t("rigsession.selcall_code_invalid"), LogLevel.WARN)
             publish(now)
             return
         }
@@ -1006,16 +1021,16 @@ class RigSession(
     private fun selcallTransmit(now: Long, feature: String, command: Command) {
         if (!connected || hello?.offers("selcall") != true) return
         if (hello?.offers(feature) != true) {
-            log("Appel SELCALL : station à mettre à jour (0.63.0 ou plus).", LogLevel.WARN)
+            log(Tr.t("rigsession.selcall_update_station"), LogLevel.WARN)
             publish(now)
             return
         }
         val ptt = state?.ptt
         when {
-            !protocolOk -> log("Version de protocole inconnue : émission impossible (STOP reste permis).", LogLevel.WARN)
-            !arming.armed -> log("Active d'abord « Émission autorisée » : l'appel SELCALL est une émission.", LogLevel.WARN)
-            ptt != null && ptt.state != "RX" -> log("Une émission est en cours (${ptt.owner ?: "?"}) : appel SELCALL impossible.", LogLevel.WARN)
-            command == Command.SelcallSend && selcall?.disabled != false -> log("Arme d'abord le SELCALL sur un code.", LogLevel.WARN)
+            !protocolOk -> log(Tr.t("rigsession.protocol_unknown_tx"), LogLevel.WARN)
+            !arming.armed -> log(Tr.t("rigsession.selcall_arm_first"), LogLevel.WARN)
+            ptt != null && ptt.state != "RX" -> log(Tr.t("rigsession.selcall_tx_busy", "owner" to (ptt.owner ?: "?")), LogLevel.WARN)
+            command == Command.SelcallSend && selcall?.disabled != false -> log(Tr.t("rigsession.selcall_not_armed"), LogLevel.WARN)
             else -> {
                 heartbeat.onToggleSent(now)
                 send(now, command)
@@ -1043,7 +1058,7 @@ class RigSession(
 
     private fun memoryCommand(now: Long, command: Command) {
         if (!connected) return
-        if (!protocolOk) log("Version de protocole inconnue : mémoires en lecture seule.", LogLevel.WARN) else send(now, command)
+        if (!protocolOk) log(Tr.t("rigsession.protocol_unknown_memories"), LogLevel.WARN) else send(now, command)
         publish(now)
     }
 
@@ -1060,7 +1075,7 @@ class RigSession(
     private fun control(now: Long, vararg commands: Command) {
         if (!connected) return
         when {
-            !protocolOk -> log("Version de protocole inconnue : réglages impossibles (STOP reste permis).", LogLevel.WARN)
+            !protocolOk -> log(Tr.t("rigsession.protocol_unknown_settings"), LogLevel.WARN)
             (state?.ptt?.state ?: "RX") != "RX" -> log(Texts.refusal("tx_active"), LogLevel.WARN)
             else -> for (command in commands) send(now, command)
         }
@@ -1149,7 +1164,7 @@ class RigSession(
             if (action == "qsy_mark") friendsTarget?.let { (hz, mode) -> friendsTarget = null; qsyTo(now, hz, mode) }   // sans point de retour
             if (action == "view" && msg.reason == "timeout") return
             friendsNotice = refusalOf(msg)
-            log("Amis : $friendsNotice", LogLevel.WARN)
+            log(Tr.t("rigsession.friends_refused", "detail" to friendsNotice), LogLevel.WARN)
             return
         }
         when (action) {
@@ -1182,7 +1197,7 @@ class RigSession(
                 if (g != null && level != null && level != "o") {
                     send(now, Command.Friends("share", JsonObject(mapOf("g" to JsonPrimitive(g), "level" to JsonPrimitive(level)))))
                 }
-                friendsNotice = "Demande d'adhésion envoyée : validée dès que la station de l'administrateur la voit."
+                friendsNotice = Tr.t("rigsession.friends_join_sent")
                 friendsAsk(now)
             }
             else -> friendsAsk(now)                                     // action réussie : vue relue
@@ -1220,7 +1235,7 @@ class RigSession(
         if (yes && args != null && diffusionOk()) {
             send(now, Command.Diffusion("start", JsonObject(args + ("confirm" to JsonPrimitive(true)))), "start")
         } else {
-            diffusionNotice = "Diffusion non lancée."
+            diffusionNotice = Tr.t("rigsession.diffusion_not_started")
             diffusionNoticeBad = false
         }
         publish(now)
@@ -1259,19 +1274,19 @@ class RigSession(
             }
             diffusionStartArgs = null
             diffusionNotice = refusalOf(msg); diffusionNoticeBad = true
-            log("Diffusion : $diffusionNotice", LogLevel.WARN)
+            log(Tr.t("rigsession.diffusion_refused", "detail" to diffusionNotice), LogLevel.WARN)
             return
         }
         diffusionStartArgs = null
         diffusionNoticeBad = false
         val data = msg.raw["data"] as? JsonObject
         when (action) {
-            "start" -> { diffusionNotice = "Diffusion lancée."; log(diffusionNotice, LogLevel.INFO) }
-            "stop" -> { diffusionNotice = "Diffusion arrêtée."; log(diffusionNotice, LogLevel.INFO) }
+            "start" -> { diffusionNotice = Tr.t("rigsession.diffusion_started"); log(diffusionNotice, LogLevel.INFO) }
+            "stop" -> { diffusionNotice = Tr.t("rigsession.diffusion_stopped"); log(diffusionNotice, LogLevel.INFO) }
             "reveal", "listener" -> {
                 diffusionUser = (data?.get("listener_user") as? JsonPrimitive)?.contentOrNull?.take(64)
                 diffusionPassword = (data?.get("listener_password") as? JsonPrimitive)?.contentOrNull?.take(64)
-                diffusionNotice = if (action == "listener") "Nouveau mot de passe des auditeurs." else ""
+                diffusionNotice = if (action == "listener") Tr.t("rigsession.diffusion_new_password") else ""
             }
         }
     }
@@ -1305,7 +1320,7 @@ class RigSession(
     fun monitoringReport(now: Long, peer: String) {
         if (!monitoringOffered || !connected || monitoringReport != null) return
         monitoringReport = Triple(peer, "", java.io.ByteArrayOutputStream())
-        monitoringNotice = "Rapport en cours de téléchargement…"
+        monitoringNotice = Tr.t("rigsession.monitoring_report_downloading")
         send(now, Command.Monitoring("report_part", JsonObject(mapOf("peer" to JsonPrimitive(peer), "part" to JsonPrimitive(0)))))
         publish(now)
     }
@@ -1321,7 +1336,7 @@ class RigSession(
             if (action == "report_part") monitoringReport = null
             if (action == "view" && msg.reason == "timeout") return
             monitoringNotice = refusalOf(msg)
-            log("Monitoring : $monitoringNotice", LogLevel.WARN)
+            log(Tr.t("rigsession.monitoring_refused", "detail" to monitoringNotice), LogLevel.WARN)
             return
         }
         when (action) {
@@ -1352,7 +1367,7 @@ class RigSession(
                                                                                   "part" to JsonPrimitive(index + 1)))))
                 } else {
                     monitoringReport = null
-                    monitoringNotice = "Rapport reçu : $name."
+                    monitoringNotice = Tr.t("rigsession.monitoring_report_received", "name" to name)
                     onMonitoringReport?.invoke(name, current.third.toByteArray())
                 }
             }
@@ -1393,7 +1408,7 @@ class RigSession(
 
     fun swrStart(now: Long, lowHz: Long, highHz: Long, points: Int, powerPct: Double) {
         if (!connected || listener || hello?.offers("swr") != true) return
-        if (!arming.armed) { log("Mesure de TOS : « Émission autorisée » d'abord.", LogLevel.WARN); publish(now); return }
+        if (!arming.armed) { log(Tr.t("rigsession.swr_arm_first"), LogLevel.WARN); publish(now); return }
         swr = SwrProgress("preparing", 0, emptyList(), null)
         send(now, Command.SwrStart(lowHz, highHz, points, powerPct))
         publish(now)
@@ -1499,7 +1514,7 @@ class RigSession(
 
     fun netStats(now: Long, days: Int = 30) {
         if (!netOperator()) return
-        netStatus = "Lecture…"
+        netStatus = Tr.t("rigsession.net_reading")
         send(now, Command.NetStats(days))
         publish(now)
     }
@@ -1519,7 +1534,7 @@ class RigSession(
     fun netExport(now: Long) {
         if (!netOperator() || netExport != null) return
         netExport = "" to java.io.ByteArrayOutputStream()
-        netStatus = "Export en cours…"
+        netStatus = Tr.t("rigsession.net_exporting")
         send(now, Command.NetExport(0))
         publish(now)
     }
@@ -1560,7 +1575,7 @@ class RigSession(
         teardown()
         reconnect = null
         status = LinkStatus.DISCONNECTED
-        log("Reconnexion abandonnée : $why.", LogLevel.BAD)
+        log(Tr.t("rigsession.giveup", "why" to why), LogLevel.BAD)
         link.alert(LinkAlert.FAILED)
     }
 

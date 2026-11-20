@@ -13,12 +13,13 @@ data class MicProfile(val key: String, val label: String, val processing: MicPro
  * l'environnement. « custom » : l'utilisateur choisit lui-même l'écho et le bruit.
  */
 object MicProfiles {
-    val ALL = listOf(
-        MicProfile("quiet", "Micro intégré, pièce calme", MicProcessing(echo = true, noise = false)),
-        MicProfile("noisy", "Micro intégré, pièce bruyante", MicProcessing(echo = true, noise = true)),
-        MicProfile("headset_nr", "Micro-casque avec réduction de bruit", MicProcessing(echo = false, noise = false)),
-        MicProfile("headset", "Micro-casque sans réduction de bruit", MicProcessing(echo = false, noise = true)),
-        MicProfile("custom", "Personnalisé", null),
+    /** Libellés lus à l'affichage (langue de l'application). */
+    val ALL: List<MicProfile> get() = listOf(
+        MicProfile("quiet", Tr.t("micprofiles.quiet"), MicProcessing(echo = true, noise = false)),
+        MicProfile("noisy", Tr.t("micprofiles.noisy"), MicProcessing(echo = true, noise = true)),
+        MicProfile("headset_nr", Tr.t("micprofiles.headset_nr"), MicProcessing(echo = false, noise = false)),
+        MicProfile("headset", Tr.t("micprofiles.headset"), MicProcessing(echo = false, noise = true)),
+        MicProfile("custom", Tr.t("micprofiles.custom"), null),
     )
     const val DEFAULT = "quiet"
 

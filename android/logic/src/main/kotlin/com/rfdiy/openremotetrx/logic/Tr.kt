@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Catalogues : ressources `/i18n/<domaine>.<langue>.json`, objets {clé: texte} avec des champs `{nom}`. Le domaine
  * « client » est le TRONC COMMUN copié à la compilation depuis `trxstation/i18n/` (mêmes textes que la station et la
- * page web : refus, coupures). Le français est la référence : une clé absente d'une langue retombe sur le français,
+ * page web : refus, coupures) ; le domaine « app » (`logic/src/main/resources/i18n/app.<langue>.json`, lot T2) porte
+ * les textes propres à l'application, clés `<fichier>.<nom>` (`rigsession.connecting`). Le français est la référence : une clé absente d'une langue retombe sur le français,
  * une clé absente partout s'affiche telle quelle (jamais d'exception : l'écran doit toujours s'afficher).
  */
 object Tr {
@@ -24,7 +25,7 @@ object Tr {
      */
     val OFFERED = listOf("fr")
 
-    private val DOMAINS = listOf("client")
+    private val DOMAINS = listOf("client", "app")
     private val json = Json { ignoreUnknownKeys = true }
     private val cache = ConcurrentHashMap<String, Map<String, String>>()
     private val FIELD = Regex("""\{([a-z_]+)\}""")
@@ -66,6 +67,17 @@ object Tr {
 
     /** Texte d'une clé (la clé elle-même si elle n'existe nulle part). */
     fun t(key: String, vararg fields: Pair<String, Any?>): String = find(key, *fields) ?: key
+
+    /**
+     * Texte qui dépend d'un nombre : clé `<clé>_one` ou `<clé>_other` selon la règle de la langue (français : 0 et 1
+     * au singulier ; anglais, allemand, espagnol : 1 seul), champ `{n}` rempli d'office.
+     */
+    fun plural(key: String, n: Long, vararg fields: Pair<String, Any?>): String {
+        val one = if (lang == "fr") n in -1L..1L else n == 1L || n == -1L
+        return t(if (one) "${key}_one" else "${key}_other", "n" to n, *fields)
+    }
+
+    fun plural(key: String, n: Int, vararg fields: Pair<String, Any?>): String = plural(key, n.toLong(), *fields)
 
     fun has(key: String): Boolean = find(key) != null
 

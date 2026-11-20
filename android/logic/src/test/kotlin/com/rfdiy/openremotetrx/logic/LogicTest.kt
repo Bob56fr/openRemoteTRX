@@ -106,7 +106,7 @@ class TextsTest {
 
     @Test
     fun `refus et coupures lus dans le tronc commun copie a la compilation`() {
-        for (lang in Tr.LANGS) assertEquals(stationKeys(lang), Tr.catalog(lang).keys, lang)
+        for (lang in Tr.LANGS) assertEquals(stationKeys(lang), Tr.catalog(lang).keys intersect stationKeys("fr"), lang)
         val fr = stationKeys("fr")
         assertEquals(fr.filter { it.startsWith("refus.") && !it.startsWith("refus._") }.map { it.removePrefix("refus.") }.toSet(),
             Texts.REFUSALS.keys)

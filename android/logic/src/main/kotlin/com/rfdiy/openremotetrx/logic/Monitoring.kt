@@ -19,13 +19,15 @@ import kotlinx.serialization.json.longOrNull
  */
 object Monitoring {
     const val REFRESH_MS = 15_000L
-    val ROLES = mapOf("receiver" to "vous aidez cette station", "emitter" to "cette station vous aide")
-    val STATES = mapOf("confirm" to "empreinte à comparer", "active" to "active", "paused" to "en pause")
+    /** Textes lus à chaque usage (la langue peut changer pendant la vie de l'application). */
+    val ROLES: Map<String, String> get() = mapOf("receiver" to Tr.t("monitoring.role_receiver"), "emitter" to Tr.t("monitoring.role_emitter"))
+    val STATES: Map<String, String> get() = mapOf("confirm" to Tr.t("monitoring.state_confirm"), "active" to Tr.t("monitoring.state_active"),
+        "paused" to Tr.t("monitoring.state_paused"))
     val HOURS = listOf(1, 2, 4, 24)
     /** Profils prédéfinis : (clé, libellé, rig, events_min), comme la page. */
-    val PROFILES = listOf(
-        Triple("essentiel", "Essentiel : santé de la machine et erreurs", false to "erreur"),
-        Triple("diagnostic", "Diagnostic : en plus, état du poste et avertissements (conseillé)", true to "avertissement"),
+    val PROFILES: List<Triple<String, String, Pair<Boolean, String>>> get() = listOf(
+        Triple("essentiel", Tr.t("monitoring.profile_essential"), false to "erreur"),
+        Triple("diagnostic", Tr.t("monitoring.profile_diagnostic"), true to "avertissement"),
     )
     private const val ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
@@ -84,16 +86,16 @@ object Monitoring {
         val out = mutableListOf<String>()
         if (link.str("state") != "confirm") {
             val age = (link["last_rx_age"] as? JsonPrimitive)?.longOrNull
-            out += if (age == null) "aucune nouvelle encore" else "dernières nouvelles il y a ${maxOf(0, age) / 60} min"
+            out += if (age == null) Tr.t("monitoring.no_news") else Tr.t("monitoring.last_news", "min" to maxOf(0, age) / 60)
         }
-        link.obj("request")?.let { out += if (it.flag("snapshot")) "DEMANDE DE RAPPORT en attente" else "DEMANDE D'ASSISTANCE en attente" }
+        link.obj("request")?.let { out += Tr.t(if (it.flag("snapshot")) "monitoring.report_pending" else "monitoring.assist_pending") }
         val left = link.num("assist_left_s") ?: 0
-        if (left > 0) out += "assistance encore ${maxOf(1, left / 60)} min"
-        if (link.flag("paused")) out += "en pause"
-        if (link.flag("silent")) out += "SANS NOUVELLES (alerte envoyée)"
-        if (link.flag("report_due")) out += "rapport de dépannage en préparation"
+        if (left > 0) out += Tr.t("monitoring.assist_left", "min" to maxOf(1, left / 60))
+        if (link.flag("paused")) out += Tr.t("monitoring.paused")
+        if (link.flag("silent")) out += Tr.t("monitoring.silent")
+        if (link.flag("report_due")) out += Tr.t("monitoring.report_due")
         val reports = link.num("reports") ?: 0
-        if (reports > 0) out += "$reports rapport(s) reçu(s)"
+        if (reports > 0) out += Tr.t("monitoring.reports_received", "reports" to reports)
         return out
     }
 
@@ -127,20 +129,21 @@ object Monitoring {
         val hb = link.obj("last_hb")
         val st = link.obj("last_st")
         hb?.str("v")?.let { v ->
-            out += "Station : version $v, passerelle ${hb.str("gateway") ?: "?"}, mode sûr : ${hb.str("safe") ?: "non"}"
+            out += Tr.t("monitoring.station_line", "version" to v, "gateway" to (hb.str("gateway") ?: "?"),
+                "safe" to (hb.str("safe") ?: Tr.t("monitoring.safe_no")))
         }
         st?.obj("system")?.takeIf { it.isNotEmpty() }?.let { s ->
             fun v(key: String) = (s[key] as? JsonPrimitive)?.let { p -> p.longOrNull?.toString() ?: p.doubleOrNull?.toString() } ?: "--"
             val temp = (s["temp"] as? JsonPrimitive)?.let { p -> p.longOrNull?.toString() ?: p.doubleOrNull?.toString() }
-            out += "Machine : processeur ${v("cpu")} %, mémoire ${v("mem")} %, disque ${v("disk")} %, température " +
-                (if (temp == null) "--" else "$temp °C")
+            out += Tr.t("monitoring.machine_line", "cpu" to v("cpu"), "mem" to v("mem"), "disk" to v("disk"),
+                "temp" to (if (temp == null) "--" else "$temp °C"))
         }
         st?.obj("rig")?.takeIf { it.isNotEmpty() }?.let { r ->
             val freq = r.num("freq")?.let { ", " + String.format(java.util.Locale.ROOT, "%.3f", it / 1e6) + " MHz " + (r.str("mode") ?: "") }.orEmpty()
-            out += ("Poste : CAT " + (if (r.flag("cat")) "OK" else (r.str("cat_error")?.ifEmpty { null } ?: "?")) +
-                ", émission ${r.str("tx") ?: "?"}, ${r.num("clients") ?: 0} connexion(s)" + freq).trimEnd()
+            out += Tr.t("monitoring.rig_line", "cat" to (if (r.flag("cat")) "OK" else (r.str("cat_error")?.ifEmpty { null } ?: "?")),
+                "tx" to (r.str("tx") ?: "?"), "clients" to (r.num("clients") ?: 0), "freq" to freq).trimEnd()
         }
-        if (out.isEmpty()) out += "Aucune nouvelle reçue pour l'instant."
+        if (out.isEmpty()) out += Tr.t("monitoring.no_news_received")
         return out
     }
 
@@ -157,7 +160,7 @@ object Monitoring {
         val pseudo = raw.str("pseudo")?.ifEmpty { null } ?: "?"
         return Link(
             peer = raw.str("peer").orEmpty(), pseudo = pseudo, role = role, state = state,
-            title = "$pseudo : ${ROLES[role] ?: "?"}, ${STATES[state] ?: "?"}",
+            title = Tr.t("monitoring.link_title", "pseudo" to pseudo, "role" to (ROLES[role] ?: "?"), "state" to (STATES[state] ?: "?")),
             details = details(raw), level = level(raw), actions = actions(raw),
             stationLines = if (role == "receiver" && state != "confirm") stationLines(raw) else emptyList(),
             fingerprint = raw.str("fingerprint").orEmpty(), requestText = raw.obj("request")?.let { requestText(pseudo, it) },
@@ -166,11 +169,11 @@ object Monitoring {
     }
 
     fun status(view: JsonObject?): String {
-        if (view == null) return "Lecture…"
+        if (view == null) return Tr.t("monitoring.reading")
         return listOfNotNull(
-            view.str("pseudo")?.ifEmpty { null }?.let { "Pseudo $it" } ?: "Pas encore de pseudo (ci-dessous)",
-            if (view.flag("registered")) "station enregistrée auprès du relais" else "pas encore enregistrée auprès du relais",
-            view.str("problem")?.ifEmpty { null }?.let { "problème : $it" },
+            view.str("pseudo")?.ifEmpty { null }?.let { Tr.t("monitoring.pseudo", "pseudo" to it) } ?: Tr.t("monitoring.no_pseudo"),
+            Tr.t(if (view.flag("registered")) "monitoring.registered" else "monitoring.not_registered"),
+            view.str("problem")?.ifEmpty { null }?.let { Tr.t("monitoring.problem", "problem" to it) },
         ).joinToString(" · ")
     }
 
@@ -178,8 +181,6 @@ object Monitoring {
 
     /** Texte d'une demande reçue (station aidée), comme la page. */
     fun requestText(pseudo: String, request: JsonObject): String =
-        if (request.flag("snapshot")) "$pseudo demande votre rapport de dépannage (diagnostic, configuration sans mot de passe, journaux), " +
-            "entièrement masqué avant l'envoi (nom de la machine, adresses, comptes, numéros de série)."
-        else "$pseudo demande le mode assistance pendant ${Math.round((request.num("assist") ?: 0) / 360.0) / 10.0} h : " +
-            "des nouvelles toutes les 30 secondes et tous les événements. Fréquence et mode restent comme dans votre choix."
+        if (request.flag("snapshot")) Tr.t("monitoring.request_report", "pseudo" to pseudo)
+        else Tr.t("monitoring.request_assist", "pseudo" to pseudo, "hours" to Math.round((request.num("assist") ?: 0) / 360.0) / 10.0)
 }
