@@ -84,6 +84,11 @@ MariaDB seulement si l'essai de charge (§ 7) montrait des attentes d'écriture.
 ### 5.4 Journaux et adresses IP
 
 Journal d'accès de Caddy du relais aux adresses **masquées** (`ip_mask` : /16 en IPv4, /32 en IPv6), gardé 7 jours.
+Tout bloc de site DOIT avoir sa directive `log` : sans elle, Caddy écrit quand même les réponses en erreur (404,
+4xx / 5xx) dans journald AVEC l'adresse complète du visiteur (constaté le 2026-11-21 par le projet SharedTodoList,
+qui partage le VPS). Même règle appliquée au site de la diffusion (`server-23`), dont le journal
+`/var/log/caddy/acces.log` garde aujourd'hui les adresses complètes des auditeurs : masquées au lot V2.
+Après chaque déploiement : `https://sharedtodolist.rf-diy.com/health` = ok (site d'un autre projet, jamais touché).
 Toujours aucune adresse IP en base ; limites de débit dans `var/rate/` sous un nom HMAC qui change chaque jour.
 
 ### 5.5 Surveillance
