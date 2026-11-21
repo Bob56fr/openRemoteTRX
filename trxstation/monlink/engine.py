@@ -188,6 +188,16 @@ class Engine:
         self.store.save()
         log.info("station enregistrée auprès du relais du monitoring (%s)", self.me)
 
+    def forget_registration(self, exc: RelayRefused) -> bool:
+        """Le relais ne connaît plus la station (`unknown_station` : relais neuf ou déménagé, station purgée après
+        12 mois sans requête) : elle se réinscrit au prochain appel, comme la présence. Vrai si c'était le cas."""
+        if exc.reason != "unknown_station" or not self.store.data["registered"]:
+            return False
+        self.store.data["registered"] = False
+        self.store.save()
+        log.info("station inconnue du relais du monitoring : nouvelle inscription")
+        return True
+
     # ------------------------------------------------------------ actions de l'opérateur (TRX Console)
     def set_pseudo(self, pseudo: object) -> dict:
         pseudo = clean_pseudo(pseudo)
@@ -415,9 +425,12 @@ class Engine:
                 emit_event(codes.ORT_7040, logger=log, relais="relais du monitoring", detail=str(exc)[:200])
             self.problem = "relay"
         except RelayRefused as exc:
-            if self.problem != exc.reason:
-                emit_event(codes.ORT_7040, logger=log, relais="relais du monitoring", detail=str(exc)[:200])
-            self.problem = exc.reason
+            if self.forget_registration(exc):
+                self.problem = "unknown_station"              # inscription au cycle suivant, sans alerte
+            else:
+                if self.problem != exc.reason:
+                    emit_event(codes.ORT_7040, logger=log, relais="relais du monitoring", detail=str(exc)[:200])
+                self.problem = exc.reason
         for address, item in list(self.store.data["invites"].items()):
             if item["e"] <= now:
                 del self.store.data["invites"][address]

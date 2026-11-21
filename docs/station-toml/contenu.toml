@@ -714,7 +714,7 @@ depuis = "0.117.0"
 role = "Adresse du relais de présence."
 niveau = "expert"
 bornes = "https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine)."
-exemple = "Relais par défaut : <code>https://rf-diy.com/orx-relay/public</code> ; essai local : <code>http://127.0.0.1:8099</code>."
+exemple = "Relais par défaut : <code>https://relay.rf-diy.com</code> (depuis 0.257.0 ; avant : <code>https://rf-diy.com/orx-relay/public</code>, retiré après la migration : une station.toml qui l'a encore doit être corrigée) ; essai local : <code>http://127.0.0.1:8099</code>."
 depuis = "0.117.0"
 
 [reglages."presence.key_file"]
@@ -735,7 +735,7 @@ depuis = "0.159.0"
 role = "Adresse du relais du monitoring (le même que celui de la présence)."
 niveau = "expert"
 bornes = "https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine)."
-exemple = "Relais par défaut : <code>https://rf-diy.com/orx-relay/public</code> ; essai local : <code>http://127.0.0.1:8099</code>."
+exemple = "Relais par défaut : <code>https://relay.rf-diy.com</code> (depuis 0.257.0 ; avant : <code>https://rf-diy.com/orx-relay/public</code>, retiré après la migration : une station.toml qui l'a encore doit être corrigée) ; essai local : <code>http://127.0.0.1:8099</code>."
 depuis = "0.159.0"
 
 [reglages."monitor_link.key_file"]

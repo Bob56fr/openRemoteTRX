@@ -47,7 +47,7 @@ Comme la présence (§ 3 de `docs/protocole-presence.md`) : `POST`, en-têtes `X
 (Ed25519 de `"orx-relay v1\n" ‖ "POST\n" ‖ chemin ‖ "\n" ‖ corps`), champs `t` (±600 s) et `n` (strictement
 croissant), même ordre des contrôles, mêmes codes d'erreur. Différences :
 - chemins `/v1/mon/<route>` ; route inconnue = 404 `unknown_route` ; le chemin SIGNÉ est le chemin complet de la
-  requête, dossier du relais compris (relais en service : `/orx-relay/public/v1/mon/<route>`), comme pour la
+  requête, dossier du relais compris (relais en service `https://relay.rf-diy.com` à la racine : `/v1/mon/<route>` ; un relais dans un sous-dossier signe aussi ce dossier), comme pour la
   présence ;
 - l'identifiant vérifié est celui du monitoring (§ 1) ; la table des stations du monitoring est **distincte** de
   celle de la présence ;

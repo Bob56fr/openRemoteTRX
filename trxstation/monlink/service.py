@@ -127,16 +127,22 @@ class MonlinkService:
         if extra:
             raise ActionRefused("malformed", f"arguments inattendus : {', '.join(sorted(extra))}")
         async with self.lock:
-            try:
-                result = getattr(self.engine, method)(**args)
-                if asyncio.iscoroutine(result):
-                    result = await result
-            except RelayUnavailable as exc:
-                raise ActionRefused("relay", f"relais injoignable : {exc}") from exc
-            except RelayRefused as exc:
-                raise ActionRefused("relay_" + exc.reason, f"refus du relais : {exc.reason}") from exc
-            except TypeError as exc:              # argument manquant
-                raise ActionRefused("malformed", "arguments incomplets") from exc
+            for attempt in (1, 2):
+                try:
+                    result = getattr(self.engine, method)(**args)
+                    if asyncio.iscoroutine(result):
+                        result = await result
+                    break
+                except RelayUnavailable as exc:
+                    raise ActionRefused("relay", f"relais injoignable : {exc}") from exc
+                except RelayRefused as exc:
+                    # Relais qui ne connaît plus la station : refus AVANT tout effet (la signature est vérifiée en
+                    # premier) ; inscription puis action rejouée une seule fois.
+                    if attempt == 1 and self.engine.forget_registration(exc):
+                        continue
+                    raise ActionRefused("relay_" + exc.reason, f"refus du relais : {exc.reason}") from exc
+                except TypeError as exc:              # argument manquant
+                    raise ActionRefused("malformed", "arguments incomplets") from exc
         self.write_status()
         return result
 

@@ -404,7 +404,7 @@ def test_presence_section_of_station_toml():
     cfg = cfgmod.Config()
     assert cfgmod._presence_problems(cfg.presence) == []
     text = cfgmod.render_toml(cfg)
-    assert "[presence]" in text and 'relay_url = "https://rf-diy.com/orx-relay/public"' in text
+    assert "[presence]" in text and 'relay_url = "https://relay.rf-diy.com"' in text
     for bad in ("http://api.rf-diy.com", "ftp://x", "https://", 12):
         cfg.presence.relay_url = bad
         assert cfgmod._presence_problems(cfg.presence)

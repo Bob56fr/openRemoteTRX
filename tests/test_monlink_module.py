@@ -375,6 +375,40 @@ def test_service_disabled_then_console_request(tmp_path):
     assert "key" not in json.dumps(status)                                # jamais de clé dans le résumé lisible
 
 
+def test_new_relay_that_forgot_the_station_means_a_new_registration_without_alert(world, caplog):
+    """Relais déménagé ou remis à zéro (migration vers le VPS, étape 342) : la station ne reste pas « inscrite » à tort."""
+    clock, relay, make = world
+    eng = make("aided", "F4XYZ")
+    gateway(eng, clock)
+    cycle(clock, eng)
+    assert eng.store.data["registered"] is True and eng.me in relay.stations
+    caplog.set_level(logging.INFO)
+    relay.stations.clear()                                                 # base neuve
+    cycle(clock, eng)
+    assert eng.store.data["registered"] is False and eng.problem == "unknown_station"
+    assert "ORT-7040" not in caplog.text                                   # pas d'alerte pour ça
+    cycle(clock, eng)
+    assert eng.store.data["registered"] is True and eng.me in relay.stations and eng.problem == ""
+
+
+def test_operator_action_on_a_relay_that_forgot_the_station_registers_and_replays_once(tmp_path):
+    state = tmp_path / "state"
+    state.mkdir()
+    cfg, _ = cfgmod.build({"rig": {"model": 1}, "supervisor": {"state_dir": str(state),
+                                                              "status_path": str(state / "gw.json")}})
+    clock = Clock()
+    relay = FakeMonRelay(clock=clock)
+    service = MonlinkService(cfg, tmp_path / "station.toml", relay_factory=relay.transport, clock=clock,
+                             monitor=FakeMonitor())
+    service.setup()
+    run(service.act("pseudo", {"pseudo": "F4XYZ"}))
+    assert run(service.act("invite", {}))["code"]
+    relay.stations.clear()                                                 # le relais ne la connaît plus
+    assert run(service.act("invite", {}))["code"]                          # inscrite de nouveau, action rejouée
+    assert service.engine.store.data["registered"] is True and service.engine.me in relay.stations
+    assert [r for _, r in relay.calls].count("register") >= 2
+
+
 def test_monlink_package_never_touches_the_ptt_nor_the_cat():
     """Rappel du lot R1, étendu aux nouveaux fichiers (service, moteur, collecte)."""
     import ast

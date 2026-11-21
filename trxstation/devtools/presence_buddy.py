@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pseudo", default="ESSAI-PC")
     ap.add_argument("--freq", type=int, default=14_205_000)
     ap.add_argument("--mode", default="USB")
-    ap.add_argument("--relay", default="https://rf-diy.com/orx-relay/public")
+    ap.add_argument("--relay", default="https://relay.rf-diy.com")
     args = ap.parse_args(argv)
     try:
         return asyncio.run(run(args))
