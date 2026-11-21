@@ -66,7 +66,8 @@ une autre machine par un simple changement de DNS.
   monitoring), 404 pour tout le reste, mêmes en-têtes de sécurité que la diffusion.
 - Code : `deployer.sh` copie le relais depuis le dossier voisin `openRemoteTRX-relay` **à un commit donné** (noté
   dans le déploiement) ; jamais une copie modifiée sur le serveur. `config.php` fabriqué au premier déploiement
-  dans `/etc/orx-vps/relais.php` (secret tiré au hasard), jamais dans un dépôt.
+  dans `/etc/orx-relay/config.php` (secret tiré au hasard, lisible par le compte du relais seulement), jamais dans
+  un dépôt.
 
 ### 5.2 Base
 
@@ -123,6 +124,12 @@ identifiants et pseudos de stations : données personnelles, d'où le chiffremen
 
 ## 7. Capacité
 
+**Mesuré le 2026-11-21 (lot V2)** : 200 stations simulées, 16 requêtes en parallèle pendant 60 s, sur une instance
+d'essai à part du même VPS (`tools/charge_relais.sh` du dépôt vps), programme de charge sur les mêmes 2 cœurs :
+183 requêtes « sync » par seconde sans aucune erreur, médiane 12 ms, 95 % sous 39 ms, une pointe à 2 s ; soit
+~16 000 stations au rythme réel. SQLite suffit (D2 confirmé).
+
+
 Rythme constant de 90 s par station, états de taille fixe : 1 000 stations ≈ 11 requêtes/s et quelques Mo de base ;
 monitoring : 5 Mo par boîte au plus. La marge est large mais se **mesure** au lot V2 : outil de charge (N stations
 simulées, Icecast en marche), temps de réponse, processeur, attentes d'écriture SQLite.
@@ -164,6 +171,13 @@ après 12 mois ; sauvegardes (durée de celle d'OVH, plus la copie hors VPS quan
 nouvelle collectée.
 
 ## 12. Lots et décisions
+
+État au 2026-11-21 : V1 FAIT (DNS, durcissement dans `deploy.sh`, commit be226be du dépôt vps) ; V2 FAIT (relais
+en service sur `https://relay.rf-diy.com`, dépôt vps 2dc1c90, relais 2777380 : PHP 8.4, essais PHP et de bout en
+bout sur le VPS, essai en production avec une station jetable, charge mesurée § 7, journaux aux adresses masquées,
+journal système limité à 7 jours pour tout le VPS) ; reste pour V2 l'adresse ntfy des alertes du VPS
+(`/etc/orx-vps/alertes.env`, posée par l'utilisateur).
+
 
 | Lot | Contenu | Qui |
 |---|---|---|
