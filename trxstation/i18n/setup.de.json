@@ -80,7 +80,7 @@
   "parts.emission": "Maximale Leistung des Funkgeräts und maximale Dauer einer Aussendung (TOT)",
   "wizard.title": "=== trx-setup: Konfiguration der Station ===",
   "wizard.existing": "Bestehende Konfiguration übernommen: Eingabe behält die aktuelle Einstellung.",
-  "wizard.desktop": "Desktop-PC: der Supervisor startet diesen PC nie neu (sicherer Modus als letztes Mittel).",
+  "wizard.desktop": "Desktop-PC: der Supervisor startet diesen PC nie neu (Sicherheitsabschaltung als letztes Mittel).",
   "part.unknown": "unbekannter Teil: {part} ({parts})",
   "part.title": "=== trx-setup: {title} ===\nEingabe behält die aktuelle Einstellung; nichts wird geschrieben, wenn du abbrichst.",
   "part.no_spectrum": "Das Spektrum über einen zweiten CI-V-Port gibt es nur bei manchen Icom: für dieses Funkgerät nichts einzustellen.",

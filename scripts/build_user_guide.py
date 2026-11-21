@@ -59,7 +59,7 @@ GLOSSARY = "glossaire.md"
 BUBBLES = {
     "fr": ("CAT", "Charge fictive", "ALC", "TOS", "Hamlib", "rigctld", "Passerelle", "Superviseur", "openRemoteTRX Console",
            "Assistant de configuration", "Tableau de bord", "station.toml", "Profil de poste", "PTT", "TOT",
-           "TOT absolu", "Battement", "Bandes autorisées", "Opérateur sur place", "Mode sûr", "HTTPS", "certificat",
+           "TOT absolu", "Battement", "Bandes autorisées", "Opérateur sur place", "Mise en sécurité", "HTTPS", "certificat",
            "Empreinte du certificat", "VPN", "Profil VPN", "Port ouvert", "CGNAT", "ntfy", "Code ORT", "Appairage",
            "Visiteur", "Compte opérateur", "WebRTC", "Réseau local", "Porte audio d'émission"),
 }

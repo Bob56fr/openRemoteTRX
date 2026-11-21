@@ -172,11 +172,11 @@ admin = false
 expert = "<p>Without the menu: <code>trx-console --rapport</code>. The report's <code>station.toml</code> file has its secrets masked; you may still check its content before sending it if you wish. The report also includes the traces of tools that stopped on an unexpected error (<code>plantages</code> folder, code ORT-9312).</p>"
 
 [menus.clear_safe_mode]
-role = "Leaves <strong>safe mode</strong>. The supervisor puts the station into it after repeated failures: transceiver in receive, access cut."
+role = "<strong>Reactivates the station</strong> after a <strong>safety lockout</strong>. The supervisor locks the station out after repeated failures: stopped in a safe state (transceiver in receive, access cut), it waits for an intervention."
 quand = "Only after finding and fixing the cause (menus 6.1 and 6.2)."
-modifie = "Clears the stored safe mode and restarts the station."
+modifie = "Clears the stored safety lockout and restarts the station."
 admin = true
-expert = "<p>Safe mode survives restarts and fixes: it must be lifted explicitly here.</p>"
+expert = "<p>The safety lockout survives restarts and fixes: the station must be reactivated explicitly here.</p>"
 
 [menus.update]
 role = "Update over the Internet: shows the new version, offers to see what changed (notes of EVERY version published since yours, newest first, page by page: Enter = next, q = stop there), then installs it after checking its signature. Up to date: offers an immediate new check on GitHub."
@@ -232,7 +232,7 @@ admin = true
 expert = "<p>No effect if the transceiver does not report its temperature through Hamlib (the case of the IC-7300MK2). The operator at the transceiver's microphone is never cut for this reason.</p>"
 
 [menus.indicator]
-role = "Enables or disables the <strong>top bar indicator</strong> (GNOME desktop): a light to the left of the sound icon (green receive, red transmit, orange alert, grey station stopped, purple safe mode), the frequency or the transmit countdown, and on click the full status: transmission, frequency and filter, connected web clients, link with the transceiver, on-site operator, last cut, temperature, power supply, HF spectrum, DX Cluster, available update, version and identifier. On Windows, this menu starts the <strong>indicator next to the clock</strong> (same colours, read only) and chooses whether it starts at each session logon."
+role = "Enables or disables the <strong>top bar indicator</strong> (GNOME desktop): a light to the left of the sound icon (green receive, red transmit, orange alert, grey station stopped, purple safety lockout), the frequency or the transmit countdown, and on click the full status: transmission, frequency and filter, connected web clients, link with the transceiver, on-site operator, last cut, temperature, power supply, HF spectrum, DX Cluster, available update, version and identifier. On Windows, this menu starts the <strong>indicator next to the clock</strong> (same colours, read only) and chooses whether it starts at each session logon."
 quand = "Once, after installation (then log out and log in again), to keep an eye on the station at all times."
 modifie = "Only your desktop display. The indicator only READS the state published by the station: it cannot control anything."
 admin = false
@@ -343,7 +343,7 @@ admin = true
 
 [menus.local_operator]
 role = "Sets what the station does when someone <strong>transmits with the transceiver microphone</strong>, in front of it. <strong>Shared station</strong> (default): such a transmission is only cut by the supervisor <strong>absolute TOT</strong> (135 s by default), or after the allowed time (300 s by default) when the operator presence is proven (they touched the transceiver just before). Otherwise any local transmission is cut at once. Remote transmission stays blocked during a local transmission and 2 minutes after."
-quand = "At commissioning, if an operator uses the transceiver on site, or if the station goes into safe mode after transmissions with the transceiver microphone."
+quand = "At commissioning, if an operator uses the transceiver on site, or if the station goes into safety lockout after transmissions with the transceiver microphone."
 modifie = "The <code>[supervisor]</code> section of <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), through the checked path of menu 8.1; the station restarts on request."
 admin = true
 
@@ -413,7 +413,7 @@ titre = "Useful files (Debian)"
 texte = """
 <ul>
 <li><code>/etc/trx-remote/station.toml</code>: configuration (edit through menu 8.1).</li>
-<li><code>/var/lib/trx-remote/</code>: station state (safe mode, memories, reports from the page, identifier <code>station-id</code>, DX Cluster).</li>
+<li><code>/var/lib/trx-remote/</code>: station state (safety lockout, memories, reports from the page, identifier <code>station-id</code>, DX Cluster).</li>
 <li><code>/run/trx-remote/gateway-status.json</code>: live state published by the gateway (read by the dashboard).</li>
 <li><code>/opt/trx-remote/releases/</code>: versions installed side by side; <code>/opt/trx-remote/current</code> points to the active version.</li>
 <li><code>/var/log/trx-remote-install.log</code>: log of installations and updates.</li>

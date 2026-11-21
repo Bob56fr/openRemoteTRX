@@ -172,11 +172,11 @@ admin = false
 expert = "<p>Ohne Menü: <code>trx-console --rapport</code>. In der Datei <code>station.toml</code> des Berichts sind die Geheimnisse ausgeblendet; prüfe ihren Inhalt trotzdem vor dem Versand, wenn du möchtest. Der Bericht enthält auch die Spuren von Werkzeugen, die bei einem unerwarteten Fehler angehalten wurden (Ordner <code>plantages</code>, Code ORT-9312).</p>"
 
 [menus.clear_safe_mode]
-role = "Verlässt den <strong>abgesicherten Modus</strong>. Der Supervisor schaltet die Station nach wiederholten Störungen dorthin: Transceiver auf Empfang, Zugang gesperrt."
+role = "<strong>Nimmt die Station wieder in Betrieb</strong> nach einer <strong>Sicherheitsabschaltung</strong>. Der Supervisor schaltet die Station nach wiederholten Störungen sicher ab: gefahrloser Zustand (Transceiver auf Empfang, Zugang gesperrt), sie wartet auf einen Eingriff."
 quand = "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2)."
-modifie = "Löscht den gespeicherten abgesicherten Modus und startet die Station neu."
+modifie = "Löscht die gespeicherte Sicherheitsabschaltung und startet die Station neu."
 admin = true
-expert = "<p>Der abgesicherte Modus überdauert Neustarts und Korrekturen: er muss hier ausdrücklich aufgehoben werden.</p>"
+expert = "<p>Die Sicherheitsabschaltung überdauert Neustarts und Korrekturen: die Station muss hier ausdrücklich wieder in Betrieb genommen werden.</p>"
 
 [menus.update]
 role = "Update über das Internet: stellt die neue Version vor, bietet an, die Art der Änderungen anzusehen (Hinweise zu JEDER seit deiner veröffentlichten Version, die neueste zuerst, seitenweise: Eingabetaste = weiter, q = hier aufhören), und installiert sie nach Prüfung ihrer Signatur. Bereits aktuell: bietet eine sofortige neue Suche auf GitHub an."
@@ -232,7 +232,7 @@ admin = true
 expert = "<p>Ohne Wirkung, wenn der Transceiver seine Temperatur nicht über Hamlib liefert (so beim IC-7300MK2). Der Operator am Mikrofon des Transceivers wird aus diesem Grund nie abgeschaltet.</p>"
 
 [menus.indicator]
-role = "Schaltet die <strong>Anzeige in der oberen Leiste</strong> (GNOME-Desktop) ein oder aus: eine Lampe links vom Ton (grün Empfang, rot Senden, orange Alarm, grau Station gestoppt, violett abgesicherter Modus), die Frequenz oder der Countdown des Sendens, und per Klick der vollständige Zustand: Senden, Frequenz und Filter, verbundene Web-Clients, Verbindung zum Transceiver, Operator vor Ort, letzte Abschaltung, Temperatur, Versorgung, HF-Spektrum, DX-Cluster, verfügbares Update, Version und Kennung. Unter Windows startet dieses Menü die <strong>Anzeige neben der Uhr</strong> (gleiche Farben, nur lesend) und legt fest, ob sie bei jeder Anmeldung startet."
+role = "Schaltet die <strong>Anzeige in der oberen Leiste</strong> (GNOME-Desktop) ein oder aus: eine Lampe links vom Ton (grün Empfang, rot Senden, orange Alarm, grau Station gestoppt, violett Sicherheitsabschaltung), die Frequenz oder der Countdown des Sendens, und per Klick der vollständige Zustand: Senden, Frequenz und Filter, verbundene Web-Clients, Verbindung zum Transceiver, Operator vor Ort, letzte Abschaltung, Temperatur, Versorgung, HF-Spektrum, DX-Cluster, verfügbares Update, Version und Kennung. Unter Windows startet dieses Menü die <strong>Anzeige neben der Uhr</strong> (gleiche Farben, nur lesend) und legt fest, ob sie bei jeder Anmeldung startet."
 quand = "Einmal, nach der Installation (dann ab- und wieder anmelden), um die Station ständig im Blick zu behalten."
 modifie = "Nur die Anzeige deines Desktops. Die Anzeige LIEST nur den von der Station veröffentlichten Zustand: sie kann nichts steuern."
 admin = false
@@ -343,7 +343,7 @@ admin = true
 
 [menus.local_operator]
 role = "Legt fest, was die Station tut, wenn jemand <strong>mit dem Mikrofon des Transceivers sendet</strong>, direkt am Gerät. <strong>Geteilte Station</strong> (Standard): eine solche Sendung wird nur durch den <strong>absoluten TOT</strong> des Supervisors abgeschaltet (standardmäßig 135 s), oder nach der geduldeten Dauer (standardmäßig 300 s), wenn die Anwesenheit des Operators nachgewiesen ist (er hat den Transceiver kurz zuvor bedient). Sonst wird jede lokale Sendung sofort abgeschaltet. Das Senden aus der Ferne bleibt während einer lokalen Sendung und 2 Minuten danach gesperrt."
-quand = "Bei der Inbetriebnahme, wenn ein Operator den Transceiver vor Ort benutzt, oder wenn die Station nach Sendungen mit dem Mikrofon des Transceivers in den sicheren Modus geht."
+quand = "Bei der Inbetriebnahme, wenn ein Operator den Transceiver vor Ort benutzt, oder wenn die Station nach Sendungen mit dem Mikrofon des Transceivers in die Sicherheitsabschaltung geht."
 modifie = "Der Abschnitt <code>[supervisor]</code> von <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), über den geprüften Weg von Menü 8.1; die Station startet auf Wunsch neu."
 admin = true
 
@@ -413,7 +413,7 @@ titre = "Nützliche Dateien (Debian)"
 texte = """
 <ul>
 <li><code>/etc/trx-remote/station.toml</code>: Konfiguration (über Menü 8.1 bearbeiten).</li>
-<li><code>/var/lib/trx-remote/</code>: Zustand der Station (abgesicherter Modus, Speicher, Berichte der Webseite, Kennung <code>station-id</code>, DX-Cluster).</li>
+<li><code>/var/lib/trx-remote/</code>: Zustand der Station (Sicherheitsabschaltung, Speicher, Berichte der Webseite, Kennung <code>station-id</code>, DX-Cluster).</li>
 <li><code>/run/trx-remote/gateway-status.json</code>: vom Gateway veröffentlichter Live-Zustand (von der Übersicht gelesen).</li>
 <li><code>/opt/trx-remote/releases/</code>: nebeneinander installierte Versionen; <code>/opt/trx-remote/current</code> zeigt auf die aktive Version.</li>
 <li><code>/var/log/trx-remote-install.log</code>: Bericht über Installationen und Updates.</li>

@@ -7519,7 +7519,7 @@ ORT-5033:
   - Micro ou pédale du poste coincés
   - Opérateur sur place qui dépasse le plafond local_tx_max_s
   preconisation: 'Contrôler le micro et la pédale du poste ; si l''émission résiste à « T 0 », l''échelle de reprise
-    puis le mode sûr suivent.'
+    puis la mise en sécurité de la station suivent.'
   action_auto: retour_rx
   ntfy_defaut: true
   priorite_ntfy: 5
@@ -7535,7 +7535,7 @@ ORT-5033:
     - Rig microphone or footswitch stuck
     - On-site operator exceeding the local_tx_max_s ceiling
     preconisation: 'Check the rig microphone and footswitch; if the transmission resists "T 0", the recovery ladder
-      then safe mode follow.'
+      then the safety lockout follow.'
   de:
     titre: 'Lokales Senden zu lang: Abschaltung durch den Supervisor'
     message: 'Der Transceiver sendet seit {duree_s} s über das Mikrofon (Obergrenze für lokales Senden {limite_s} s): „T 0“
@@ -7544,7 +7544,7 @@ ORT-5033:
     - Mikrofon oder Fußtaster des Transceivers hängen
     - Operator vor Ort überschreitet die Obergrenze local_tx_max_s
     preconisation: Kontrollieren Sie Mikrofon und Fußtaster des Transceivers; widersteht das Senden „T 0“, folgen die Wiederherstellungsstufen
-      und dann der sichere Modus.
+      und dann die Sicherheitsabschaltung.
   es:
     titre: 'Transmisión local demasiado larga: corte por el supervisor'
     message: 'El equipo transmite desde el micrófono desde hace {duree_s} s (límite de la transmisión local {limite_s} s):
@@ -7553,7 +7553,7 @@ ORT-5033:
     - Micrófono o pedal del equipo atascados
     - Operador local que supera el límite local_tx_max_s
     preconisation: Controla el micrófono y el pedal del equipo; si la transmisión resiste a «T 0», siguen la escala de recuperación
-      y luego el modo seguro.
+      y luego el bloqueo de seguridad.
 
 ORT-5034:
   gravite: avertissement
@@ -9675,7 +9675,7 @@ ORT-6102:
   causes:
   - Arrêt par un opérateur
   - Fin de la durée choisie au lancement
-  - Station surchargée, passerelle relancée, mode sûr ou fonction mise hors service
+  - Station surchargée, passerelle relancée, station mise en sécurité ou fonction mise hors service
   - Mot de passe source refusé par le serveur
   preconisation: Rien à faire si l'arrêt était voulu ; sinon voir la cause et relancer la diffusion.
   action_auto: aucune
@@ -9689,7 +9689,7 @@ ORT-6102:
     causes:
     - Stopped by an operator
     - End of the duration chosen at start
-    - Station overloaded, gateway restarted, safe mode or feature switched off
+    - Station overloaded, gateway restarted, safety lockout or feature switched off
     - Source password refused by the server
     preconisation: Nothing to do if the stop was intended; otherwise check the cause and start the broadcast again.
   de:
@@ -9698,7 +9698,7 @@ ORT-6102:
     causes:
     - Von einem Operator beendet
     - Beim Start gewählte Dauer abgelaufen
-    - Station überlastet, Gateway neu gestartet, sicherer Modus oder Funktion außer Betrieb gesetzt
+    - Station überlastet, Gateway neu gestartet, Sicherheitsabschaltung oder Funktion außer Betrieb gesetzt
     - Quellen-Passwort vom Server abgelehnt
     preconisation: Nichts zu tun, wenn das Beenden gewollt war; sonst die Ursache ansehen und die Übertragung neu starten.
   es:
@@ -9707,7 +9707,7 @@ ORT-6102:
     causes:
     - Detenida por un operador
     - Fin de la duración elegida al iniciarla
-    - Estación sobrecargada, pasarela relanzada, modo seguro o función puesta fuera de servicio
+    - Estación sobrecargada, pasarela relanzada, bloqueo de seguridad o función puesta fuera de servicio
     - Contraseña de la fuente rechazada por el servidor
     preconisation: No hay nada que hacer si la parada era voluntaria; si no, mira la causa y vuelve a iniciar la difusión.
 
@@ -14342,7 +14342,7 @@ ORT-8006:
   causes:
   - Relances de la passerelle, de rigctld et réinitialisation USB sans effet
   preconisation: Après le redémarrage, consulter les journaux ; au-delà de {max_par_heure} redémarrages par heure,
-    la station passe en mode sûr.
+    la station est mise en sécurité.
   action_auto: redemarrer_systeme
   ntfy_defaut: true
   priorite_ntfy: 3
@@ -14355,22 +14355,22 @@ ORT-8006:
     message: 'Recovery level 3 (reboot): {problemes}. "T 0" sent, rebooting the machine.'
     causes:
     - Gateway restart, rigctld restart and USB reset had no effect
-    preconisation: After the reboot, read the logs; beyond {max_par_heure} reboots per hour the station enters safe
-      mode.
+    preconisation: After the reboot, read the logs; beyond {max_par_heure} reboots per hour the station goes into
+      safety lockout.
   de:
     titre: Neustart des Rechners durch den Supervisor
     message: 'Wiederherstellung Stufe 3 (reboot): {problemes}. „T 0“ gesendet, Neustart des Rechners.'
     causes:
     - Neustarts von Gateway und rigctld sowie USB-Reset ohne Wirkung
     preconisation: Sehen Sie nach dem Neustart in die Protokolle; bei mehr als {max_par_heure} Neustarts pro Stunde geht die
-      Station in den sicheren Modus.
+      Station in die Sicherheitsabschaltung.
   es:
     titre: Reinicio del equipo por el supervisor
     message: 'Recuperación nivel 3 (reboot): {problemes}. «T 0» enviado, reinicio del equipo.'
     causes:
     - Relanzamientos de la pasarela, de rigctld y reinicio USB sin efecto
     preconisation: Tras el reinicio, consulta los registros; por encima de {max_par_heure} reinicios por hora, la estación
-      pasa a modo seguro.
+      pasa a bloqueo de seguridad.
 
 ORT-8007:
   gravite: critique
@@ -14409,14 +14409,14 @@ ORT-8007:
 
 ORT-8008:
   gravite: critique
-  titre: 'Mode sûr : station en réception, accès coupé'
-  message: 'MODE SÛR : {raison}. Poste en réception, passerelle arrêtée ; intervention requise.'
+  titre: 'Station mise en sécurité : réception, accès coupé'
+  message: 'STATION MISE EN SÉCURITÉ : {raison}. Poste en réception, passerelle arrêtée ; intervention requise.'
   causes:
   - Trop de redémarrages de la machine en une heure ({n} pour {max_par_heure} permis)
   - Pannes qui persistent malgré l'échelle de reprise
-  - Fichier de mode sûr illisible (on reste en mode sûr par prudence)
-  preconisation: Corriger la cause d'après les journaux, puis sortir du mode sûr sur la station (openRemoteTRX Console menu
-    9 ou « trx-supervisor --clear-safe-mode »).
+  - Fichier de mise en sécurité illisible (la station reste mise en sécurité par prudence)
+  preconisation: Corriger la cause d'après les journaux, puis réactiver la station (openRemoteTRX Console menu
+    1.4 ou « trx-supervisor --clear-safe-mode »).
   action_auto: mode_sur
   ntfy_defaut: true
   priorite_ntfy: 4
@@ -14425,37 +14425,37 @@ ORT-8008:
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8008/
   depuis_version: 0.123.0
   en:
-    titre: 'Safe mode: station on receive, access cut'
-    message: 'SAFE MODE: {raison}. Rig on receive, gateway stopped; manual intervention required.'
+    titre: 'Station in safety lockout: receive, access cut'
+    message: 'SAFETY LOCKOUT: {raison}. Rig on receive, gateway stopped; manual intervention required.'
     causes:
     - Too many machine reboots within an hour ({n} for {max_par_heure} allowed)
     - Faults persisting despite the recovery ladder
-    - Safe-mode file unreadable (staying in safe mode as a precaution)
-    preconisation: Fix the cause from the logs, then leave safe mode on the station (openRemoteTRX Console menu 9 or "trx-supervisor
+    - Lockout file unreadable (the station stays locked out as a precaution)
+    preconisation: Fix the cause from the logs, then reactivate the station (openRemoteTRX Console menu 1.4 or "trx-supervisor
       --clear-safe-mode").
   de:
-    titre: 'Sicherer Modus: Station auf Empfang, Zugang gesperrt'
-    message: 'SICHERER MODUS: {raison}. Funkgerät auf Empfang, Gateway gestoppt; Eingriff erforderlich.'
+    titre: 'Sicherheitsabschaltung der Station: Empfang, Zugang gesperrt'
+    message: 'SICHERHEITSABSCHALTUNG: {raison}. Funkgerät auf Empfang, Gateway gestoppt; Eingriff erforderlich.'
     causes:
     - Zu viele Neustarts des Rechners in einer Stunde ({n} bei {max_par_heure} erlaubten)
     - Störungen, die trotz der Wiederherstellungsstufen andauern
-    - Datei des sicheren Modus unlesbar (aus Vorsicht bleibt der sichere Modus bestehen)
-    preconisation: Beheben Sie die Ursache anhand der Protokolle und verlassen Sie dann den sicheren Modus auf der Station
-      (openRemoteTRX Console Menü 9 oder „trx-supervisor --clear-safe-mode“).
+    - Datei der Sicherheitsabschaltung unlesbar (aus Vorsicht bleibt die Station abgeschaltet)
+    preconisation: Beheben Sie die Ursache anhand der Protokolle und nehmen Sie dann die Station wieder in Betrieb
+      (openRemoteTRX Console Menü 1.4 oder „trx-supervisor --clear-safe-mode“).
   es:
-    titre: 'Modo seguro: estación en recepción, acceso cortado'
-    message: 'MODO SEGURO: {raison}. Transceptor en recepción, pasarela detenida; se requiere intervención.'
+    titre: 'Estación en bloqueo de seguridad: recepción, acceso cortado'
+    message: 'BLOQUEO DE SEGURIDAD: {raison}. Transceptor en recepción, pasarela detenida; se requiere intervención.'
     causes:
     - Demasiados reinicios del equipo en una hora ({n} para {max_par_heure} permitidos)
     - Averías que persisten pese a la escala de recuperación
-    - Archivo de modo seguro ilegible (se sigue en modo seguro por prudencia)
-    preconisation: Corrige la causa según los registros y sal del modo seguro en la estación (openRemoteTRX Console menú 9 o «trx-supervisor
+    - Archivo de bloqueo de seguridad ilegible (la estación sigue bloqueada por prudencia)
+    preconisation: Corrige la causa según los registros y reactiva la estación (openRemoteTRX Console menú 1.4 o «trx-supervisor
       --clear-safe-mode»).
 
 ORT-8009:
   gravite: erreur
-  titre: Mode sûr non enregistré
-  message: 'Mode sûr non enregistré sur le disque ({detail}) : il ne survivra pas à un redémarrage du superviseur.'
+  titre: Mise en sécurité non enregistrée
+  message: 'Mise en sécurité non enregistrée sur le disque ({detail}) : elle ne survivra pas à un redémarrage du superviseur.'
   causes:
   - Disque plein ou en lecture seule
   - Droits sur le dossier d'état
@@ -14466,22 +14466,22 @@ ORT-8009:
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8009/
   depuis_version: 0.123.0
   en:
-    titre: Safe mode not saved
-    message: 'Safe mode not saved to disk ({detail}): it will not survive a supervisor restart.'
+    titre: Safety lockout not saved
+    message: 'Safety lockout not saved to disk ({detail}): it will not survive a supervisor restart.'
     causes:
     - Disk full or read-only
     - Permissions on the state folder
     preconisation: Free some space or fix the state folder permissions.
   de:
-    titre: Sicherer Modus nicht gespeichert
-    message: 'Sicherer Modus nicht auf dem Datenträger gespeichert ({detail}): er übersteht keinen Neustart des Supervisors.'
+    titre: Sicherheitsabschaltung nicht gespeichert
+    message: 'Sicherheitsabschaltung nicht auf dem Datenträger gespeichert ({detail}): sie übersteht keinen Neustart des Supervisors.'
     causes:
     - Datenträger voll oder schreibgeschützt
     - Rechte auf den Statusordner
     preconisation: Schaffen Sie Platz oder korrigieren Sie die Rechte des Statusordners.
   es:
-    titre: Modo seguro no guardado
-    message: 'Modo seguro no guardado en el disco ({detail}): no sobrevivirá a un reinicio del supervisor.'
+    titre: Bloqueo de seguridad no guardado
+    message: 'Bloqueo de seguridad no guardado en el disco ({detail}): no sobrevivirá a un reinicio del supervisor.'
     causes:
     - Disco lleno o de solo lectura
     - Permisos de la carpeta de estado
@@ -14564,7 +14564,7 @@ ORT-8011:
 ORT-8012:
   gravite: info
   titre: Station en service
-  message: 'Station en service : passerelle {passerelle}, poste {poste}, mode sûr {mode_sur}, problèmes {problemes}
+  message: 'Station en service : passerelle {passerelle}, poste {poste}, mise en sécurité {mode_sur}, problèmes {problemes}
     ; prochain message dans {heures} h.'
   causes:
   - Battement périodique (alive_every_h)
@@ -14576,21 +14576,21 @@ ORT-8012:
   depuis_version: 0.123.0
   en:
     titre: Station in service
-    message: 'Station in service: gateway {passerelle}, rig {poste}, safe mode {mode_sur}, problems {problemes};
+    message: 'Station in service: gateway {passerelle}, rig {poste}, safety lockout {mode_sur}, problems {problemes};
       next message in {heures} h.'
     causes:
     - Periodic heartbeat (alive_every_h)
     preconisation: 'None: missing this message means the station is off or unreachable.'
   de:
     titre: Station in Betrieb
-    message: 'Station in Betrieb: Gateway {passerelle}, Funkgerät {poste}, sicherer Modus {mode_sur}, Probleme {problemes};
+    message: 'Station in Betrieb: Gateway {passerelle}, Funkgerät {poste}, Sicherheitsabschaltung {mode_sur}, Probleme {problemes};
       nächste Nachricht in {heures} h.'
     causes:
     - Periodischer Heartbeat (alive_every_h)
     preconisation: 'Keine: das Ausbleiben dieser Nachricht zeigt eine ausgeschaltete oder nicht erreichbare Station an.'
   es:
     titre: Estación en servicio
-    message: 'Estación en servicio: pasarela {passerelle}, transceptor {poste}, modo seguro {mode_sur}, problemas {problemes};
+    message: 'Estación en servicio: pasarela {passerelle}, transceptor {poste}, bloqueo de seguridad {mode_sur}, problemas {problemes};
       próximo mensaje en {heures} h.'
     causes:
     - Latido periódico (alive_every_h)

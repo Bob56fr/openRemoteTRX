@@ -85,7 +85,7 @@
   <text x="527" y="878" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">Alertes ntfy</text>
   <text x="527" y="904" fill="#9aa8bb" font-size="15" text-anchor="middle">sur ton téléphone :</text>
   <text x="527" y="926" fill="#9aa8bb" font-size="15" text-anchor="middle">coupure, panne,</text>
-  <text x="527" y="948" fill="#9aa8bb" font-size="15" text-anchor="middle">mode sûr</text>
+  <text x="527" y="948" fill="#9aa8bb" font-size="15" text-anchor="middle">mise en sécurité</text>
 
   <!-- Étiquette posée par-dessus la ligne du son (croisement) -->
   <rect x="305" y="441" width="30" height="17" rx="3" fill="#0f141c"/>

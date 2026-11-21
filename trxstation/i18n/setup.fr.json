@@ -80,7 +80,7 @@
   "parts.emission": "Puissance maximale du poste et durée maximale d'une émission (TOT)",
   "wizard.title": "=== trx-setup : configuration de la station ===",
   "wizard.existing": "Configuration existante reprise : Entrée garde le réglage actuel.",
-  "wizard.desktop": "PC de bureau : le superviseur ne redémarrera jamais ce PC (mode sûr en dernier recours).",
+  "wizard.desktop": "PC de bureau : le superviseur ne redémarrera jamais ce PC (mise en sécurité en dernier recours).",
   "part.unknown": "partie inconnue : {part} ({parts})",
   "part.title": "=== trx-setup : {title} ===\nEntrée garde le réglage actuel ; rien n'est écrit si tu abandonnes.",
   "part.no_spectrum": "Le spectre par un second port CI-V n'existe que sur certains Icom : rien à régler pour ce poste.",

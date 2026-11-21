@@ -267,7 +267,7 @@
   "monitoring.state_active": "aktiv",
   "monitoring.state_confirm": "Fingerabdruck zu vergleichen",
   "monitoring.state_paused": "pausiert",
-  "monitoring.station_line": "Station: Version {version}, Gateway {gateway}, sicherer Modus: {safe}",
+  "monitoring.station_line": "Station: Version {version}, Gateway {gateway}, Sicherheitsabschaltung: {safe}",
   "scrambler.mode_inv1": "Einfache Inversion (1 Band)",
   "scrambler.mode_inv2": "2 invertierte Bänder",
   "scrambler.mode_inv3": "3 invertierte Bänder",

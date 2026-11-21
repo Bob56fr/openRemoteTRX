@@ -267,7 +267,7 @@
   "monitoring.state_active": "active",
   "monitoring.state_confirm": "empreinte à comparer",
   "monitoring.state_paused": "en pause",
-  "monitoring.station_line": "Station : version {version}, passerelle {gateway}, mode sûr : {safe}",
+  "monitoring.station_line": "Station : version {version}, passerelle {gateway}, mise en sécurité : {safe}",
   "scrambler.mode_inv1": "Inversion simple (1 bande)",
   "scrambler.mode_inv2": "2 bandes inversées",
   "scrambler.mode_inv3": "3 bandes inversées",

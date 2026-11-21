@@ -27,7 +27,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **Hamlib** | la bibliothèque libre qui sait parler à environ 300 modèles de postes ; chaque modèle a un **numéro** (FTDX10 = 1042) |
 | **rigctld** | le programme de Hamlib qui garde la liaison avec le poste ; il n'écoute que sur le PC lui-même, jamais sur le réseau |
 | **Passerelle** (`trx-gateway`) | le cœur de la station : sert la page web, vérifie les comptes, transporte le son et **décide de l'émission** |
-| **Superviseur** (`trx-supervisor`) | le gardien indépendant : surveille la passerelle, rigctld et le PC ; il peut **seulement couper** une émission, relancer un service ou mettre la station en mode sûr ; envoie les alertes |
+| **Superviseur** (`trx-supervisor`) | le gardien indépendant : surveille la passerelle, rigctld et le PC ; il peut **seulement couper** une émission, relancer un service ou mettre la station en sécurité ; envoie les alertes |
 | **openRemoteTRX Console** (`trx-console`) | le tableau de commande de la station dans un terminal : installer, configurer, démarrer, essayer, mettre à jour, dépanner (menus numérotés « 2.1 », « 2.2 »…) |
 | **Assistant de configuration** (`trx-setup`) | les questions qui créent la configuration (menu 2.1) ; il n'interroge le poste qu'en lecture |
 | **Tableau de bord** (`trx-monitor`) | l'état en direct dans un terminal (menu 1.3) ; une seule action : STOP TX |
@@ -64,7 +64,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **Bandes autorisées** | les plages de fréquences où la station accepte d'émettre ; liste vide = réception seule |
 | **Opérateur sur place** | quelqu'un qui utilise le poste devant lui : l'émission à distance est bloquée pendant son émission puis 2 minutes |
 | **Porte audio d'émission** | le passage du son vers le poste, ouvert par la passerelle seulement pendant une émission autorisée |
-| **Mode sûr** | l'état où le superviseur met la station après des pannes répétées : réception, accès coupé ; se lève par le menu 1.4 |
+| **Mise en sécurité** | l'état où le superviseur met la station après des pannes répétées : arrêtée sans danger (réception, accès coupé), elle attend une intervention ; on la réactive par le menu 1.4 (« Réactiver la station ») |
 | **Minuterie du poste** (TX TIME OUT TIMER) | la coupure propre au FTDX10, indépendante de la station : la dernière barrière |
 
 ## Le réseau

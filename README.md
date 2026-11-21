@@ -26,7 +26,7 @@ The station, not the app, decides when to transmit. The safeguards run on the st
 - immediate return to receive if the connection drops; always in receive at start-up;
 - only one operator transmits at a time; the remote microphone reaches the radio only during that operator's own confirmed transmission;
 - the radio's real state is read back continuously; frequency and mode changes are refused while transmitting;
-- an **independent supervisor** reads the radio itself and cuts the transmission if the gateway freezes, or beyond an absolute time limit; as a last resort, **safe mode** (receive only);
+- an **independent supervisor** reads the radio itself and cuts the transmission if the gateway freezes, or beyond an absolute time limit; as a last resort, a **safety lockout** (receive only, waiting for an intervention);
 - the person **at the radio** keeps priority: if they use the radio's microphone or controls, remote transmission is blocked for a few minutes;
 - when in doubt, the station does not transmit.
 

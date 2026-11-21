@@ -63,7 +63,7 @@ class MonitoringTest {
         assertEquals("F4XYZ : vous aidez cette station, active", l.title)
         assertEquals(listOf("dernières nouvelles il y a 2 min", "SANS NOUVELLES (alerte envoyée)", "1 rapport(s) reçu(s)"), l.details)
         assertEquals("warn", l.level)
-        assertEquals(listOf("Station : version 0.166.0, passerelle ok, mode sûr : non",
+        assertEquals(listOf("Station : version 0.166.0, passerelle ok, mise en sécurité : non",
                             "Machine : processeur 7 %, mémoire 30 %, disque 20 %, température --",
                             "Poste : CAT OK, émission RX, 1 connexion(s)"), l.stationLines)
         assertEquals("""{"rig":true,"events_min":"avertissement","freq_mode":false}""", Monitoring.profile("diagnostic", false).toString())

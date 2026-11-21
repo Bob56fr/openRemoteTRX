@@ -22,7 +22,7 @@
 | Connecté mais pas de son à distance | l'UDP ne passe pas (port ouvert sur la box) | VPN (partie 5) |
 | Coupures toutes les 15 à 30 s | deux appareils sur le même profil VPN | un profil par appareil |
 | Émission coupée toute seule | durée maximale atteinte, téléphone qui ne répond plus, fréquence hors bandes, opérateur sur place | normal : la raison est affichée dans la page et le journal |
-| Plus rien ne répond, alerte « mode sûr » | pannes répétées | partie 6.2 |
+| Plus rien ne répond, alerte « station mise en sécurité » | pannes répétées | partie 6.2 |
 | Essai du poste refusé : « ORT-9313 … la station est en marche » | l'essai a besoin du poste pour lui seul | arrêter la station (menu 1.2), refaire l'essai, redémarrer la station |
 | Un outil s'arrête avec « ORT-9312 … erreur inattendue » | défaut du logiciel dans un cas non prévu (nouveau poste, carte son…) | le message indique le fichier de détail (dossier `plantages`) : le joindre à la demande d'aide (partie 8.3) |
 

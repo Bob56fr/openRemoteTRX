@@ -42,7 +42,7 @@ class StateStore:
         except FileNotFoundError:
             return None
         except OSError:
-            return "mode sûr (fichier illisible)"   # dans le doute, on reste en mode sûr
+            return "mise en sécurité (fichier illisible)"   # dans le doute, la station reste mise en sécurité
 
     def set_safe_mode(self, reason: str) -> None:
         self._atomic_write("safe_mode", reason or "raison inconnue")

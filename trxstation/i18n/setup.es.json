@@ -80,7 +80,7 @@
   "parts.emission": "Potencia máxima del equipo y duración máxima de una transmisión (TOT)",
   "wizard.title": "=== trx-setup: configuración de la estación ===",
   "wizard.existing": "Configuración existente recuperada: Intro conserva el ajuste actual.",
-  "wizard.desktop": "PC de sobremesa: el supervisor nunca reiniciará este PC (modo seguro como último recurso).",
+  "wizard.desktop": "PC de sobremesa: el supervisor nunca reiniciará este PC (bloqueo de seguridad como último recurso).",
   "part.unknown": "parte desconocida: {part} ({parts})",
   "part.title": "=== trx-setup: {title} ===\nIntro conserva el ajuste actual; no se escribe nada si abandonas.",
   "part.no_spectrum": "El espectro por un segundo puerto CI-V solo existe en algunos Icom: nada que ajustar para este equipo.",

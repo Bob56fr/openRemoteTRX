@@ -267,7 +267,7 @@
   "monitoring.state_active": "activa",
   "monitoring.state_confirm": "huella por comparar",
   "monitoring.state_paused": "en pausa",
-  "monitoring.station_line": "Estación: versión {version}, pasarela {gateway}, modo seguro: {safe}",
+  "monitoring.station_line": "Estación: versión {version}, pasarela {gateway}, bloqueo de seguridad: {safe}",
   "scrambler.mode_inv1": "Inversión simple (1 banda)",
   "scrambler.mode_inv2": "2 bandas invertidas",
   "scrambler.mode_inv3": "3 bandas invertidas",

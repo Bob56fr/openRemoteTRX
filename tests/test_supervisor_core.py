@@ -672,7 +672,7 @@ def test_alive_message_after_grace_then_every_period(tmp_path):
     assert len(w.alive) == 1 and w.alerts == []
     text = w.alive[0]
     assert "passerelle : en marche" in text and "en réception, 14.200 MHz" in text
-    assert "mode sûr : non" in text and "problèmes : aucun" in text and "1 h" in text
+    assert "mise en sécurité : non" in text and "problèmes : aucun" in text and "1 h" in text
     w.run(3590, dt=5)
     assert len(w.alive) == 1
     w.run(15, dt=5)
@@ -701,7 +701,7 @@ def test_alive_message_tells_safe_mode_and_rigctld_down(tmp_path):
     w.rig = RigProbe(False, error="connexion refusée")
     w.run(1)
     assert len(w.alive) == 1
-    assert "mode sûr : essai" in w.alive[0] and "rigctld injoignable" in w.alive[0]
+    assert "mise en sécurité : essai" in w.alive[0] and "rigctld injoignable" in w.alive[0]
 
 
 def test_alive_message_never_acts(tmp_path):

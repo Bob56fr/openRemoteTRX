@@ -95,7 +95,7 @@ def test_sante_panel_alarms():
     assert row(p, "Passerelle openRemoteTRX").text.startswith("FIGÉE depuis 5 s") and row(p, "Passerelle openRemoteTRX").level == "bad"
     assert row(p, "Service Hamlib (rigctld)").text == "INJOIGNABLE" and row(p, "Service Hamlib (rigctld)").level == "bad"
     assert "unkey_failed" in row(p, "Défaut PTT").text and row(p, "Défaut PTT").level == "bad"
-    assert row(p, "Mode sûr activé").text.startswith("OUI : trop de") and row(p, "Mode sûr activé").level == "bad"
+    assert row(p, "Mise en sécurité").text.startswith("OUI : trop de") and row(p, "Mise en sécurité").level == "bad"
     healthy = panel(snap(status()), "sante")
     assert [r.level for r in healthy.rows] == ["ok", "ok", "ok", "ok"]
 
@@ -181,11 +181,11 @@ def test_event_log_reports_changes_only():
                              fresh=False, safe="x"))
     joined = " | ".join(lines)
     for expected in ("client déconnecté : phone", "PASSERELLE FIGÉE", "RIGCTLD INJOIGNABLE",
-                     "DÉFAUT PTT : unkey_failed", "MODE SÛR ACTIVÉ : x"):
+                     "DÉFAUT PTT : unkey_failed", "STATION MISE EN SÉCURITÉ : x"):
         assert expected in joined, expected
     lines = log.observe(snap(status(), fresh=True))
     assert any("passerelle active" in l for l in lines) and any("défaut PTT effacé" in l for l in lines)
-    assert any("mode sûr désactivé" in l for l in lines)
+    assert any("station réactivée" in l for l in lines)
 
 
 def test_event_log_is_bounded():

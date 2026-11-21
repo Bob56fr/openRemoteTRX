@@ -61,7 +61,7 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 - [ ] Alertes ntfy reçues (sujet long et secret), message « Station en service » vu
 - [ ] PC réglé pour se rallumer après une coupure de courant
 - [ ] Onduleur, parafoudre, ventilation du poste
-- [ ] Je sais lever le mode sûr (menu 1.4) après avoir trouvé la cause
+- [ ] Je sais réactiver la station mise en sécurité (menu 1.4) après avoir trouvé la cause
 
 ## 7. Exploitation au quotidien
 

@@ -123,14 +123,14 @@ def _all_text(lang):
 def test_english_dashboard_has_no_french_left():
     text, log = _all_text("en")
     for french in ("ÉMISSION", "Fréquence", "RÉCEPTION", "Passerelle", "coupure", "Mémoire", "Réseau", "Visiteur",
-                   "aucun", "FIGÉE", "INJOIGNABLE", "MODE SÛR", "trames", "démarré"):
+                   "aucun", "FIGÉE", "INJOIGNABLE", "MISE EN SÉCURITÉ", "MODE SÛR", "trames", "démarré"):
         assert french not in text, french
-    for english in ("TRANSMIT", "Frequency", "openRemoteTRX gateway", "Hamlib service (rigctld)", "FROZEN", "Safe mode", "S-meter", "Network", "trx-monitor started",
+    for english in ("TRANSMIT", "Frequency", "openRemoteTRX gateway", "Hamlib service (rigctld)", "FROZEN", "Safety lockout", "S-meter", "Network", "trx-monitor started",
                     "PTT FAULT", "VPN PROFILE PROBABLY SHARED"):
         assert english in text, english
     levels = {e["text"].split("  ", 1)[1]: e["level"] for e in log.entries()}
     assert levels["trx-monitor started"] == "info"
-    assert any(level == "bad" and "SAFE MODE ON" in text for text, level in levels.items())
+    assert any(level == "bad" and "STATION IN SAFETY LOCKOUT" in text for text, level in levels.items())
 
 
 def test_panel_keys_and_levels_do_not_depend_on_the_language():
@@ -159,4 +159,4 @@ def test_event_log_levels_stay_aligned_with_the_lines():
     assert len(entries) == 3 == len(log.lines)
     assert [e["text"] for e in entries] == list(log.lines)
     assert [e["level"] for e in entries] == ["info", "bad", "bad"]
-    assert "SAFE MODE ON: x" in entries[-1]["text"]
+    assert "STATION IN SAFETY LOCKOUT: x" in entries[-1]["text"]

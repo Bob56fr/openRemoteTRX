@@ -458,7 +458,7 @@ class Supervisor:
         lines = [
             f"passerelle : {'en marche' if gateway_fresh else 'muette ou arrêtée'}",
             f"poste : {radio}",
-            f"mode sûr : {safe_reason or 'non'}",
+            f"mise en sécurité : {safe_reason or 'non'}",
             f"problèmes : {', '.join(problems) if problems else 'aucun'}",
             f"prochain message dans {every_h:g} h",
         ]

@@ -148,13 +148,13 @@ l'extérieur, voir la documentation « Accès distant » du projet.</p>
 [themes.station]
 texte = """
 <p>Le quotidien de la station : la <strong>démarrer</strong>, l'<strong>arrêter</strong>, la <strong>regarder
-vivre</strong> (tableau de bord) et la <strong>sortir du mode sûr</strong>. La station démarre seule avec le PC ; ces
+vivre</strong> (tableau de bord) et la <strong>réactiver après une mise en sécurité</strong>. La station démarre seule avec le PC ; ces
 menus servent après un changement de réglage, avant de brancher ou débrancher le poste, ou quand la page web ne répond
 plus. Le poste est toujours remis en réception au démarrage comme à l'arrêt.</p>
 """
 debut = """
 <p>Le 1.1 après la configuration, le 1.3 pour surveiller une émission ; le 1.4 seulement après avoir compris pourquoi
-la station est passée en mode sûr (menus 6.1 et 6.2).</p>
+la station a été mise en sécurité (menus 6.1 et 6.2).</p>
 """
 
 [themes.hardware]
@@ -306,11 +306,11 @@ admin = false
 expert = "<p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code>station.toml</code> du rapport a ses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si tu le souhaites. Le rapport joint aussi les traces des outils arrêtés sur une erreur inattendue (dossier <code>plantages</code>, code ORT-9312).</p>"
 
 [menus.clear_safe_mode]
-role = "Sort du <strong>mode sûr</strong>. Le superviseur y place la station après des pannes répétées : poste en réception, accès coupé."
+role = "<strong>Réactive la station</strong> après une <strong>mise en sécurité</strong>. Le superviseur met la station en sécurité après des pannes répétées : arrêtée sans danger (poste en réception, accès coupé), elle attend une intervention."
 quand = "Seulement après avoir trouvé et corrigé la cause (menus 6.1 et 6.2)."
-modifie = "Efface le mode sûr mémorisé et redémarre la station."
+modifie = "Efface la mise en sécurité mémorisée et redémarre la station."
 admin = true
-expert = "<p>Le mode sûr survit aux redémarrages et aux corrections : il faut le lever explicitement ici.</p>"
+expert = "<p>La mise en sécurité survit aux redémarrages et aux corrections : il faut réactiver la station explicitement ici.</p>"
 
 [menus.update]
 role = "Mise à jour par Internet : présente la nouvelle version, propose de voir la nature des changements (notes de CHAQUE version publiée depuis la tienne, la plus récente d'abord, par pages : Entrée = suite, q = arrêter là), puis l'installe après vérification de sa signature. À jour : propose une nouvelle recherche immédiate sur GitHub."
@@ -366,7 +366,7 @@ admin = true
 expert = "<p>Sans effet si le poste ne donne pas sa température par Hamlib (cas de l'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce motif.</p>"
 
 [menus.indicator]
-role = "Active ou désactive l'<strong>indicateur de la barre du haut</strong> (bureau GNOME) : un voyant à gauche du son (vert réception, rouge émission, orange alerte, gris station arrêtée, violet mode sûr), la fréquence ou le compte à rebours d'émission, et au clic l'état complet : émission, fréquence et filtre, clients web connectés, liaison avec le poste, opérateur sur place, dernière coupure, température, alimentation, spectre HF, Cluster DX, mise à jour disponible, version et identifiant. Sous Windows, ce menu lance l'<strong>indicateur près de l'horloge</strong> (mêmes couleurs, lecture seule) et choisit s'il démarre à chaque ouverture de session."
+role = "Active ou désactive l'<strong>indicateur de la barre du haut</strong> (bureau GNOME) : un voyant à gauche du son (vert réception, rouge émission, orange alerte, gris station arrêtée, violet station mise en sécurité), la fréquence ou le compte à rebours d'émission, et au clic l'état complet : émission, fréquence et filtre, clients web connectés, liaison avec le poste, opérateur sur place, dernière coupure, température, alimentation, spectre HF, Cluster DX, mise à jour disponible, version et identifiant. Sous Windows, ce menu lance l'<strong>indicateur près de l'horloge</strong> (mêmes couleurs, lecture seule) et choisit s'il démarre à chaque ouverture de session."
 quand = "Une fois, après l'installation (puis une déconnexion et reconnexion), pour garder un œil sur la station en permanence."
 modifie = "Seulement l'affichage de ton bureau. L'indicateur ne fait que LIRE l'état publié par la station : il ne peut rien commander."
 admin = false
@@ -477,7 +477,7 @@ admin = true
 
 [menus.local_operator]
 role = "Règle ce que fait la station quand quelqu'un <strong>émet au micro du poste</strong>, devant lui. <strong>Station partagée</strong> (défaut) : cette émission n'est coupée que par le <strong>TOT absolu</strong> du superviseur (135 s par défaut), ou après la durée tolérée (300 s par défaut) quand la présence de l'opérateur est prouvée (il a touché le poste juste avant). Sinon, toute émission locale est coupée aussitôt. L'émission à distance reste bloquée pendant une émission locale puis 2 minutes."
-quand = "À la mise en service, si un opérateur se sert du poste sur place, ou si la station passe en mode sûr après des émissions au micro du poste."
+quand = "À la mise en service, si un opérateur se sert du poste sur place, ou si la station est mise en sécurité après des émissions au micro du poste."
 modifie = "La section <code>[supervisor]</code> de <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), par le chemin vérifié du menu 8.1 ; la station redémarre sur ta demande."
 admin = true
 
@@ -547,7 +547,7 @@ titre = "Fichiers utiles"
 texte = """
 <ul>
 <li><code>/etc/trx-remote/station.toml</code> : configuration (modifier par le menu 8.1).</li>
-<li><code>/var/lib/trx-remote/</code> : état de la station (mode sûr, mémoires, rapports de la page, identifiant <code>station-id</code>, Cluster DX).</li>
+<li><code>/var/lib/trx-remote/</code> : état de la station (mise en sécurité, mémoires, rapports de la page, identifiant <code>station-id</code>, Cluster DX).</li>
 <li><code>/run/trx-remote/gateway-status.json</code> : état en direct publié par la passerelle (lu par le tableau de bord).</li>
 <li><code>/opt/trx-remote/releases/</code> : versions installées côte à côte ; <code>/opt/trx-remote/current</code> pointe sur la version active.</li>
 <li><code>/var/log/trx-remote-install.log</code> : compte-rendu des installations et mises à jour.</li>

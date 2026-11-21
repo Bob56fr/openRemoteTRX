@@ -50,7 +50,7 @@ test("carte d'une liaison : textes du menu 6.5, couleur « à voir » si l'opér
 test("dernières nouvelles et événements d'une station suivie", () => {
   const lines = mx.stationLines({ last_hb: { v: "0.164.0", gateway: "ok", safe: null },
                                   last_st: { system: { cpu: 7, mem: 30, disk: 20, temp: null }, rig: { cat: true, tx: "RX", clients: 1 } } });
-  assert.deepEqual(lines, ["Station : version 0.164.0, passerelle ok, mode sûr : non",
+  assert.deepEqual(lines, ["Station : version 0.164.0, passerelle ok, mise en sécurité : non",
                            "Machine : processeur 7 %, mémoire 30 %, disque 20 %, température --",
                            "Poste : CAT OK, émission RX, 1 connexion(s)"]);
   assert.deepEqual(mx.stationLines({}), ["Aucune nouvelle reçue pour l'instant."]);

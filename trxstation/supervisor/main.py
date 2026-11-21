@@ -85,8 +85,8 @@ def run_forever(sup: Supervisor, poll_interval_s: float, *, stop: Callable[[], b
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-supervisor", description="Superviseur autonome de la station TRX")
     ap.add_argument("--config", type=Path, default=default_config_path())
-    ap.add_argument("--clear-safe-mode", action="store_true", help="sort du mode sûr (action de l'opérateur)")
-    ap.add_argument("--status", action="store_true", help="affiche le mode sûr et l'historique des redémarrages")
+    ap.add_argument("--clear-safe-mode", action="store_true", help="réactive la station après une mise en sécurité (action de l'opérateur)")
+    ap.add_argument("--status", action="store_true", help="affiche la mise en sécurité et l'historique des redémarrages")
     ap.add_argument("--stop", action="store_true", help="arrête proprement le superviseur en marche (et la station)")
     ap.add_argument("--log-dir", type=Path, help="journaux dans ce dossier (aussi pour la passerelle et rigctld)")
     args = ap.parse_args(argv)
@@ -108,10 +108,10 @@ def main(argv: list[str] | None = None) -> int:
     store = StateStore(cfg.supervisor.state_dir)
     if args.clear_safe_mode:
         store.clear_safe_mode()
-        print("Mode sûr désactivé. La passerelle peut être relancée : systemctl start", cfg.supervisor.gateway_unit)
+        print("Station réactivée (mise en sécurité levée). La passerelle peut être relancée : systemctl start", cfg.supervisor.gateway_unit)
         return 0
     if args.status:
-        print("mode sûr :", store.safe_mode() or "non")
+        print("mise en sécurité :", store.safe_mode() or "non")
         print("redémarrages enregistrés :", store.reboot_times())
         return 0
     if args.stop:

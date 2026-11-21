@@ -105,7 +105,7 @@ def import_config(source: Config, *, desktop: bool) -> tuple[Config, list[str]]:
         v.service_mode = "auto"
     if desktop and v.max_reboots_per_hour != 0:
         notes.append(f"PC de bureau : redémarrages automatiques désactivés (max_reboots_per_hour {v.max_reboots_per_hour} -> 0). "
-                     "En dernier recours, le superviseur passe en mode sûr au lieu de redémarrer le PC.")
+                     "En dernier recours, le superviseur met la station en sécurité au lieu de redémarrer le PC.")
         v.max_reboots_per_hour = 0
 
     kept = [c for c in cfg.clients if c.id and (c.password_hash or c.token)]

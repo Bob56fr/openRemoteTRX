@@ -80,7 +80,7 @@
   "parts.emission": "Maximum power of the radio and maximum length of a transmission (TOT)",
   "wizard.title": "=== trx-setup: station configuration ===",
   "wizard.existing": "Existing configuration loaded: Enter keeps the current setting.",
-  "wizard.desktop": "Desktop PC: the supervisor will never restart this PC (safe mode as a last resort).",
+  "wizard.desktop": "Desktop PC: the supervisor will never restart this PC (safety lockout as a last resort).",
   "part.unknown": "unknown part: {part} ({parts})",
   "part.title": "=== trx-setup: {title} ===\nEnter keeps the current setting; nothing is written if you give up.",
   "part.no_spectrum": "The spectrum through a second CI-V port only exists on some Icom radios: nothing to set for this radio.",

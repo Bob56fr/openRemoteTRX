@@ -26,7 +26,7 @@ La station, et non l'application, décide de l'émission. Les sécurités tourne
 - retour en réception immédiat si la connexion tombe ; toujours en réception au démarrage ;
 - un seul opérateur émet à la fois ; le micro distant n'atteint le poste que pendant sa propre émission confirmée ;
 - l'état réel du poste est relu en permanence ; changer la fréquence ou le mode est refusé pendant l'émission ;
-- un **superviseur indépendant** relit le poste lui-même et coupe l'émission si la passerelle se fige, ou au-delà d'une durée absolue ; en dernier recours, **mode sûr** (réception seule) ;
+- un **superviseur indépendant** relit le poste lui-même et coupe l'émission si la passerelle se fige, ou au-delà d'une durée absolue ; en dernier recours, **mise en sécurité** de la station (réception seule, en attente d'une intervention) ;
 - la personne **devant le poste** garde la priorité : si elle utilise le micro ou les boutons du poste, l'émission à distance est bloquée pendant quelques minutes ;
 - en cas de doute, la station n'émet pas.
 

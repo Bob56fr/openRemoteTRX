@@ -126,8 +126,8 @@ def summarize(data, hints: dict[str, str] = DEBIAN_HINTS) -> dict:
     level, label = "ok", "TRX"
 
     if safe:
-        level, label = "safe", "MODE SÛR"
-        add("Station", f"MODE SÛR : {safe} ({hints['safe']})", "bad")
+        level, label = "safe", "MISE EN SÉCURITÉ"
+        add("Station", f"MISE EN SÉCURITÉ : {safe} ({hints['safe']})", "bad")
     age = now - _num(status.get("written_at"), math.nan) if status else math.inf
     if not status:
         if not safe:

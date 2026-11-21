@@ -172,11 +172,11 @@ admin = false
 expert = "<p>Sin el menú: <code>trx-console --rapport</code>. El archivo <code>station.toml</code> del informe tiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo si quieres. El informe incluye también las trazas de las herramientas detenidas por un error inesperado (carpeta <code>plantages</code>, código ORT-9312).</p>"
 
 [menus.clear_safe_mode]
-role = "Sale del <strong>modo seguro</strong>. El supervisor pone en él la estación tras fallos repetidos: transceptor en recepción, acceso cortado."
+role = "<strong>Reactiva la estación</strong> tras un <strong>bloqueo de seguridad</strong>. El supervisor bloquea la estación tras fallos repetidos: parada sin peligro (transceptor en recepción, acceso cortado), espera una intervención."
 quand = "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2)."
-modifie = "Borra el modo seguro memorizado y reinicia la estación."
+modifie = "Borra el bloqueo de seguridad memorizado y reinicia la estación."
 admin = true
-expert = "<p>El modo seguro sobrevive a los reinicios y a las correcciones: hay que quitarlo explícitamente aquí.</p>"
+expert = "<p>El bloqueo de seguridad sobrevive a los reinicios y a las correcciones: hay que reactivar la estación explícitamente aquí.</p>"
 
 [menus.update]
 role = "Actualización por Internet: presenta la nueva versión, propone ver la naturaleza de los cambios (notas de CADA versión publicada desde la tuya, la más reciente primero, por páginas: Intro = seguir, q = parar ahí) y luego la instala tras comprobar su firma. Si ya estás al día: propone una nueva búsqueda inmediata en GitHub."
@@ -232,7 +232,7 @@ admin = true
 expert = "<p>Sin efecto si el transceptor no da su temperatura por Hamlib (caso del IC-7300MK2). El operador al micrófono del transceptor nunca se corta por este motivo.</p>"
 
 [menus.indicator]
-role = "Activa o desactiva el <strong>indicador de la barra superior</strong> (escritorio GNOME): un piloto a la izquierda del sonido (verde recepción, rojo transmisión, naranja alerta, gris estación detenida, violeta modo seguro), la frecuencia o la cuenta atrás de transmisión y, al hacer clic, el estado completo: transmisión, frecuencia y filtro, clientes web conectados, enlace con el transceptor, operador in situ, último corte, temperatura, alimentación, espectro HF, DX Cluster, actualización disponible, versión e identificador. En Windows, este menú arranca el <strong>indicador junto al reloj</strong> (mismos colores, solo lectura) y elige si arranca en cada inicio de sesión."
+role = "Activa o desactiva el <strong>indicador de la barra superior</strong> (escritorio GNOME): un piloto a la izquierda del sonido (verde recepción, rojo transmisión, naranja alerta, gris estación detenida, violeta bloqueo de seguridad), la frecuencia o la cuenta atrás de transmisión y, al hacer clic, el estado completo: transmisión, frecuencia y filtro, clientes web conectados, enlace con el transceptor, operador in situ, último corte, temperatura, alimentación, espectro HF, DX Cluster, actualización disponible, versión e identificador. En Windows, este menú arranca el <strong>indicador junto al reloj</strong> (mismos colores, solo lectura) y elige si arranca en cada inicio de sesión."
 quand = "Una vez, después de la instalación (y de cerrar y volver a abrir la sesión), para vigilar la estación en todo momento."
 modifie = "Solo la visualización de tu escritorio. El indicador solo LEE el estado publicado por la estación: no puede controlar nada."
 admin = false
@@ -343,7 +343,7 @@ admin = true
 
 [menus.local_operator]
 role = "Ajusta lo que hace la estación cuando alguien <strong>emite con el micrófono del transceptor</strong>, delante de él. <strong>Estación compartida</strong> (por defecto): esa emisión solo la corta el <strong>TOT absoluto</strong> del supervisor (135 s por defecto), o tras la duración tolerada (300 s por defecto) cuando la presencia del operador está probada (tocó el transceptor justo antes). Si no, toda emisión local se corta en el acto. La emisión remota queda bloqueada durante una emisión local y 2 minutos después."
-quand = "En la puesta en servicio, si un operador usa el transceptor en el lugar, o si la estación pasa a modo seguro tras emisiones con el micrófono del transceptor."
+quand = "En la puesta en servicio, si un operador usa el transceptor en el lugar, o si la estación pasa a bloqueo de seguridad tras emisiones con el micrófono del transceptor."
 modifie = "La sección <code>[supervisor]</code> de <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), por el camino comprobado del menú 8.1; la estación se reinicia a petición."
 admin = true
 
@@ -413,7 +413,7 @@ titre = "Archivos útiles (Debian)"
 texte = """
 <ul>
 <li><code>/etc/trx-remote/station.toml</code>: configuración (modificar con el menú 8.1).</li>
-<li><code>/var/lib/trx-remote/</code>: estado de la estación (modo seguro, memorias, informes de la página, identificador <code>station-id</code>, DX Cluster).</li>
+<li><code>/var/lib/trx-remote/</code>: estado de la estación (bloqueo de seguridad, memorias, informes de la página, identificador <code>station-id</code>, DX Cluster).</li>
 <li><code>/run/trx-remote/gateway-status.json</code>: estado en directo publicado por la pasarela (leído por el panel).</li>
 <li><code>/opt/trx-remote/releases/</code>: versiones instaladas una junto a otra; <code>/opt/trx-remote/current</code> apunta a la versión activa.</li>
 <li><code>/var/log/trx-remote-install.log</code>: informe de las instalaciones y actualizaciones.</li>

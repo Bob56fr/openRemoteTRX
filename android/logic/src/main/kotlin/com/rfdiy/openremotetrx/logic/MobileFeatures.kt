@@ -6,7 +6,7 @@ package com.rfdiy.openremotetrx.logic
  * « Fonctionnalités mobiles » (demande de l'utilisateur du 2026-11-20, étape 300) : commutateurs d'AFFICHAGE de
  * l'application, rangés sur le téléphone (jamais sur la station). Règles :
  * - masquer n'arrête rien : une fonction EN SERVICE reste toujours affichée (sinon elle agirait sans qu'on la voie) ;
- * - rien de sécurité n'est masquable : PTT, STOP, armement, TOT, bandeaux (émission, TOS, mode sûr, poste éteint) ;
+ * - rien de sécurité n'est masquable : PTT, STOP, armement, TOT, bandeaux (émission, TOS, mise en sécurité, poste éteint) ;
  * - le micro (onglet Audio) est toujours visible.
  * Kotlin pur : l'écran lit `shown`, les préférences sont lues et écrites par l'application.
  */

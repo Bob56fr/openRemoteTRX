@@ -614,7 +614,7 @@
   }
  },
  {
-  "name": "mode sûr prioritaire",
+  "name": "mise en sécurité prioritaire",
   "input": {
    "status": {
     "pid": 1,
@@ -658,11 +658,11 @@
   },
   "expect": {
    "level": "safe",
-   "label": "MODE SÛR",
+   "label": "MISE EN SÉCURITÉ",
    "lines": [
     {
      "key": "Station",
-     "text": "MODE SÛR : pannes répétées (openRemoteTRX Console, menu 1.4)",
+     "text": "MISE EN SÉCURITÉ : pannes répétées (openRemoteTRX Console, menu 1.4)",
      "level": "bad"
     },
     {
@@ -694,7 +694,7 @@
   }
  },
  {
-  "name": "mode sûr, station arrêtée",
+  "name": "mise en sécurité, station arrêtée",
   "input": {
    "status": null,
    "nowS": 1793175457.5,
@@ -702,11 +702,11 @@
   },
   "expect": {
    "level": "safe",
-   "label": "MODE SÛR",
+   "label": "MISE EN SÉCURITÉ",
    "lines": [
     {
      "key": "Station",
-     "text": "MODE SÛR : pannes (openRemoteTRX Console, menu 1.4)",
+     "text": "MISE EN SÉCURITÉ : pannes (openRemoteTRX Console, menu 1.4)",
      "level": "bad"
     },
     {

@@ -4,7 +4,7 @@ Une station pilotée à distance fonctionne la plupart du temps sans personne à
 
 ## 6.1 Les alertes sur ton téléphone (ntfy)
 
-Le superviseur de la station peut t'envoyer des notifications : émission coupée par sécurité, panne, mode sûr,
+Le superviseur de la station peut t'envoyer des notifications : émission coupée par sécurité, panne, mise en sécurité,
 mémoire ou disque presque plein, coupure de la liaison, et un message « Station en service » sans sonnerie toutes
 les heures (s'il n'arrive plus, la station ou sa connexion est en panne).
 
@@ -19,10 +19,10 @@ les heures (s'il n'arrive plus, la station ou sa connexion est en panne).
 
 Chaque alerte porte un code « ORT-NNNN » avec un lien vers son explication (partie 8).
 
-## 6.2 Le mode sûr
+## 6.2 La mise en sécurité
 
-Après des pannes répétées que les relances n'ont pas réglées, le superviseur met la station en **mode sûr** : poste
-en réception, accès coupé, alerte envoyée. Le mode sûr **survit aux redémarrages** : il faut trouver la cause
+Après des pannes répétées que les relances n'ont pas réglées, le superviseur **met la station en sécurité** : poste
+en réception, accès coupé, alerte envoyée. La mise en sécurité **survit aux redémarrages** : il faut trouver la cause
 (menus 6.1 et 6.2), puis le lever par le menu **1.4**.
 
 ## 6.3 Après une coupure de courant
@@ -51,4 +51,4 @@ Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart 
   les 2 minutes avant de parler ou pendant qu'il parle : la station le sait présent et le laisse parler jusqu'à
   5 minutes (`local_tx_max_s`), avec une simple alerte entre les deux. Le minuteur du poste, s'il est réglé plus
   court, coupe avant. Ces réglages sont au menu **3.4** « Opérateur sur place » : gardez « station partagée » ;
-  sinon, un micro tenu enfoncé mène au mode sûr.
+  sinon, un micro tenu enfoncé mène à la mise en sécurité.

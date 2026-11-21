@@ -284,7 +284,7 @@ class ManagedBackend:
         gateway = self.children["gateway"]
         if self._safe_mode():
             gateway.stopped = gateway.safe_mode_hold = True
-            emit_event(codes.ORT_8008, logger=log, raison="mode sûr mémorisé, la passerelle n'est pas lancée")
+            emit_event(codes.ORT_8008, logger=log, raison="mise en sécurité mémorisée, la passerelle n'est pas lancée")
         else:
             self._spawn(gateway)
         if "console_web" in self.children:
@@ -294,7 +294,7 @@ class ManagedBackend:
         now = self._clock()
         gateway = self.children["gateway"]
         if gateway.safe_mode_hold and not self._safe_mode():
-            log.info("mode sûr désactivé : la passerelle est relancée")
+            log.info("station réactivée (mise en sécurité levée) : la passerelle est relancée")
             self._spawn(gateway)
         for child in self.children.values():
             if child.proc is None or child.stopped or child.proc.poll() is None:

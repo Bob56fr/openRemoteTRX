@@ -50,8 +50,8 @@ async function main() {
     assert.equal(stale.level, "stale"); assert.match(line(stale, "Station").text, /ne répond plus depuis 30 s/);
     assert.equal(ind.summarize({ status: status(), nowS: NOW + 600 }).level, "off");     // vieux fichier : station arrêtée
     const safe = ind.summarize({ status: status({ state: "TX", owner: "phone", tot_remaining_s: 10 }), nowS: NOW, safeMode: "pannes répétées\n" });
-    assert.equal(safe.level, "safe"); assert.equal(safe.label, "MODE SÛR");               // prioritaire même sur l'émission
-    assert.match(line(safe, "Station").text, /MODE SÛR : pannes répétées/);
+    assert.equal(safe.level, "safe"); assert.equal(safe.label, "MISE EN SÉCURITÉ");               // prioritaire même sur l'émission
+    assert.match(line(safe, "Station").text, /MISE EN SÉCURITÉ : pannes répétées/);
   });
 
   test("anomalies : voyant orange (liaison perdue, sur place, chaleur, défaut, cluster, mise à jour)", () => {

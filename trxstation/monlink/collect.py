@@ -34,7 +34,7 @@ def heartbeat(status_path: str | Path, state_dir: str | Path, *, started: float,
     except FileNotFoundError:
         pass
     except OSError:
-        safe = "mode sûr (fichier illisible)"
+        safe = "mise en sécurité (fichier illisible)"
     return {"v": __version__, "up": int(now - started), "safe": safe,
             "gateway": "absent" if gw is None else ("ok" if now - gw.written_at <= GATEWAY_STALE_S else "stale")}
 

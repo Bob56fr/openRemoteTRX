@@ -267,7 +267,7 @@
   "monitoring.state_active": "active",
   "monitoring.state_confirm": "fingerprint to compare",
   "monitoring.state_paused": "paused",
-  "monitoring.station_line": "Station: version {version}, gateway {gateway}, safe mode: {safe}",
+  "monitoring.station_line": "Station: version {version}, gateway {gateway}, safety lockout: {safe}",
   "scrambler.mode_inv1": "Simple inversion (1 band)",
   "scrambler.mode_inv2": "2 inverted bands",
   "scrambler.mode_inv3": "3 inverted bands",

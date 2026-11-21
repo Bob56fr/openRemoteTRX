@@ -53,8 +53,8 @@ export function summarize(input) {
   let level = "ok", label = "TRX";
 
   if (safe) {
-    level = "safe"; label = "MODE SÛR";
-    add("Station", "MODE SÛR : " + safe + " (openRemoteTRX Console, menu 1.4)", "bad");
+    level = "safe"; label = "MISE EN SÉCURITÉ";
+    add("Station", "MISE EN SÉCURITÉ : " + safe + " (openRemoteTRX Console, menu 1.4)", "bad");
   }
   const age = status ? nowS - Number(status.written_at) : Infinity;
   if (!status) {

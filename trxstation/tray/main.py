@@ -36,7 +36,7 @@ POLL_S = 1.0
 TOOLTIP_MAX = 127                        # limite de Windows (NOTIFYICONDATAW.szTip, 128 avec le zéro final)
 COLORS = {"off": "#8a8a8a", "ok": "#2e9d4a", "tx": "#d32f2f", "warn": "#f0a020", "stale": "#c9a400", "safe": "#8e44ad"}
 LEVEL_WORDS = {"off": "arrêtée", "ok": "en marche", "tx": "ÉMISSION", "warn": "à surveiller", "stale": "ne répond plus",
-               "safe": "MODE SÛR"}
+               "safe": "MISE EN SÉCURITÉ"}
 MUTEX_NAME = "Local\\TRX-distant-indicateur"
 
 

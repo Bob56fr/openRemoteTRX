@@ -193,7 +193,7 @@ def test_failed_service_safe_mode_and_stale_gateway(tmp_path):
     sysm.mtimes[str(tmp_path / "status.json")] = 900.0
     checks = d.run_all(sysm, path)
     assert by_name(checks, "trx-gateway.service").status == d.FAIL
-    assert by_name(checks, "Mode sûr").status == d.FAIL and "3 redémarrage" in by_name(checks, "Mode sûr").message
+    assert by_name(checks, "Mise en sécurité").status == d.FAIL and "3 redémarrage" in by_name(checks, "Mise en sécurité").message
     assert by_name(checks, "État de la passerelle").status == d.WARN
 
 
@@ -241,7 +241,7 @@ def test_safe_mode_file_unreadable_is_still_reported(tmp_path):
     sysm = FakeSystem(tmp_path)
     sysm.present.add(str(Path("/var/lib/trx-remote") / "safe_mode"))              # fichier du superviseur (root, 0600)
     sysm.commands["systemctl is-active trx-gateway.service"] = (0, "inactive")
-    checks = [c for c in d.check_services(sysm, cfg) if c.name == "Mode sûr"]
+    checks = [c for c in d.check_services(sysm, cfg) if c.name == "Mise en sécurité"]
     assert checks and checks[0].status == d.FAIL and "illisible" in checks[0].message
 
 
