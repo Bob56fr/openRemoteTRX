@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Socle de l'architecture en modules de la station TRX distant (lot 1a).
+"""Socle de l'architecture en modules de la station openRemoteTRX (lot 1a).
 
 Ce paquet ne dépend que de la bibliothèque standard Python (3.11+).
 Il fournit :

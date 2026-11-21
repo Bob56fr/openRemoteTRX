@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 RF-DIY.COM -->
-<!-- TRX Remote : architecture en schémas (matériel, réseau, briques de la station, page web). À coller dans un bloc
+<!-- openRemoteTRX : architecture en schémas (matériel, réseau, briques de la station, page web). À coller dans un bloc
      « HTML personnalisé » de WordPress. Schémas en SVG intégré, aucun script ni ressource externe. Styles regroupés sous
      .trxr ; lisible en thème clair comme sombre (textes et traits dans la couleur du thème). Contenu fidèle à la version 0.30. -->
 <style>
@@ -43,12 +43,12 @@
 
 <div class="trxr">
 
-<p class="trxr-lead">Comment TRX Remote relie votre poste à votre téléphone : les équipements, le chemin sur le réseau, puis les briques logicielles de la station et de la page de contrôle.</p>
+<p class="trxr-lead">Comment openRemoteTRX relie votre poste à votre téléphone : les équipements, le chemin sur le réseau, puis les briques logicielles de la station et de la page de contrôle.</p>
 
 <h2>1. Les équipements et le réseau</h2>
-<p>Le poste est relié en USB à un ordinateur, le <strong>serveur TRX Remote</strong> (PC Windows, PC Debian ou Raspberry Pi). Ce serveur est branché sur votre réseau local. Chez vous, votre téléphone ou votre PC s'y connecte directement en Wi-Fi. À l'extérieur, la connexion passe par votre box et Internet, au choix par un VPN ou par un accès HTTPS ouvert sur la box.</p>
+<p>Le poste est relié en USB à un ordinateur, le <strong>serveur openRemoteTRX</strong> (PC Windows, PC Debian ou Raspberry Pi). Ce serveur est branché sur votre réseau local. Chez vous, votre téléphone ou votre PC s'y connecte directement en Wi-Fi. À l'extérieur, la connexion passe par votre box et Internet, au choix par un VPN ou par un accès HTTPS ouvert sur la box.</p>
 
-<div class="trxr-fig" role="img" aria-label="Schéma des équipements : poste relié en USB au serveur TRX Remote, serveur sur le réseau local, téléphone à la maison en Wi-Fi, box Internet, Internet, téléphone ou PC distant.">
+<div class="trxr-fig" role="img" aria-label="Schéma des équipements : poste relié en USB au serveur openRemoteTRX, serveur sur le réseau local, téléphone à la maison en Wi-Fi, box Internet, Internet, téléphone ou PC distant.">
 <svg viewBox="0 0 980 560" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="trxr-m1n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3a83d0"/></marker>
@@ -78,7 +78,7 @@
 
   <!-- serveur -->
   <rect class="box" x="340" y="200" width="200" height="150" rx="10"/>
-  <text class="t" x="440" y="236" text-anchor="middle">Serveur TRX Remote</text>
+  <text class="t" x="440" y="236" text-anchor="middle">Serveur openRemoteTRX</text>
   <text class="s" x="440" y="258" text-anchor="middle">PC Windows, Debian</text>
   <text class="s" x="440" y="276" text-anchor="middle">ou Raspberry Pi</text>
   <text class="s" x="440" y="302" text-anchor="middle">page de contrôle :</text>

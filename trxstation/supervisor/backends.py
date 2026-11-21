@@ -130,7 +130,7 @@ class ManagedBackend:
         self.guard = (self.platform == "win32") if guard is None else guard
         if self.guard:
             self.children["guard"] = _Child("guard")
-        # TRX Console sur le réseau (étape 233, menu 4.6) : sous Windows, c'est le superviseur qui la lance (Debian :
+        # openRemoteTRX Console sur le réseau (étape 233, menu 4.6) : sous Windows, c'est le superviseur qui la lance (Debian :
         # service systemd à part). Indépendante du mode sûr : c'est justement par elle qu'on dépanne.
         if getattr(getattr(cfg, "remote_console", None), "enabled", False) is True:
             self.children["console_web"] = _Child("console_web")

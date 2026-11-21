@@ -330,7 +330,7 @@ class ControlSession:
                    "freedv": self.freedv.snapshot() if self.freedv is not None else None,
                    # rediffusion d'un enregistrement (application) : accordée sur la station, durée bornée au TOT - 5 s
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
-                   # TRX Console sur le réseau (étape 233) : lien pour les opérateurs administrateurs seulement
+                   # openRemoteTRX Console sur le réseau (étape 233) : lien pour les opérateurs administrateurs seulement
                    "remote_console": self._remote_console(),
                    "lang": self.lang,                                 # langue retenue pour les textes de ce client
                    "features": self.features()})
@@ -419,7 +419,7 @@ class ControlSession:
         from ..power import PowerError
         if self.power is None:
             self._result(cmd.id, False, reason="power_disabled",
-                         detail="allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8)")
+                         detail="allumage et extinction à distance hors service sur cette station (openRemoteTRX Console, menu 2.8)")
             return
         if cmd.name == "power_off":
             result = await self.power.power_off(self.client_id, how="stop_hold")      # Refused : refus habituel
@@ -1028,7 +1028,7 @@ class ControlSession:
                     self._result(cmd.id, False, reason="listeners_unavailable")
                 elif cmd.params["on"] and self.access.settings.max_listeners <= 0:
                     self._result(cmd.id, False, reason="listeners_off",
-                                 detail="écoute des visiteurs fermée sur la station ([access] max_listeners, TRX Console menu 4.2)")
+                                 detail="écoute des visiteurs fermée sur la station ([access] max_listeners, openRemoteTRX Console menu 4.2)")
                 else:
                     self.access.switch.set(cmd.params["on"])
                     emit_event(codes.ORT_4019, logger=log, compte=self.client_id,

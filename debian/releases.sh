@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-# Versions installées de TRX distant. Sourcé par install.sh (APP_DIR défini avant) ; testé seul par
+# Versions installées d'openRemoteTRX. Sourcé par install.sh (APP_DIR défini avant) ; testé seul par
 # tests/test_update_releases.py.
 #
 #   /opt/trx-remote/releases/<version>/   paquet de cette version (install.sh, systeme/, app/) et son venv/

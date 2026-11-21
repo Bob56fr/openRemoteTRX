@@ -1,6 +1,6 @@
 [Unit]
-Description=Recherche d'une nouvelle version de TRX distant (n'installe rien)
-# Lancée par trx-update-check.timer. Écrit /var/lib/trx-remote/update/latest.json, affiché par TRX Console.
+Description=Recherche d'une nouvelle version d'openRemoteTRX (n'installe rien)
+# Lancée par trx-update-check.timer. Écrit /var/lib/trx-remote/update/latest.json, affiché par openRemoteTRX Console.
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/etc/trx-remote/station.toml

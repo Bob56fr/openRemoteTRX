@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """Cahier de test d'un modèle : partie FIXE (socle et exercices, communs à tous les postes) plus partie
-GÉNÉRÉE depuis le profil Hamlib (fonctions déclarées que TRX Remote sait utiliser).
+GÉNÉRÉE depuis le profil Hamlib (fonctions déclarées qu'openRemoteTRX sait utiliser).
 
 Les tests générés passent par la couche CAT de l'application (PttController, CatLink), jamais par
 `rigctl` directement : on qualifie notre implémentation, pas seulement Hamlib.
 
 Catégories :
   socle     : un échec refuse le poste ; non testé = qualification incomplète
-  genere    : fonction déclarée par Hamlib et utilisée par TRX Remote ; un échec la masque
+  genere    : fonction déclarée par Hamlib et utilisée par openRemoteTRX ; un échec la masque
   fixe      : exercices communs (pannes, endurance USB) ; informatifs pour la fiche
   declaratif: réponses de l'opérateur, jamais suffisantes seules
 """
@@ -23,7 +23,7 @@ from .texts import _t, term
 
 SOCLE, GENERE, FIXE, DECLARATIF = "socle", "genere", "fixe", "declaratif"
 
-# Ce que TRX Remote lit et écrit aujourd'hui (repris de la couche CAT : une seule source).
+# Ce qu'openRemoteTRX lit et écrit aujourd'hui (repris de la couche CAT : une seule source).
 READ_FUNCS = tuple(dict.fromkeys(EXTRA_FUNCTIONS))
 READ_LEVELS = tuple(dict.fromkeys(("STRENGTH", *EXTRA_LEVELS, POWER_METER, *TX_METERS)))
 WRITE_FUNCS = tuple(WRITABLE_FUNCS)
@@ -78,7 +78,7 @@ class PlanItem:
 @dataclass
 class TestPlan:
     items: list[PlanItem]
-    unused: list[str]       # déclaré par Hamlib, non exploité par TRX Remote (piste d'évolution)
+    unused: list[str]       # déclaré par Hamlib, non exploité par openRemoteTRX (piste d'évolution)
 
     def by_id(self, item_id: str) -> PlanItem | None:
         return next((i for i in self.items if i.id == item_id), None)
@@ -147,7 +147,7 @@ def render_plan(plan: TestPlan, profile: HamlibProfile) -> str:
             lines.append(f"  - {item.label}" + (f"  ({item.note})" if item.note else ""))
         lines.append("")
     if plan.unused:
-        lines.append("Déclaré par Hamlib, non exploité par TRX Remote : " + ", ".join(plan.unused))
+        lines.append("Déclaré par Hamlib, non exploité par openRemoteTRX : " + ", ".join(plan.unused))
     return "\n".join(lines)
 
 

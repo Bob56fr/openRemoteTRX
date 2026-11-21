@@ -30,7 +30,7 @@ class QrImageTest {
     }
 
     @Test
-    fun `QR code clair sur fond sombre (capture du terminal de TRX Console)`() {
+    fun `QR code clair sur fond sombre (capture du terminal d'openRemoteTRX Console)`() {
         val (w, h, px) = image(0xFFE0E0E0.toInt(), 0xFF101010.toInt())
         assertEquals(text, QrImage.decode(w, h, px))
     }

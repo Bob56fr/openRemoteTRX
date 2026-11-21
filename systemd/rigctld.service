@@ -2,7 +2,7 @@
 Description=Hamlib rigctld de la station TRX (écoute locale uniquement)
 After=network.target
 PartOf=trx-remote.target
-# Tant que la station n'est pas configurée (TRX Console, assistant), rien ne démarre.
+# Tant que la station n'est pas configurée (openRemoteTRX Console, assistant), rien ne démarre.
 ConditionPathExists=/etc/trx-remote/station.toml
 # Redémarré par trx-supervisor (échelle de reprise) : Restart couvre les arrêts simples.
 

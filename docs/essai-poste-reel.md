@@ -383,7 +383,7 @@ L'assistant complet (`trx-setup` sans option) pose la même question pour un Ico
 
 En cas de problème, la station continue **en mode normal** (un seul port, sans waterfall HF) et prévient :
 journal de la passerelle, page web (« Spectre HF : problème de configuration… »), `trx-monitor` (panneau
-Audio) et diagnostic de TRX Console (section « Spectre HF »). Elle réessaie seule toutes les 60 s, toujours
+Audio) et diagnostic d'openRemoteTRX Console (section « Spectre HF »). Elle réessaie seule toutes les 60 s, toujours
 en réception confirmée.
 
 **Affichage du spectre HF dans la page** : touche la zone des graphiques de puissance une fois (spectre de

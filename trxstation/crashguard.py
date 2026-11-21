@@ -3,7 +3,7 @@
 """Garde des outils lancés par l'opérateur : jamais de fermeture brutale sans message (étape 201).
 
 Avant : une erreur imprévue (ou une entrée clavier fermée) refermait la fenêtre d'un raccourci Windows ou du lanceur
-TRX Console de Debian avant qu'on ait pu lire quoi que ce soit. Désormais `@guarded("trx-hwtest")` sur le `main` :
+openRemoteTRX Console de Debian avant qu'on ait pu lire quoi que ce soit. Désormais `@guarded("trx-hwtest")` sur le `main` :
   - erreur imprévue : message ORT-9312 en clair, trace complète enregistrée dans un fichier (joint au rapport du
     menu 6.3), code de sortie 1 ;
   - Ctrl+C : « Interrompu », code 130 ; entrée clavier fermée : message, code 2 ;

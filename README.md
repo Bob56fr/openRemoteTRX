@@ -1,4 +1,4 @@
-# TRX Remote (openRemoteTRX)
+# openRemoteTRX
 
 *[Version française](README.fr.md)*
 
@@ -14,7 +14,7 @@ Remote control of an amateur radio transceiver from the browser of a smartphone,
 - **Waterfall of the received audio** in the page, and the **radio's HF spectrum** (Icom, through the second CI-V port) full screen or docked on large screens, with finger tuning.
 - **DX Cluster spots** (amateur clusters, Reverse Beacon Network, CB page) shown on the HF spectrum, with the status of each feed.
 - **Group presence "Friends"** (off by default): a group of friends running openRemoteTRX sees who is in a QSO, listening, at the shack or away and, if each one agrees, on which frequency; QSY to a friend in receive only, after confirmation. A relay only carries encrypted states it cannot read; the feature has no right over the radio.
-- **TRX Console** on the station: setup wizard, diagnostics, dashboard, guided radio test, updates, configuration editor, radio temperature thresholds, troubleshooting report, automated tests.
+- **openRemoteTRX Console** on the station: setup wizard, diagnostics, dashboard, guided radio test, updates, configuration editor, radio temperature thresholds, troubleshooting report, automated tests.
 - Colour themes, layouts, link sounds, end-of-transmission beeps (off by default), "Report a problem".
 
 ## Transmit safeguards
@@ -46,17 +46,17 @@ Details in `CLAUDE.md` ("Règles de sécurité d'émission") and `docs/` (in Fre
 
 1. Get the `trx-remote-debian-X.Y.Z.zip` package and unzip it.
 2. In that folder: `sudo bash install.sh` (dependencies, service account, systemd services).
-3. Open **TRX Console** (applications menu or `trx-console`) and run the **setup wizard** (menu 2.1): radio, ports, sound cards, network access, accounts.
+3. Open **openRemoteTRX Console** (applications menu or `trx-console`) and run the **setup wizard** (menu 2.1): radio, ports, sound cards, network access, accounts.
 4. Run the **guided test** (menu 2.2) on a dummy load.
 5. On the phone, open `https://<station-address>:8443`.
 
-Later versions are installed from TRX Console (menu 7.1 over the Internet, menu 7.3 from a zip file).
+Later versions are installed from openRemoteTRX Console (menu 7.1 over the Internet, menu 7.3 from a zip file).
 
 ### Windows
 
 1. Install **Hamlib 64-bit** (`hamlib-w64-X.Y.Z.exe`, [Hamlib releases](https://github.com/Hamlib/Hamlib/releases)).
 2. Get the `trx-remote-windows-X.Y.Z.zip` package, unblock it (Properties), extract it, double-click **`installer.cmd`**. Python is installed if missing (with your consent).
-3. Start menu > **TRX distant**: a single shortcut opening TRX Console (configuration, diagnostics, start and stop the station, dashboard, radio test, logs). Uninstall: Settings > Apps.
+3. Start menu > **openRemoteTRX**: a single shortcut opening openRemoteTRX Console (configuration, diagnostics, start and stop the station, dashboard, radio test, logs). Uninstall: Settings > Apps.
 
 The station starts at logon, without a window. Full guide (French): `windows/notice-windows.html` (shipped in the package).
 
@@ -76,7 +76,7 @@ You remain responsible for complying with your licence and your country's regula
 
 ## Reporting problems, contributing
 
-- From the page: **"Signaler un problème"** section (the report is shown before sending), then TRX Console, menu 6.3 (troubleshooting report, no passwords).
+- From the page: **"Signaler un problème"** section (the report is shown before sending), then openRemoteTRX Console, menu 6.3 (troubleshooting report, no passwords).
 - On GitHub: *Issues* tab, with the form in your language (English, French, German, Spanish).
 - Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md).
 

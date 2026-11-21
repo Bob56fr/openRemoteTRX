@@ -2039,7 +2039,7 @@
           presenceOpen = false; $("presence-dialog").hidden = true;
         }
         renderSelcall(value ? client.selcall : null);
-        rcRender();                                                              // lien vers TRX Console (administrateurs)
+        rcRender();                                                              // lien vers openRemoteTRX Console (administrateurs)
         const version = value && client.hello ? versionLabel(client.hello.version) : "";
         $("version").textContent = version; $("version").hidden = !version;        // version de la station, à droite de « Connecté »
         if ($("bug-report") && !$("bug-report").hidden) $("bug-send").disabled = !value;   // « Envoyer à la station » : connecté seulement
@@ -3806,9 +3806,9 @@
     }
 
     // ---- monitoring inter-stations (monitoring.js, docs/cdc-monitoring.md § 17, fonction « monitoring », OPÉRATEURS) :
-    // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 6.5 de TRX Console. Le module n'agit
+    // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 6.5 d'openRemoteTRX Console. Le module n'agit
     // jamais sur le poste ; la station qui aide ne peut que lire et DEMANDER. Fenêtres : celles de la rubrique « Amis ».
-    // TRX Console sur le réseau (étape 233) : lien pour les opérateurs ADMINISTRATEURS (hello.remote_console)
+    // openRemoteTRX Console sur le réseau (étape 233) : lien pour les opérateurs ADMINISTRATEURS (hello.remote_console)
     function rcRender() {
       const rc = client.connected && !client.isListener() && client.hello ? client.hello.remote_console : null;
       const port = rc && Number.isInteger(rc.port) && rc.port >= 1024 && rc.port <= 65535 ? rc.port : null;

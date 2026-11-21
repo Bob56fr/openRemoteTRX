@@ -6,4 +6,4 @@ Unabhängiger Supervisor und Endwächter: das Funkgerät geht bei einer Störung
 KW-Spektrum, S-Meter, Speicher, DX-Cluster, SWR-Messung
 FreeDV-RADE-Empfang
 Bedienerkonten und Besucher nur mit Empfang
-TRX Console auf Deutsch, Englisch, Französisch und Spanisch
+openRemoteTRX Console auf Deutsch, Englisch, Französisch und Spanisch

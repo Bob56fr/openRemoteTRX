@@ -1,5 +1,5 @@
 [Unit]
-Description=Recherche d'une nouvelle version de TRX distant (au démarrage puis toutes les 24 h)
+Description=Recherche d'une nouvelle version d'openRemoteTRX (au démarrage puis toutes les 24 h)
 PartOf=trx-remote.target
 
 [Timer]

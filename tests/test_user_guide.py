@@ -91,7 +91,7 @@ def test_diagram_is_inlined_and_published_without_script() -> None:
 
 def test_every_glossary_term_used_by_the_diagram_is_defined() -> None:
     glossary = (GUIDE / "fr" / "glossaire.md").read_text(encoding="utf-8")
-    for term in ("Passerelle", "Superviseur", "rigctld", "TRX Console", "station.toml", "ntfy", "CAT", "WebRTC",
+    for term in ("Passerelle", "Superviseur", "rigctld", "openRemoteTRX Console", "station.toml", "ntfy", "CAT", "WebRTC",
                  "Hamlib", "TOT", "PTT", "Mode sûr"):
         assert term in glossary, f"terme absent du glossaire : {term}"
 

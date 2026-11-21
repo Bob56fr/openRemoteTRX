@@ -74,7 +74,7 @@ def boot(*, supervisor_main=None, zip_check=zip_installed, setup_logs: bool = Tr
         return EXIT_ZIP_INSTALLED
     config = root / "station.toml"
     if not config.exists():
-        return 0                                 # station pas encore configurée : TRX Console s'en charge
+        return 0                                 # station pas encore configurée : openRemoteTRX Console s'en charge
     if supervisor_main is None:
         from .supervisor.main import main as supervisor_main
     return supervisor_main(["--config", str(config), "--log-dir", str(root / "logs")])

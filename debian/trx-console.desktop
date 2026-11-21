@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=TRX Console
+Name=openRemoteTRX Console
 GenericName=Station radio à distance
-Comment=Configurer, tester et dépanner la station TRX distant
+Comment=Configurer, tester et dépanner la station openRemoteTRX
 Exec=env TRX_PAUSE_ON_EXIT=1 trx-console
 Icon=trx-console
 Terminal=true

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Profils de poste : plusieurs TRX pilotés tour à tour par la même station (TRX Console, menu 2.3).
+"""Profils de poste : plusieurs TRX pilotés tour à tour par la même station (openRemoteTRX Console, menu 2.3).
 
 Un profil garde ce qui dépend DU POSTE : sections [rig] (modèle, port, PTT, modes d'émission, puissance), [audio]
 (cartes son, gains) et [spectrum] (second port CI-V). Le reste de station.toml appartient à la station et n'est
@@ -125,7 +125,7 @@ def _section_text(rendered: str, names: tuple[str, ...]) -> str:
 
 def render(name: str, cfg: cfgmod.Config, version: str, saved_at: str) -> str:
     """Texte du profil : en-tête [profil] puis les sections du poste, telles que station.toml les écrit."""
-    return ("# Profil de poste TRX distant (TRX Console, menu 2.3). Modifier de préférence par la console :\n"
+    return ("# Profil de poste openRemoteTRX (Console, menu 2.3). Modifier de préférence par la console :\n"
             "# charger le profil, changer la configuration, puis le réenregistrer.\n"
             "[profil]\n"
             f"nom = {cfgmod._s(name)}\n"
@@ -155,7 +155,7 @@ def upgrade(profile: Profile) -> dict:
     """Sections au format actuel (conversions successives) ; ProfileError si impossible."""
     if profile.format > PROFILE_FORMAT:
         raise ProfileError(f"profil enregistré par une version plus récente (format {profile.format}, version "
-                           f"{profile.version}) : mets TRX distant à jour pour le charger")
+                           f"{profile.version}) : mets openRemoteTRX à jour pour le charger")
     sections = {k: dict(v) if isinstance(v, dict) else v for k, v in profile.sections.items()}
     for fmt in range(profile.format, PROFILE_FORMAT):
         step = MIGRATIONS.get(fmt)

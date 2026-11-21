@@ -6,4 +6,4 @@ Superviseur indépendant et garde de fin : le poste revient en réception en cas
 Spectre HF, S-mètre, mémoires, Cluster DX, mesure de TOS
 FreeDV RADE en réception
 Comptes des opérateurs et visiteurs en réception seule
-TRX Console en français, anglais, allemand et espagnol
+openRemoteTRX Console en français, anglais, allemand et espagnol

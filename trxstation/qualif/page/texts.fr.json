@@ -157,9 +157,9 @@
     "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
   ],
   "drill.local_operator.expected": "la page montre l'opérateur sur place et refuse le PTT à distance pendant l'émission, puis 2 minutes.",
-  "drill.stop_dashboard.but": "Nous testons maintenant le STOP TX du tableau de bord (TRX Console, menu 1.3), pour vérifier qu'il coupe une émission.",
+  "drill.stop_dashboard.but": "Nous testons maintenant le STOP TX du tableau de bord (openRemoteTRX Console, menu 1.3), pour vérifier qu'il coupe une émission.",
   "drill.stop_dashboard.steps": [
-    "Ouvrez le tableau de bord (TRX Console, menu 1.3).",
+    "Ouvrez le tableau de bord (openRemoteTRX Console, menu 1.3).",
     "Dans la page de la station, passez en émission.",
     "Touchez STOP TX dans le tableau de bord ET, dans la même seconde, cliquez sur le gros bouton ci-dessous.",
     "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
@@ -169,7 +169,7 @@
   "drill.station_stop.but": "Nous testons maintenant l'arrêt de la station pendant une émission, pour vérifier que le poste ne reste pas en émission.",
   "drill.station_stop.steps": [
     "Dans la page de la station, passez en émission.",
-    "Cliquez sur le gros bouton ci-dessous : il ARRÊTE la station (comme TRX Console, menu 1.2) et note l'instant exact.",
+    "Cliquez sur le gros bouton ci-dessous : il ARRÊTE la station (comme openRemoteTRX Console, menu 1.2) et note l'instant exact.",
     "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
   ],
   "drill.station_stop.expected": "le poste revient en réception.",
@@ -177,7 +177,7 @@
   "drill.startup.but": "Nous testons maintenant le démarrage de la station, pour vérifier que le poste ne passe jamais en émission quand elle démarre.",
   "drill.startup.steps": [
     "La station doit être ARRÊTÉE au départ.",
-    "Cliquez sur « Commencer l'essai », puis démarrez la station (TRX Console, menu 1.1).",
+    "Cliquez sur « Commencer l'essai », puis démarrez la station (openRemoteTRX Console, menu 1.1).",
     "Attendez qu'elle soit prête (page de la station accessible), puis cliquez sur « L'essai est fini »."
   ],
   "drill.startup.expected": "le poste ne passe jamais en émission.",

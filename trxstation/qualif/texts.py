@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Textes MONTRÉS ou DEMANDÉS par `trx-qualif` dans la langue de TRX Console (lot L3, domaine « qualif »).
+"""Textes MONTRÉS ou DEMANDÉS par `trx-qualif` dans la langue d'openRemoteTRX Console (lot L3, domaine « qualif »).
 
 Seul l'affichage est traduit : les documents produits (fiche.toml, results.json, plan.txt, constats.txt,
 fiche-poste.md, rapport-hamlib.md, exploration.json) gardent leur langue, quelle que soit `TRX_LANG`.

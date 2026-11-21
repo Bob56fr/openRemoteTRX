@@ -162,7 +162,7 @@ def test_check_web_source():
                                    fetch=lambda url: ("<html>maintenance</html>", CDX_NOW)))
     assert rep.code == "format"
 
-# ------------------------------------------------------------------ éditeur (TRX Console, menu 5.1)
+# ------------------------------------------------------------------ éditeur (openRemoteTRX Console, menu 5.1)
 
 
 class Script:

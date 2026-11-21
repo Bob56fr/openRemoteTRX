@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 990" width="640" height="990" role="img" aria-labelledby="titre desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
   <title id="titre">Les briques d'une station openRemoteTRX</title>
-  <desc id="desc">De haut en bas : l'utilisateur (navigateur ou application Android) joint par le réseau la passerelle du PC de la station ; la passerelle commande le poste par rigctld (Hamlib) et échange le son avec sa carte son ; le superviseur surveille le tout, ne peut que couper l'émission et envoie les alertes ntfy ; TRX Console, trx-monitor et l'indicateur lisent l'état ; station.toml porte la configuration ; le poste est relié par un seul câble USB.</desc>
+  <desc id="desc">De haut en bas : l'utilisateur (navigateur ou application Android) joint par le réseau la passerelle du PC de la station ; la passerelle commande le poste par rigctld (Hamlib) et échange le son avec sa carte son ; le superviseur surveille le tout, ne peut que couper l'émission et envoie les alertes ntfy ; openRemoteTRX Console, trx-monitor et l'indicateur lisent l'état ; station.toml porte la configuration ; le poste est relié par un seul câble USB.</desc>
   <defs>
     <marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#9aa8bb"/>
@@ -56,7 +56,7 @@
 
   <rect x="340" y="580" width="270" height="110" rx="10" fill="#171e29" stroke="#3fae72" stroke-width="2"/>
   <text x="475" y="612" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">Outils de la station</text>
-  <text x="475" y="636" fill="#9aa8bb" font-size="15" text-anchor="middle">TRX Console, trx-monitor,</text>
+  <text x="475" y="636" fill="#9aa8bb" font-size="15" text-anchor="middle">openRemoteTRX Console, trx-monitor,</text>
   <text x="475" y="656" fill="#9aa8bb" font-size="15" text-anchor="middle">indicateur : lisent l'état ;</text>
   <text x="475" y="676" fill="#9aa8bb" font-size="15" text-anchor="middle">seule action : STOP TX</text>
 

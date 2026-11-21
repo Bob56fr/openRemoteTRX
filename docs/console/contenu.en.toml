@@ -1,4 +1,4 @@
-# Content of the TRX Console user manual (page published on GitHub Pages, shown on the rf-diy.com site), in
+# Content of the openRemoteTRX Console user manual (page published on GitHub Pages, shown on the rf-diy.com site), in
 # ENGLISH. The reference is contenu.toml (French): same sections, in the same order.
 # Built by: python scripts/build_console_doc.py  (output in docs/site/console/).
 # The LIST of menus (themes, numbers, labels) comes from the code (trxstation/console.py, catalogues trxstation/i18n/);
@@ -9,11 +9,11 @@
 # Generic examples only: never an IP address, machine name, real port or key.
 
 [page]
-titre = "TRX Console: user manual"
+titre = "openRemoteTRX Console: user manual"
 intro = """
-<p><strong>TRX Console</strong> is the control panel of the TRX distant station, on the PC (or Raspberry Pi)
+<p><strong>openRemoteTRX Console</strong> is the control panel of the openRemoteTRX station, on the PC (or Raspberry Pi)
 connected to the transceiver. It is used to install and configure the station, start it, test it, update it and
-troubleshoot it. Open it from the applications menu ("TRX Console") or by typing <code>trx-console</code>
+troubleshoot it. Open it from the applications menu ("openRemoteTRX Console") or by typing <code>trx-console</code>
 in a terminal.</p>
 <p>The menus are grouped by theme (Station, Transceiver and hardware, Transmit safety and alerts, Access and accounts, Features, Troubleshooting and assistance, Updates, Expert and preferences; numbers changed in 0.166.0):
 type the theme number then the menu number, or both at once, for example <code>4.1</code> to pair a
@@ -34,7 +34,7 @@ service?</strong> Go straight to the menu reference. <strong>Helping with debugg
 [ui]   # texts of the page itself
 lang_name = "English"
 langs = "Language:"
-version = "TRX distant version {version}"
+version = "openRemoteTRX version {version}"
 nav_first = "First deployment"
 nav_menus = "The menus"
 nav_expert = "Advanced troubleshooting"
@@ -57,6 +57,9 @@ more = "Going further"
 latest = "Latest version"
 others = "Other versions:"
 footer = "Free software project (AGPL-3.0-or-later)"
+toc = "Contents"
+top = "Back to contents"
+start_here = "Where to start"
 source = "source code"
 
 # ------------------------------------------------------------------ beginner's path
@@ -76,7 +79,7 @@ before starting the installation: accounts, bands and alerts will be carried ove
 [[parcours]]
 titre = "Configure the station (menu 2.1)"
 texte = """
-<p>On first launch, TRX Console offers the wizard. It asks, in order: the transceiver model (Hamlib
+<p>On first launch, openRemoteTRX Console offers the wizard. It asks, in order: the transceiver model (Hamlib
 list), the CAT serial port, the PTT method, the sound cards (receive and transmit), the bands allowed
 for transmission, network access and the first account (username and password for the web page).</p>
 <p>The transceiver is queried <strong>read-only</strong> during the wizard: no transmission. Nothing is
@@ -130,7 +133,7 @@ admin = true
 expert = "<p>The transceiver is only queried read-only. A configuration imported from an old station (<code>station.import.toml</code>) is used as a starting point.</p><p>When a transceiver is added, the wizard asks whether <strong>replay of recordings</strong> is allowed (app: record the received audio then send it back on transmit, duration limited to the maximum transmit time minus 5 s). Default answer: no. Retransmitting a station's signal to third parties is generally forbidden in the amateur service: accept only if you need it and under your own responsibility (<code>[safety] allow_replay</code>).</p>"
 
 [menus.monitor]
-role = "Live dashboard, in the terminal: frequency, mode, transmit or receive, connected clients, services, hardware, audio, log. It opens in a <strong>new tab</strong> or window (Windows Terminal, GNOME Terminal, tmux, screen): TRX Console stays open next to it; over SSH without tmux, it opens in the same terminal."
+role = "Live dashboard, in the terminal: frequency, mode, transmit or receive, connected clients, services, hardware, audio, log. It opens in a <strong>new tab</strong> or window (Windows Terminal, GNOME Terminal, tmux, screen): openRemoteTRX Console stays open next to it; over SSH without tmux, it opens in the same terminal."
 quand = "To watch the station on site, or during a test."
 modifie = "Nothing, except one key: <strong>STOP TX</strong> forces receive. The dashboard can never make the transceiver transmit."
 admin = false
@@ -233,7 +236,7 @@ role = "Enables or disables the <strong>top bar indicator</strong> (GNOME deskto
 quand = "Once, after installation (then log out and log in again), to keep an eye on the station at all times."
 modifie = "Only your desktop display. The indicator only READS the state published by the station: it cannot control anything."
 admin = false
-expert = "<p>Files read every second: <code>/run/trx-remote/gateway-status.json</code>, and in <code>/var/lib/trx-remote/</code>: <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extension installed in <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. The indicator menu also opens the web page, TRX Console and the dashboard.</p>"
+expert = "<p>Files read every second: <code>/run/trx-remote/gateway-status.json</code>, and in <code>/var/lib/trx-remote/</code>: <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extension installed in <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. The indicator menu also opens the web page, openRemoteTRX Console and the dashboard.</p>"
 
 [menus.profiles]
 role = "Transceiver profiles, for those who use several rigs in turn: <strong>save</strong> the configuration of the transceiver in service under a name (\"IC-7300 home\"), <strong>reload</strong> it later, or delete a profile. The profile in service is marked in the list."
@@ -333,7 +336,7 @@ modifie = "The station configuration (<code>station.toml</code>), with administr
 admin = true
 
 [menus.remote_console]
-role = "Puts <strong>TRX Console on the network</strong>: the same menus in the browser of any PC, tablet or phone on the local network or VPN, without SSH or shortcut, at <code>https://&lt;station&gt;:8444/</code>. Login with an <strong>operator account marked administrator</strong> (chosen here); the session closes after 30 minutes without action; the station sudo password is still asked once per session. 5 failures block the address for 15 minutes and every login sends an ntfy alert. Never reachable from the Internet. An administrator logged in to the control page also finds the link there."
+role = "Puts <strong>openRemoteTRX Console on the network</strong>: the same menus in the browser of any PC, tablet or phone on the local network or VPN, without SSH or shortcut, at <code>https://&lt;station&gt;:8444/</code>. Login with an <strong>operator account marked administrator</strong> (chosen here); the session closes after 30 minutes without action; the station sudo password is still asked once per session. 5 failures block the address for 15 minutes and every login sends an ntfy alert. Never reachable from the Internet. An administrator logged in to the control page also finds the link there."
 quand = "To administer the station from another device, without knowing SSH."
 modifie = "The station configuration (<code>station.toml</code>: <code>[remote_console]</code> and the <code>admin</code> mark of the accounts), with administrator rights; the previous version is kept. On Debian, the <code>trx-console-web@account</code> service is started or stopped; on Windows, the station is restarted."
 admin = true

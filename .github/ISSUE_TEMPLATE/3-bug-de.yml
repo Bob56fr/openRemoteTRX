@@ -14,7 +14,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: "Station: Kopfzeile von TRX Console. App: Anmeldebildschirm."
+      description: "Station: Kopfzeile von openRemoteTRX Console. App: Anmeldebildschirm."
       placeholder: "Station 0.134.0 / App 0.63.0"
     validations:
       required: true
@@ -94,7 +94,7 @@ body:
     attributes:
       label: Protokolle
       description: |
-        Nützliche Auszüge aus dem Protokoll (TRX Console, Menü 6.2). Der Fehlerbericht (Menü 6.3) ist ein Zip ohne Passwörter: Ziehen Sie ihn in das Feld „Was passiert“ oben. Android-App: Réglages > „Signaler un problème“ (die App ist auf Französisch).
+        Nützliche Auszüge aus dem Protokoll (openRemoteTRX Console, Menü 6.2). Der Fehlerbericht (Menü 6.3) ist ein Zip ohne Passwörter: Ziehen Sie ihn in das Feld „Was passiert“ oben. Android-App: Réglages > „Signaler un problème“ (die App ist auf Französisch).
       render: text
   - type: checkboxes
     id: confidentialite

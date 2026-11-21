@@ -75,7 +75,7 @@ def _app_files(root: Path) -> list[tuple[str, Path]]:
     files = [("app/pyproject.toml", root / "pyproject.toml"), ("app/LICENSE", root / "LICENSE"),   # AGPL : le texte suit le code
              ("app/requirements.lock", root / "requirements.lock")]     # empreintes des modules (pip --require-hashes)
     # tests/ et les dossiers qu'ils lisent (debian/, systemd/, scripts/, config/), même disposition que le dépôt :
-    # TRX Console > menu expert lance toute la suite sur la station (python -m pytest app/tests).
+    # openRemoteTRX Console > menu expert lance toute la suite sur la station (python -m pytest app/tests).
     for base in ("trxstation", "docs", "tests", "debian", "systemd", "scripts", "config"):
         for path in sorted((root / base).rglob("*")):
             rel = path.relative_to(root)

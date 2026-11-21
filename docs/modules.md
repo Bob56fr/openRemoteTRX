@@ -4,7 +4,7 @@ Les fonctions complémentaires (cluster DX, vidéo, journal…) tournent chacune
 dans **son propre processus**. Un module qui plante, sature le processeur ou
 fuit en mémoire ne touche ni à l'audio, ni au CAT, ni au PTT.
 Référence : Claude Doc « Cahier des charges — Architecture en modules de la
-station TRX distant ».
+station openRemoteTRX ».
 
 ## Activer un module
 
@@ -22,7 +22,7 @@ compilé par install.sh quand l'API du fabricant est installée ; `[sdr]`, `docs
 locator de la station dans `[freedv] locator` ; `docs/protocole.md` § 17), `presence` (présence de groupe),
 `monlink` (monitoring inter-stations pour aider ou être aidé, `[monitor_link]`, `docs/cdc-monitoring.md` § 17 ; aucun droit, ni même la lecture des événements du bus),
 `cluster` (Cluster DX, voir `docs/cluster-dx.md` ; se règle
-avec TRX Console, menu 5.1, qui l'ajoute ici) et `demo`, un module factice qui se met
+avec openRemoteTRX Console, menu 5.1, qui l'ajoute ici) et `demo`, un module factice qui se met
 en pause pendant l'émission et l'annonce dans le journal de la page web
 (« [demo] Démo en pause pendant l'émission », puis « [demo] Démo reprise »).
 Il sert à valider la chaîne complète sans matériel.

@@ -2,7 +2,7 @@
 // Copyright (C) 2026 RF-DIY.COM
 /* Monitoring inter-stations dans la page (docs/cdc-monitoring.md § 17, lot R5 ; protocole : docs/protocole.md § 19) :
    calculs purs, testés sous Node (tests/js/monitoring_test.js), sans DOM. Le dessin est dans ui.js (rubrique
-   « Monitoring »). Mêmes actions que le menu 6.5 de TRX Console ; le module « monlink » n'agit jamais sur le poste et
+   « Monitoring »). Mêmes actions que le menu 6.5 de la console ; le module « monlink » n'agit jamais sur le poste et
    la station qui aide ne peut que lire et DEMANDER. */
 (function (root) {
   "use strict";   // i18n-ok
@@ -42,7 +42,7 @@
   function minutes(seconds) { return Math.max(0, Math.floor((Number(seconds) || 0) / 60)); }
 
   function extra(link) {
-    /* Détails d'une liaison, dans les mots de TRX Console (menu 6.5). */
+    /* Détails d'une liaison, dans les mots d'openRemoteTRX Console (menu 6.5). */
     const out = [];
     if (link.state !== "confirm") {
       out.push(link.last_rx_age === null || link.last_rx_age === undefined ? I18N.t("monitoring.no_news")

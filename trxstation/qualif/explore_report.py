@@ -86,7 +86,7 @@ def render_hamlib_md(profile: HamlibProfile, result: ExplorationResult, *, date:
     lines = [
         f"# {profile.name} (model {profile.model}): differences between dump_caps and the rig (draft)",
         "",
-        f"Found by the receive-only exploration of TRX Remote (openRemoteTRX {_version()}) on {date:%Y-%m-%d}.",
+        f"Found by the receive-only exploration of openRemoteTRX ({_version()}) on {date:%Y-%m-%d}.",
         f"Hamlib {profile.hamlib_version or '?'}, backend status \"{profile.backend_status or '?'}\". Nothing was transmitted.",
         "Before sending: check each item against current Hamlib master, attach `dump_caps.txt` and the relevant part of",
         "`cat_trace.log`, and add a `rigctld -vvvvv` log of a failing command. One subject per message.",

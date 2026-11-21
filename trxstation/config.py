@@ -51,7 +51,7 @@ class Rig:
     tx_modes: list[str] = field(default_factory=list)    # modes où l'émission est permise (vide = aucune restriction)
     max_power_w: int = 0                                 # puissance maximale du poste en watts ; 0 = inconnue (la page affiche des %)
     tuner: bool = False                                  # coupleur d'antenne du poste utilisé : réglages d'accord vérifiés à chaque connexion
-    # Identité USB des ports (« 10C4:EA70 SN=01D0F21E IF=00 », usbports.py), relevée par TRX Console (menu 2.8) ; vérifiée
+    # Identité USB des ports (« 10C4:EA70 SN=01D0F21E IF=00 », usbports.py), relevée par openRemoteTRX Console (menu 2.8) ; vérifiée
     # avant un allumage à distance (docs/alimentation-poste-cahier-des-charges.md § 4.1) ; vide = non relevée
     port_usb: str = ""
     ptt_port_usb: str = ""
@@ -76,7 +76,7 @@ class Audio:
     capture_device: str = ""       # audio reçu du TRX (ex. plughw:CARD=CODEC,DEV=0)
     playback_device: str = ""      # audio injecté vers le TRX
     sample_rate: int = 48000       # seul 48000 est géré (Opus)
-    rx_gain_db: float = 0.0        # gain appliqué au son reçu (TRX Console, menu 2.9)
+    rx_gain_db: float = 0.0        # gain appliqué au son reçu (openRemoteTRX Console, menu 2.9)
     rx_limiter: bool = True        # limiteur du son reçu (crête à -1 dBFS) avant les terminaux ; coupé = saturation possible
     tx_gain_db: float = 0.0        # gain appliqué au son émis (prudence : un excès sature l'émetteur)
 
@@ -94,7 +94,7 @@ class ClientAuth:
     pseudo: str = ""               # nom montré aux autres connectés (jamais l'identifiant) ; plusieurs comptes peuvent le partager
     enabled: bool = True           # false : connexion refusée, connexion en cours fermée
     expires: str = ""              # AAAA-MM-JJ : refusé après ce jour (heure locale de la station) ; vide = jamais
-    admin: bool = False            # true : peut aussi ouvrir TRX Console sur le réseau ([remote_console], menu 4.6)
+    admin: bool = False            # true : peut aussi ouvrir openRemoteTRX Console sur le réseau ([remote_console], menu 4.6)
 
     def __post_init__(self) -> None:
         if isinstance(self.expires, date):      # date TOML écrite sans guillemets : expires = 2026-12-31
@@ -128,7 +128,7 @@ class Access:
 @dataclass
 class Power:
     """Allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) : réglages de la
-    STATION seulement, mis en service par TRX Console (menu 2.8) ; hors service par défaut."""
+    STATION seulement, mis en service par openRemoteTRX Console (menu 2.8) ; hors service par défaut."""
     enabled: bool = False               # false : ni allumage ni extinction à distance (fonction « power » non annoncée)
     on_timeout_s: int = 30              # attente de la réponse du poste après l'ordre d'allumage (5 à 120 s)
     idle_off: bool = False              # extinction automatique après idle_off_hours sans aucune connexion
@@ -201,7 +201,7 @@ _PRESENCE_RELAY_RE = re.compile(r"(https://[a-z0-9.-]{1,100}|http://(127\.0\.0\.
 class Presence:
     """Présence de groupe (docs/presence-cahier-des-charges.md) : module « presence », sans AUCUN droit sur le poste.
     Groupes, partage, pseudo et clés de groupe sont dans state_dir/presence/ (choisis depuis la page, l'application
-    ou TRX Console), jamais ici."""
+    ou openRemoteTRX Console), jamais ici."""
     enabled: bool = False             # false : le module attend sans rien envoyer
     relay_url: str = PRESENCE_DEFAULT_RELAY   # relais (https:// ; http:// seulement vers 127.0.0.1 pour les essais)
     key_file: str = ""                # clés de la station ; vide = state_dir/presence/presence.key
@@ -213,7 +213,7 @@ MONLINK_KEY_FILE = "monlink.key"     # dans state_dir/monlink/ quand key_file es
 @dataclass
 class MonitorLink:
     """Monitoring inter-stations (docs/cdc-monitoring.md § 17) : module « monlink », sans AUCUN droit sur le poste.
-    Liaisons, profils d'envoi et pseudo sont dans state_dir/monlink/ (choisis dans TRX Console), jamais ici. Clés À
+    Liaisons, profils d'envoi et pseudo sont dans state_dir/monlink/ (choisis dans openRemoteTRX Console), jamais ici. Clés À
     PART de la présence (décision de l'utilisateur du 2026-11-16) : les deux services ne peuvent pas être reliés."""
     enabled: bool = False             # false : le module attend sans rien envoyer ni relever
     relay_url: str = PRESENCE_DEFAULT_RELAY   # même relais que la présence (routes /v1/mon/)
@@ -242,7 +242,7 @@ class Diffusion:
 
 @dataclass
 class RemoteConsole:
-    """TRX Console sur le réseau (étape 233, décisions de l'utilisateur du 2026-11-17) : la console web servie en HTTPS
+    """openRemoteTRX Console sur le réseau (étape 233, décisions de l'utilisateur du 2026-11-17) : la console web servie en HTTPS
     sur le réseau local ou le VPN, connexion avec un compte OPÉRATEUR marqué `admin = true`, session fermée après
     `idle_min` minutes sans action. Programme à part de la passerelle, sous le compte Linux `account` (jamais root) :
     le mot de passe sudo reste demandé dans le terminal, une fois par session. Réglé par le menu 4.6.
@@ -1289,7 +1289,7 @@ def _list(values: list[str]) -> str:
 
 def _render_cluster(c: Cluster) -> list[str]:
     lines = [
-        "[cluster]   # module Cluster DX : se règle avec TRX Console (menu 5.1) ou python -m trxstation.cluster.setup",
+        "[cluster]   # module Cluster DX : se règle avec openRemoteTRX Console (menu 5.1) ou python -m trxstation.cluster.setup",
         f"enabled = {str(c.enabled).lower()}",
         f"call = {_s(c.call)}   # VOTRE indicatif radioamateur, seul envoyé aux clusters et au RBN",
         f"cb_call = {_s(c.cb_call)}   # votre indicatif de cibiste (sources CB)",
@@ -1339,14 +1339,14 @@ def render_toml(cfg: Config) -> str:
         f"tx_modes = [{', '.join(_s(m) for m in r.tx_modes)}]   # ex. Icom : [\"PKTUSB\", \"PKTLSB\"] ; vide = pas de restriction",
         f"max_power_w = {r.max_power_w}   # puissance maximale du poste (ex. 100) : la page affiche des watts ; 0 = inconnue, des %",
         f"tuner = {'true' if r.tuner else 'false'}   # coupleur d'antenne du poste utilisé : réglages d'accord vérifiés à chaque connexion",
-        f"port_usb = {_s(r.port_usb)}   # identité USB du port du poste (TRX Console, menu 2.8) ; vide = non relevée",
+        f"port_usb = {_s(r.port_usb)}   # identité USB du port du poste (openRemoteTRX Console, menu 2.8) ; vide = non relevée",
         f"ptt_port_usb = {_s(r.ptt_port_usb)}   # identité USB du port du PTT, s'il est séparé",
         "",
         "[audio]",
         f"capture_device = {_s(a.capture_device)}",
         f"playback_device = {_s(a.playback_device)}",
         f"sample_rate = {a.sample_rate}",
-        f"rx_gain_db = {a.rx_gain_db}   # gain du son reçu, -40 à +20 dB (TRX Console, menu 2.9)",
+        f"rx_gain_db = {a.rx_gain_db}   # gain du son reçu, -40 à +20 dB (openRemoteTRX Console, menu 2.9)",
         f"rx_limiter = {'true' if a.rx_limiter else 'false'}   # limiteur du son reçu (crête à -1 dBFS) ; false = saturation possible",
         f"tx_gain_db = {a.tx_gain_db}",
         "",
@@ -1459,7 +1459,7 @@ def render_toml(cfg: Config) -> str:
         f"max_points = {cfg.swr.max_points}   # points d'une mesure au plus (2 à 200)",
         f"point_tx_max_s = {cfg.swr.point_tx_max_s}   # émission d'un point au plus, en secondes (0.5 à 3)",
         "",
-        "[power]   # allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) ; TRX Console, menu 2.8",
+        "[power]   # allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) ; openRemoteTRX Console, menu 2.8",
         f"enabled = {str(cfg.power.enabled).lower()}   # false : ni allumage ni extinction à distance",
         f"on_timeout_s = {cfg.power.on_timeout_s}   # attente de la réponse du poste après l'ordre d'allumage (5 à 120 s)",
         f"idle_off = {str(cfg.power.idle_off).lower()}   # extinction automatique après idle_off_hours sans aucune connexion",
@@ -1519,7 +1519,7 @@ def render_toml(cfg: Config) -> str:
         f"tls = {str(cfg.diffusion.tls).lower()}   # false seulement vers 127.0.0.1 (faux serveur d'essai)",
         f"outside_bands = {str(cfg.diffusion.outside_bands).lower()}   # false : silence hors des [[bands]] ; true : tout diffuser",
         "",
-        "[remote_console]   # TRX Console sur le réseau (HTTPS, comptes opérateurs admin = true) : menu 4.6",
+        "[remote_console]   # openRemoteTRX Console sur le réseau (HTTPS, comptes opérateurs admin = true) : menu 4.6",
         f"enabled = {str(cfg.remote_console.enabled).lower()}",
         f"account = {_s(cfg.remote_console.account)}   # compte Linux de la console (jamais root) ; vide sous Windows",
         f"port = {cfg.remote_console.port}   # https://<station>:{cfg.remote_console.port}/",
@@ -1565,7 +1565,7 @@ def render_toml(cfg: Config) -> str:
         if client.expires:
             lines.append(f"expires = {_s(client.expires)}")
         if client.admin is True:
-            lines.append("admin = true   # peut ouvrir TRX Console sur le réseau")
+            lines.append("admin = true   # peut ouvrir openRemoteTRX Console sur le réseau")
         lines.append("")
     for b in cfg.bands:
         lines += ["[[bands]]", f"name = {_s(b.name)}", f"low_mhz = {b.low_mhz}",

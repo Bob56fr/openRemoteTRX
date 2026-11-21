@@ -1,4 +1,4 @@
-# Postes essayés avec TRX distant
+# Postes essayés avec openRemoteTRX
 
 Page publique : https://bob56fr.github.io/openRemoteTRX/postes/ (comparaison des postes et fiche de chaque poste,
 français / anglais, filtre par thème). Bloc WordPress à coller une fois : `docs/wordpress/postes-iframe.html`.
@@ -19,7 +19,7 @@ Une fiche par poste dans `donnees/<fabricant>-<modèle>.toml`, source unique des
 - `[poste] stabilite` : `ok` (aucun défaut aléatoire pendant les essais) ou `defauts` (avec `stabilite_note` /
   `stabilite_note_en`) ; sans ce champ, pas de note.
 - `[[essais]]` : `date`, `station`, `hamlib`, `systeme`, `quoi` / `quoi_en`. Un résultat vaut pour ces versions.
-- NOTE SUR 5 ÉTOILES (« fonctionne avec TRX distant », décision de l'utilisateur du 2026-11-19, `rating` de
+- NOTE SUR 5 ÉTOILES (« fonctionne avec openRemoteTRX », décision de l'utilisateur du 2026-11-19, `rating` de
   `scripts/build_rigs_doc.py`) : validé = 1, partiel = ½, ne fonctionne pas = 0, `non_declare` de cause `hamlib` ou
   `trx_distant` = ½ ; `non_declare` de cause `poste` (choix du constructeur) HORS du calcul ; `non_teste` hors du calcul,
   note « provisoire » ; aucune note tant que la sécurité d'émission n'est pas entièrement validée ni sans `stabilite` ;
@@ -30,7 +30,7 @@ Une fiche par poste dans `donnees/<fabricant>-<modèle>.toml`, source unique des
   (2) ») ; `note` / `note_en` obligatoires pour `partiel` et `echec` ; `cause` obligatoire pour `non_declare` :
   `hamlib` (Hamlib ne la propose pas pour ce modèle), `poste` (la CAT du poste ne la donne pas) ou `trx_distant`
   (pas encore programmée). Les notes (1) et (2) sont en bas de la page publique.
-- `[hamlib]` : `non_exploite` (proposé par Hamlib, pas utilisé par TRX distant), `constats` / `constats_en`.
+- `[hamlib]` : `non_exploite` (proposé par Hamlib, pas utilisé par openRemoteTRX), `constats` / `constats_en`.
 
 Règles : chaque état vient d'un essai réel (qualification, valise de qualification) ; un poste n'est `valide` ou
 `restreint` que si TOUTE la sécurité d'émission est `valide` ; la comparaison ne montre que `valide` et `partiel`, et

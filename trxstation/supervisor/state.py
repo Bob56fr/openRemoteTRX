@@ -28,7 +28,7 @@ class StateStore:
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 handle.write(text)
             with contextlib.suppress(OSError):
-                os.chmod(tmp, 0o644)             # lisible par TRX Console (diagnostic) : le superviseur tourne en root
+                os.chmod(tmp, 0o644)             # lisible par openRemoteTRX Console (diagnostic) : le superviseur tourne en root
             os.replace(tmp, self.dir / name)
         except BaseException:
             with contextlib.suppress(OSError):

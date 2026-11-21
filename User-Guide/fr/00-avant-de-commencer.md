@@ -19,7 +19,7 @@
   poste**. C'est elle qui décide de l'émission et applique les sécurités.
 - Le **superviseur** surveille le tout de façon indépendante : il ne peut que couper une émission, relancer un
   service, et t'envoyer des **alertes**.
-- **TRX Console**, le tableau de bord et l'indicateur sont tes outils sur le PC : ils lisent l'état de la station.
+- **openRemoteTRX Console**, le tableau de bord et l'indicateur sont tes outils sur le PC : ils lisent l'état de la station.
 - La configuration tient dans un seul fichier, **`station.toml`**.
 
 Chaque mot est expliqué dans le [glossaire](glossaire.md).
@@ -42,8 +42,8 @@ Le Raspberry Pi 4 est prévu mais n'a **jamais été essayé** : ne le choisis p
 | | Debian (recommandé) | Windows |
 |---|---|---|
 | Démarrage | au démarrage du PC, sans ouvrir de session | à l'**ouverture de ta session** (le PC doit rester avec ta session ouverte, verrouillée si tu veux) |
-| Mises à jour | par Internet depuis TRX Console, signature vérifiée | à la main, en relançant l'installateur d'une nouvelle version |
-| Outils | TRX Console (menus 1 à 8) | TRX Console aussi, par l'unique raccourci menu Démarrer > TRX distant (sauf les mises à jour, menus 7.x) |
+| Mises à jour | par Internet depuis openRemoteTRX Console, signature vérifiée | à la main, en relançant l'installateur d'une nouvelle version |
+| Outils | openRemoteTRX Console (menus 1 à 8) | openRemoteTRX Console aussi, par l'unique raccourci menu Démarrer > openRemoteTRX (sauf les mises à jour, menus 7.x) |
 
 ## Réglementation
 

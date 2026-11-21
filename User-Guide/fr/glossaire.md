@@ -23,12 +23,12 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 
 | Terme | Ce que c'est |
 |---|---|
-| **openRemoteTRX** | le nom du projet ; l'application Android porte ce nom, la station s'appelle aussi « TRX distant » |
+| **openRemoteTRX** | le nom du projet ; l'application Android porte ce nom, la station s'appelle aussi « openRemoteTRX » |
 | **Hamlib** | la bibliothèque libre qui sait parler à environ 300 modèles de postes ; chaque modèle a un **numéro** (FTDX10 = 1042) |
 | **rigctld** | le programme de Hamlib qui garde la liaison avec le poste ; il n'écoute que sur le PC lui-même, jamais sur le réseau |
 | **Passerelle** (`trx-gateway`) | le cœur de la station : sert la page web, vérifie les comptes, transporte le son et **décide de l'émission** |
 | **Superviseur** (`trx-supervisor`) | le gardien indépendant : surveille la passerelle, rigctld et le PC ; il peut **seulement couper** une émission, relancer un service ou mettre la station en mode sûr ; envoie les alertes |
-| **TRX Console** (`trx-console`) | le tableau de commande de la station dans un terminal : installer, configurer, démarrer, essayer, mettre à jour, dépanner (menus numérotés « 2.1 », « 2.2 »…) |
+| **openRemoteTRX Console** (`trx-console`) | le tableau de commande de la station dans un terminal : installer, configurer, démarrer, essayer, mettre à jour, dépanner (menus numérotés « 2.1 », « 2.2 »…) |
 | **Assistant de configuration** (`trx-setup`) | les questions qui créent la configuration (menu 2.1) ; il n'interroge le poste qu'en lecture |
 | **Tableau de bord** (`trx-monitor`) | l'état en direct dans un terminal (menu 1.3) ; une seule action : STOP TX |
 | **Indicateur** | le voyant de la station dans la barre du haut (Debian) ou près de l'horloge (Windows) ; lecture seule |

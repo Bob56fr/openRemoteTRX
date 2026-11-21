@@ -4,9 +4,9 @@ La station installée par ce paquet pilote le poste par Hamlib (environ 300 mod�
 
 SÉCURITÉ D'ÉMISSION, assurée par la station elle-même : PTT en alternat seulement, coupure au bout du temps maximal (TOT), retour en réception si l'appareil distant ne répond plus, un seul opérateur émet à la fois, bouton STOP toujours visible, superviseur indépendant qui remet le poste en réception en cas de panne, même si la station est fermée de force.
 
-TRX Console guide la mise en service : choix du poste, du port série et de la carte son, comptes des opérateurs (un par appareil), bandes autorisées, alertes sur le téléphone, essais du poste.
+openRemoteTRX Console guide la mise en service : choix du poste, du port série et de la carte son, comptes des opérateurs (un par appareil), bandes autorisées, alertes sur le téléphone, essais du poste.
 
-Il faut : un poste radioamateur relié au PC (câble CAT USB ou interface type Digirig / SignaLink), et Hamlib pour Windows (gratuit, installé à part ; TRX Console vous guide).
+Il faut : un poste radioamateur relié au PC (câble CAT USB ou interface type Digirig / SignaLink), et Hamlib pour Windows (gratuit, installé à part ; openRemoteTRX Console vous guide).
 
 Réservé aux radioamateurs titulaires d'une licence : vous êtes responsable de vos émissions et du respect des règles de votre pays.
 

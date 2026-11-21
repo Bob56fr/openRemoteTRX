@@ -83,7 +83,7 @@
   "filters.out_of_range": "Fuera de rango: se conserva el valor.",
   "filters.not_a_number": "Se esperaba un número: se conserva el valor.",
   "save.impossible": "Imposible guardar:\n  - {problems}",
-  "save.done": "Guardado. Reinicia la estación para aplicarlo (TRX Console, menú 1.1).",
+  "save.done": "Guardado. Reinicia la estación para aplicarlo (openRemoteTRX Console, menú 1.1).",
   "run.first_time": "DX cluster: primera configuración.",
   "run.enable": "Activar el DX cluster",
   "menu.flux": "Spots y modos seguidos (radioaficionados, RBN, CB)",

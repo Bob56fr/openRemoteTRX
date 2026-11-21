@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Exploration d'un poste jamais essayé (`trx-qualif --explorer`) : aller le plus loin possible SANS ÉMETTRE.
 
-Pour un expert, avant la qualification : tout ce que Hamlib déclare est sondé, pas seulement ce que TRX Remote
+Pour un expert, avant la qualification : tout ce que Hamlib déclare est sondé, pas seulement ce qu'openRemoteTRX
 exploite, et chaque écart entre la déclaration et la réponse du poste devient un constat (voir coherence.py).
 
   1. PTT relu au repos (10 fois) : s'il n'est pas en réception, on s'arrête sans rien toucher.
@@ -12,7 +12,7 @@ exploite, et chaque écart entre la déclaration et la réponse du poste devient
   4. Couverture : bords des plages de réception, puis une fréquence HORS couverture (doit être refusée).
   5. Commande inconnue : le flux doit rester synchronisé.
   6. Écritures avec relecture et remise à la valeur d'origine, LISTE FERMÉE de réglages sans effet sur l'émission
-     (EXPLORE_WRITE_FUNCS / EXPLORE_WRITE_LEVELS) ; les réglages déjà exploités par TRX Remote sont essayés par la
+     (EXPLORE_WRITE_FUNCS / EXPLORE_WRITE_LEVELS) ; les réglages déjà exploités par openRemoteTRX sont essayés par la
      qualification (phase 1), pas ici.
   7. Rafale de lectures mêlées (fréquence, mode, PTT, S-mètre) : réponses décalées ou incohérentes.
   8. Reconnexions à rigctld.
@@ -394,7 +394,7 @@ class Exploration:
         skipped = sorted((set(p.set_functions) - set(funcs) - set(WRITE_FUNCS)) | (set(p.set_levels) - set(levels) - set(WRITE_LEVELS)))
         if skipped:
             self.probe("writes_skipped", "write", "", None, "non écrits (hors de la liste fermée de l'exploration, ou "
-                       "sans plage déclarée ; réglages de TRX Remote : essayés par la qualification) : " + ", ".join(skipped))
+                       "sans plage déclarée ; réglages d'openRemoteTRX : essayés par la qualification) : " + ", ".join(skipped))
         if not self.writes:
             self.probe("writes", "write", "", None, "écritures désactivées (--lecture-seule)")
             return

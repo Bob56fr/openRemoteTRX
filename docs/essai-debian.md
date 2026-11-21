@@ -25,9 +25,9 @@ Note chaque écart (copie d'écran ou texte) : c'est le résultat de l'essai.
 4. **Se déconnecter puis se reconnecter** (appartenance aux groupes `dialout`, `audio`, `trx`).
 5. Relancer `sudo bash install.sh` une seconde fois : il doit réparer/mettre à jour sans rien écraser.
 
-## 2. TRX Console et diagnostic
+## 2. openRemoteTRX Console et diagnostic
 
-1. Menu des applications : « TRX Console ». Une fenêtre de terminal doit s'ouvrir avec le menu.
+1. Menu des applications : « openRemoteTRX Console ». Une fenêtre de terminal doit s'ouvrir avec le menu.
 2. Menu « Diagnostic ».
 
 | Attendu | À noter |
@@ -42,7 +42,7 @@ Note chaque écart (copie d'écran ou texte) : c'est le résultat de l'essai.
 2. Repérer ses ports : `ls -l /dev/serial/by-id/`
    L'IC-7300MK2 en montre **deux**. Relevé sur un vrai Debian 13 : `…-if00` = port A (CI-V, CAT) et
    `…-if02` = port B (spectre). L'assistant le contrôle de toute façon.
-3. TRX Console, menu « Assistant de configuration » : choisir le port A, les cartes son du poste
+3. openRemoteTRX Console, menu « Assistant de configuration » : choisir le port A, les cartes son du poste
    (noms `plughw:CARD=CODEC…`), accepter les modes données, garder comptes et bandes.
    À la question du spectre HF : **oui**, choisir le port B, vérifier USB SEND / USB Keying, taper OUI.
 
@@ -58,7 +58,7 @@ Variante en ligne de commande, station arrêtée :
 
 ## 4. Station en marche
 
-1. TRX Console : « Démarrer la station », puis « Diagnostic » et `trx-monitor`.
+1. openRemoteTRX Console : « Démarrer la station », puis « Diagnostic » et `trx-monitor`.
 
 | Attendu | À noter |
 | --- | --- |

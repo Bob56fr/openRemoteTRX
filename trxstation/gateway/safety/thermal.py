@@ -3,7 +3,7 @@
 """Température du poste (TEMP_METER de Hamlib) : avertissement, puis coupure de l'émission à distance.
 
 Seuils dans station.toml ([safety] rig_temp_warn_c, rig_temp_cut_c ; 40 et 50 °C par défaut), réglables par
-TRX Console. Niveaux :
+openRemoteTRX Console. Niveaux :
   * "" : rien à signaler, ou température inconnue (poste sans TEMP_METER, comme l'IC-7300MK2 sous Hamlib) ;
   * "warn" : au moins rig_temp_warn_c ; la page l'affiche, le superviseur prévient (ntfy) ;
   * "hot" : au moins rig_temp_cut_c ; l'émission À DISTANCE est coupée et refusée (`rig_hot`). On n'en sort

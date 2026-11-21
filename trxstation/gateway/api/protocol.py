@@ -112,13 +112,13 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "sdr_audio",                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
                      "monitoring",                # monitoring inter-stations dans la page (0.164.0+, module monlink)
                      "diffusion",                 # diffusion en direct vers un serveur Icecast (0.189.0+, module diffusion)
-                     "remote_console",            # lien vers TRX Console sur le réseau (0.178.0+, opérateurs admin)
+                     "remote_console",            # lien vers openRemoteTRX Console sur le réseau (0.178.0+, opérateurs admin)
                      "power")                     # allumage et extinction du poste à distance (0.222.0+, [power] enabled)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
 SDR_ACTIONS = ("watch", "listen", "state", "set")
-# Mêmes actions que le menu 6.5 de TRX Console (monlink/service.py ACTIONS), plus le rapport reçu par morceaux.
+# Mêmes actions que le menu 6.5 d'openRemoteTRX Console (monlink/service.py ACTIONS), plus le rapport reçu par morceaux.
 MONITORING_ACTIONS = ("view", "pseudo", "invite", "join", "confirm", "profile", "pause", "end", "request_assist",
                       "request_report", "answer", "received", "send_report", "report_part")
 MAX_MONITORING_ARGS_BYTES = 1500

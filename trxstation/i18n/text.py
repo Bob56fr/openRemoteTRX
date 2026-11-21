@@ -3,7 +3,7 @@
 """Textes de la station pour les CLIENTS, refabriqués dans la langue de chacun (lot T5 de
 docs/application-traduction-cahier-des-charges.md, § 3.3).
 
-`Text` est une chaîne dont la VALEUR est le texte français (journal, fichiers d'état, TRX Console, alertes ntfy et
+`Text` est une chaîne dont la VALEUR est le texte français (journal, fichiers d'état, openRemoteTRX Console, alertes ntfy et
 clients français : rien ne change pour eux) ; elle garde la clé du tronc commun (`trxstation/i18n/client.<langue>.json`,
 clés `station.*`) et ses champs `{nom}`. La passerelle la refabrique pour chaque client au moment de l'envoi
 (`gateway/api/texts.py`, `localize`). Un champ peut être lui-même un `Text` (traduit aussi) ; un détail technique

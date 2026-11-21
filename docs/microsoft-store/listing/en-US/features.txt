@@ -6,4 +6,4 @@ Independent supervisor and end guard: the radio goes back to receive on failure
 HF spectrum, S-meter, memories, DX Cluster, SWR measurement
 FreeDV RADE reception
 Operator accounts and receive-only visitors
-TRX Console in English, French, German and Spanish
+openRemoteTRX Console in English, French, German and Spanish

@@ -84,11 +84,11 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
 | --- | --- |
 | Étape 1 : modèle du Pi affiché en vert, aucun avertissement d'alimentation ni de mémoire | avertissements |
 | `pip` télécharge des modules déjà compilés pour arm64 : quelques minutes | durée totale (`time`). Si `pip` compile (`Building wheel for av`, `aiortc`…), noter quel module et la durée : c'est un défaut à corriger |
-| Étape 8 : « pas de bureau : TRX Console se lance par la commande trx-console » | |
+| Étape 8 : « pas de bureau : openRemoteTRX Console se lance par la commande trx-console » | |
 | Fin : « Installation terminée » | sinon la dernière ligne et `/var/log/trx-remote-install.log` |
 
 3. Chaque commande `ssh` ouvre une NOUVELLE connexion, donc les nouveaux groupes (`dialout`, `audio`, `trx`)
-   s'appliquent d'eux-mêmes. TRX Console, `trx-monitor` et les mesures se lancent de la même façon :
+   s'appliquent d'eux-mêmes. openRemoteTRX Console, `trx-monitor` et les mesures se lancent de la même façon :
 
    ```
    ssh -t $pi trx-console
@@ -138,11 +138,11 @@ Pour essayer davantage, recommencer avec `--listeners 10`.
    sert pas.
 3. `trx-console`, menu « Assistant de configuration », comme sur minix-bzh (`docs/essai-debian.md` § 3) :
    port A, cartes son du poste, comptes, bandes. Spectre HF : oui, port B (`-if02`).
-4. TRX Console : « Démarrer la station », puis « Diagnostic ».
+4. openRemoteTRX Console : « Démarrer la station », puis « Diagnostic ».
 
 | Attendu | À noter |
 | --- | --- |
-| TRX Console s'affiche correctement en SSH : cadres, accents, couleurs | défauts d'affichage |
+| openRemoteTRX Console s'affiche correctement en SSH : cadres, accents, couleurs | défauts d'affichage |
 | Diagnostic : Python, modules, Hamlib, groupes, température du processeur (capteur `cpu_thermal`) OK | toute ligne en échec |
 | `trx-monitor` dans une 2e fenêtre SSH : radio vivante, spectre HF vert, compteur « Trames » qui avance | |
 | Menu 4.1 : le QR code s'affiche dans le terminal et le téléphone le lit | |
@@ -207,7 +207,7 @@ Les mêmes essais que sur minix-bzh (`docs/essai-debian.md` § 5), sur **charge 
 - Durée de l'installation, et modules compilés s'il y en a eu.
 - Mo écrits par heure. Au-delà de quelques dizaines de Mo par heure, prévoir le journal en mémoire
   (`Storage=volatile` dans `/etc/systemd/journald.conf`) ou un SSD. Ne pas le faire avant la mesure E.
-- Tout défaut d'affichage de TRX Console ou de `trx-monitor` en SSH.
+- Tout défaut d'affichage d'openRemoteTRX Console ou de `trx-monitor` en SSH.
 
 Ne pas faire tourner minix-bzh et le Pi en même temps sur le même poste : un seul maître par port série.
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Langues des outils de la station (aujourd'hui : TRX Console). Français, anglais, allemand, espagnol ; d'autres
+"""Langues des outils de la station (aujourd'hui : openRemoteTRX Console). Français, anglais, allemand, espagnol ; d'autres
 langues viendront : ajouter son code à LANGS, son nom à NAMES et ses catalogues.
 
 Catalogues : `trxstation/i18n/<domaine>.<langue>.json` (livrés avec la station), un objet {clé: texte} ; les
@@ -105,11 +105,11 @@ def load_lang(path: Path, env: dict[str, str] | None = None) -> str:
     return system_lang(env)
 
 
-ENV_LANG = "TRX_LANG"             # langue passée par TRX Console aux outils qu'elle lance (sudo compris, étape 240)
+ENV_LANG = "TRX_LANG"             # langue passée par openRemoteTRX Console aux outils qu'elle lance (sudo compris, étape 240)
 
 
 def tool_lang(env: dict[str, str] | None = None) -> str:
-    """Langue d'un OUTIL (trx-setup, trx-monitor…, lot L3) : celle que lui passe TRX Console (`TRX_LANG`), sinon le
+    """Langue d'un OUTIL (trx-setup, trx-monitor…, lot L3) : celle que lui passe openRemoteTRX Console (`TRX_LANG`), sinon le
     choix du menu 0 du compte qui le lance, sinon celle du système, sinon le français."""
     env = os.environ if env is None else env
     lang = env.get(ENV_LANG, "")
@@ -149,7 +149,7 @@ def save_lang(path: Path, lang: str) -> bool:
     return _save_pref(path, "lang", lang)
 
 
-# Niveaux d'affichage de TRX Console (étape 234, décisions de l'utilisateur du 2026-11-17) : ils CACHENT des menus pour
+# Niveaux d'affichage d'openRemoteTRX Console (étape 234, décisions de l'utilisateur du 2026-11-17) : ils CACHENT des menus pour
 # ne pas noyer un débutant, ils ne protègent rien (un numéro tapé ouvre toujours son menu).
 LEVELS = ("basic", "normal", "expert")
 

@@ -79,7 +79,7 @@ def test_one_time_token_then_cookie_and_every_door_is_closed_without_them(tmp_pa
         assert (await client.get("/")).status == 403                     # sans cookie
         origin = await login(wc, client)
         r = await client.get("/")
-        assert r.status == 200 and "TRX Console" in await r.text()
+        assert r.status == 200 and "openRemoteTRX Console" in await r.text()
         assert "script-src 'self'" in r.headers["Content-Security-Policy"]
         assert wc.token is None and token                                 # jeton consommé
         import aiohttp

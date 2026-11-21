@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Fabrique le mode d'emploi de TRX Console (pages HTML, thème sombre) publié par GitHub Pages, dans chaque langue.
+"""Fabrique le mode d'emploi d'openRemoteTRX Console (pages HTML, thème sombre) publié par GitHub Pages, dans chaque langue.
 
 La liste des menus (thèmes, numéros, libellés) vient du code (`trxstation.console`, catalogues `trxstation/i18n/`) ;
 les explications de `docs/console/contenu.toml` (français, référence) et `contenu.<langue>.toml` (en, de, es).
@@ -23,6 +23,7 @@ import re
 import sys
 import textwrap
 import tomllib
+import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +31,7 @@ CONTENT = ROOT / "docs" / "console" / "contenu.toml"
 LANGS = ("fr", "en", "de", "es")                         # même liste que trxstation.i18n.LANGS (vérifié par les tests)
 UI_KEYS = ("lang_name", "version", "nav_first", "nav_menus", "nav_expert", "h_first", "h_menus", "menus_intro", "dt_role",
            "dt_when", "dt_changes", "dt_rights", "rights_yes", "rights_no", "more", "latest", "others", "footer",
-           "source", "langs")
+           "source", "langs", "toc", "top", "start_here")
 
 
 def content_path(lang: str) -> Path:
@@ -41,6 +42,33 @@ SITE = ROOT / "docs" / "site"
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 SITE_URL = "https://www.rf-diy.com"
 VERSION_DIR = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}$")
+GUIDE_URL = "https://bob56fr.github.io/openRemoteTRX/guide/"
+
+
+def _guide():
+    """Fabrique du guide de l'opérateur : ses infobulles (glossaire, liste fermée des termes, script) servent ici aussi."""
+    spec = importlib.util.spec_from_file_location("build_user_guide", ROOT / "scripts" / "build_user_guide.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+GUIDE = _guide()
+
+
+def glossary_url(lang: str) -> str:
+    return GUIDE_URL + ("" if lang == "fr" else f"{lang}/") + "#glossaire"
+
+
+def bubbles_note(lang: str) -> str:
+    """Encadré de tête : ce que sont les mots soulignés, lien vers le glossaire (langues qui ont les bulles)."""
+    ui = GUIDE.UI.get(lang)
+    if not GUIDE.BUBBLES.get(lang) or not ui:
+        return ""
+    esc = html.escape
+    return (f'<p class="note-bulles"><strong><span class="exemple">{esc(ui["bubbles_title"])}</span></strong> '
+            f'{esc(ui["bubbles_note"])} <a href="{glossary_url(lang)}" target="_blank" rel="noopener noreferrer">'
+            f'{esc(ui["bubbles_link"])}</a>.</p>')
 
 CSS = """
 :root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
@@ -63,9 +91,23 @@ li{margin:.2rem 0}
 .version{color:var(--doux);font-size:.95rem;margin:0 0 1rem}
 .lecture{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
   padding:.5rem 1rem;margin:1rem 0}
-.sommaire{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0;padding:0;list-style:none}
-.sommaire a{display:inline-block;background:var(--carte);border:1px solid var(--ligne);border-radius:2rem;
-  padding:.25rem .9rem;text-decoration:none;color:var(--texte)}
+.sommaire{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1.2rem 0}
+.sommaire h2{margin:.6rem 0 .5rem;border:0;padding:0}
+.sommaire ol,.sommaire ul{list-style:none;margin:0;padding:0}
+.sommaire a{text-decoration:none}
+.sommaire a:hover{text-decoration:underline}
+.toc-haut>li{margin:.5rem 0}
+.toc-haut>li>a{font-weight:600}
+.toc-themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:.6rem;margin:.5rem 0 .2rem!important}
+.toc-themes>li{border:1px solid var(--ligne);border-radius:.5rem;padding:.45rem .7rem;margin:0;background:var(--fond)}
+.toc-themes>li>a{display:flex;gap:.5rem;align-items:baseline;font-weight:600;color:var(--texte)}
+.toc-menus{margin:.3rem 0 0 .2rem!important;font-size:.92rem}
+.toc-menus li{margin:.1rem 0}
+.toc-menus .k{display:inline-block;min-width:2.1rem;color:var(--doux)}
+.theme-bloc,details{scroll-margin-top:1rem}
+.theme-texte{margin:.2rem 0 .4rem}
+.debut{border-left:.25rem solid var(--ok);padding:.1rem 0 .1rem .8rem;margin:.4rem 0 .8rem}
+.haut{text-align:right;font-size:.9rem;margin:.4rem 0 0}
 .etapes{list-style:none;margin:0;padding:0;counter-reset:e}
 .etapes>li{counter-increment:e;display:grid;grid-template-columns:2.2rem 1fr;gap:.8rem;background:var(--carte);
   border:1px solid var(--ligne);border-radius:.6rem;padding:.8rem 1rem;margin:.7rem 0}
@@ -87,7 +129,11 @@ dd{margin:0;min-width:0}
 .libre{color:var(--ok);font-weight:600}
 .expert{border-top:1px dashed var(--ligne);margin-top:.5rem;padding-top:.4rem}
 .plus{display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;margin:0}
-.theme{margin:1.4rem 0 .3rem;color:var(--doux);font-size:1rem;text-transform:uppercase;letter-spacing:.04em}
+.note-bulles{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--ok);
+  border-radius:.5rem;padding:.55rem .9rem;margin:.6rem 0 1rem}
+.note-bulles .exemple{border-bottom:1px dotted var(--accent)}
+.bulle .plus{display:inline-block;color:var(--accent);text-transform:none;letter-spacing:normal;margin-top:.35rem}
+.theme{margin:1.8rem 0 .3rem;font-size:1.15rem;display:flex;gap:.6rem;align-items:baseline}
 .langues{margin:0 0 1rem;color:var(--doux);font-size:.95rem}
 .bloc{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.6rem 1rem;margin:.7rem 0}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
@@ -107,6 +153,24 @@ RESIZE_JS = """
   document.addEventListener("toggle", send, true);
   if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
   else window.addEventListener("resize", send);
+})();
+// Lien vers un thème ou un menu (#menu-2-5, ?menu=2.5, ?theme=2) : menu ouvert, puis position donnée au site.
+(function () {
+  function target() {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var q = new URLSearchParams(location.search), m = q.get("menu"), t = q.get("theme");
+    if (!id && m) id = "menu-" + m.replace(".", "-");
+    if (!id && t) id = "theme-" + t;
+    if (!/^[a-z0-9-]{1,40}$/.test(id)) return;
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === "DETAILS") el.open = true;
+    el.scrollIntoView();
+    if (window.parent !== window)
+      window.parent.postMessage({ type: "trx-doc-scroll", top: Math.round(el.getBoundingClientRect().top + window.scrollY) }, "*");
+  }
+  window.addEventListener("load", target);
+  window.addEventListener("hashchange", target);
 })();
 """
 
@@ -130,6 +194,13 @@ def console_menus(lang: str = "fr") -> list[tuple[str, str, str, str, str]]:
     return [(key, label, fn.__name__, key.split(".")[0], titles[key.split(".")[0]]) for key, label, fn in con.items]
 
 
+def theme_ids() -> dict[str, str]:
+    """{numéro du thème: id} (id = clé des sections [themes.<id>] du contenu)."""
+    sys.path.insert(0, str(ROOT))
+    from trxstation.console import MENU_THEMES
+    return {number: tid for number, tid, _ in MENU_THEMES}
+
+
 def load_content(path: Path = CONTENT) -> dict:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
@@ -150,6 +221,12 @@ def check(menus: list[tuple], content: dict, lang: str = "fr") -> None:
         missing = [f for f in ("role", "quand", "modifie", "admin") if f not in fields]
         if missing:
             problems.append(f"[menus.{name}] ({path.name}) : champ(s) manquant(s) {', '.join(missing)}")
+    if lang == "fr":       # présentation des thèmes : obligatoire en français ; les traductions suivent (sinon rien)
+        for tid in theme_ids().values():
+            fields = content.get("themes", {}).get(tid, {})
+            missing = [f for f in ("texte", "debut") if not fields.get(f)]
+            if missing:
+                problems.append(f"[themes.{tid}] ({path.name}) : champ(s) manquant(s) {', '.join(missing)}")
     missing_ui = [k for k in UI_KEYS if k not in content.get("ui", {})]
     if missing_ui:
         problems.append(f"[ui] ({path.name}) : clé(s) manquante(s) {', '.join(missing_ui)}")
@@ -221,23 +298,34 @@ def render(version: str, menus: list[tuple], content: dict, versions: list[str],
            f'<html lang="{lang}">', "<head>", '<meta charset="utf-8">',
            '<meta name="viewport" content="width=device-width, initial-scale=1">',
            f"<title>{esc(page['titre'])} ({esc(version)})</title>",
-           f"<style>{CSS.strip()}</style>", "</head>", "<body>", "<main>",
+           f"<style>{CSS.strip()}\n{GUIDE.BUBBLES_CSS.strip()}</style>", "</head>", "<body>", "<main>",
            f"<h1>{esc(page['titre'])}</h1>",
            f'<p class="version">{esc(ui["version"].format(version=version))}</p>',
            f'<p class="langues">{esc(ui["langs"])} {" · ".join(links)}</p>',
+           bubbles_note(lang),
            page["intro"].strip(),
            f'<div class="lecture">{page["lecture"].strip()}</div>',
-           f'<ul class="sommaire"><li><a href="#premier-deploiement">{esc(ui["nav_first"])}</a></li>'
-           f'<li><a href="#menus">{esc(ui["nav_menus"])}</a></li><li><a href="#depannage">{esc(ui["nav_expert"])}</a></li></ul>',
+           toc(menus, ui),
            f'<h2 id="premier-deploiement">{esc(ui["h_first"])}</h2>', '<ol class="etapes">']
     for step in content.get("parcours", []):
         out.append(f"<li><div><h3>{esc(step['titre'])}</h3>{step['texte'].strip()}</div></li>")
     out += ["</ol>", f'<h2 id="menus">{esc(ui["h_menus"])}</h2>', ui["menus_intro"].strip()]
     current_theme = None
+    ids = theme_ids()
+    top = f'<p class="haut"><a href="#sommaire">&#8593; {esc(ui["top"])}</a></p></section>'
     for key, label, name, theme, theme_title in menus:
         if theme != current_theme:
+            if current_theme is not None:
+                out.append(top)
             current_theme = theme
-            out.append(f'<h3 class="theme" id="theme-{esc(theme)}">{esc(theme)}) {esc(theme_title)}</h3>')
+            out.append(f'<section class="theme-bloc" id="theme-{esc(theme)}">'
+                       f'<h3 class="theme"><span class="num">{esc(theme)}</span>{esc(theme_title)}</h3>')
+            intro = content.get("themes", {}).get(ids[theme], {})
+            if intro.get("texte"):
+                out.append(f'<div class="theme-texte">{intro["texte"].strip()}</div>')
+            if intro.get("debut"):
+                out.append(f'<div class="debut"><span class="plus">{esc(ui["start_here"])}</span>'
+                           f'{intro["debut"].strip()}</div>')
         item = content["menus"][name]
         rights = (f'<span class="sudo">{esc(ui["rights_yes"])}</span>' if item["admin"]
                   else f'<span class="libre">{esc(ui["rights_no"])}</span>')
@@ -249,6 +337,8 @@ def render(version: str, menus: list[tuple], content: dict, versions: list[str],
                    f"<dt>{esc(ui['dt_when'])}</dt><dd>{item['quand']}</dd>"
                    f"<dt>{esc(ui['dt_changes'])}</dt><dd>{item['modifie']}</dd>"
                    f"<dt>{esc(ui['dt_rights'])}</dt><dd>{rights}</dd></dl>{extra}</div></details>")
+    if current_theme is not None:
+        out.append(top)
     out.append(f'<h2 id="depannage">{esc(ui["nav_expert"])}</h2>')
     for n, block in enumerate(content.get("expert", []), 1):
         out.append(f'<div class="bloc" id="bloc-{n}"><h3>{esc(block["titre"])}</h3>{block["texte"].strip()}</div>')
@@ -260,11 +350,33 @@ def render(version: str, menus: list[tuple], content: dict, versions: list[str],
     archive = (esc(ui["others"]) + " " + ", ".join(f'<a href="{archived(v)}">{esc(v)}</a>' for v in others) + ". ") if others else ""
     if versioned:
         archive = f'<a href="{page_url(None, lang)}">{esc(ui["latest"])}</a>. ' + archive
+    # Infobulles (langues dont le guide a la liste des termes) : contenu de la page, pas l'en-tête ni le pied
+    bubbles = GUIDE.Bubbles(lang, {})
+    bubbles.more = glossary_url(lang)
+    start = out.index("<main>") + 1
+    out[start:] = [bubbles.apply("\n".join(out[start:]))]
+    defs = bubbles.footer(GUIDE.UI.get(lang, GUIDE.UI["fr"]))
     out += ["<footer>",
             f'<p>{archive}{esc(ui["footer"])} : <a href="{REPO_URL}" target="_blank" rel="noopener noreferrer">'
             f'{esc(ui["source"])}</a> · <a href="{SITE_URL}" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>',
-            "</footer>", "</main>", f"<script>{RESIZE_JS.strip()}</script>", "</body>", "</html>", ""]
+            "</footer>", "</main>", defs, f"<script>{RESIZE_JS.strip()}</script>",
+            f"<script>{GUIDE.BUBBLES_JS.strip()}</script>" if defs else "", "</body>", "</html>", ""]
     return "\n".join(out)
+
+
+def toc(menus: list[tuple], ui: dict) -> str:
+    """Sommaire : premier déploiement, chaque thème avec ses menus, dépannage avancé."""
+    esc = html.escape
+    themes: dict[str, tuple[str, list[str]]] = {}
+    for key, label, _name, theme, theme_title in menus:
+        themes.setdefault(theme, (theme_title, []))[1].append(
+            f'<li><a href="#menu-{esc(key.replace(".", "-"))}"><span class="k">{esc(key)}</span>{esc(label)}</a></li>')
+    cards = "".join(f'<li><a href="#theme-{esc(t)}"><span class="num">{esc(t)}</span>{esc(title)}</a>'
+                    f'<ul class="toc-menus">{"".join(items)}</ul></li>' for t, (title, items) in themes.items())
+    return (f'<nav class="sommaire" id="sommaire"><h2>{esc(ui["toc"])}</h2><ol class="toc-haut">'
+            f'<li><a href="#premier-deploiement">{esc(ui["nav_first"])}</a></li>'
+            f'<li><a href="#menus">{esc(ui["nav_menus"])}</a><ol class="toc-themes">{cards}</ol></li>'
+            f'<li><a href="#depannage">{esc(ui["nav_expert"])}</a></li></ol></nav>')
 
 
 def html_to_text(fragment: str, width: int = 76, french: bool = True) -> str:
@@ -316,8 +428,8 @@ def build(site: Path = SITE, version: str | None = None) -> dict[Path, str]:
                       key=lambda v: tuple(int(x) for x in v.split(".")), reverse=True)
     home = ("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- Copyright (C) 2026 RF-DIY.COM -->\n"
             '<html lang="fr"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=console/">'
-            "<title>TRX distant</title></head><body style=\"background:#0f141c;color:#dbe3ee;font-family:system-ui\">"
-            '<p><a style="color:#4c9be8" href="console/">Mode d\'emploi de TRX Console</a></p></body></html>\n')
+            "<title>openRemoteTRX</title></head><body style=\"background:#0f141c;color:#dbe3ee;font-family:system-ui\">"
+            '<p><a style="color:#4c9be8" href="console/">Mode d\'emploi d\'openRemoteTRX Console</a></p></body></html>\n')
     pages: dict[Path, str] = {}
     for lang in LANGS:
         sub = "" if lang == "fr" else lang + "/"

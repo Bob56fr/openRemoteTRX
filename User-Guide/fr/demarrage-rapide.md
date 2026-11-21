@@ -54,7 +54,7 @@ Déconnecte-toi puis reconnecte-toi à la fin.
 
 ## 2. Configurer (5 min)
 
-Ouvre **TRX Console** (Debian : menu des applications ou `trx-console` ; Windows : menu Démarrer > **TRX distant**),
+Ouvre **openRemoteTRX Console** (Debian : menu des applications ou `trx-console` ; Windows : menu Démarrer > **openRemoteTRX**),
 puis le **menu 2.1** (l'assistant). Le poste n'est que lu : aucune émission. Ce qui compte :
 
 | Question | Réponse |

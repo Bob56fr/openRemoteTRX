@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
-// TRX Console sur le réseau (étape 233) : connexion d'un opérateur administrateur, puis la page des menus.
+// openRemoteTRX Console sur le réseau (étape 233) : connexion d'un opérateur administrateur, puis la page des menus.
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);

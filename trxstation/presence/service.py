@@ -10,7 +10,7 @@ fréquence, le mode et l'émission sur le bus, et échange des états chiffrés 
 - groupes, clés de groupe, partage : `state_dir/presence/presence.json` (0600) ; résumé : `status.json` ;
 - journal : `state_dir/presence/presence.log`, 5 fichiers de 1 Mo, jamais de clé ;
 - commandes des opérateurs (`friends` de la page et de l'application, relayées par le cœur : droit client_commands)
-  et de TRX Console (menu 5.3 : `state_dir/presence-request.json` déposé par la console, réponse dans
+  et d'openRemoteTRX Console (menu 5.3 : `state_dir/presence-request.json` déposé par la console, réponse dans
   `state_dir/presence/console-reply.json`, effacée après 60 s) ; avis `friends_changed` aux SEULS opérateurs.
 
 À la main (essai) :  python -m trxstation.presence.service --config station.toml
@@ -41,7 +41,7 @@ from .store import Store
 
 log = logging.getLogger("trx.presence")
 ERROR_DELAY_S = 120.0
-CONSOLE_REQUEST = "presence-request.json"      # dans state_dir (déposé par TRX Console, au besoin par sudo)
+CONSOLE_REQUEST = "presence-request.json"      # dans state_dir (déposé par openRemoteTRX Console, au besoin par sudo)
 CONSOLE_REPLY = "console-reply.json"           # dans state_dir/presence
 CONSOLE_MAX_AGE_S = 120.0
 CONSOLE_REPLY_KEEP_S = 60.0
@@ -144,7 +144,7 @@ class PresenceService:
         return Path(self.cfg.supervisor.state_dir)
 
     async def check_console(self) -> None:
-        """Demande de TRX Console (menu 5.3) : lue puis effacée, réponse dans console-reply.json (effacée après 60 s)."""
+        """Demande d'openRemoteTRX Console (menu 5.3) : lue puis effacée, réponse dans console-reply.json (effacée après 60 s)."""
         from .store import write_json
         reply_path = self.folder / CONSOLE_REPLY
         now = self.clock()

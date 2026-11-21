@@ -1,6 +1,6 @@
 # Reports for the Hamlib developers (draft)
 
-Drafts prepared from measurements made with an Icom IC-7300MK2 while building TRX Remote (openRemoteTRX).
+Drafts prepared from measurements made with an Icom IC-7300MK2 while building openRemoteTRX.
 Where to send: the mailing list `hamlib-developer@lists.sourceforge.net` (see https://github.com/Hamlib/Hamlib, README);
 the repository also has a GitHub issue tracker: check CONTRIBUTING.md before choosing. One subject per message.
 Before sending: attach the full `rigctld -vvvvv` log of a failing run, and re-check items 2 and 3 against the

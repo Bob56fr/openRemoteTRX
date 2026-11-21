@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console plein écran (étape 223) : arbre des thèmes et des menus, aide du menu sélectionné, menu déroulé par la
+"""openRemoteTRX Console plein écran (étape 223) : arbre des thèmes et des menus, aide du menu sélectionné, menu déroulé par la
 console texte (écran en pause), et choix entre écran plein et console texte au lancement."""
 from __future__ import annotations
 

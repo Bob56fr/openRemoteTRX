@@ -1448,7 +1448,7 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
   send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [],
          remote_console: { port: 8444 } });
   await wait(30);
-  assert.equal($("sec-console").hidden, false);                                    // lien vers TRX Console : administrateur
+  assert.equal($("sec-console").hidden, false);                                    // lien vers openRemoteTRX Console : administrateur
   assert.equal($("rc-open").href, "https://192.168.1.50:8444/");
   send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"], presence });
   await wait(30);

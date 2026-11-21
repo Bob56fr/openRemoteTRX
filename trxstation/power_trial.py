@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Essai d'extinction et de rallumage du poste par la CAT (TRX Console, menu 2.8), station ARRÊTÉE.
+"""Essai d'extinction et de rallumage du poste par la CAT (openRemoteTRX Console, menu 2.8), station ARRÊTÉE.
 
 `python -m trxstation.power_trial --config station.toml` : poste lu allumé et en réception, éteint, ports relus
 (présents, même identité USB), rallumé, puis fréquence, mode et PTT relus. Code de sortie 0 = réussi ; la mise en

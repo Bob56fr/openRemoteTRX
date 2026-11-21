@@ -499,7 +499,7 @@
    "lines": [
     {
      "key": "Station",
-     "text": "arrêtée (TRX Console, menu 1.1 pour la démarrer)",
+     "text": "arrêtée (openRemoteTRX Console, menu 1.1 pour la démarrer)",
      "level": "info"
     }
    ]
@@ -662,7 +662,7 @@
    "lines": [
     {
      "key": "Station",
-     "text": "MODE SÛR : pannes répétées (TRX Console, menu 1.4)",
+     "text": "MODE SÛR : pannes répétées (openRemoteTRX Console, menu 1.4)",
      "level": "bad"
     },
     {
@@ -706,12 +706,12 @@
    "lines": [
     {
      "key": "Station",
-     "text": "MODE SÛR : pannes (TRX Console, menu 1.4)",
+     "text": "MODE SÛR : pannes (openRemoteTRX Console, menu 1.4)",
      "level": "bad"
     },
     {
      "key": "Station",
-     "text": "arrêtée (TRX Console, menu 1.1 pour la démarrer)",
+     "text": "arrêtée (openRemoteTRX Console, menu 1.1 pour la démarrer)",
      "level": "bad"
     }
    ]
@@ -2369,7 +2369,7 @@
     },
     {
      "key": "Mise à jour",
-     "text": "version 0.114.0 disponible (TRX Console, menu 7.1)",
+     "text": "version 0.114.0 disponible (openRemoteTRX Console, menu 7.1)",
      "level": "warn"
     }
    ]
@@ -2545,7 +2545,7 @@
    "lines": [
     {
      "key": "Station",
-     "text": "arrêtée (TRX Console, menu 1.1 pour la démarrer)",
+     "text": "arrêtée (openRemoteTRX Console, menu 1.1 pour la démarrer)",
      "level": "info"
     }
    ]
@@ -2560,7 +2560,7 @@
    "lines": [
     {
      "key": "Station",
-     "text": "arrêtée (TRX Console, menu 1.1 pour la démarrer)",
+     "text": "arrêtée (openRemoteTRX Console, menu 1.1 pour la démarrer)",
      "level": "info"
     }
    ]

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console plein écran (Textual) : même arborescence, mêmes menus que la console texte (console.py).
+"""openRemoteTRX Console plein écran (Textual) : même arborescence, mêmes menus que la console texte (console.py).
 
 À gauche, l'arbre des thèmes et de leurs menus, avec un pictogramme par thème ; flèches et Entrée, ou les CHIFFRES
 comme dans la console texte (un chiffre ouvre un thème, 0 = langue ; dans un thème ouvert, un chiffre lance son menu ;
@@ -86,7 +86,7 @@ class ConsoleApp(App):
         super().__init__()
         self.con = con
         self.icons = icons_wanted() if icons is None else icons
-        self.title = "TRX Console"
+        self.title = "openRemoteTRX Console"
         self.ran: list[str] = []                      # menus ouverts (journal de la session, tests)
         # Thème choisi par un CHIFFRE : le chiffre suivant lance un de ses menus. Jamais déduit de la position du
         # curseur (tout déplié, « 4 » doit ouvrir le thème 4, pas lancer le menu 1.4).
@@ -98,7 +98,7 @@ class ConsoleApp(App):
     def compose(self) -> ComposeResult:
         yield Static(id="status")
         with Horizontal(id="body"):
-            yield MenuTree("TRX Console", id="menus")
+            yield MenuTree("openRemoteTRX Console", id="menus")
             with VerticalScroll(id="help-box"):
                 yield Static(id="help")
         yield Static(id="hint")
@@ -130,7 +130,7 @@ class ConsoleApp(App):
         try:
             header = self.con.header()
         except Exception as exc:                       # l'en-tête ne doit jamais faire tomber l'écran
-            header = f"TRX Console ({exc})"
+            header = f"openRemoteTRX Console ({exc})"
         self.query_one("#status", Static).update(Text.from_ansi(header.strip("\n")))
 
     def icon(self, theme_id: str) -> str:

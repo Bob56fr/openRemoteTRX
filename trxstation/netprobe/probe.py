@@ -31,7 +31,7 @@ WINDOW_MS = 10_000
 KEEP_BEATS_MS = 70_000                 # fenêtre de 60 s + 5 s d'écho tardif + marge
 KEEP_REPORTS_MS = 900_000              # 15 min de résumés du client (diagnostic après coup)
 DIAGNOSE_AFTER_MS = 15_000             # attente des résumés du client avant de conclure (un résumé toutes les 10 s)
-CLEAR_REQUEST = "netprobe-clear.json"   # « Tout effacer » demandé par TRX Console (menu 6.4), écrit par sudo
+CLEAR_REQUEST = "netprobe-clear.json"   # « Tout effacer » demandé par openRemoteTRX Console (menu 6.4), écrit par sudo
 CLEAR_MAX_AGE_S = 10.0
 RECONNECT_LINK_MS = 1_800_000          # une reconnexion du même appareil dans les 30 min clôt une coupure « déconnexion »
 REPORT_FRESH_MS = 30_000               # signal radio pris en compte dans le niveau s'il date de moins de 30 s
@@ -228,7 +228,7 @@ class NetProbeHub:
             emit_event(codes.ORT_4017, logger=log, demande="effacement de l'historique réseau", motif="illisible")
             return
         if abs(self.wall_ms() / 1000 - at) <= CLEAR_MAX_AGE_S:
-            self.clear("TRX Console")
+            self.clear("openRemoteTRX Console")
         else:
             emit_event(codes.ORT_4017, logger=log, demande="effacement de l'historique réseau", motif="trop ancienne")
 
@@ -282,7 +282,7 @@ class NetProbeHub:
         emit_event(codes.ORT_4506, logger=log, par=by)
 
     def summary(self) -> dict:
-        """Champ `net` du fichier d'état (trx-monitor, TRX Console) : vue opérateur."""
+        """Champ `net` du fichier d'état (trx-monitor, openRemoteTRX Console) : vue opérateur."""
         return {"enabled": True,
                 "clients": [p.summary() for p in self.connections],
                 "probes": self.probes.snapshot() if self.probes is not None else {},

@@ -156,7 +156,7 @@ Réponse :
 
 ### 4.9 `GET /i` (page d'une invitation)
 
-Seule requête sans signature. Un lien d'invitation (`<relais>/i#…`) ouvert dans un navigateur affiche une page statique qui explique où le coller (page de la station, application, TRX Console). La partie après `#` n'est jamais envoyée au relais.
+Seule requête sans signature. Un lien d'invitation (`<relais>/i#…`) ouvert dans un navigateur affiche une page statique qui explique où le coller (page de la station, application, openRemoteTRX Console). La partie après `#` n'est jamais envoyée au relais.
 
 ## 5. Preuve de travail
 

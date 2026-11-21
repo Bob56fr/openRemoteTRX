@@ -1,5 +1,5 @@
 [Unit]
-Description=Station TRX distant (rigctld, passerelle, superviseur)
+Description=Station openRemoteTRX (rigctld, passerelle, superviseur)
 Wants=rigctld.service trx-gateway.service trx-supervisor.service
 
 [Install]

@@ -1,4 +1,4 @@
-TRX distant : installation sur Debian 12 ou 13 (PC ou Raspberry Pi)
+openRemoteTRX : installation sur Debian 12 ou 13 (PC ou Raspberry Pi)
 ====================================================================
 
 1. Décompresse ce zip dans ton dossier Téléchargements (clic droit, « Extraire ici »).
@@ -8,7 +8,7 @@ TRX distant : installation sur Debian 12 ou 13 (PC ou Raspberry Pi)
 
    et ton mot de passe de session (rien ne s'affiche pendant la frappe : c'est normal).
 3. À la fin, déconnecte-toi puis reconnecte-toi.
-4. Ouvre « TRX Console » depuis le menu des applications et suis l'assistant.
+4. Ouvre « openRemoteTRX Console » depuis le menu des applications et suis l'assistant.
 
 Sans bureau (serveur, Raspberry Pi OS Lite 64 bits), tout par SSH : copie le zip (scp), puis
        unzip -q trx-remote-debian-*.zip && cd trx-remote-debian-*/ && sudo bash install.sh
@@ -23,13 +23,13 @@ compile un Hamlib récent dans /usr/local (le paquet de Debian reste en place).
 FreeDV RADE V1 en réception (facultatif) : les deux décodeurs se compilent sur la station,
 depuis des sources épinglées et vérifiées (~5 minutes sur un PC, 30 à 60 sur un Raspberry Pi 4) :
        sudo bash compiler-freedv.sh
-puis [freedv] enabled = true dans station.toml (TRX Console, menu 8.1).
+puis [freedv] enabled = true dans station.toml (openRemoteTRX Console, menu 8.1).
 
 Tu viens d'un autre PC (Windows) ? Pose son fichier station.toml dans ce dossier, à côté de
 install.sh, AVANT l'étape 2 : comptes, mots de passe, alertes et bandes seront repris.
 
-Mettre à jour : TRX Console, menu 7.1, quand une nouvelle version est annoncée (paquet signé, vérifié
+Mettre à jour : openRemoteTRX Console, menu 7.1, quand une nouvelle version est annoncée (paquet signé, vérifié
                 avant installation) ; ou même chose qu'à l'installation avec le nouveau zip.
-                La configuration est conservée, la version précédente aussi (TRX Console, menu 7.2).
+                La configuration est conservée, la version précédente aussi (openRemoteTRX Console, menu 7.2).
 Désinstaller  : sudo bash install.sh --desinstaller
 Compte-rendu de l'installation : /var/log/trx-remote-install.log

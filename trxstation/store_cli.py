@@ -5,7 +5,7 @@
 Le Store refuse plus de 8 applications par paquet et toute application cachée du menu Démarrer (erreurs de
 validation du 2026-11-21) : UNE seule application « openRemoteTRX » porte TOUS les alias d'exécution (trx-console,
 trx-setup, trx-monitor…). Lancé par un alias, `sys.executable` vaut le chemin de l'alias (essai S0) : son nom choisit
-la commande ; lancé depuis le menu Démarrer, c'est TRX Console.
+la commande ; lancé depuis le menu Démarrer, c'est openRemoteTRX Console.
 """
 from __future__ import annotations
 

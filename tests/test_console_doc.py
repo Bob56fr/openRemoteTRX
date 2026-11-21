@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Mode d'emploi de TRX Console (GitHub Pages) : chaque menu expliqué, page publiée à jour, aucune ressource externe,
+"""Mode d'emploi d'openRemoteTRX Console (GitHub Pages) : chaque menu expliqué, page publiée à jour, aucune ressource externe,
 bloc WordPress qui n'accepte que les messages de GitHub Pages."""
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def test_page_is_self_contained_and_reports_its_height():
     assert page.startswith("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->")
     assert not re.search(r"<(link|img|iframe)\b|\bsrc\s*=", page, re.I)                # tout est dans la page
     urls = set(re.findall(r'href="(https?://[^"]+)"', page))                          # seuls liens sortants permis
-    assert urls <= {doc.REPO_URL, doc.SITE_URL}, urls
+    assert {u for u in urls if not u.startswith(doc.GUIDE_URL)} <= {doc.REPO_URL, doc.SITE_URL}, urls   # + glossaire du guide
     assert "trx-doc-height" in page and f"version {doc.project_version()}" in page
     assert not re.search(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", page)            # aucune adresse IP
     for m in doc.console_menus():

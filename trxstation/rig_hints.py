@@ -38,7 +38,7 @@ _YAESU_CHECKLIST = (
     "RADIO SETTING > MODE SSB, AM, FM, PSK/DATA : RPTT SELECT = DAKY (jamais RTS ni DTR : le poste peut passer en "
     "émission au démarrage du PC) ; CW SETTING > MODE CW : PC KEYING = OFF",
     "RADIO SETTING > MODE SSB, AM, FM, PSK/DATA : SSB / AM / FM / DATA MOD SOURCE = REAR et REAR SELECT = USB",
-    "RPORT GAIN (dans chaque mode) : à régler avec l'ALC ; OUT LEVEL : prise RTTY/DATA seulement (sans effet sur l'USB) ; son reçu faible : TRX Console, menu 2.9",
+    "RPORT GAIN (dans chaque mode) : à régler avec l'ALC ; OUT LEVEL : prise RTTY/DATA seulement (sans effet sur l'USB) ; son reçu faible : openRemoteTRX Console, menu 2.9",
     "Touche VOX éteinte ; OPERATION SETTING > GENERAL : TX TIME OUT TIMER = 3 (min), seconde sécurité du poste",
     "Pas de spectre HF dans l'application avec ce poste (Yaesu n'envoie pas les données du scope par CAT) : spectre audio seul",
 )

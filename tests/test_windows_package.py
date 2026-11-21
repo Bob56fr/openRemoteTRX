@@ -57,8 +57,8 @@ def test_notice_describes_every_shortcut_created():
     ps = (WIN / "installer.ps1").read_text(encoding="utf-8")
     notice = (WIN / "notice-windows.html").read_text(encoding="utf-8")
     shortcuts = re.findall(r'New-Shortcut "([^"]+)"', ps)
-    assert shortcuts == ["TRX distant"]                               # UN SEUL raccourci (étape 222) : TRX Console
-    assert "TRX distant" in notice and "-m trxstation.console --config" in ps
+    assert shortcuts == ["openRemoteTRX"]                               # UN SEUL raccourci (étape 222) : openRemoteTRX Console
+    assert "openRemoteTRX" in notice and "-m trxstation.console --config" in ps
     for old in ("1 - Configuration de la station", "9 - Désinstaller", "10 - Indicateur"):
         assert old not in notice and old not in ps, old
     assert notice.startswith("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->")
@@ -95,7 +95,7 @@ def test_every_useful_command_is_put_on_the_windows_path():
 
 @pytest.mark.skipif(sys.platform != "win32", reason="relais .cmd : Windows seulement")
 def test_command_relays_and_user_path_round_trip(tmp_path):
-    base = tmp_path / "TRX distant"
+    base = tmp_path / "openRemoteTRX"
     scripts = base / "versions" / "9.9.9" / "venv" / "Scripts"
     scripts.mkdir(parents=True)
     import os
@@ -205,7 +205,7 @@ def test_uninstall_goes_through_windows_settings_and_removes_everything():
     for name in ("DisplayName", "DisplayVersion", "UninstallString", "NoModify", "NoRepair"):
         assert f'"{name}"' in ps, name
     uninstall = ps.split("# ------------------------------------------------------------------ désinstallation", 1)[1].split("exit 0", 1)[0]
-    for removed in ("$MenuDir", "$Shortcut", "$UninstallKey", "$TrayStartup"):
+    for removed in ("$MenuDir", "$Shortcut", "$OldShortcut", "$UninstallKey", "$TrayStartup"):
         assert f"Remove-Item -LiteralPath {removed}" in uninstall, removed
     assert ps.index("if ($Essai) {") < ps.index("New-Item -Path $UninstallKey")           # l'essai ne touche pas au registre
     assert "HKLM" not in ps                                                              # jamais pour tous les comptes

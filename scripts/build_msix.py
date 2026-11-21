@@ -8,7 +8,7 @@ Cahier `docs/store-microsoft-cahier-des-charges.md` § 3 et § 8. Contenu :
   jamais les fichiers en cours d'autres conversations) ;
 - `python\\trx-station.exe` : lanceur SANS paramètre de la station (tâche de démarrage, `trxstation/store_boot.py`) ;
 - `freedv\\` (facultatif, `--freedv DOSSIER`) : décodeurs FreeDV, trouvés par `freedv/service.py` (`bundled_dir`) ;
-- Hamlib n'est PAS dans le paquet (décision 3) : TRX Console guide l'opérateur pour l'installer.
+- Hamlib n'est PAS dans le paquet (décision 3) : openRemoteTRX Console guide l'opérateur pour l'installer.
 
 Le paquet produit n'est PAS signé : le Store le signe lui-même. Pour un essai local seulement, `--signer FICHIER.pfx`
 (certificat dont le sujet est EXACTEMENT le `publisher` de windows/msix/identity.toml, mot de passe dans la variable
@@ -55,7 +55,7 @@ LAUNCHER = "trx-station.exe"
 SERVICES = ("trx-gateway", "trx-rigctld", "trx-supervisor")
 CONSOLE = "trx-console"
 DESCRIPTIONS = {
-    CONSOLE: "TRX Console : démarrer, configurer, essayer et dépanner la station",
+    CONSOLE: "openRemoteTRX Console : démarrer, configurer, essayer et dépanner la station",
 }
 
 
@@ -105,7 +105,7 @@ def manifest(ident: dict[str, str], version: str) -> str:
       </Extensions>
     </Application>"""]
     # Station : lanceur SANS paramètre (la tâche de démarrage ignore uap10:Parameters), jamais d'alias (un alias de
-    # pythonw avec paramètres ne lance rien) ; démarrée aussi par TRX Console (shell:AppsFolder\\…!Supervisor).
+    # pythonw avec paramètres ne lance rien) ; démarrée aussi par openRemoteTRX Console (shell:AppsFolder\\…!Supervisor).
     apps.append(f"""    <Application Id="Supervisor" Executable="python\\{LAUNCHER}" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements DisplayName="{display} station" Description="Démarre la station openRemoteTRX (sans fenêtre ; déjà en marche = rien)" {vis}/>
       <Extensions>
@@ -153,7 +153,7 @@ def manifest(ident: dict[str, str], version: str) -> str:
 
 
 BOOT_MODULE = '''# Lanceur de la station du paquet MSIX (fabriqué par scripts/build_msix.py) : lu par trx_boot.pth à chaque démarrage
-# de Python ; n'agit que pour trx-station.exe lancé SANS argument (tâche de démarrage, TRX Console menu 1.1).
+# de Python ; n'agit que pour trx-station.exe lancé SANS argument (tâche de démarrage, openRemoteTRX Console menu 1.1).
 import os
 import sys
 

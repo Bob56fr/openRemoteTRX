@@ -10,7 +10,7 @@ des fichiers d'état (passerelle, superviseur, journaux JSON) et échange des en
 - clés : `[monitor_link] key_file`, ou `state_dir/monlink/monlink.key` créé au premier démarrage (À PART de la présence) ;
 - liaisons : `state_dir/monlink/monlink.json` (0600) ; résumé : `status.json` (0644) ; reçu : `received.db` ;
 - journal : `state_dir/monlink/monlink.log`, 5 fichiers de 1 Mo, jamais de clé ;
-- TRX Console (menu 6.5, lot R3b) : demande `state_dir/monlink-request.json` déposée par la console, réponse dans
+- openRemoteTRX Console (menu 6.5, lot R3b) : demande `state_dir/monlink-request.json` déposée par la console, réponse dans
   `state_dir/monlink/console-reply.json`, effacée après 60 s (même mécanisme que la présence).
 
 À la main (essai) :  python -m trxstation.monlink.service --config station.toml
@@ -40,12 +40,12 @@ from .store import Store
 
 log = logging.getLogger("trx.monlink")
 ERROR_DELAY_S = 120.0
-CONSOLE_REQUEST = "monlink-request.json"       # dans state_dir (déposé par TRX Console, au besoin par sudo)
+CONSOLE_REQUEST = "monlink-request.json"       # dans state_dir (déposé par openRemoteTRX Console, au besoin par sudo)
 CONSOLE_REPLY = "console-reply.json"           # dans state_dir/monlink
 CONSOLE_MAX_AGE_S = 120.0
 CONSOLE_REPLY_KEEP_S = 60.0
 TICK_S = 1.0
-# Actions de l'opérateur (TRX Console) -> (méthode du moteur, arguments acceptés)
+# Actions de l'opérateur (openRemoteTRX Console) -> (méthode du moteur, arguments acceptés)
 ACTIONS = {"view": ("view", ()), "pseudo": ("set_pseudo", ("pseudo",)), "invite": ("invite", ()),
            "join": ("join", ("code",)), "confirm": ("confirm", ("peer", "profile")),
            "profile": ("set_profile", ("peer", "profile")), "pause": ("pause", ("peer", "paused")),
@@ -159,7 +159,7 @@ class MonlinkService:
             raise CallRefused(exc.reason, str(exc)) from None
 
     async def check_console(self) -> None:
-        """Demande de TRX Console : lue puis effacée, réponse dans console-reply.json (effacée après 60 s)."""
+        """Demande d'openRemoteTRX Console : lue puis effacée, réponse dans console-reply.json (effacée après 60 s)."""
         reply_path = self.folder / CONSOLE_REPLY
         now = self.clock()
         if self._reply_at is not None and now - self._reply_at > CONSOLE_REPLY_KEEP_S:

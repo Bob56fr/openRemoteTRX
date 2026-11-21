@@ -7,7 +7,7 @@
   derniers états reçus des membres) ;
 - `stats.json` : statistiques agrégées par jour pour les groupes dont la station est administratrice (§ 11 du cahier),
   6 mois au plus ;
-- `status.json` (0644) : résumé SANS clé ni état reçu, lu par TRX Console et trx-monitor.
+- `status.json` (0644) : résumé SANS clé ni état reçu, lu par openRemoteTRX Console et trx-monitor.
 """
 from __future__ import annotations
 

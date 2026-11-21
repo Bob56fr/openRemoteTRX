@@ -1,6 +1,6 @@
 ﻿# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-# Installation de TRX distant sous Windows 10 / 11 (lancée par installer.cmd).
+# Installation d'openRemoteTRX sous Windows 10 / 11 (lancée par installer.cmd).
 #   installer.cmd                 installe ou met à jour (la configuration est conservée)
 #   installer.cmd -Desinstaller   retire le logiciel (la configuration est gardée, sauf réponse contraire)
 #   installer.cmd -Essai -Destination DOSSIER   essai sans rien toucher au système (ni tâche, ni pare-feu, ni raccourci)
@@ -15,14 +15,16 @@ param(
 $ErrorActionPreference = "Stop"
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Version = (Get-Content -LiteralPath (Join-Path $Here "VERSION") -Raw).Trim()
-$AppName = "TRX distant"
+$AppName = "openRemoteTRX"
 $TaskName = "TRX distant"
 $Base = if ($Destination) { $Destination } else { Join-Path $env:LOCALAPPDATA "Programs\TRX distant" }
 $DataDir = Join-Path $env:ProgramData "trx-remote"
 $Config = Join-Path $DataDir "station.toml"
 $LogDir = Join-Path $DataDir "logs"
-# UN SEUL raccourci (étape 222, décision du 2026-11-16) : « TRX distant » ouvre TRX Console, qui regroupe tout.
-$Shortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TRX distant.lnk"
+# UN SEUL raccourci (étape 222, décision du 2026-11-16) : « openRemoteTRX » ouvre openRemoteTRX Console, qui regroupe tout.
+$Shortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\openRemoteTRX.lnk"
+# Raccourci des versions 0.258.0 et avant (nom affiché « TRX distant », étape 345) : retiré à l'installation
+$OldShortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TRX distant.lnk"
 # Dossier de 10 raccourcis des versions jusqu'à 0.168.0 : retiré à l'installation et à la désinstallation.
 $MenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TRX distant"
 # Inscription dans Paramètres > Applications (désinstallation comme tout logiciel Windows), pour ce compte seulement.
@@ -79,7 +81,7 @@ $script:Transcript = Join-Path $env:TEMP "trx-remote-install.log"
 try { Start-Transcript -LiteralPath $script:Transcript -Append | Out-Null } catch { }
 
 Write-Host ""
-Write-Host "TRX distant $Version : installation pour Windows" -ForegroundColor White
+Write-Host "openRemoteTRX $Version : installation pour Windows" -ForegroundColor White
 Write-Host "Dossier du logiciel : $Base"
 Write-Host "Configuration       : $Config"
 
@@ -184,8 +186,8 @@ function Install-Commands {
     New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
     foreach ($cmd in $Commands) {
         $exe = "%~dp0..\current\venv\Scripts\$cmd.exe"
-        $lines = @("@echo off", "rem TRX distant : relais vers la version active (cree par installer.ps1)",
-                   "if not exist `"$exe`" (echo TRX distant : version active introuvable, relance installer.cmd 1>&2 & exit /b 9009)",
+        $lines = @("@echo off", "rem openRemoteTRX : relais vers la version active (cree par installer.ps1)",
+                   "if not exist `"$exe`" (echo openRemoteTRX : version active introuvable, relance installer.cmd 1>&2 & exit /b 9009)",
                    "`"$exe`" %*")
         [IO.File]::WriteAllText((Join-Path $BinDir "$cmd.cmd"), (($lines -join "`r`n") + "`r`n"), [Text.Encoding]::ASCII)
     }
@@ -210,12 +212,13 @@ function Remove-Commands {
 # ------------------------------------------------------------------ désinstallation
 
 if ($Desinstaller) {
-    Step "Désinstallation de TRX distant"
+    Step "Désinstallation d'openRemoteTRX"
     Stop-Station
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
     Get-NetFirewallRule -Group $FirewallGroup -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
     if (Test-Path -LiteralPath $Shortcut) { Remove-Item -LiteralPath $Shortcut -Force }
+    if (Test-Path -LiteralPath $OldShortcut) { Remove-Item -LiteralPath $OldShortcut -Force }
     if (Test-Path -LiteralPath $UninstallKey) { Remove-Item -LiteralPath $UninstallKey -Recurse -Force }
     Remove-Commands
     Stop-Tray
@@ -326,10 +329,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 Remove-Item -LiteralPath $PipLog -Force -ErrorAction SilentlyContinue
 & $VenvPy -m pip install --disable-pip-version-check --no-deps --no-build-isolation (Join-Path $Release 'app') | Out-Host
-if ($LASTEXITCODE -ne 0) { Fail "installation de TRX distant impossible." }
+if ($LASTEXITCODE -ne 0) { Fail "installation d'openRemoteTRX impossible." }
 & $VenvPy -c "import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial, pystray, PIL; print('modules OK')"
 if ($LASTEXITCODE -ne 0) { Fail "modules Python incomplets." }
-Ok "TRX distant $Version installé dans $Release"
+Ok "openRemoteTRX $Version installé dans $Release"
 
 if ($Essai) {
     & $VenvPy -m trxstation.setup_wizard --help | Select-Object -First 2 | Out-Host
@@ -370,10 +373,10 @@ if (Test-Path -LiteralPath $Config) {
 $basePy = (& $VenvPy -c "import sys; print(sys._base_executable)").Trim()
 $programs = @($basePy, (Join-Path (Split-Path -Parent $basePy) "pythonw.exe")) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -Unique
 foreach ($program in $programs) {
-    New-NetFirewallRule -DisplayName "TRX distant ($([IO.Path]::GetFileName($program)))" -Group $FirewallGroup -Direction Inbound `
+    New-NetFirewallRule -DisplayName "openRemoteTRX ($([IO.Path]::GetFileName($program)))" -Group $FirewallGroup -Direction Inbound `
         -Action Allow -Program $program -Profile Private | Out-Null
 }
-New-NetFirewallRule -DisplayName "TRX distant (page web, port $port)" -Group $FirewallGroup -Direction Inbound -Action Allow `
+New-NetFirewallRule -DisplayName "openRemoteTRX (page web, port $port)" -Group $FirewallGroup -Direction Inbound -Action Allow `
     -Protocol TCP -LocalPort $port -Profile Private | Out-Null
 Ok "entrées autorisées sur les réseaux privés (port $port et audio WebRTC)"
 $public = Get-NetConnectionProfile -ErrorAction SilentlyContinue | Where-Object { $_.NetworkCategory -eq "Public" }
@@ -393,19 +396,20 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
     -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew
 $principal = New-ScheduledTaskPrincipal -UserId $me -LogonType Interactive -RunLevel Limited
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
-    -Description "Station TRX distant : superviseur, rigctld et passerelle (sans fenêtre). Journaux : $LogDir" -Force | Out-Null
+    -Description "Station openRemoteTRX : superviseur, rigctld et passerelle (sans fenêtre). Journaux : $LogDir" -Force | Out-Null
 Ok "la station démarre à l'ouverture de session de $me (tâche planifiée « $TaskName », sans fenêtre)"
 
 $py = Venv-Python $Current
 $ps = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
 if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
+if (Test-Path -LiteralPath $OldShortcut) { Remove-Item -LiteralPath $OldShortcut -Force }
 # PowerShell -NoExit (leçon de l'étape 201) : la fenêtre reste ouverte après une erreur et se ferme quand on quitte
-# TRX Console normalement (code 0).
-New-Shortcut "TRX distant" $ps "-NoExit -Command `"& '$py' -m trxstation.console --config '$Config'; if (`$LASTEXITCODE -eq 0) { exit }`"" "TRX Console : démarrer, configurer, essayer, mettre à jour, dépanner" $DataDir
-Ok "raccourci « TRX distant » dans le menu Démarrer (TRX Console : tous les menus de la station)"
+# openRemoteTRX Console normalement (code 0).
+New-Shortcut "openRemoteTRX" $ps "-NoExit -Command `"& '$py' -m trxstation.console --config '$Config'; if (`$LASTEXITCODE -eq 0) { exit }`"" "openRemoteTRX Console : démarrer, configurer, essayer, mettre à jour, dépanner" $DataDir
+Ok "raccourci « openRemoteTRX » dans le menu Démarrer (openRemoteTRX Console : tous les menus de la station)"
 $uninstall = "`"$ps`" -NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Release 'installer.ps1')`" -Desinstaller"
 New-Item -Path $UninstallKey -Force | Out-Null
-foreach ($pair in @(@("DisplayName", "TRX distant"), @("DisplayVersion", $Version), @("Publisher", "RF-DIY.COM"),
+foreach ($pair in @(@("DisplayName", "openRemoteTRX"), @("DisplayVersion", $Version), @("Publisher", "RF-DIY.COM"),
                     @("InstallLocation", $Base), @("UninstallString", $uninstall), @("URLInfoAbout", $GuideUrl),
                     @("HelpLink", $GuideUrl), @("DisplayIcon", $py))) {
     New-ItemProperty -Path $UninstallKey -Name $pair[0] -Value $pair[1] -PropertyType String -Force | Out-Null
@@ -413,13 +417,13 @@ foreach ($pair in @(@("DisplayName", "TRX distant"), @("DisplayVersion", $Versio
 foreach ($flag in @("NoModify", "NoRepair")) {
     New-ItemProperty -Path $UninstallKey -Name $flag -Value 1 -PropertyType DWord -Force | Out-Null
 }
-Ok "désinstallation : Paramètres > Applications > TRX distant"
+Ok "désinstallation : Paramètres > Applications > openRemoteTRX"
 Install-Commands
 if (Ask-Yes "Afficher l'indicateur de la station près de l'horloge à chaque ouverture de session" $true) {
     $link = (New-Object -ComObject WScript.Shell).CreateShortcut($TrayStartup)
     $link.TargetPath = $pythonw
     $link.Arguments = "-m trxstation.tray"
-    $link.Description = "TRX distant : indicateur près de l'horloge (lecture seule)"
+    $link.Description = "openRemoteTRX : indicateur près de l'horloge (lecture seule)"
     $link.WorkingDirectory = $DataDir
     $link.Save()
     # Lancé par l'Explorateur : sous TON compte, sans les droits administrateur de l'installation.
@@ -427,7 +431,7 @@ if (Ask-Yes "Afficher l'indicateur de la station près de l'horloge à chaque ou
     Ok "indicateur près de l'horloge (s'il est caché dans « ^ », glisse-le à côté de l'horloge)"
 } elseif (Test-Path -LiteralPath $TrayStartup) {
     Remove-Item -LiteralPath $TrayStartup -Force
-    Say "  Indicateur non lancé à l'ouverture de session (TRX Console, menu 8.4, pour le lancer ou le remettre)."
+    Say "  Indicateur non lancé à l'ouverture de session (openRemoteTRX Console, menu 8.4, pour le lancer ou le remettre)."
 }
 Ok "commandes $($Commands -join ', ') lançables depuis un NOUVEAU terminal (dossier $BinDir ajouté à ton PATH)"
 foreach ($file in @("notice-windows.html", "installer.cmd", "installer.ps1", "VERSION", "LICENSE")) {
@@ -451,13 +455,13 @@ if (Test-Path -LiteralPath $Config) {
         Ok "station démarrée (journaux : $LogDir)"
     }
 } else {
-    Warn "station non configurée : menu Démarrer > TRX distant (TRX Console), menu 2.1, puis menu 1.1 pour démarrer."
+    Warn "station non configurée : menu Démarrer > openRemoteTRX (Console), menu 2.1, puis menu 1.1 pour démarrer."
 }
 
 Write-Host ""
-Write-Host "Installation terminée (TRX distant $Version)." -ForegroundColor Green
+Write-Host "Installation terminée (openRemoteTRX $Version)." -ForegroundColor Green
 Say "Page web : https://<adresse-de-ce-PC>:$port depuis le téléphone (même réseau), ou https://localhost:$port ici."
-Say "Tout se fait depuis le menu Démarrer > TRX distant (TRX Console ; « h » puis un numéro = aide d'un menu)."
+Say "Tout se fait depuis le menu Démarrer > openRemoteTRX (Console ; « h » puis un numéro = aide d'un menu)."
 Say "Guide de l'opérateur : $GuideUrl ; notice Windows : $(Join-Path $Current 'notice-windows.html')"
 try { Stop-Transcript | Out-Null } catch { }
 Pause-End

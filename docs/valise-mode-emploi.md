@@ -19,7 +19,7 @@ dossier indiqué** juste au-dessus du cadre.
 
 - Le poste, son câble USB (CAT et carte son), sa notice.
 - Une **charge fictive** qui tient la puissance minimale du poste, et l'**antenne** habituelle (réception).
-- Un PC Windows ou Debian avec TRX Remote installé (les commandes `trx-setup` et `trx-qualif` répondent dans un
+- Un PC Windows ou Debian avec openRemoteTRX installé (les commandes `trx-setup` et `trx-qualif` répondent dans un
   terminal). Vérifier :
 
   Dans n'importe quel dossier :
@@ -162,7 +162,7 @@ qualif-ic7300/
 S'il y en a une, elle prendrait les mêmes ports et le même poste. **Pas de station installée sur ce PC** (PC prévu
 pour la valise seule) : rien à faire, passer au § 3.2.
 
-Sinon, par TRX Console (menu 1.2), ou :
+Sinon, par openRemoteTRX Console (menu 1.2), ou :
 
 **Windows**, dans n'importe quel dossier :
 ```powershell
@@ -230,7 +230,7 @@ Sans navigateur (menu au clavier dans le terminal), dans le dossier de qualifica
 trx-qualif --config station.toml --output valise --terrain
 ```
 
-Depuis TRX Console : menu 8.3, choix 6.
+Depuis openRemoteTRX Console : menu 8.3, choix 6.
 
 ### 4.4 Adresses utiles
 

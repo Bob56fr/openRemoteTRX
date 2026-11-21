@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """Indicateur GNOME (barre du haut) : champs lus = champs publiés par la station, lecture seule, paquet et installation,
-menu 8.4 de TRX Console."""
+menu 8.4 d'openRemoteTRX Console."""
 from __future__ import annotations
 
 import dataclasses

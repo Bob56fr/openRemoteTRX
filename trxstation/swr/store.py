@@ -71,7 +71,7 @@ class SwrStore:
                 with os.fdopen(fd, "w", encoding="utf-8") as handle:
                     handle.write(json.dumps(self._data, ensure_ascii=False, indent=1))
                 if os.name == "posix":
-                    os.chmod(tmp, 0o644)               # TRX Console (compte de bureau) affiche la dernière mesure
+                    os.chmod(tmp, 0o644)               # openRemoteTRX Console (compte de bureau) affiche la dernière mesure
                 os.replace(tmp, self.path)
             except BaseException:
                 with contextlib.suppress(OSError):

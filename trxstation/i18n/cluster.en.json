@@ -83,7 +83,7 @@
   "filters.out_of_range": "Out of range: value kept.",
   "filters.not_a_number": "Number expected: value kept.",
   "save.impossible": "Cannot save:\n  - {problems}",
-  "save.done": "Saved. Restart the station to apply (TRX Console, menu 1.1).",
+  "save.done": "Saved. Restart the station to apply (openRemoteTRX Console, menu 1.1).",
   "run.first_time": "DX cluster: first-time setup.",
   "run.enable": "Enable the DX cluster",
   "menu.flux": "Spots and modes followed (amateur radio, RBN, CB)",

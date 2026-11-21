@@ -1,6 +1,6 @@
 # Application Android openRemoteTRX
 
-Client Android de la station TRX distant. Cahier des charges : [`docs/android-cahier-des-charges.md`](../docs/android-cahier-des-charges.md) ; protocole : [`docs/protocole.md`](../docs/protocole.md).
+Client Android de la station openRemoteTRX. Cahier des charges : [`docs/android-cahier-des-charges.md`](../docs/android-cahier-des-charges.md) ; protocole : [`docs/protocole.md`](../docs/protocole.md).
 
 - Identifiant du paquet : `com.rfdiy.openremotetrx` (ne jamais le changer). Android 10 (API 29) minimum.
 - Les règles de sécurité d'émission (PTT en toggle, état de la station seul affiché, battements, RX à la reconnexion, STOP partout) sont celles de `CLAUDE.md` : l'application ne retire et ne remplace aucune sécurité de la station.

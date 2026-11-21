@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Diagnostic de TRX Console et rapport de dépannage (système simulé)."""
+"""Diagnostic d'openRemoteTRX Console et rapport de dépannage (système simulé)."""
 from __future__ import annotations
 
 import zipfile

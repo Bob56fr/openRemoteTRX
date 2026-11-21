@@ -620,7 +620,7 @@ class Engine:
         return stt_stats.summary(self.store.stats, g, self.clock(), self.tz)
 
     def status_summary(self) -> dict:
-        """Pour TRX Console et trx-monitor : jamais de clé, ni de fréquence d'un ami."""
+        """Pour openRemoteTRX Console et trx-monitor : jamais de clé, ni de fréquence d'un ami."""
         return {"station": self.me, "pseudo": self.pseudo, "registered": bool(self.store.data.get("registered")),
                 "problem": self.problem, "last_sync": int(self.last_sync) if self.last_sync else None,
                 "next_in": self.next_in,

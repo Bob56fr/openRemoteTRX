@@ -83,7 +83,7 @@
   "filters.out_of_range": "Hors plage : valeur gardée.",
   "filters.not_a_number": "Nombre attendu : valeur gardée.",
   "save.impossible": "Enregistrement impossible :\n  - {problems}",
-  "save.done": "Enregistré. Redémarrer la station pour appliquer (TRX Console, menu 1.1).",
+  "save.done": "Enregistré. Redémarrer la station pour appliquer (openRemoteTRX Console, menu 1.1).",
   "run.first_time": "Cluster DX : première configuration.",
   "run.enable": "Activer le Cluster DX",
   "menu.flux": "Spots et modes suivis (radioamateurs, RBN, CB)",

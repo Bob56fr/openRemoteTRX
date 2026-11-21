@@ -44,7 +44,11 @@ UI = {
            "source": "Source de ce guide sur GitHub", "footer": "Projet libre (AGPL-3.0-or-later)",
            "top": "Haut de page", "enlarge": "ouvrir le schéma en grand",
            "pdf": "Télécharger en PDF", "pdf_hint": "A4, une partie par page, à imprimer",
-           "glossary_more": "Voir le glossaire"},
+           "glossary_more": "Voir le glossaire",
+           "bubbles_title": "Les mots soulignés en pointillé",
+           "bubbles_note": "ont une définition : survole-les à la souris ou touche-les (Tab puis Entrée au clavier) "
+                           "pour la voir sans quitter la page. Toutes les définitions sont dans le",
+           "bubbles_link": "glossaire du guide de l'opérateur"},
 }
 
 # Infobulles : termes du glossaire (premier nom en gras d'une ligne, ou un autre nom en gras de la même ligne)
@@ -53,13 +57,25 @@ UI = {
 # ni dans les titres, le code, les liens et les en-têtes de tableau.
 GLOSSARY = "glossaire.md"
 BUBBLES = {
-    "fr": ("CAT", "Charge fictive", "ALC", "TOS", "Hamlib", "rigctld", "Passerelle", "Superviseur", "TRX Console",
+    "fr": ("CAT", "Charge fictive", "ALC", "TOS", "Hamlib", "rigctld", "Passerelle", "Superviseur", "openRemoteTRX Console",
            "Assistant de configuration", "Tableau de bord", "station.toml", "Profil de poste", "PTT", "TOT",
            "TOT absolu", "Battement", "Bandes autorisées", "Opérateur sur place", "Mode sûr", "HTTPS", "certificat",
            "Empreinte du certificat", "VPN", "Profil VPN", "Port ouvert", "CGNAT", "ntfy", "Code ORT", "Appairage",
            "Visiteur", "Compte opérateur", "WebRTC", "Réseau local", "Porte audio d'émission"),
 }
 NO_BUBBLE_TAGS = ("code", "pre", "a", "h1", "h2", "h3", "h4", "th", "figcaption", "button", "summary")
+
+# Infobulles : même aspect dans le guide et dans le mode d'emploi de la console (build_console_doc.py).
+BUBBLES_CSS = """
+.terme{border-bottom:1px dotted var(--accent);cursor:help}
+.terme:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.bulle{position:absolute;z-index:10;max-width:min(22rem,calc(100vw - 16px));background:var(--carte);
+  border:1px solid var(--accent);border-radius:.5rem;padding:.5rem .75rem;font-size:.9rem;line-height:1.45;
+  box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.bulle>strong{display:block;margin-bottom:.15rem}
+.bulle .plus{display:inline-block;margin-top:.35rem;font-size:.85rem}
+@media print{.terme{border:0}.bulle{display:none}}
+"""
 
 CSS = """
 :root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
@@ -117,22 +133,14 @@ figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
   text-decoration:none}
 .telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
-.terme{border-bottom:1px dotted var(--accent);cursor:help}
-.terme:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
-.bulle{position:absolute;z-index:10;max-width:min(22rem,calc(100vw - 16px));background:var(--carte);
-  border:1px solid var(--accent);border-radius:.5rem;padding:.5rem .75rem;font-size:.9rem;line-height:1.45;
-  box-shadow:0 6px 20px rgba(0,0,0,.45)}
-.bulle>strong{display:block;margin-bottom:.15rem}
-.bulle .plus{display:inline-block;margin-top:.35rem;font-size:.85rem}
 @media print{
-  .terme{border:0}
-  .bulle{display:none}
   :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
   .outils button,.haut,.telecharger,footer{display:none}
   a{color:#000}
   .partie{break-before:page}
 }
 """
+CSS += BUBBLES_CSS
 
 # Hauteur envoyée au site qui affiche la page dans une iframe, et cases du récapitulatif gardées dans le navigateur
 # (essai protégé : un navigateur ou une iframe sans stockage garde les cases le temps de la visite seulement).
@@ -224,6 +232,7 @@ BUBBLES_JS = """
       var a = document.createElement("a");
       a.className = "plus";
       a.href = more;
+      if (/^https?:/.test(more)) { a.target = "_blank"; a.rel = "noopener"; }
       a.textContent = defs.getAttribute("data-more-label");
       a.addEventListener("click", close);
       bubble.appendChild(a);

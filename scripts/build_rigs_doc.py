@@ -90,21 +90,21 @@ NOTE_MARK = {"non_teste": "1", "non_declare": "2"}          # renvoi vers la not
 CAUSES = {   # qui empêche la fonction (état « non_declare ») : (français, anglais)
     "hamlib": ("Hamlib", "Hamlib"),
     "poste": ("le poste", "the rig"),
-    "trx_distant": ("TRX distant", "TRX Remote"),
+    "trx_distant": ("openRemoteTRX", "openRemoteTRX"),
 }
 FOOTNOTES = (
-    ("(1) Non testé : la fonction existe peut-être, mais aucun essai réel ne l'a encore prouvée avec TRX distant sur ce "
+    ("(1) Non testé : la fonction existe peut-être, mais aucun essai réel ne l'a encore prouvée avec openRemoteTRX sur ce "
      "poste. Elle peut marcher ; tant qu'elle n'est pas essayée, on ne l'affirme pas.",
-     "(1) Not tested: the feature may exist, but no real test has proved it yet with TRX Remote on this rig. It may "
+     "(1) Not tested: the feature may exist, but no real test has proved it yet with openRemoteTRX on this rig. It may "
      "work; until it is tested, we do not claim it."),
     ("(2) Non disponible : la fonction ne peut pas être utilisée à distance aujourd'hui, et la cause est indiquée : "
      "Hamlib (la bibliothèque qui parle au poste ne la propose pas pour ce modèle), le poste lui-même (sa liaison CAT "
-     "ne la donne pas, ex. aucune donnée de spectre HF par la CAT du Yaesu FTDX10) ou TRX distant (pas encore "
-     "programmée). Une nouvelle version de Hamlib, du micrologiciel du poste ou de TRX distant peut la rendre disponible.",
+     "ne la donne pas, ex. aucune donnée de spectre HF par la CAT du Yaesu FTDX10) ou openRemoteTRX (pas encore "
+     "programmée). Une nouvelle version de Hamlib, du micrologiciel du poste ou d'openRemoteTRX peut la rendre disponible.",
      "(2) Not available: the feature cannot be used remotely today, and the cause is shown: Hamlib (the library that "
      "talks to the rig does not offer it for this model), the rig itself (its CAT link does not provide it, e.g. no HF "
-     "spectrum data over the Yaesu FTDX10 CAT) or TRX Remote (not programmed yet). A new version of Hamlib, of the rig "
-     "firmware or of TRX Remote may make it available."),
+     "spectrum data over the Yaesu FTDX10 CAT) or openRemoteTRX (not programmed yet). A new version of Hamlib, of the rig "
+     "firmware or of openRemoteTRX may make it available."),
 )
 STATUTS = {"valide": ("validé", "validated"), "restreint": ("validé avec restrictions", "validated with restrictions"),
            "validation_en_cours": ("validation en cours", "validation in progress"), "refuse": ("refusé", "refused")}
@@ -205,10 +205,10 @@ def check(rigs: list[dict]) -> None:
 
 
 def rating(rig: dict) -> dict:
-    """Note « fonctionne avec TRX distant » : `stars` (0 à 5 par demi-étoile, None tant que la sécurité d'émission n'est
+    """Note « fonctionne avec openRemoteTRX » : `stars` (0 à 5 par demi-étoile, None tant que la sécurité d'émission n'est
     pas entièrement validée ou que la stabilité n'est pas déclarée), `provisional` (fonctions pas encore testées),
     `counted` / `valid` (fonctions comptées / validées), `absent` (absentes du POSTE, non comptées), `limits` (limites de
-    Hamlib ou de TRX distant, comptées ½), `untested`."""
+    Hamlib ou d'openRemoteTRX, comptées ½), `untested`."""
     funcs = rig["fonctions"]
     absent, limits, untested, points, counted, valid = [], [], [], 0.0, 0, 0
     for fid, theme, fr, en in FEATURES:
@@ -256,13 +256,13 @@ def _rating_html(rig: dict) -> list[str]:
         head += " " + _bi(f"(provisoire : {len(r['untested'])} fonction(s) pas encore testée(s))",
                           f"(provisional: {len(r['untested'])} feature(s) not tested yet)")
     out = [f'<p class="note-etoiles">{head}</p>', "<ul class=\"note-detail\">",
-           f'<li>{_bi(f"Fonctions utilisées par TRX distant : {r["valid"]} sur {r["counted"]} validées.", f"Features used by TRX Remote: {r["valid"]} of {r["counted"]} validated.")}</li>']
+           f'<li>{_bi(f"Fonctions utilisées par openRemoteTRX : {r["valid"]} sur {r["counted"]} validées.", f"Features used by openRemoteTRX: {r["valid"]} of {r["counted"]} validated.")}</li>']
     if r["absent"]:
         out.append("<li>" + _bi("Absent du poste (choix du constructeur, non compté) : " + ", ".join(fr for fr, _ in r["absent"]) + ".",
                                 "Missing from the rig (manufacturer's choice, not counted): " + ", ".join(en for _, en in r["absent"]) + ".") + "</li>")
     if r["limits"]:
-        out.append("<li>" + _bi("Limites de Hamlib ou de TRX distant (comptées ½) : " + ", ".join(fr for fr, _ in r["limits"]) + ".",
-                                "Hamlib or TRX Remote limits (counted ½): " + ", ".join(en for _, en in r["limits"]) + ".") + "</li>")
+        out.append("<li>" + _bi("Limites de Hamlib ou d'openRemoteTRX (comptées ½) : " + ", ".join(fr for fr, _ in r["limits"]) + ".",
+                                "Hamlib or openRemoteTRX limits (counted ½): " + ", ".join(en for _, en in r["limits"]) + ".") + "</li>")
     sfr, sen = STABILITES[r["stability"]]
     note = rig["poste"].get("stabilite_note", "")
     out.append("<li>" + _bi(f"Stabilité : {sfr}" + (f" ({note})" if note else "") + ".",
@@ -337,7 +337,7 @@ def _table1(rig: dict, marks: dict | None = None) -> list[str]:
                f'{html.escape(e["hamlib"])} · {html.escape(e["systeme"])} : {_bi(e["quoi"], e.get("quoi_en", e["quoi"]))}'
                for e in rig["essais"]) + "</p>",
            '<div class="wrap"><table>',
-           f'<tr><th>{_bi("Fonction", "Feature")}</th><th>Hamlib</th><th>{_bi("TRX Remote", "TRX Remote")}</th>'
+           f'<tr><th>{_bi("Fonction", "Feature")}</th><th>Hamlib</th><th>{_bi("openRemoteTRX", "openRemoteTRX")}</th>'
            f'<th>{_bi("Remarque", "Note")}</th></tr>']
     for tid, tfr, ten in THEMES:
         out.append(f'<tr class="t" data-theme="{tid}"><th colspan="4">{_bi(tfr, ten)}</th></tr>')
@@ -365,7 +365,7 @@ def _table1(rig: dict, marks: dict | None = None) -> list[str]:
         out.append("</div>")
     hamlib = rig.get("hamlib", {})
     if hamlib.get("non_exploite"):
-        out += ["<details>", f'<summary>{_bi("Proposé par Hamlib, non exploité par TRX Remote", "Offered by Hamlib, not used by TRX Remote")}'
+        out += ["<details>", f'<summary>{_bi("Proposé par Hamlib, non exploité par openRemoteTRX", "Offered by Hamlib, not used by openRemoteTRX")}'
                 f' ({len(hamlib["non_exploite"])})</summary>',
                 "<p>" + ", ".join(f"<code>{html.escape(n)}</code>" for n in hamlib["non_exploite"]) + "</p>", "</details>"]
     if hamlib.get("constats"):
@@ -415,10 +415,10 @@ def render(rigs: list[dict]) -> str:
            "<!-- Fabriqué par scripts/build_rigs_doc.py depuis docs/postes/donnees/ : ne pas modifier à la main. -->",
            '<html lang="fr">', "<head>", '<meta charset="utf-8">',
            '<meta name="viewport" content="width=device-width, initial-scale=1">',
-           "<title>Postes essayés avec TRX distant</title>",
+           "<title>Postes essayés avec openRemoteTRX</title>",
            f"<style>{base.CSS.strip()}{EXTRA_CSS.strip()}</style>", "</head>", "<body>", "<main>",
            '<p class="choix"><button type="button" data-l="fr">Français</button><button type="button" data-l="en">English</button></p>',
-           f'<h1>{_bi("Postes essayés avec TRX distant", "Rigs tried with TRX Remote")}</h1>',
+           f'<h1>{_bi("Postes essayés avec openRemoteTRX", "Rigs tried with openRemoteTRX")}</h1>',
            "<p>" + _bi("Chaque état vient d’un essai réel sur le poste (qualification, charge fictive). Un résultat vaut pour "
                        "la version de Hamlib et le système indiqués.",
                        "Every state comes from a real test on the rig (qualification, dummy load). A result holds for the "
@@ -432,7 +432,7 @@ def render(rigs: list[dict]) -> str:
                        "note).") + "</p>"]
     marks = number_partials(rigs)
     out += _table2(rigs, marks)
-    out.append(f'<h2>{_bi("Fiche de chaque poste : Hamlib et TRX distant", "Each rig: Hamlib and TRX Remote")}</h2>')
+    out.append(f'<h2>{_bi("Fiche de chaque poste : Hamlib et openRemoteTRX", "Each rig: Hamlib and openRemoteTRX")}</h2>')
     for rig in rigs:
         out += _table1(rig, marks)
     out.append(_footnotes(anchor=False))

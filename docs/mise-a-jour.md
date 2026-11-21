@@ -1,7 +1,7 @@
 # Mise à jour depuis Internet (paquets signés Ed25519)
 
 La station cherche une nouvelle version sur GitHub (dépôt `Bob56fr/openRemoteTRX`, API publique, sans
-jeton) au démarrage puis toutes les 24 h. TRX Console l'annonce ; rien n'est installé sans confirmation.
+jeton) au démarrage puis toutes les 24 h. openRemoteTRX Console l'annonce ; rien n'est installé sans confirmation.
 Chaque paquet est **signé** par l'auteur : la station refuse tout paquet dont la signature n'est pas
 valide. La version précédente est gardée et un retour en arrière est possible sans Internet.
 
@@ -41,7 +41,7 @@ python scripts/gen_update_key.py
 5. Sur GitHub, créer une Release :
    - étiquette **`v` + la version exacte** de `pyproject.toml` : `v0.24.0` ;
    - joindre **les deux fichiers**, sans les renommer ;
-   - notes de version : texte libre, affiché dans TRX Console (4 000 caractères au plus) ; écrire ce qui
+   - notes de version : texte libre, affiché dans openRemoteTRX Console (4 000 caractères au plus) ; écrire ce qui
      change POUR L'UTILISATEUR (une ligne par changement, « - … »), la console les montre sur demande avant
      d'installer, avec celles de toutes les versions sautées ;
    - pré-version : version de la forme `0.24.0rc1` (pas `0.24.0-rc1`) ET case « pre-release » cochée.
@@ -60,14 +60,14 @@ allow_prerelease = false  # true : propose aussi les pré-versions
 - Recherche : timer `trx-update-check.timer` (compte `trx`, jamais root, sans droit particulier),
   2 minutes après le démarrage de la station puis toutes les 24 h. Résultat :
   `/var/lib/trx-remote/update/latest.json`. Hors ligne : la dernière version connue est gardée.
-- TRX Console : cadre « NOUVELLE VERSION X DISPONIBLE » en haut du menu (noir sur jaune dans un
+- openRemoteTRX Console : cadre « NOUVELLE VERSION X DISPONIBLE » en haut du menu (noir sur jaune dans un
   terminal), menu 7.1 marqué « <== NOUVELLE VERSION X ». **Menu 7.1** : résumé, « Voir la nature des
   changements » (notes de chaque version publiée depuis celle installée, la plus récente d'abord, 12
   versions et 16 000 caractères au plus, par pages de 20 lignes ; une Release sans paquet signé compte
   aussi), puis confirmation en tapant le numéro de version ; à jour : nouvelle recherche immédiate
   proposée. **Menu 7.2** : retour à la version précédente. Le diagnostic (menu 6.1)
   a une section « Mise à jour ».
-- Installation (`python -m trxstation.update.apply ... install --version X`, en root par TRX Console) :
+- Installation (`python -m trxstation.update.apply ... install --version X`, en root par openRemoteTRX Console) :
   1. refus si le poste émet ou si on ne peut pas prouver qu'il n'émet pas (fichier d'état de la
      passerelle vivant ET relecture du PTT par rigctld) : arrêter la station (menu 1.2) lève le doute ;
   2. GitHub réinterrogé (latest.json, écrit par le compte trx, ne sert qu'à l'affichage) ;
@@ -93,7 +93,7 @@ allow_prerelease = false  # true : propose aussi les pré-versions
   PyPI ou en chemin fait échouer l'installation. LIMITE (décision de l'utilisateur du 2026-11-09) : un module sans
   fichier précompilé pour la plateforme (cas possible sur Raspberry Pi) est compilé, et les outils de compilation que
   pip télécharge alors ne sont pas vérifiés par empreinte. Les versions étant figées, une mise à jour de sécurité d'un
-  module n'arrive qu'avec une nouvelle version de TRX distant.
+  module n'arrive qu'avec une nouvelle version d'openRemoteTRX.
 - Les notes de version ne sont pas signées : elles sont nettoyées (aucun caractère de contrôle) et ne
   servent qu'à l'affichage.
 - Le temps de veille du PC ne compte pas dans les 24 h (minuterie monotone de systemd).

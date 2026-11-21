@@ -1,5 +1,5 @@
 [Unit]
-Description=TRX Console sur le réseau (HTTPS, comptes administrateurs), sous le compte %i
+Description=openRemoteTRX Console sur le réseau (HTTPS, comptes administrateurs), sous le compte %i
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/etc/trx-remote/station.toml

@@ -69,7 +69,7 @@ def test_details_are_written_sections_without_ports(tmp_path):
     titles = [s["title"] for s in sections]
     assert titles == ["Machine", "Charge en ce moment", "Station", "Son"]
     rows = {label: value for s in sections for label, value in s["rows"]}
-    assert rows["Hamlib"] == "4.7.2" and rows["TRX distant"]
+    assert rows["Hamlib"] == "4.7.2" and rows["openRemoteTRX"]
     assert rows["Poste"] == f"modèle Hamlib {cfg.rig.model}\nalimentation 14,4 V"                 # modèle, puis tension
     assert h.rig_vitals_text({"VD_METER": 13.8, "TEMP_METER": 41.6}) == "alimentation 13,8 V, température 42 °C"
     assert h.rig_vitals_text({"TEMP_METER": True}) == "" and h.rig_vitals_text(None) == ""

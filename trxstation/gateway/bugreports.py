@@ -3,7 +3,7 @@
 """Rapports de problème envoyés par la page (« Signaler un problème » > « Envoyer à la station »).
 
 Le texte est assemblé par la page et MONTRÉ à l'utilisateur avant l'envoi : il décide de ce qui part. La station le
-range dans `<state_dir>/reports/page-AAAAMMJJ-HHMMSS-<compte>.txt` ; TRX Console le joint au rapport de dépannage
+range dans `<state_dir>/reports/page-AAAAMMJJ-HHMMSS-<compte>.txt` ; openRemoteTRX Console le joint au rapport de dépannage
 (menu 6.3). Rien ne part sur Internet depuis la passerelle.
 
 Garde-fous : clients authentifiés seulement (la session donne le compte, jamais le message) ; texte borné

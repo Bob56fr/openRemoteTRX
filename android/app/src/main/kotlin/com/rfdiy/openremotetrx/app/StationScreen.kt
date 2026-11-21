@@ -65,7 +65,7 @@ private val WINDOWS = listOf(0, 30, 60, 120, 300)
 
 /**
  * Choix ou appairage d'une station : adresse, identifiant, mot de passe et empreinte du certificat
- * (TRX Console menu 4.1). La dernière cause de déconnexion reste affichée.
+ * (openRemoteTRX Console menu 4.1). La dernière cause de déconnexion reste affichée.
  */
 @Composable
 fun StationScreen(
@@ -99,7 +99,7 @@ fun StationScreen(
         fingerprint = a?.fingerprint ?: ""; window = a?.reconnectWindowS ?: 60; error = ""
     }
 
-    // QR code du menu 4.1 de TRX Console : adresse, identifiant, empreinte. Le mot de passe reste à saisir.
+    // QR code du menu 4.1 d'openRemoteTRX Console : adresse, identifiant, empreinte. Le mot de passe reste à saisir.
     // Lu par l'appareil photo, ou dans une image de la bibliothèque (photo, capture d'écran reçue par message…).
     var notice by remember { mutableStateOf("") }
     fun applyPairing(text: String) {

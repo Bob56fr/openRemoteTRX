@@ -370,7 +370,7 @@ def host_details(monitor: HostMonitor, cfg=None, capabilities=None, hamlib_versi
     load.append(["État", {"ok": "normal", "warn": "chargé", "bad": "SURCHARGÉ"}[summary["level"]]
                  + (f" ({NAMES[summary['worst']]})" if summary["level"] != "ok" and summary["worst"] else "")])
 
-    station = [["TRX distant", __version__], ["Python", platform.python_version()]]
+    station = [["openRemoteTRX", __version__], ["Python", platform.python_version()]]
     if hamlib_version:
         station.append(["Hamlib", hamlib_version])
     vitals = rig_vitals_text(rig_levels)

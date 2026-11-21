@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Un menu de TRX Console joué SANS terminal, pour la page (étape 235, lot W3a de la console web).
+"""Un menu d'openRemoteTRX Console joué SANS terminal, pour la page (étape 235, lot W3a de la console web).
 
 Processus enfant du serveur de la console web, un par menu ouvert : `python -m trxstation.console_web.worker
 --config station.toml --key 4.3`. Il fait tourner le MÊME code que la console texte (aucun menu réécrit) en remplaçant

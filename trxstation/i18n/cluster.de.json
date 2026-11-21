@@ -83,7 +83,7 @@
   "filters.out_of_range": "Außerhalb des Bereichs: Wert bleibt.",
   "filters.not_a_number": "Zahl erwartet: Wert bleibt.",
   "save.impossible": "Speichern unmöglich:\n  - {problems}",
-  "save.done": "Gespeichert. Station neu starten, um es anzuwenden (TRX Console, Menü 1.1).",
+  "save.done": "Gespeichert. Station neu starten, um es anzuwenden (openRemoteTRX Console, Menü 1.1).",
   "run.first_time": "DX-Cluster: Ersteinrichtung.",
   "run.enable": "DX-Cluster aktivieren",
   "menu.flux": "Spots und verfolgte Betriebsarten (Amateurfunk, RBN, CB)",

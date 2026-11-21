@@ -25,7 +25,7 @@ Chaque étape d'émission exige de taper EMETTRE. Quoi qu'il arrive (erreur, Ctr
 coupée à la fin. Le PTT n'est jamais actif pendant qu'une question est posée.
 
 Langues (lot L3) : tout ce que l'essai montre ou demande vient de `trxstation/i18n/hwtest.<langue>.json` (`_t`,
-langue de TRX Console par `TRX_LANG`, sinon menu 0, sinon le système). Les mots de confirmation affichés sont
+langue d'openRemoteTRX Console par `TRX_LANG`, sinon menu 0, sinon le système). Les mots de confirmation affichés sont
 ceux de la langue ; le mot français (EMETTRE, OUI) reste TOUJOURS accepté, rien d'autre.
 """
 from __future__ import annotations

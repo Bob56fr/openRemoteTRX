@@ -1,6 +1,6 @@
 # Glossaire de traduction (FR / EN / DE / ES)
 
-Termes communs à TRX Console, à l'application Android, à la page web et au guide (cahier
+Termes communs à openRemoteTRX Console, à l'application Android, à la page web et au guide (cahier
 `docs/application-traduction-cahier-des-charges.md`, § 6). Une notion = un mot dans chaque langue, partout. Les
 colonnes DE et ES reprennent la console et le lot T6 (allemand VOUVOYÉ « Sie », espagnol « tú ») ; à faire relire par
 quelqu'un dont c'est la langue. Guillemets : « … » en français et en espagnol, “…” en anglais, „…“ en allemand.

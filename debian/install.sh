@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-# Installation de TRX distant sur Debian 12 ou 13 (PC avec ou sans bureau, Raspberry Pi OS 64 bits). Relançable sans danger :
+# Installation d'openRemoteTRX sur Debian 12 ou 13 (PC avec ou sans bureau, Raspberry Pi OS 64 bits). Relançable sans danger :
 # une nouvelle exécution répare ou met à jour, sans jamais écraser la configuration.
 #
 #   sudo bash install.sh                  installe ou met à jour (la version d'avant est gardée)
@@ -37,7 +37,7 @@ APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-c
 MIN_FREE_MB=2000
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TARGET_USER=${SUDO_USER:-}
-HAS_DESKTOP=0      # bureau graphique installé (sinon : TRX Console par SSH ou sur la console texte)
+HAS_DESKTOP=0      # bureau graphique installé (sinon : openRemoteTRX Console par SSH ou sur la console texte)
 if compgen -G '/usr/share/xsessions/*.desktop' >/dev/null || compgen -G '/usr/share/wayland-sessions/*.desktop' >/dev/null; then
   HAS_DESKTOP=1
 fi
@@ -153,7 +153,7 @@ hardware_watchdog() {
     return 0
   fi
   install -d -m 0755 "$(dirname "$WATCHDOG_CONF")"
-  printf '%s\n' "# TRX distant (install.sh) : watchdog matériel du Raspberry Pi tenu par systemd (plafond de la puce : 15 s)." \
+  printf '%s\n' "# openRemoteTRX (install.sh) : watchdog matériel du Raspberry Pi tenu par systemd (plafond de la puce : 15 s)." \
     "[Manager]" "RuntimeWatchdogSec=15" "RebootWatchdogSec=10min" >"$WATCHDOG_CONF"
   chmod 0644 "$WATCHDOG_CONF"
   systemctl daemon-reexec
@@ -165,13 +165,13 @@ start_if_configured() {
     if systemctl restart trx-remote.target; then
       ok "station démarrée"
     else
-      warn "la station n'a pas démarré : TRX Console, menus « Diagnostic » et « Journal »"
+      warn "la station n'a pas démarré : openRemoteTRX Console, menus « Diagnostic » et « Journal »"
     fi
     restart_network_console
   elif [[ -f $CONF ]]; then
-    warn "configuration incomplète : la station démarrera après l'assistant de TRX Console"
+    warn "configuration incomplète : la station démarrera après l'assistant d'openRemoteTRX Console"
   else
-    ok "la station démarrera après l'assistant de TRX Console"
+    ok "la station démarrera après l'assistant d'openRemoteTRX Console"
   fi
 }
 
@@ -201,21 +201,21 @@ backup_config_for() {  # copie de station.toml prise avant de passer à la versi
   done
 }
 
-# TRX Console sur le réseau (menu 4.6) : relancée sur la nouvelle version 30 s APRÈS l'installation, jamais tout de
+# openRemoteTRX Console sur le réseau (menu 4.6) : relancée sur la nouvelle version 30 s APRÈS l'installation, jamais tout de
 # suite : cette installation peut tourner dans le terminal de cette console même (menu 7.1 ou 7.3 depuis le navigateur).
 restart_network_console() {
   local link
   for link in "$UNIT_DIR"/multi-user.target.wants/trx-console-web@*.service; do
     [[ -L $link ]] || continue
     systemd-run --quiet --on-active=30 systemctl try-restart "$(basename "$link")" >/dev/null 2>&1 || true
-    ok "TRX Console sur le réseau : relancée dans 30 s sur cette version (reconnexion dans le navigateur)"
+    ok "openRemoteTRX Console sur le réseau : relancée dans 30 s sur cette version (reconnexion dans le navigateur)"
   done
 }
 
 # ------------------------------------------------------------------ désinstallation
 
 uninstall() {
-  step "Désinstallation de TRX distant"
+  step "Désinstallation d'openRemoteTRX"
   stop_station || true
   for unit in "${UNITS[@]}"; do
     systemctl disable "$unit" >/dev/null 2>&1 || true
@@ -278,14 +278,14 @@ reactivate() {
       chmod 0640 "$CONF" "$CONF_DIR/station.toml.version-$left"
       warn "configuration refusée par la version $TRX_VERSION : celle d'avant la mise à jour est remise (l'autre est gardée dans station.toml.version-$left)"
     else
-      warn "configuration refusée par la version $TRX_VERSION : TRX Console, menu « Assistant de configuration »"
+      warn "configuration refusée par la version $TRX_VERSION : openRemoteTRX Console, menu « Assistant de configuration »"
     fi
   fi
   install_services "$HERE/systeme"
   install_launcher "$HERE/systeme"
   FINISHED=1
   start_if_configured
-  printf '\n%s%sRetour terminé%s (TRX distant %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"
+  printf '\n%s%sRetour terminé%s (openRemoteTRX %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"
 }
 
 if [[ $MODE == reactivate ]]; then reactivate; exit 0; fi
@@ -297,7 +297,7 @@ for f in app/pyproject.toml app/trxstation/__init__.py systeme/trx-remote.target
   [[ -f $HERE/$f ]] || fail "fichier manquant : $f. Décompresse tout le zip et lance install.sh depuis son dossier."
 done
 valid_version "$TRX_VERSION" || fail "version illisible dans app/pyproject.toml : $TRX_VERSION"
-ok "TRX distant version $TRX_VERSION"
+ok "openRemoteTRX version $TRX_VERSION"
 # shellcheck disable=SC1091
 . /etc/os-release
 if [[ " ${ID:-} ${ID_LIKE:-} " != *" debian "* ]]; then
@@ -354,13 +354,13 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -q || fail "mise à jour de la liste des paquets impossible (apt-get update)."
 apt-get install -y -q --no-install-recommends "${APT_PACKAGES[@]}" || fail "installation des paquets Debian impossible."
 ok "paquets installés"
-# Pictogrammes de TRX Console (écran plein) dans un terminal du BUREAU : police d'emoji en couleur, absente de Raspberry
+# Pictogrammes d'openRemoteTRX Console (écran plein) dans un terminal du BUREAU : police d'emoji en couleur, absente de Raspberry
 # Pi OS (étape 302). Sans bureau, rien : la police est celle du terminal qui affiche (SSH) ; console texte = sans pictogramme.
 if [[ $HAS_DESKTOP -eq 1 ]]; then
   if apt-get install -y -q --no-install-recommends fonts-noto-color-emoji >>"$LOG" 2>&1; then
-    ok "police des pictogrammes de TRX Console installée (fonts-noto-color-emoji)"
+    ok "police des pictogrammes d'openRemoteTRX Console installée (fonts-noto-color-emoji)"
   else
-    warn "police des pictogrammes absente (fonts-noto-color-emoji) : TRX Console sans pictogramme (TRX_CONSOLE_SANS_ICONES=1)"
+    warn "police des pictogrammes absente (fonts-noto-color-emoji) : openRemoteTRX Console sans pictogramme (TRX_CONSOLE_SANS_ICONES=1)"
   fi
 fi
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
@@ -397,7 +397,7 @@ fi
 step "3/8 Comptes et droits"
 if ! getent passwd "$SERVICE_USER" >/dev/null; then
   useradd --system --user-group --home-dir "$STATE_DIR" --no-create-home --shell /usr/sbin/nologin \
-          --comment "Station TRX distant" "$SERVICE_USER"
+          --comment "Station openRemoteTRX" "$SERVICE_USER"
   ok "compte système $SERVICE_USER créé"
 else
   ok "compte système $SERVICE_USER déjà présent"
@@ -413,7 +413,7 @@ fi
 
 # ------------------------------------------------------------------ 4. logiciel
 
-step "4/8 Logiciel TRX distant (environnement Python isolé)"
+step "4/8 Logiciel openRemoteTRX (environnement Python isolé)"
 RELEASE=$RELEASES/$TRX_VERSION
 install -d -m 0755 "$APP_DIR" "$RELEASES"
 if [[ $HERE != "$RELEASE" ]]; then
@@ -458,7 +458,7 @@ if ! "$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check -
 fi
 rm -f "$PIP_LOG"
 "$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --no-deps --no-build-isolation "$RELEASE/app" \
-  || fail "installation de TRX distant impossible (détails dans $LOG)."
+  || fail "installation d'openRemoteTRX impossible (détails dans $LOG)."
 "$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial' \
   || fail "modules Python incomplets après installation."
 ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography, pyserial)"
@@ -493,7 +493,7 @@ if [[ -f $SDR_SRC ]]; then
   if (( ${#SDR_DRIVERS_FOUND[@]} )); then
     if gcc -O2 "${SDR_FLAGS[@]}" -o "$REL_VENV/bin/sdr-core" "$SDR_SRC" -I/usr/local/include -L/usr/local/lib \
          -lliquid "${SDR_LIBS[@]}" -lm -lpthread -Wl,-rpath,/usr/local/lib >>"$LOG" 2>&1; then
-      ok "sdr-core compilé (pilotes : ${SDR_DRIVERS_FOUND[*]}) ; TRX Console menu 2.4 ou « trx-sdr --list » pour choisir le SDR"
+      ok "sdr-core compilé (pilotes : ${SDR_DRIVERS_FOUND[*]}) ; openRemoteTRX Console menu 2.4 ou « trx-sdr --list » pour choisir le SDR"
     else
       warn "sdr-core non compilé (détails dans $LOG) : le module SDR restera indisponible."
     fi
@@ -529,7 +529,7 @@ elif [[ -n $IMPORT_SOURCE ]]; then
   chown root:"$SERVICE_USER" "$IMPORT" && chmod 0640 "$IMPORT"
   ok "configuration de l'ancien PC prête à être complétée par l'assistant"
 else
-  ok "pas encore de configuration : l'assistant de TRX Console la créera"
+  ok "pas encore de configuration : l'assistant d'openRemoteTRX Console la créera"
 fi
 
 # ------------------------------------------------------------------ 6. ports USB
@@ -580,17 +580,17 @@ start_if_configured
 
 # ------------------------------------------------------------------ 8. lanceur
 
-step "8/8 Lanceur TRX Console"
+step "8/8 Lanceur openRemoteTRX Console"
 install_launcher "$HERE/systeme"
 if [[ $HAS_DESKTOP -eq 1 ]]; then
-  ok "icône « TRX Console » ajoutée au menu des applications"
-  OPEN_CONSOLE="Ouvre « TRX Console » depuis le menu des applications."
+  ok "icône « openRemoteTRX Console » ajoutée au menu des applications"
+  OPEN_CONSOLE="Ouvre « openRemoteTRX Console » depuis le menu des applications."
 else
-  ok "pas de bureau : TRX Console se lance par la commande trx-console (SSH ou console texte)"
+  ok "pas de bureau : openRemoteTRX Console se lance par la commande trx-console (SSH ou console texte)"
   OPEN_CONSOLE="Tape : trx-console"
 fi
 
-printf '\n%s%sInstallation terminée%s (TRX distant %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"
+printf '\n%s%sInstallation terminée%s (openRemoteTRX %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"
 if [[ -n $TARGET_USER ]]; then
   printf '\nÀ faire maintenant :\n  1. Déconnecte-toi puis reconnecte-toi (les nouveaux droits ne valent qu'\''après ;\n'
   printf '     en SSH : exit, puis nouvelle connexion).\n'

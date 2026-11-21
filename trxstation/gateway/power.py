@@ -3,7 +3,7 @@
 """PowerControl : allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md).
 
 SEUL composant autorisé à envoyer « \\set_powerstat » (un test le vérifie dans le code source). Règles :
-  * Hors service par défaut (`[power] enabled = false`, menu 2.8 de TRX Console) ; refus si le poste ne déclare pas
+  * Hors service par défaut (`[power] enabled = false`, menu 2.8 d'openRemoteTRX Console) ; refus si le poste ne déclare pas
     « set / get Power Stat ». Jamais automatique, sauf : la connexion d'un OPÉRATEUR (c'est le CLIENT qui envoie
     `power_on`) et l'extinction après N heures sans connexion (`[power] idle_off`, hors service par défaut).
   * Éteindre : jamais pendant une émission (station, micro du poste) ni dans les 2 min qui suivent une action sur le
@@ -113,7 +113,7 @@ class PowerControl:
     def _check_available(self) -> None:
         reason = self.unavailable_reason()
         if reason == "power_disabled":
-            raise Refused(reason, "allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8)")
+            raise Refused(reason, "allumage et extinction à distance hors service sur cette station (openRemoteTRX Console, menu 2.8)")
         if reason:
             raise Refused(reason, "le poste ne peut pas être allumé ou éteint par la CAT d'après Hamlib")
         if self._phase:

@@ -46,8 +46,8 @@ async def serve(args: argparse.Namespace) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if station_running(Supervisor().instance_lock_port):
-        print("La station openRemoteTRX est en marche : arrêtez-la d'abord (TRX Console, menu 1.2).\n"
-              "The openRemoteTRX station is running: stop it first (TRX Console, menu 1.2).")
+        print("La station openRemoteTRX est en marche : arrêtez-la d'abord (openRemoteTRX Console, menu 1.2).\n"
+              "The openRemoteTRX station is running: stop it first (openRemoteTRX Console, menu 1.2).")
         return 2
     try:
         asyncio.run(serve(args))

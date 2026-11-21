@@ -1,4 +1,4 @@
-# Publie docs/site/ (mode d'emploi de TRX Console, guide de l'opérateur…) et la page d'openRemoteTRX-Autotest (autotest/web/) sur GitHub Pages à chaque push sur main qui
+# Publie docs/site/ (mode d'emploi d'openRemoteTRX Console, guide de l'opérateur…) et la page d'openRemoteTRX-Autotest (autotest/web/) sur GitHub Pages à chaque push sur main qui
 # le modifie. Le PDF du guide n'est pas dans le dépôt : il est imprimé ici, à côté de la page, juste avant la mise en ligne.
 # Réglage à faire une fois sur GitHub : Settings > Pages > Build and deployment > Source = « GitHub Actions ».
 name: Documentation (GitHub Pages)

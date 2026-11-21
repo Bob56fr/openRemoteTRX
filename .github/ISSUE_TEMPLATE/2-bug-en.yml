@@ -14,7 +14,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: "Station: TRX Console header. App: login screen."
+      description: "Station: openRemoteTRX Console header. App: login screen."
       placeholder: "station 0.134.0 / app 0.63.0"
     validations:
       required: true
@@ -94,7 +94,7 @@ body:
     attributes:
       label: Logs
       description: |
-        Useful excerpts of the log (TRX Console, menu 6.2). The troubleshooting report (menu 6.3) is a zip without passwords: drag it into the "What happens" box above. Android app: Réglages > "Signaler un problème" (the app is in French).
+        Useful excerpts of the log (openRemoteTRX Console, menu 6.2). The troubleshooting report (menu 6.3) is a zip without passwords: drag it into the "What happens" box above. Android app: Réglages > "Signaler un problème" (the app is in French).
       render: text
   - type: checkboxes
     id: confidentialite

@@ -141,7 +141,7 @@
   "power_progress": [{"type": "power_progress", "step": "ports", "status": "ok", "detail": ""},
                      {"type": "power_progress", "step": "wait", "status": "running", "detail": "", "remaining_s": 22.0},
                      {"type": "power_progress", "step": "done", "status": "ok", "detail": "7 074,00 kHz USB, en réception"},
-                     {"type": "power_progress", "step": "ports", "status": "error", "ort": "ORT-2809", "detail": "le poste est maintenant sur COM7 (station.toml dit COM6) : refaire le menu 2.5 de TRX Console sur la station"}],
+                     {"type": "power_progress", "step": "ports", "status": "error", "ort": "ORT-2809", "detail": "le poste est maintenant sur COM7 (station.toml dit COM6) : refaire le menu 2.5 d'openRemoteTRX Console sur la station"}],
   "power_on_result": {"type": "result", "id": 150, "ok": true, "result": "on", "seconds": 9.4, "rig": "7 074,00 kHz USB, en réception",
                       "power": {"state": "on", "available": true, "by": "phone", "how": "connect", "last": "on", "since": 1795000010.0}},
   "power_refused_result": {"type": "result", "id": 150, "ok": false, "reason": "power_on_timeout", "ort": "ORT-2803", "step": "wait", "detail": "le poste ne s'est pas allumé en 30 s"}

@@ -8,7 +8,7 @@ Dans ta box, **réserve une adresse IP** au PC de la station (réservation DHCP)
 porte l'adresse du PC : si elle change, le navigateur et l'application ne le reconnaîtront plus. Après un
 changement d'adresse, relance l'assistant (menu 2.1) pour refaire le certificat.
 
-L'adresse à utiliser est affichée en tête de TRX Console et par le diagnostic.
+L'adresse à utiliser est affichée en tête d'openRemoteTRX Console et par le diagnostic.
 
 ## 4.2 La page web
 
@@ -23,7 +23,7 @@ L'adresse à utiliser est affichée en tête de TRX Console et par le diagnostic
 
 ### Installer l'autorité de la station (une fois par appareil)
 
-1. Sur la station, TRX Console, menu **4.4** « Certificat de la station » : choix **1** (refaire le certificat, signé
+1. Sur la station, openRemoteTRX Console, menu **4.4** « Certificat de la station » : choix **1** (refaire le certificat, signé
    par l'autorité de la station), puis redémarrer la station quand la console le propose. L'empreinte du certificat
    change : **appaire de nouveau l'application Android** (menu 4.1).
 2. Sur l'appareil, ouvre la page de la station : sous le mot de passe, touche **« Installer le certificat de la
@@ -66,7 +66,7 @@ toi. Un même compte ouvert sur un second appareil **ferme la connexion du premi
 émettait). Avec un compte par appareil, la station sait lequel émet, et tu peux retirer un seul appareil (téléphone
 perdu) sans toucher aux autres.
 
-Tout se fait au menu **4.3 « Comptes opérateurs »** de TRX Console :
+Tout se fait au menu **4.3 « Comptes opérateurs »** d'openRemoteTRX Console :
 
 - **ajouter** un compte : identifiant, mot de passe (Entrée = un mot de passe fort est généré, note-le), puis le
   **QR code d'appairage** de ce compte pour l'application ;
@@ -85,7 +85,7 @@ L'application (« openRemoteTRX », Android 10 ou plus récent) apporte ce que l
 qui continue écran éteint, bouton d'un casque, Android Auto, mode conduite.
 
 1. Installe l'application (test sur invitation, partie 0).
-2. Sur la station, menu **4.1** : TRX Console affiche l'adresse, les comptes, l'empreinte du certificat et un
+2. Sur la station, menu **4.1** : openRemoteTRX Console affiche l'adresse, les comptes, l'empreinte du certificat et un
    **QR code** (sans mot de passe).
 3. Dans l'application : « **Scanner le QR code de la station** ». L'adresse, l'identifiant et l'empreinte se
    remplissent ; saisis le mot de passe.

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Mesure de TOS, outils de la station (étape 5 du cahier des charges) : TRX Console en lecture seule, trx-monitor,
+"""Mesure de TOS, outils de la station (étape 5 du cahier des charges) : openRemoteTRX Console en lecture seule, trx-monitor,
 fichier d'état de la passerelle."""
 from __future__ import annotations
 

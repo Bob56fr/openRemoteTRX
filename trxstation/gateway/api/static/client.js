@@ -2030,7 +2030,7 @@
     }
 
     async sendProblemReport(text) {
-      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 6.3). */
+      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage d'openRemoteTRX Console (menu 6.3). */
       const res = await this.send("bug_report", { text: String(text).slice(0, MAX_REPORT_CHARS) });
       if (res.ok) this.ui.log(I18N.t("rigsession.bug_report_sent_name", { name: res.name }), "");
       else this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");

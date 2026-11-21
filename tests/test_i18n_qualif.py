@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """trx-qualif en quatre langues (lot L3) : catalogues `trxstation/i18n/qualif.<langue>.json` complets et cohérents,
-affichage dans la langue de TRX Console (`TRX_LANG`), français affiché inchangé, confirmations sûres, et DOCUMENTS
+affichage dans la langue d'openRemoteTRX Console (`TRX_LANG`), français affiché inchangé, confirmations sûres, et DOCUMENTS
 produits (rapport, fiche, cahier, constats, brouillons) identiques quelle que soit la langue."""
 from __future__ import annotations
 

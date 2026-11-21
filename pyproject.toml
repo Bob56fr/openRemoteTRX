@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trx-station"
-version = "0.258.0"
+version = "0.259.0"
 description = "Passerelle de pilotage à distance d'un TRX radioamateur (côté Raspberry Pi)"
 requires-python = ">=3.11"
 # Cœur en stdlib ; les modules de l'audio, du web et de l'interface sont dans les extras ci-dessous.
@@ -17,7 +17,7 @@ audio = ["aiortc>=1.9", "aiohttp>=3.9", "sounddevice>=0.4", "pyserial>=3.5", "nu
 tls = ["cryptography>=41"]
 # Indicateur près de l'horloge (Windows seulement, trxstation/tray/) : installé par windows/installer.ps1.
 tray = ["pystray>=0.19; sys_platform == 'win32'", "pillow>=10; sys_platform == 'win32'"]
-# Station complète (installation Debian) : tout ce qu'il faut pour la passerelle, la page web et TRX Console.
+# Station complète (installation Debian) : tout ce qu'il faut pour la passerelle, la page web et openRemoteTRX Console.
 # pywinpty : terminal intégré de la console web sous Windows (même écran que sous Debian, décision du 2026-11-17).
 station = ["aiortc>=1.9", "aiohttp>=3.9", "sounddevice>=0.4", "textual>=0.50", "cryptography>=41", "pyserial>=3.5", "segno>=1.5", "numpy>=1.24", "pywinpty>=2.0; sys_platform == 'win32'"]
 
@@ -38,8 +38,8 @@ trx-sdr = "trxstation.sdr.devices:main"
 "trxstation.gateway.api" = ["static/*"]
 "trxstation.modules" = ["builtin/*/manifest.toml"]
 "trxstation" = ["console_help.json"]
-"trxstation.console_web" = ["static/*", "static/vendor/*"]   # console web (étape 229) : page, xterm.js livré avec la station   # aide de la touche « h » de TRX Console (scripts/build_console_doc.py)
-"trxstation.i18n" = ["*.json"]   # catalogues de langue de TRX Console (fr, en, de, es)
+"trxstation.console_web" = ["static/*", "static/vendor/*"]   # console web (étape 229) : page, xterm.js livré avec la station   # aide de la touche « h » d'openRemoteTRX Console (scripts/build_console_doc.py)
+"trxstation.i18n" = ["*.json"]   # catalogues de langue d'openRemoteTRX Console (fr, en, de, es)
 "trxstation.errors" = ["*.yaml", "*.json"]   # catalogue d'erreurs et registre des préfixes (cahier du monitoring, § 7) ; catalog.json : scripts/build_errors.py
 "trxstation.qualif.page" = ["*.json", "static/*"]   # page de la valise de qualification (étape 280)
 

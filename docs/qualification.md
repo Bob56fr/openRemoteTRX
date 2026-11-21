@@ -24,7 +24,7 @@ trx-qualif --sans-emission           # qualification sans la phase 3 (verdict «
 trx-qualif --filtres                 # essaie AUSSI les largeurs de filtre (voir « Filtres » : réécrit les FIL d'un Icom)
 ```
 
-Depuis TRX Console : menu 8.3 « Qualification d'un poste » (choix 1 à 5 = les commandes ci-dessus ; rapports dans
+Depuis openRemoteTRX Console : menu 8.3 « Qualification d'un poste » (choix 1 à 5 = les commandes ci-dessus ; rapports dans
 le dossier d'état de la station, `qualifications/`).
 
 Un rigctld qui répond déjà est REFUSÉ (c'est presque toujours celui de la station) : arrêter la station, ou
@@ -43,7 +43,7 @@ nouvelle commande), ou `python -m trxstation.qualif.main`.
    mesurer la résolution), tous les modes déclarés, filtres, lectures et écritures générées depuis
    Hamlib, endurance (1000 lectures) et temps de réponse. L'état du poste est relevé avant et
    **rétabli après**. La puissance n'est jamais montée au-dessus de la valeur de départ si un palier
-   inférieur existe ; une puissance hors des paliers de TRX Remote n'est pas touchée.
+   inférieur existe ; une puissance hors des paliers d'openRemoteTRX n'est pas touchée.
    Le tuner n'est **jamais** activé automatiquement (il peut lancer un accord).
 3. Audio reçu (enregistré dans `rx.wav`).
 4. **Phase 2, guidée** : l'opérateur confirme l'afficheur et l'écoute. Réponses déclaratives,
@@ -81,7 +81,7 @@ trx-qualif --terrain --output DOSSIER            # nouvelle session dans DOSSIER
 trx-qualif --terrain --output DOSSIER --session DOSSIER/terrain-…   # reprendre une session
 ```
 
-Depuis TRX Console : menu 8.3, choix 6 (étape 253 ; la station n'est pas arrêtée par la console, la valise s'en charge).
+Depuis openRemoteTRX Console : menu 8.3, choix 6 (étape 253 ; la station n'est pas arrêtée par la console, la valise s'en charge).
 
 Bus et page (étapes 279-280, valise graphique, `docs/qualification-gui-cahier-des-charges.md`) : tout passe par le
 bus `qualif/bus.py` (historique `evenements.jsonl` dans le dossier de la session). `trx-qualif --terrain --page`
@@ -217,7 +217,7 @@ divergent. Aucune commande de PTT n'est envoyée ; le mode n'est jamais changé.
 6. Écritures avec relecture et remise à la valeur d'origine, LISTE FERMÉE de réglages de réception
    (`EXPLORE_WRITE_FUNCS`, `EXPLORE_WRITE_LEVELS` : CTCSS, APF, PBT, pitch et vitesse CW…). Jamais VOX, tuner, envoi
    de morse ou de mémoire vocale, break-in, MICGAIN, RFPOWER, volume AF, spectre, verrouillage. Le PTT est relu avant
-   chaque écriture. Les réglages déjà exploités par TRX Remote sont essayés par la qualification, pas ici.
+   chaque écriture. Les réglages déjà exploités par openRemoteTRX sont essayés par la qualification, pas ici.
 7. Rafale de lectures mêlées (fréquence, mode, PTT, S-mètre) : réponses décalées, et temps de réponse par commande.
 8. Reconnexions à rigctld ; fréquence d'origine remise, mode relu.
 
@@ -289,7 +289,7 @@ But : dérouler la qualification de bout en bout sur un poste connu, pour juger 
 (clarté des questions, durée, verdict, fiche produite) avant de la proposer à d'autres utilisateurs.
 
 1. Préparer : charge fictive, puissance au minimum, TOT interne du poste réglé, VOX coupé, mode
-   données (USB-D), station arrêtée (TRX Console, ou arrêt du superviseur sous Windows).
+   données (USB-D), station arrêtée (openRemoteTRX Console, ou arrêt du superviseur sous Windows).
 2. `trx-qualif --plan` : lire le cahier de test produit pour ce modèle. Noter tout test qui paraît
    inutile, absent ou mal nommé.
 3. `trx-qualif` : suivre le déroulé, chronométrer chaque phase, taper `EMETTRE` seulement poste prêt.

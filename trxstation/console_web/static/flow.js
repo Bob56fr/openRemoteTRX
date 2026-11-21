@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
-// Menu ouvert en formulaires (étape 235) : la station joue le menu de TRX Console sans terminal et envoie ses
+// Menu ouvert en formulaires (étape 235) : la station joue le menu d'openRemoteTRX Console sans terminal et envoie ses
 // messages ; la page les dessine (texte, boutons de choix, oui / non, nombre et bornes, mot de passe, mot de
 // confirmation, sortie des commandes) et renvoie les réponses. Une réponse libre reste toujours possible.
 "use strict";

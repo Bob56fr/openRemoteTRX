@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Monitoring inter-stations, lot R3b : TRX Console menu 6.5 et ligne « Monitoring » de trx-monitor.
+"""Monitoring inter-stations, lot R3b : openRemoteTRX Console menu 6.5 et ligne « Monitoring » de trx-monitor.
 
 Deux stations complètes (console + module « monlink » + faux relais) : celle qui AIDE et celle qui est AIDÉE. La
 demande de la console va directement au module (le dépôt par fichier est le même que la présence, déjà essayé)."""

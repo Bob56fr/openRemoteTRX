@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console : installation d'un paquet déposé (menu 7.3) et modification de station.toml (menu 8.1)."""
+"""openRemoteTRX Console : installation d'un paquet déposé (menu 7.3) et modification de station.toml (menu 8.1)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -657,7 +657,7 @@ def test_features_switch_sets_enabled_and_the_module_together(tmp_path):
     assert not feature_on(cfgmod.load(path), "cluster", "cluster")
 
 
-# --------------------------------------------------------------------------- TRX Console sous Windows (étape 222)
+# --------------------------------------------------------------------------- openRemoteTRX Console sous Windows (étape 222)
 
 def test_windows_saves_station_toml_without_sudo_cp_or_install(tmp_path, monkeypatch):
     import trxstation.console as module

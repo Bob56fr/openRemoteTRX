@@ -3,7 +3,7 @@
 """Identifiant unique de la station (GUID), pour les échanges futurs avec rf-diy.com (rapports, autres services).
 
 `<state_dir>/station-id` : un UUID version 4 (122 bits tirés de `os.urandom`, le générateur du système), créé
-une seule fois par la PASSERELLE au premier démarrage, jamais écrasé, lisible par tous (0644 : TRX Console et le
+une seule fois par la PASSERELLE au premier démarrage, jamais écrasé, lisible par tous (0644 : openRemoteTRX Console et le
 rapport de dépannage le lisent). Il survit aux mises à jour et aux retours arrière (dossier d'état hors des versions).
 
 Doublons : avec 2^122 valeurs possibles, il faudrait environ 2,7 milliards de milliards de stations pour avoir

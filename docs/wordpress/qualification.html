@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 RF-DIY.COM -->
-<!-- TRX Remote : présentation de la qualification d'un poste. À coller dans un bloc « HTML personnalisé » de WordPress.
+<!-- openRemoteTRX : présentation de la qualification d'un poste. À coller dans un bloc « HTML personnalisé » de WordPress.
      Aucun script ni ressource externe. Styles regroupés sous .trxr pour ne pas toucher au thème du site ; lisible en thème clair comme sombre.
      À COMPLÉTER avant publication : l'adresse d'envoi des rapports (repère [À COMPLÉTER]). -->
 <style>
@@ -33,7 +33,7 @@
 
 <div class="trxr">
 
-<p class="trxr-lead">TRX Remote pilote à distance la plupart des postes reconnus par Hamlib. Avant d'autoriser l'émission à distance sur un modèle, nous vérifions qu'il se comporte exactement comme prévu&nbsp;: c'est la qualification. Voici comment elle se déroule si vous voulez faire qualifier votre poste.</p>
+<p class="trxr-lead">openRemoteTRX pilote à distance la plupart des postes reconnus par Hamlib. Avant d'autoriser l'émission à distance sur un modèle, nous vérifions qu'il se comporte exactement comme prévu&nbsp;: c'est la qualification. Voici comment elle se déroule si vous voulez faire qualifier votre poste.</p>
 
 <h2>Pourquoi qualifier un poste&nbsp;?</h2>
 <p>Deux postes reconnus par Hamlib ne répondent pas toujours de la même façon. Selon le modèle et la version du micrologiciel, certaines fonctions sont absentes, d'autres répondent avec un format inattendu. Un poste peut aussi relire son état d'émission avec retard.</p>
@@ -45,7 +45,7 @@
 
 <h2>Ce qu'il vous faut</h2>
 <ul>
-  <li>Une station TRX Remote installée (PC Windows, PC Debian ou Raspberry Pi) et votre poste relié en CAT (câble USB ou interface).</li>
+  <li>Une station openRemoteTRX installée (PC Windows, PC Debian ou Raspberry Pi) et votre poste relié en CAT (câble USB ou interface).</li>
   <li>L'interface audio du poste (carte son intégrée au poste ou interface externe).</li>
   <li>Une <strong>charge fictive</strong> adaptée à la puissance du poste. C'est indispensable pour les essais d'émission.</li>
   <li>Votre indicatif et une bande où vous êtes autorisé à émettre.</li>
@@ -58,7 +58,7 @@
   <li>Charge fictive branchée, puissance réglée <strong>au minimum</strong>.</li>
   <li>Minuterie d'émission interne du poste (TOT) <strong>activée</strong> : c'est une sécurité de plus, indépendante de l'ordinateur.</li>
   <li>VOX coupé.</li>
-  <li>Station TRX Remote arrêtée : la qualification utilise seule le poste pendant la séance.</li>
+  <li>Station openRemoteTRX arrêtée : la qualification utilise seule le poste pendant la séance.</li>
 </ul>
 </div>
 
@@ -73,7 +73,7 @@
     <ul>
       <li>le réglage de la fréquence sur chaque bande ;</li>
       <li>tous les modes et les filtres ;</li>
-      <li>les fonctions et niveaux que TRX Remote utilise ;</li>
+      <li>les fonctions et niveaux qu'openRemoteTRX utilise ;</li>
       <li>l'endurance (un millier de lectures) et les temps de réponse.</li>
     </ul>
     <p>À la fin, <strong>tout est remis comme avant</strong>. La puissance n'est jamais augmentée, et le coupleur d'antenne n'est jamais lancé (il pourrait émettre une porteuse).</p></li>
@@ -116,7 +116,7 @@
     <tr><td><strong>Refusé</strong></td><td>Un essai essentiel a échoué. Par exemple, un poste dont on ne peut pas lire l'état d'émission ne sera jamais autorisé à émettre à distance.</td></tr>
   </tbody>
 </table>
-<p>Après examen, le modèle reçoit son statut dans TRX Remote :</p>
+<p>Après examen, le modèle reçoit son statut dans openRemoteTRX :</p>
 <ul>
   <li><strong>validé</strong> : toutes les fonctions sont proposées ;</li>
   <li><strong>restreint</strong> : certaines fonctions sont masquées, avec un avertissement ;</li>

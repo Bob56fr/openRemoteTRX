@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
-// Indicateur TRX distant de la barre du haut (GNOME) : logique pure, sans GNOME, testée sous Node (tests/js/indicator_test.js).
+// Indicateur openRemoteTRX de la barre du haut (GNOME) : logique pure, sans GNOME, testée sous Node (tests/js/indicator_test.js).
 // Entrée : les fichiers publiés par la station (lecture seule). Sortie : voyant, texte de la barre, lignes du menu.
 // L'indicateur ne commande JAMAIS la station : il lit seulement.
 
@@ -54,12 +54,12 @@ export function summarize(input) {
 
   if (safe) {
     level = "safe"; label = "MODE SÛR";
-    add("Station", "MODE SÛR : " + safe + " (TRX Console, menu 1.4)", "bad");
+    add("Station", "MODE SÛR : " + safe + " (openRemoteTRX Console, menu 1.4)", "bad");
   }
   const age = status ? nowS - Number(status.written_at) : Infinity;
   if (!status) {
     if (!safe) { level = "off"; label = "TRX arrêtée"; }
-    add("Station", "arrêtée (TRX Console, menu 1.1 pour la démarrer)", safe ? "bad" : "info");
+    add("Station", "arrêtée (openRemoteTRX Console, menu 1.1 pour la démarrer)", safe ? "bad" : "info");
   } else if (!(age < STALE_S)) {
     if (!safe) { level = age > 120 ? "off" : "stale"; label = age > 120 ? "TRX arrêtée" : "TRX ?"; }
     add("Station", age > 120 ? "arrêtée" : "ne répond plus depuis " + Math.round(age) + " s", age > 120 ? "info" : "warn");
@@ -114,7 +114,7 @@ export function summarize(input) {
     add("Cluster DX", CLUSTER[cluster.health], cluster.health === "green" ? "ok" : cluster.health === "orange" ? "warn" : "bad");
   }
   const release = input && input.update && input.update.release;
-  if (release && release.version) add("Mise à jour", "version " + text(release.version, 20) + " disponible (TRX Console, menu 7.1)", "warn");
+  if (release && release.version) add("Mise à jour", "version " + text(release.version, 20) + " disponible (openRemoteTRX Console, menu 7.1)", "warn");
   if (input && input.version) add("Version", text(input.version, 20), "info");
   if (input && input.stationId) add("Identifiant", text(input.stationId, 40), "info");
 

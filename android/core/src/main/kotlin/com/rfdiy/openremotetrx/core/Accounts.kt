@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Une station appairée. `fingerprint` : empreinte SHA-256 du certificat (TRX Console menu 4.1), « AB:CD:… » ;
+ * Une station appairée. `fingerprint` : empreinte SHA-256 du certificat (openRemoteTRX Console menu 4.1), « AB:CD:… » ;
  * vide = certificat signé par une autorité reconnue (proxy HTTPS), vérifié normalement par Android.
  */
 @Serializable

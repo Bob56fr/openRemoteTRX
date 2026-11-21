@@ -25,8 +25,8 @@ def test_same_result_as_the_gnome_indicator(vector):
 def test_windows_hints_replace_trx_console_menus():
     view = summarize({"status": None, "nowS": 1.0, "safeMode": "pannes"}, WINDOWS_HINTS)
     texts = " ".join(line["text"] for line in view["lines"])
-    assert "TRX Console" not in texts and "menu Démarrer" in texts
-    assert "TRX Console, menu 1.1" in summarize({"status": None, "nowS": 1.0}, DEBIAN_HINTS)["lines"][0]["text"]
+    assert "openRemoteTRX Console" not in texts and "menu Démarrer" in texts
+    assert "openRemoteTRX Console, menu 1.1" in summarize({"status": None, "nowS": 1.0}, DEBIAN_HINTS)["lines"][0]["text"]
 
 
 def test_collect_reads_the_station_files_and_never_raises(tmp_path):
@@ -50,11 +50,11 @@ def test_collect_reads_the_station_files_and_never_raises(tmp_path):
 
 def test_tooltip_and_menu_lines():
     tx = summarize(VECTORS[1]["input"])
-    assert tray.tooltip(tx) == "TRX distant : TX 1:12"
-    assert tray.tooltip(summarize({"status": None, "nowS": 1.0})) == "TRX distant : arrêtée"
+    assert tray.tooltip(tx) == "openRemoteTRX : TX 1:12"
+    assert tray.tooltip(summarize({"status": None, "nowS": 1.0})) == "openRemoteTRX : arrêtée"
     warn = summarize(next(v["input"] for v in VECTORS if v["name"] == "liaison perdue"))
     tip = tray.tooltip(warn)
-    assert tip.startswith("TRX distant : ") and "Poste : liaison perdue" in tip and len(tip) <= tray.TOOLTIP_MAX
+    assert tip.startswith("openRemoteTRX : ") and "Poste : liaison perdue" in tip and len(tip) <= tray.TOOLTIP_MAX
     lines = tray.menu_lines(warn)
     assert "! Poste : liaison perdue (connexion refusée) : poste éteint ou débranché ?" in lines
     assert "Clients web : aucun" in lines

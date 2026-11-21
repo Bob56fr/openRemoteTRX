@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Profils de poste (TRX Console, menu 2.3) : seules les sections du poste changent, format versionné avec conversions,
+"""Profils de poste (openRemoteTRX Console, menu 2.3) : seules les sections du poste changent, format versionné avec conversions,
 profil trop ancien ou trop récent refusé avec la marche à suivre, jamais pendant une émission."""
 from __future__ import annotations
 
@@ -159,4 +159,4 @@ def test_menu_reports_a_profile_from_a_newer_version(tmp_path):
                                        encoding="utf-8")
     con, fake, out = make(tmp_path, answers=["2", "1"])
     con.profiles()
-    assert any("version plus récente" in line for line in out) and "mets TRX distant à jour" in out[-1]
+    assert any("version plus récente" in line for line in out) and "mets openRemoteTRX à jour" in out[-1]

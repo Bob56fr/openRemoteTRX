@@ -576,7 +576,7 @@ def test_setup_cli_off_and_refusal_without_oui(tmp_path, monkeypatch, capsys):
     assert "mode normal" not in capsys.readouterr().err
 
 
-# ------------------------------------------------------------------ diagnostic (TRX Console)
+# ------------------------------------------------------------------ diagnostic (openRemoteTRX Console)
 
 @pytest.mark.parametrize("published, level, text", [
     (None, "INFO", "passerelle arrêtée"),

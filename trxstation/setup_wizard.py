@@ -44,14 +44,14 @@ TEST_TCP_PORT = 4533  # port temporaire, distinct de celui du service (4532)
 
 
 def _t(key: str, **fields) -> str:
-    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3 : `TRX_LANG` posée par TRX Console, sinon
+    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3 : `TRX_LANG` posée par openRemoteTRX Console, sinon
     menu 0, sinon le système) ; catalogues `trxstation/i18n/setup.<langue>.json`, le français en référence.
     Lu À CHAQUE APPEL (jamais au chargement du module : les tests changent la langue après l'import)."""
     return tool_translator("setup")(key, **fields)
 
 
 def _typed_yes(answer: str | None) -> bool:
-    """Mot de confirmation : celui de la langue choisie OU le mot français OUI (toujours accepté, comme TRX Console)."""
+    """Mot de confirmation : celui de la langue choisie OU le mot français OUI (toujours accepté, comme openRemoteTRX Console)."""
     return any(typed(answer, word) for word in {_t("word.yes"), "OUI"})
 
 
@@ -410,7 +410,7 @@ def choose_cat_port(ports: list[str], current: str, *, chooser: Callable[..., st
             return port
 
 
-# Parties de l'assistant (TRX Console : une partie = un menu, étape 220). L'assistant complet les enchaîne dans cet
+# Parties de l'assistant (openRemoteTRX Console : une partie = un menu, étape 220). L'assistant complet les enchaîne dans cet
 # ordre ; chacune ne pose que ses questions et part de la configuration existante (Entrée = réglage gardé).
 # Textes en français pour l'aide argparse ; à l'écran, `parts.<partie>` du catalogue (langue de l'outil).
 PARTS = {
@@ -804,7 +804,7 @@ def _make_certificate(hosts: list[str], folder: Path, cfg: Config) -> bool:
 
 def station_authority(cfg: Config, output: Path, hosts: list[str] | None = None,
                       say: Callable[[str], None] = print) -> int:
-    """Passe la station à son autorité de certification (TRX Console, menu 4.4) : noms du certificat actuel PLUS
+    """Passe la station à son autorité de certification (openRemoteTRX Console, menu 4.4) : noms du certificat actuel PLUS
     ceux donnés, même dossier ; empreinte affichée (l'application doit être appairée de nouveau)."""
     from .gateway.api.tls import certificate_fingerprint, certificate_hosts
     n = cfg.network

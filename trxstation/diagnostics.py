@@ -55,7 +55,7 @@ CLUSTER_STATES = ("connected", "connecting", "reconnecting", "failed", "disabled
 
 
 def _t(key: str, **fields) -> str:
-    """Texte montré à l'opérateur, dans la langue de l'outil (`TRX_LANG` posée par TRX Console, sinon menu 0, sinon
+    """Texte montré à l'opérateur, dans la langue de l'outil (`TRX_LANG` posée par openRemoteTRX Console, sinon menu 0, sinon
     le système) ; lu À CHAQUE APPEL (les tests changent la langue après l'import)."""
     return tool_translator("diagnostic")(key, **fields)
 

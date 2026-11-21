@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console : annonce de la nouvelle version, installation confirmée, retour à la version précédente."""
+"""openRemoteTRX Console : annonce de la nouvelle version, installation confirmée, retour à la version précédente."""
 from __future__ import annotations
 
 import os

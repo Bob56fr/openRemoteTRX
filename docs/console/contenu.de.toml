@@ -1,4 +1,4 @@
-# Inhalt der Anleitung von TRX Console (Seite auf GitHub Pages, eingebettet in die Website rf-diy.com), auf
+# Inhalt der Anleitung von openRemoteTRX Console (Seite auf GitHub Pages, eingebettet in die Website rf-diy.com), auf
 # DEUTSCH. Referenz ist contenu.toml (Französisch): gleiche Abschnitte in gleicher Reihenfolge.
 # Erzeugt durch: python scripts/build_console_doc.py  (Ergebnis in docs/site/console/).
 # Die LISTE der Menüs (Themen, Nummern, Bezeichnungen) kommt aus dem Code (trxstation/console.py, Kataloge trxstation/i18n/) ;
@@ -9,11 +9,11 @@
 # Nur allgemeine Beispiele: niemals IP-Adresse, Rechnername, echter Port oder Schlüssel.
 
 [page]
-titre = "TRX Console: Anleitung"
+titre = "openRemoteTRX Console: Anleitung"
 intro = """
-<p><strong>TRX Console</strong> ist die Schaltzentrale der Station TRX distant, auf dem PC (oder Raspberry Pi),
+<p><strong>openRemoteTRX Console</strong> ist die Schaltzentrale der Station openRemoteTRX, auf dem PC (oder Raspberry Pi),
 der mit dem Transceiver verbunden ist. Damit installierst und konfigurierst du die Station, startest sie, testest sie,
-aktualisierst sie und suchst Fehler. Sie öffnet sich über das Anwendungsmenü („TRX Console“) oder mit
+aktualisierst sie und suchst Fehler. Sie öffnet sich über das Anwendungsmenü („openRemoteTRX Console“) oder mit
 <code>trx-console</code> in einem Terminal.</p>
 <p>Die Menüs sind nach Themen geordnet (Station, Transceiver und Hardware, Sendesicherheit und Alarme, Zugang und Konten, Funktionen, Fehlersuche und Hilfe, Aktualisierungen, Experte und Einstellungen; Nummern in 0.166.0 geändert):
 tippe die Nummer des Themas, dann die des Menüs, oder direkt beide, zum Beispiel <code>4.1</code>, um ein Telefon zu
@@ -34,7 +34,7 @@ Betrieb?</strong> Geh direkt zur Übersicht der Menüs. <strong>Du hilfst bei de
 [ui]   # Texte der Seite selbst
 lang_name = "Deutsch"
 langs = "Sprache:"
-version = "TRX distant Version {version}"
+version = "openRemoteTRX Version {version}"
 nav_first = "Erste Einrichtung"
 nav_menus = "Die Menüs"
 nav_expert = "Erweiterte Fehlersuche"
@@ -57,6 +57,9 @@ more = "Weiterführendes"
 latest = "Neueste Version"
 others = "Andere Versionen:"
 footer = "Freies Projekt (AGPL-3.0-or-later)"
+toc = "Inhalt"
+top = "Zurück zum Inhalt"
+start_here = "Womit beginnen"
 source = "Quellcode"
 
 # ------------------------------------------------------------------ Ablauf für Einsteiger
@@ -76,7 +79,7 @@ bevor du die Installation startest: Konten, Bänder und Alarme werden übernomme
 [[parcours]]
 titre = "Station konfigurieren (Menü 2.1)"
 texte = """
-<p>Beim ersten Start bietet TRX Console den Assistenten an. Er fragt der Reihe nach: das Transceiver-Modell (Liste
+<p>Beim ersten Start bietet openRemoteTRX Console den Assistenten an. Er fragt der Reihe nach: das Transceiver-Modell (Liste
 von Hamlib), die serielle Schnittstelle für CAT, die PTT-Methode, die Soundkarten (Empfang und Senden), die für den
 Sendebetrieb erlaubten Bänder, den Netzwerkzugang und das erste Konto (Benutzername und Passwort für die Webseite).</p>
 <p>Der Transceiver wird während des Assistenten <strong>nur lesend</strong> abgefragt: kein Senden. Nichts wird
@@ -130,7 +133,7 @@ admin = true
 expert = "<p>Der Transceiver wird nur lesend abgefragt. Eine aus einer alten Station importierte Konfiguration (<code>station.import.toml</code>) dient als Ausgangspunkt.</p><p>Beim Hinzufügen eines Transceivers fragt der Assistent, ob das <strong>Wiederaussenden von Aufnahmen</strong> erlaubt ist (App: empfangenes Audio aufnehmen und dann senden, Dauer begrenzt auf die maximale Sendezeit minus 5 s). Standardantwort: nein. Die Aussendung einer Station an Dritte weiterzusenden ist im Amateurfunkdienst in der Regel verboten: nur zustimmen, wenn du es wirklich brauchst, und auf eigene Verantwortung (<code>[safety] allow_replay</code>).</p>"
 
 [menus.monitor]
-role = "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang, verbundene Clients, Dienste, Hardware, Audio, Protokoll. Sie öffnet sich in einem <strong>neuen Tab</strong> oder Fenster (Windows Terminal, GNOME Terminal, tmux, screen): TRX Console bleibt daneben offen; über SSH ohne tmux öffnet sie sich im selben Terminal."
+role = "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang, verbundene Clients, Dienste, Hardware, Audio, Protokoll. Sie öffnet sich in einem <strong>neuen Tab</strong> oder Fenster (Windows Terminal, GNOME Terminal, tmux, screen): openRemoteTRX Console bleibt daneben offen; über SSH ohne tmux öffnet sie sich im selben Terminal."
 quand = "Um die Station vor Ort zu überwachen oder während eines Tests."
 modifie = "Nichts, bis auf eine Taste: <strong>STOP TX</strong> erzwingt Empfang. Die Übersicht kann niemals Senden auslösen."
 admin = false
@@ -233,7 +236,7 @@ role = "Schaltet die <strong>Anzeige in der oberen Leiste</strong> (GNOME-Deskto
 quand = "Einmal, nach der Installation (dann ab- und wieder anmelden), um die Station ständig im Blick zu behalten."
 modifie = "Nur die Anzeige deines Desktops. Die Anzeige LIEST nur den von der Station veröffentlichten Zustand: sie kann nichts steuern."
 admin = false
-expert = "<p>Jede Sekunde gelesene Dateien: <code>/run/trx-remote/gateway-status.json</code>, und in <code>/var/lib/trx-remote/</code>: <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Erweiterung installiert in <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. Das Menü der Anzeige öffnet auch die Webseite, TRX Console und die Übersicht.</p>"
+expert = "<p>Jede Sekunde gelesene Dateien: <code>/run/trx-remote/gateway-status.json</code>, und in <code>/var/lib/trx-remote/</code>: <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Erweiterung installiert in <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. Das Menü der Anzeige öffnet auch die Webseite, openRemoteTRX Console und die Übersicht.</p>"
 
 [menus.profiles]
 role = "Transceiver-Profile, für alle, die mehrere TRX abwechselnd betreiben: die Konfiguration des aktiven Transceivers unter einem Namen <strong>speichern</strong> („IC-7300 zuhause“), sie später <strong>wieder laden</strong> oder ein Profil löschen. Das aktive Profil ist in der Liste markiert."
@@ -333,7 +336,7 @@ modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administra
 admin = true
 
 [menus.remote_console]
-role = "Stellt <strong>TRX Console im Netzwerk</strong> bereit: dieselben Menüs im Browser jedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung, unter <code>https://&lt;station&gt;:8444/</code>. Anmeldung mit einem <strong>als Administrator markierten Operatorkonto</strong> (hier gewählt); die Sitzung endet nach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der Bedienseite angemeldeter Administrator findet dort auch den Link."
+role = "Stellt <strong>openRemoteTRX Console im Netzwerk</strong> bereit: dieselben Menüs im Browser jedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung, unter <code>https://&lt;station&gt;:8444/</code>. Anmeldung mit einem <strong>als Administrator markierten Operatorkonto</strong> (hier gewählt); die Sitzung endet nach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der Bedienseite angemeldeter Administrator findet dort auch den Link."
 quand = "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen."
 modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>[remote_console]</code> und die Markierung <code>admin</code> der Konten), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Unter Debian wird der Dienst <code>trx-console-web@konto</code> gestartet oder gestoppt; unter Windows wird die Station neu gestartet."
 admin = true

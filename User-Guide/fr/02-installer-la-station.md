@@ -14,7 +14,7 @@ L'installation ne commande jamais le poste : il peut rester allumé et branché.
    Ton mot de passe de session est demandé (rien ne s'affiche pendant la frappe : c'est normal). Le script installe
    Hamlib, Python, les modules, le compte de service et les services de la station.
 3. À la fin, **déconnecte-toi puis reconnecte-toi** (les droits de ton compte changent).
-4. Ouvre **TRX Console** depuis le menu des applications (ou tape `trx-console` dans un terminal). Elle propose
+4. Ouvre **openRemoteTRX Console** depuis le menu des applications (ou tape `trx-console` dans un terminal). Elle propose
    l'assistant de configuration : c'est la partie 3.
 
 Sans bureau (serveur), tout se fait par SSH : copie le zip, puis
@@ -45,16 +45,16 @@ ferme la connexion SSH, reconnecte-toi et tape `trx-console`.
 
 La notice complète (`notice-windows.html`) est dans le paquet.
 
-### TRX Console sous Windows
+### openRemoteTRX Console sous Windows
 
-L'installation crée **un seul raccourci** : menu Démarrer > **TRX distant**. Il ouvre TRX Console, avec les mêmes
+L'installation crée **un seul raccourci** : menu Démarrer > **openRemoteTRX**. Il ouvre openRemoteTRX Console, avec les mêmes
 menus numérotés que sous Debian : ce guide s'applique tel quel (1.1 démarrer, 2.1 configuration, 6.1 diagnostic…).
 Différences :
 
 - **Mises à jour** (menus 7.1 à 7.3) : sous Windows, extrais le nouveau zip et lance son `installer.cmd` ; la
   configuration est gardée. Retour en arrière : relance `installer.cmd` de l'ancienne version.
 - **Indicateur près de l'horloge** : menu 8.4 (le lancer, ou le lancer à chaque ouverture de session).
-- **Désinstaller** : Paramètres > Applications > **TRX distant** > Désinstaller (la configuration est gardée sauf si
+- **Désinstaller** : Paramètres > Applications > **openRemoteTRX** > Désinstaller (la configuration est gardée sauf si
   tu demandes de l'effacer).
 - La configuration est dans `C:\ProgramData\trx-remote\station.toml` ; les commandes (`trx-console`, `trx-setup`,
   `trx-monitor`…) se lancent aussi dans un terminal ouvert **après** l'installation.

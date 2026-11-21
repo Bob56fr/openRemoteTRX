@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """Version Microsoft Store (cahier `docs/store-microsoft-cahier-des-charges.md`) : identité, manifeste, lanceur de la
-station, TRX Console, coexistence avec le zip."""
+station, openRemoteTRX Console, coexistence avec le zip."""
 import importlib.util
 import re
 import sys
@@ -176,7 +176,7 @@ def test_zip_installed_reads_the_scheduled_task(monkeypatch):
     assert store_boot.zip_installed(run=lambda cmd, **kw: Done(1)) is False
 
 
-# --------------------------------------------------------------------------- TRX Console
+# --------------------------------------------------------------------------- openRemoteTRX Console
 
 
 def test_console_store_starts_the_station_like_windows_and_sends_updates_to_the_store(tmp_path, monkeypatch):

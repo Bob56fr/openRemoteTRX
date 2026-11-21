@@ -1134,7 +1134,7 @@ test("cluster DX : état des flux lisible, débit adapté à la vitesse de chaqu
   assert.equal(view.lines[2].text, "db0sue (cluster) : en réserve (secours)"); assert.equal(view.lines[2].dot, "");
   assert.equal(view.lines[3].text, "clusterdx (page CB) : reçoit · 1 spot en 10 min · dernier il y a 5 min");
   assert.match(view.lines[4].text, /connexion en cours · nouvel essai dans 30 s/);
-  assert.match(view.lines[5].text, /refusé · callsign_refused : voir TRX Console, menu 5.1/); assert.equal(view.lines[5].dot, "red");
+  assert.match(view.lines[5].text, /refusé · callsign_refused : voir openRemoteTRX Console, menu 5.1/); assert.equal(view.lines[5].dot, "red");
   const old = web.clusterStatusView(data, 120);
   assert.equal(old.stale, true); assert.match(old.staleText, /Plus de nouvelles du module Cluster DX depuis 2 min/);
   assert.equal(web.clusterStatusView({ health: "?" }, 0).health, "red");                                 // valeur douteuse : rouge
@@ -1147,7 +1147,7 @@ test("signaler un problème : rapport lisible, sans mot de passe, rangé sur la 
   w.client.recordError("TypeError: x is undefined");
   for (let i = 0; i < 12; i++) w.client.recordError("erreur " + i);                        // 10 au plus
   const text = w.client.problemReport("Le waterfall reste noir", { userAgent: "Chrome Android", screen: "412×860", layout: "portrait" });
-  assert.match(text, /=== Rapport de problème TRX distant ===/);
+  assert.match(text, /=== Rapport de problème openRemoteTRX ===/);
   assert.match(text, /Le waterfall reste noir/); assert.match(text, /Station : v0\.40\.0/); assert.match(text, /Chrome Android/);
   assert.match(text, /7 074 000 Hz PKTUSB/); assert.match(text, /erreur 11/); assert.doesNotMatch(text, /erreur 0\b/);
   assert.doesNotMatch(text, /mot de passe|password/i);                                     // jamais de secret

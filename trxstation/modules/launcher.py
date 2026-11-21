@@ -327,7 +327,7 @@ def generate_systemd_unit(m: Manifest, *, python: str, workdir: Path,
     after = f"network.target {core_unit}" if core_unit else "network.target"
     lines = [
         "[Unit]",
-        f"Description=TRX distant - module {m.name}",
+        f"Description=openRemoteTRX - module {m.name}",
         f"After={after}",
         "StartLimitIntervalSec=300",
         "StartLimitBurst=5",

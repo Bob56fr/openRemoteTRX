@@ -2,9 +2,9 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.258.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+openRemoteTRX version 0.259.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
-`station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
+`station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant d'openRemoteTRX Console et se modifie ensuite par openRemoteTRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
 **Débutant** : seuls les réglages courant vous concernent ; l'assistant les règle pour vous. Les réglages expert ont des valeurs par défaut sûres : n'y touchez qu'en connaissance de cause. Emplacement du fichier : `/etc/trx-remote/station.toml` (Debian, Raspberry Pi), `C:\ProgramData\trx-remote\station.toml` (Windows).
 
@@ -39,8 +39,8 @@ Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au
 | `capture_device` | courant | `""` | Carte son qui reçoit l'audio du poste (le son entendu à distance). Vide : la carte par défaut du système. Exemple : Linux : `plughw:CARD=CODEC,DEV=0` ; Windows : `Microphone (USB Audio CODEC)`. |
 | `playback_device` | courant | `""` | Carte son qui envoie l'audio vers le poste (votre voix en émission). Vide : la carte par défaut du système. |
 | `sample_rate` | expert | `48000` | Fréquence d'échantillonnage. Seule la valeur 48 000 est gérée (codec Opus). Valeurs : 48000 uniquement. |
-| `rx_gain_db` | courant | `0.0` | Gain appliqué au son reçu, en dB (négatif = moins fort), pour tous les terminaux, visiteurs et diffusion compris. Réglé par TRX Console, menu 2.9, qui propose une valeur d'après le niveau reçu. Valeurs : -40 à +20 dB. |
-| `rx_limiter` | courant | `true` | Limiteur du son reçu : crêtes plafonnées à -1 dBFS avant les terminaux, pour qu'un gain fort ou un signal puissant ne sature pas. `false` = gain appliqué sans plafond (saturation possible), pour un diagnostic seulement. TRX Console, menu 2.9. Exemple : rx_limiter = true (depuis 0.227.0) |
+| `rx_gain_db` | courant | `0.0` | Gain appliqué au son reçu, en dB (négatif = moins fort), pour tous les terminaux, visiteurs et diffusion compris. Réglé par openRemoteTRX Console, menu 2.9, qui propose une valeur d'après le niveau reçu. Valeurs : -40 à +20 dB. |
+| `rx_limiter` | courant | `true` | Limiteur du son reçu : crêtes plafonnées à -1 dBFS avant les terminaux, pour qu'un gain fort ou un signal puissant ne sature pas. `false` = gain appliqué sans plafond (saturation possible), pour un diagnostic seulement. openRemoteTRX Console, menu 2.9. Exemple : rx_limiter = true (depuis 0.227.0) |
 | `tx_gain_db` | courant | `0.0` | Gain appliqué au son envoyé au poste, en dB. **Sécurité** : Un excès sature l'émetteur : réglez-le sur charge fictive en surveillant l'ALC. |
 
 ## Réseau [network]
@@ -109,7 +109,7 @@ Se modifie : Assistant (menu 2.1), visiteurs (menu 4.2), commande `trx-setup --a
 | `pseudo` | courant | `""` | Nom montré aux autres connectés à la place de l'identifiant (plusieurs comptes peuvent porter le même). |
 | `enabled` | courant | `true` | false : connexion refusée, et une connexion en cours est fermée. |
 | `expires` | courant | `""` | Date de fin du compte (AAAA-MM-JJ, heure de la station) ; vide : jamais. |
-| `admin` | courant | `false` | true : ce compte opérateur peut aussi ouvrir TRX Console sur le réseau (`[remote_console]`, menu 4.6). Les autres opérateurs pilotent le poste mais n'administrent pas la station. Valeurs : Opérateurs seulement (jamais un visiteur). **Sécurité** : Le mot de passe d'un compte administrateur ouvre la configuration de la station : à ne pas prêter. (depuis 0.178.0) |
+| `admin` | courant | `false` | true : ce compte opérateur peut aussi ouvrir openRemoteTRX Console sur le réseau (`[remote_console]`, menu 4.6). Les autres opérateurs pilotent le poste mais n'administrent pas la station. Valeurs : Opérateurs seulement (jamais un visiteur). **Sécurité** : Le mot de passe d'un compte administrateur ouvre la configuration de la station : à ne pas prêter. (depuis 0.178.0) |
 
 ## Visiteurs en réception seule [access]
 
@@ -147,11 +147,11 @@ Se modifie : Menu 8.1. (au redémarrage).
 
 Allumer le poste à la connexion d'un opérateur et l'éteindre depuis la page ou l'application (STOP maintenu 3 s). Hors service par défaut. Seulement pour un poste qui le permet par la CAT (Hamlib : « set / get Power Stat ») et qui garde son USB alimenté une fois éteint. La station n'émet jamais pour allumer ou éteindre le poste.
 
-Se modifie : TRX Console, menu 2.8 (mise en service avec un essai éteindre / rallumer) ; réglages fins : menu 8.1. (au redémarrage).
+Se modifie : openRemoteTRX Console, menu 2.8 (mise en service avec un essai éteindre / rallumer) ; réglages fins : menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
-| `enabled` | courant | `false` | true : allumage du poste à la connexion d'un opérateur et extinction depuis la page ou l'application. false (défaut) : ni allumage ni extinction à distance. **Sécurité** : Extinction refusée pendant toute émission et quand le poste est utilisé sur place ; après un allumage, la station relit le PTT et remet le poste en réception s'il s'est allumé en émission. Exemple : Mettre en service par le menu 2.8 de TRX Console, qui essaie d'abord d'éteindre et de rallumer le poste. (depuis 0.222.0) |
+| `enabled` | courant | `false` | true : allumage du poste à la connexion d'un opérateur et extinction depuis la page ou l'application. false (défaut) : ni allumage ni extinction à distance. **Sécurité** : Extinction refusée pendant toute émission et quand le poste est utilisé sur place ; après un allumage, la station relit le PTT et remet le poste en réception s'il s'est allumé en émission. Exemple : Mettre en service par le menu 2.8 d'openRemoteTRX Console, qui essaie d'abord d'éteindre et de rallumer le poste. (depuis 0.222.0) |
 | `on_timeout_s` | expert | `30` | Attente de la réponse du poste après l'ordre d'allumage. Au-delà, l'allumage est déclaré en échec avec un message clair. Valeurs : 5 à 120 s (défaut 30 ; un FTDX10 répond en 8 s environ). (depuis 0.222.0) |
 | `idle_off` | courant | `false` | Extinction automatique du poste quand plus personne n'est connecté (opérateur ni visiteur) depuis `idle_off_hours` heures, sans diffusion en cours ni action sur le poste. Reportée de 10 min pendant une émission, jamais forcée. Exemple : false (défaut). (depuis 0.222.0) |
 | `idle_off_hours` | courant | `4` | Délai sans aucune connexion avant l'extinction automatique. Valeurs : 1 à 168 h (défaut 4). (depuis 0.222.0) |
@@ -161,7 +161,7 @@ Se modifie : TRX Console, menu 2.8 (mise en service avec un essai éteindre / ra
 
 Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.
 
-Se modifie : Menu 8.1 ; la clé d'appairage se crée avec TRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
+Se modifie : Menu 8.1 ; la clé d'appairage se crée avec openRemoteTRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -205,7 +205,7 @@ Se modifie : Menu 8.1. Les seuils de l'indicateur choisis dans la page ou l'appl
 
 Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa station et, si chacun le veut, sur quelle fréquence et dans quel mode. Un relais sur Internet transporte des états CHIFFRÉS qu'il ne peut pas lire. Le module « presence » n'a aucun droit sur le poste : il ne peut ni émettre ni changer de fréquence ; un QSY vers un ami se fait seulement par un appui de l'opérateur, en réception.
 
-Se modifie : Menu 8.1, et ajouter « presence » à `[modules] run`. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
+Se modifie : Menu 8.1, et ajouter « presence » à `[modules] run`. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou openRemoteTRX Console (rangés à part, pas dans station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -217,7 +217,7 @@ Se modifie : Menu 8.1, et ajouter « presence » à `[modules] run`. Les groupes
 
 Pour AIDER un opérateur en difficulté, ou ÊTRE AIDÉ, sans VPN ni port ouvert : la station de l'opérateur aidé envoie, par le même relais que la présence et chiffré de bout en bout, ce que SON opérateur a accepté (battement, santé de la machine, état du poste sans fréquence ni mode par défaut, codes d'erreur), toujours masqué (mots de passe, adresses, numéros de série). La station qui aide ne peut que lire et DEMANDER : aucune commande vers la station aidée n'existe. Le module « monlink » n'a aucun droit sur le poste.
 
-Se modifie : Menu 8.1, et ajouter « monlink » à `[modules] run`. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
+Se modifie : Menu 8.1, et ajouter « monlink » à `[modules] run`. Pseudo, invitations, liaisons et profils d'envoi se règlent dans openRemoteTRX Console (rangés à part, pas dans station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -244,15 +244,15 @@ Se modifie : Menu 8.1, et ajouter « diffusion » à `[modules] run`. Protocole 
 | `tls` | expert | `true` | true : connexions chiffrées et certificat du serveur vérifié. false seulement vers 127.0.0.1 (faux serveur d'essai, `python -m trxstation.devtools.fake_icecast`). **Sécurité** : Refusé vers tout autre serveur : le mot de passe source passerait en clair. (depuis 0.188.0) |
 | `outside_bands` | courant | `false` | false (défaut) : silence pour les auditeurs quand la réception sort des bandes autorisées (`[[bands]]`) ou que la fréquence est inconnue, sans arrêter la diffusion : le son revient dès que le poste rentre dans une bande. true : tout est diffusé, quelle que soit la fréquence. Indépendant de `[access] listeners_outside_bands` (visiteurs). **Sécurité** : Ce qui est diffusé est de la responsabilité de l'opérateur (décision de l'utilisateur du 2026-11-17). (depuis 0.189.0) |
 
-## TRX Console sur le réseau [remote_console]
+## openRemoteTRX Console sur le réseau [remote_console]
 
-TRX Console dans le navigateur, depuis n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH : `https://<station>:8444/`. On s'y connecte avec un compte **opérateur marqué administrateur** (`admin = true` dans `[[clients]]`) ; la session se ferme après 30 minutes sans action. La console tourne sous un compte Linux ordinaire, jamais root : le mot de passe sudo reste demandé dans le terminal, une fois par session. Jamais joignable depuis Internet (adresses publiques refusées).
+openRemoteTRX Console dans le navigateur, depuis n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH : `https://<station>:8444/`. On s'y connecte avec un compte **opérateur marqué administrateur** (`admin = true` dans `[[clients]]`) ; la session se ferme après 30 minutes sans action. La console tourne sous un compte Linux ordinaire, jamais root : le mot de passe sudo reste demandé dans le terminal, une fois par session. Jamais joignable depuis Internet (adresses publiques refusées).
 
-Se modifie : Menu 4.6 de TRX Console. (au redémarrage).
+Se modifie : Menu 4.6 d'openRemoteTRX Console. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
-| `enabled` | courant | `false` | true : la station sert TRX Console en HTTPS sur le réseau (service `trx-console-web@compte` sous Debian, processus du superviseur sous Windows). **Sécurité** : Un compte administrateur vaut presque un accès SSH à la station : mot de passe solide, réseau local ou VPN seulement. 5 échecs bloquent l'adresse 15 minutes ; chaque connexion envoie une alerte ntfy. (depuis 0.178.0) |
+| `enabled` | courant | `false` | true : la station sert openRemoteTRX Console en HTTPS sur le réseau (service `trx-console-web@compte` sous Debian, processus du superviseur sous Windows). **Sécurité** : Un compte administrateur vaut presque un accès SSH à la station : mot de passe solide, réseau local ou VPN seulement. 5 échecs bloquent l'adresse 15 minutes ; chaque connexion envoie une alerte ntfy. (depuis 0.178.0) |
 | `account` | courant | `""` | Compte Linux sous lequel tourne la console (celui de l'opérateur qui administre : il doit pouvoir utiliser sudo et faire partie du groupe `trx`). Vide sous Windows. Valeurs : Nom de compte Linux : minuscules, chiffres, _ . - (32 caractères au plus). Jamais root. Exemple : `account = "pi"` (depuis 0.178.0) |
 | `port` | expert | `8444` | Port HTTPS de la console. L'adresse d'écoute est celle de la page de pilotage (`[network] gateway_bind`), avec le même certificat. Valeurs : 1024 à 65535, différent du port de la page de pilotage et de rigctld. (depuis 0.178.0) |
 | `idle_min` | expert | `30` | Durée sans action (menu ouvert, touche tapée) après laquelle la session se ferme : il faut se reconnecter. Valeurs : 5 à 240 minutes. (depuis 0.178.0) |
@@ -279,7 +279,7 @@ Se modifie : Menu 8.1 ; le centre, le gain et la cadence se règlent ensuite dep
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
 | `enabled` | courant | `false` | true : la rubrique « SDR » (waterfall d'un récepteur SDR en parallèle du TRX) est proposée aux opérateurs. Il faut aussi « sdr » dans `[modules] run` et le numéro de série du SDR dans `serial`. **Sécurité** : Réception seulement : le module SDR n'a aucun droit sur le poste ; « QSY du TRX » passe par la commande habituelle de fréquence, refusée pendant une émission. Une panne du SDR n'arrête jamais la station. La protection de l'entrée du SDR contre la puissance émise par le TRX (antenne séparée, séquenceur) est à la charge de l'opérateur. (depuis 0.140.0) |
-| `driver` | expert | `"sdrplay"` | Type de SDR. `sdrplay` : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. `rtlsdr` (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 2.4 de TRX Console avec le SDR. Valeurs : `sdrplay` ou `rtlsdr`. (depuis 0.140.0) |
+| `driver` | expert | `"sdrplay"` | Type de SDR. `sdrplay` : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. `rtlsdr` (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 2.4 d'openRemoteTRX Console avec le SDR. Valeurs : `sdrplay` ou `rtlsdr`. (depuis 0.140.0) |
 | `serial` | courant | `""` | Numéro de série du SDR de cette station. Le SDR est toujours désigné par ce numéro, jamais par son port USB : sur une machine qui a plusieurs SDR, chacun sert la bonne application. `trx-sdr --list` montre les SDR libres et ceux déjà pris par une autre application. Valeurs : Lettres et chiffres, 4 à 32 ; obligatoire quand `enabled = true`. Numéro absent au démarrage : le module attend (nouvel essai toutes les 30 s) et n'ouvre jamais un autre SDR. **Sécurité** : Ne jamais mettre le numéro d'un SDR utilisé par une autre application de la machine. Exemple : `1234567ABC` (depuis 0.140.0) |
 | `core_path` | expert | `""` | Programme sdr-core (cœur natif du module SDR). Vide : celui que l'installation a compilé (à côté de la station), sinon le PATH. Valeurs : Chemin d'un fichier, ou vide. (depuis 0.140.0) |
 | `sample_rate_hz` | courant | `2000000` | Largeur couverte par le waterfall du SDR (fréquence d'échantillonnage). 2 MHz couvre une bande HF entière ou la bande 2 m et charge peu la machine ; 6 et 8 MHz demandent beaucoup plus de calcul. Valeurs : SDRplay : 2000000, 6000000 ou 8000000 ; clé RTL-SDR : 1024000, 2048000 ou 2400000 (Hz). Exemple : `2000000` (depuis 0.140.0) |
@@ -381,7 +381,7 @@ Se modifie : Menu 8.1. (au redémarrage).
 | `max_reboots_per_hour` | expert | `3` | Redémarrages de la machine permis par heure ; au-delà, mode sûr (réception, accès coupé). |
 | `notify_url` | courant | `""` | Adresse de notification ntfy pour les alertes de la station (facultatif). Chaque alerte porte un code stable (par exemple « ORT-5024 TOT absolu dépassé »), la priorité ntfy de ce code, ce qu'il faut faire et le lien vers la page du code (liste des codes d’erreur) ; un code sans alerte par défaut est seulement inscrit au journal. **Sécurité** : Choisissez un sujet difficile à deviner : quiconque le connaît lit vos alertes. Exemple : `https://ntfy.sh/mon-sujet-secret` |
 | `notify_lang` | courant | `"fr"` | Langue des alertes ntfy envoyées au téléphone : titre, message et marche à suivre du catalogue d'erreurs. Le journal de la station reste en français ; une valeur mesurée (détail) reste telle que la station l'écrit. Valeurs : `fr` (défaut), `en`, `de` ou `es` : les langues du catalogue d'erreurs (allemand et espagnol depuis la version 0.241.0). Exemple : `en` (depuis 0.165.0) |
-| `status_path` | expert | `/run/trx-remote/gateway-status.json` (Linux) ; `C:\ProgramData\trx-remote\run\gateway-status.json` (Windows). | Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et TRX Console. |
+| `status_path` | expert | `/run/trx-remote/gateway-status.json` (Linux) ; `C:\ProgramData\trx-remote\run\gateway-status.json` (Windows). | Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et openRemoteTRX Console. |
 | `state_dir` | expert | `/var/lib/trx-remote` (Linux) ; `C:\ProgramData\trx-remote\state` (Windows). | Dossier d'état de la station : mode sûr, mémoires, profils, mesures de TOS, identifiant de station. |
 | `service_mode` | expert | `"auto"` | `auto`, `systemd` (Linux : services du système) ou `managed` (le superviseur lance lui-même les processus, Windows). |
 | `instance_lock_port` | expert | `47321` | Port local réservé pour garantir qu'un seul superviseur tourne. |
@@ -443,4 +443,4 @@ Se modifie : Rien à faire : écrits par la station. (au redémarrage).
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
 | `schema_version` | expert | `1` | Version du format du fichier. La station la met à jour elle-même lors d'une migration. |
-| `config_revision` | expert | `1` | Compteur incrémenté à chaque enregistrement par TRX Console : permet de savoir quelle version du fichier est en service. |
+| `config_revision` | expert | `1` | Compteur incrémenté à chaque enregistrement par openRemoteTRX Console : permet de savoir quelle version du fichier est en service. |

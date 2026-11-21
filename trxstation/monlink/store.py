@@ -4,7 +4,7 @@
 
 - `monlink.json` (0600 : clés publiques des partenaires, clés des invitations en cours) : pseudo, enregistrement,
   invitations, liaisons (rôle, état, profil, séquences, fenêtre anti-rejeu, positions des journaux lus) ;
-- `status.json` (0644) : résumé SANS clé, lu par TRX Console et trx-monitor ;
+- `status.json` (0644) : résumé SANS clé, lu par openRemoteTRX Console et trx-monitor ;
 - `received.db` (SQLite, côté station qui AIDE) : battements, états et événements reçus de chaque partenaire,
   gardés 30 jours (cahier § 8), effacés à la fin d'une liaison si l'opérateur le demande.
 """

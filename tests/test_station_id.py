@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Identifiant unique de la station (GUID) : UUID 4 créé une fois, jamais écrasé, lisible par TRX Console."""
+"""Identifiant unique de la station (GUID) : UUID 4 créé une fois, jamais écrasé, lisible par openRemoteTRX Console."""
 import os
 import uuid
 

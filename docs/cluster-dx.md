@@ -115,7 +115,7 @@ l'administrateur du site de cet usage.
 
 ### Régler le Cluster DX
 
-Debian : **TRX Console, menu 5.1**. Windows ou à la main :
+Debian : **openRemoteTRX Console, menu 5.1**. Windows ou à la main :
 
     python -m trxstation.cluster.setup --config station.toml
 

@@ -2,9 +2,9 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Installation d'une mise à jour, ou retour à la version précédente (root, Debian) : `python -m trxstation.update.apply`.
 
-    apply --config C install --version 0.23.0   installe la version annoncée (confirmée dans TRX Console)
+    apply --config C install --version 0.23.0   installe la version annoncée (confirmée dans openRemoteTRX Console)
     apply --config C local --zip F [--sans-signature]
-                                                installe un paquet DÉJÀ PRÉSENT sur la machine (TRX Console, menu 7.3) :
+                                                installe un paquet DÉJÀ PRÉSENT sur la machine (openRemoteTRX Console, menu 7.3) :
                                                 signature vérifiée si F.sig est à côté ; sans .sig, refus sauf
                                                 --sans-signature (confirmation explicite de l'opérateur)
     apply --config C rollback                   revient à la version précédente (sans réseau)

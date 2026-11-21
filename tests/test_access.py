@@ -525,7 +525,7 @@ def test_host_info_gives_the_operator_a_written_summary_without_serial_or_addres
             result = phone.result(7)
             assert result["ok"] and [s["title"] for s in result["sections"]][:3] == ["Machine", "Charge en ce moment", "Station"]
             rows = {label: value for section in result["sections"] for label, value in section["rows"]}
-            assert {"Système", "Processeur", "Disque", "TRX distant"} <= set(rows)
+            assert {"Système", "Processeur", "Disque", "openRemoteTRX"} <= set(rows)
             text = json.dumps(result, ensure_ascii=False)
             assert "by-id" not in text and "/dev/" not in text and "COM" not in text      # chemin du port : numéro de série
     run(scenario)

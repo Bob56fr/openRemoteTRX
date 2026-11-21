@@ -63,10 +63,10 @@ def collect(status_path: str | Path, state_dir: str | Path, now: float | None = 
 
 
 def tooltip(view: dict) -> str:
-    """Infobulle : « TRX distant : 7.195 LSB-D » ; en émission « TRX distant : TX 1:05 ». 127 caractères au plus."""
+    """Infobulle : « openRemoteTRX : 7.195 LSB-D » ; en émission « openRemoteTRX : TX 1:05 ». 127 caractères au plus."""
     level = view.get("level", "off")
     label = view.get("label") or ""
-    tip = f"TRX distant : {label}" if label and label not in ("TRX", "TRX arrêtée") else f"TRX distant : {LEVEL_WORDS.get(level, level)}"
+    tip = f"openRemoteTRX : {label}" if label and label not in ("TRX", "TRX arrêtée") else f"openRemoteTRX : {LEVEL_WORDS.get(level, level)}"
     if level == "warn":
         worst = next((ln for ln in view.get("lines", []) if ln.get("level") in ("bad", "warn")), None)
         if worst:

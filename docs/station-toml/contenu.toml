@@ -10,8 +10,8 @@
 titre = "Réglages de la station : station.toml"
 intro = """
 <p><code>station.toml</code> est le fichier de configuration de la station : le poste, les cartes son, le réseau, les
-sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie
-ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le <strong>vérifie</strong>
+sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant d'openRemoteTRX Console et se modifie
+ensuite par openRemoteTRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le <strong>vérifie</strong>
 à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.</p>
 """
 lecture = """
@@ -89,13 +89,13 @@ relu = "redemarrage"
 [sections.power]
 titre = "Allumage et extinction du poste à distance [power]"
 intro = "<p>Allumer le poste à la connexion d'un opérateur et l'éteindre depuis la page ou l'application (STOP maintenu 3 s). Hors service par défaut. Seulement pour un poste qui le permet par la CAT (Hamlib : « set / get Power Stat ») et qui garde son USB alimenté une fois éteint. La station n'émet jamais pour allumer ou éteindre le poste.</p>"
-ou = "TRX Console, menu 2.8 (mise en service avec un essai éteindre / rallumer) ; réglages fins : menu 8.1."
+ou = "openRemoteTRX Console, menu 2.8 (mise en service avec un essai éteindre / rallumer) ; réglages fins : menu 8.1."
 relu = "redemarrage"
 
 [sections.breizh]
 titre = "Breizh Audio Box dans l'émission [breizh]"
 intro = "<p>Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.</p>"
-ou = "Menu 8.1 ; la clé d'appairage se crée avec TRX Console (fichier <code>breizh.key</code> à côté de station.toml)."
+ou = "Menu 8.1 ; la clé d'appairage se crée avec openRemoteTRX Console (fichier <code>breizh.key</code> à côté de station.toml)."
 relu = "redemarrage"
 
 [sections.netprobe]
@@ -107,13 +107,13 @@ relu = "redemarrage"
 [sections.presence]
 titre = "Présence de groupe [presence]"
 intro = "<p>Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa station et, si chacun le veut, sur quelle fréquence et dans quel mode. Un relais sur Internet transporte des états CHIFFRÉS qu'il ne peut pas lire. Le module « presence » n'a aucun droit sur le poste : il ne peut ni émettre ni changer de fréquence ; un QSY vers un ami se fait seulement par un appui de l'opérateur, en réception.</p>"
-ou = "Menu 8.1, et ajouter « presence » à <code>[modules] run</code>. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml)."
+ou = "Menu 8.1, et ajouter « presence » à <code>[modules] run</code>. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou openRemoteTRX Console (rangés à part, pas dans station.toml)."
 relu = "redemarrage"
 
 [sections.monitor_link]
 titre = "Monitoring inter-stations [monitor_link]"
 intro = "<p>Pour AIDER un opérateur en difficulté, ou ÊTRE AIDÉ, sans VPN ni port ouvert : la station de l'opérateur aidé envoie, par le même relais que la présence et chiffré de bout en bout, ce que SON opérateur a accepté (battement, santé de la machine, état du poste sans fréquence ni mode par défaut, codes d'erreur), toujours masqué (mots de passe, adresses, numéros de série). La station qui aide ne peut que lire et DEMANDER : aucune commande vers la station aidée n'existe. Le module « monlink » n'a aucun droit sur le poste.</p>"
-ou = "Menu 8.1, et ajouter « monlink » à <code>[modules] run</code>. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml)."
+ou = "Menu 8.1, et ajouter « monlink » à <code>[modules] run</code>. Pseudo, invitations, liaisons et profils d'envoi se règlent dans openRemoteTRX Console (rangés à part, pas dans station.toml)."
 relu = "redemarrage"
 
 [sections.diffusion]
@@ -123,9 +123,9 @@ ou = "Menu 8.1, et ajouter « diffusion » à <code>[modules] run</code>. Protoc
 relu = "redemarrage"
 
 [sections.remote_console]
-titre = "TRX Console sur le réseau [remote_console]"
-intro = "<p>TRX Console dans le navigateur, depuis n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH : <code>https://&lt;station&gt;:8444/</code>. On s'y connecte avec un compte <strong>opérateur marqué administrateur</strong> (<code>admin = true</code> dans <code>[[clients]]</code>) ; la session se ferme après 30 minutes sans action. La console tourne sous un compte Linux ordinaire, jamais root : le mot de passe sudo reste demandé dans le terminal, une fois par session. Jamais joignable depuis Internet (adresses publiques refusées).</p>"
-ou = "Menu 4.6 de TRX Console."
+titre = "openRemoteTRX Console sur le réseau [remote_console]"
+intro = "<p>openRemoteTRX Console dans le navigateur, depuis n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH : <code>https://&lt;station&gt;:8444/</code>. On s'y connecte avec un compte <strong>opérateur marqué administrateur</strong> (<code>admin = true</code> dans <code>[[clients]]</code>) ; la session se ferme après 30 minutes sans action. La console tourne sous un compte Linux ordinaire, jamais root : le mot de passe sudo reste demandé dans le terminal, une fois par session. Jamais joignable depuis Internet (adresses publiques refusées).</p>"
+ou = "Menu 4.6 d'openRemoteTRX Console."
 relu = "redemarrage"
 
 [sections.spectrum]
@@ -192,7 +192,7 @@ role = "Version du format du fichier. La station la met à jour elle-même lors 
 niveau = "expert"
 
 [reglages."racine.config_revision"]
-role = "Compteur incrémenté à chaque enregistrement par TRX Console : permet de savoir quelle version du fichier est en service."
+role = "Compteur incrémenté à chaque enregistrement par openRemoteTRX Console : permet de savoir quelle version du fichier est en service."
 niveau = "expert"
 
 # ---------------------------------------------------------------- rig
@@ -275,12 +275,12 @@ niveau = "expert"
 bornes = "48000 uniquement."
 
 [reglages."audio.rx_gain_db"]
-role = "Gain appliqué au son reçu, en dB (négatif = moins fort), pour tous les terminaux, visiteurs et diffusion compris. Réglé par TRX Console, menu 2.9, qui propose une valeur d'après le niveau reçu."
+role = "Gain appliqué au son reçu, en dB (négatif = moins fort), pour tous les terminaux, visiteurs et diffusion compris. Réglé par openRemoteTRX Console, menu 2.9, qui propose une valeur d'après le niveau reçu."
 niveau = "courant"
 bornes = "-40 à +20 dB."
 
 [reglages."audio.rx_limiter"]
-role = "Limiteur du son reçu : crêtes plafonnées à -1 dBFS avant les terminaux, pour qu'un gain fort ou un signal puissant ne sature pas. <code>false</code> = gain appliqué sans plafond (saturation possible), pour un diagnostic seulement. TRX Console, menu 2.9."
+role = "Limiteur du son reçu : crêtes plafonnées à -1 dBFS avant les terminaux, pour qu'un gain fort ou un signal puissant ne sature pas. <code>false</code> = gain appliqué sans plafond (saturation possible), pour un diagnostic seulement. openRemoteTRX Console, menu 2.9."
 niveau = "courant"
 depuis = "0.227.0"
 exemple = "rx_limiter = true"
@@ -455,7 +455,7 @@ role = "Date de fin du compte (AAAA-MM-JJ, heure de la station) ; vide : jamais.
 niveau = "courant"
 
 [reglages."clients.admin"]
-role = "true : ce compte opérateur peut aussi ouvrir TRX Console sur le réseau (<code>[remote_console]</code>, menu 4.6). Les autres opérateurs pilotent le poste mais n'administrent pas la station."
+role = "true : ce compte opérateur peut aussi ouvrir openRemoteTRX Console sur le réseau (<code>[remote_console]</code>, menu 4.6). Les autres opérateurs pilotent le poste mais n'administrent pas la station."
 niveau = "courant"
 bornes = "Opérateurs seulement (jamais un visiteur)."
 securite = "Le mot de passe d'un compte administrateur ouvre la configuration de la station : à ne pas prêter."
@@ -517,7 +517,7 @@ bornes = "1 à 50 %."
 role = "true : allumage du poste à la connexion d'un opérateur et extinction depuis la page ou l'application. false (défaut) : ni allumage ni extinction à distance."
 niveau = "courant"
 securite = "Extinction refusée pendant toute émission et quand le poste est utilisé sur place ; après un allumage, la station relit le PTT et remet le poste en réception s'il s'est allumé en émission."
-exemple = "Mettre en service par le menu 2.8 de TRX Console, qui essaie d'abord d'éteindre et de rallumer le poste."
+exemple = "Mettre en service par le menu 2.8 d'openRemoteTRX Console, qui essaie d'abord d'éteindre et de rallumer le poste."
 depuis = "0.222.0"
 
 [reglages."power.on_timeout_s"]
@@ -606,7 +606,7 @@ securite = "Réception seulement : le module SDR n'a aucun droit sur le poste ; 
 depuis = "0.140.0"
 
 [reglages."sdr.driver"]
-role = "Type de SDR. <code>sdrplay</code> : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. <code>rtlsdr</code> (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 2.4 de TRX Console avec le SDR."
+role = "Type de SDR. <code>sdrplay</code> : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. <code>rtlsdr</code> (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 2.4 d'openRemoteTRX Console avec le SDR."
 niveau = "expert"
 bornes = "<code>sdrplay</code> ou <code>rtlsdr</code>."
 depuis = "0.140.0"
@@ -806,7 +806,7 @@ securite = "Refusé vers tout autre serveur : le mot de passe source passerait e
 depuis = "0.188.0"
 
 [reglages."remote_console.enabled"]
-role = "true : la station sert TRX Console en HTTPS sur le réseau (service <code>trx-console-web@compte</code> sous Debian, processus du superviseur sous Windows)."
+role = "true : la station sert openRemoteTRX Console en HTTPS sur le réseau (service <code>trx-console-web@compte</code> sous Debian, processus du superviseur sous Windows)."
 niveau = "courant"
 securite = "Un compte administrateur vaut presque un accès SSH à la station : mot de passe solide, réseau local ou VPN seulement. 5 échecs bloquent l'adresse 15 minutes ; chaque connexion envoie une alerte ntfy."
 depuis = "0.178.0"
@@ -1179,7 +1179,7 @@ exemple = "<code>en</code>"
 depuis = "0.165.0"
 
 [reglages."supervisor.status_path"]
-role = "Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et TRX Console."
+role = "Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et openRemoteTRX Console."
 niveau = "expert"
 defaut = "<code>/run/trx-remote/gateway-status.json</code> (Linux) ; <code>C:\\ProgramData\\trx-remote\\run\\gateway-status.json</code> (Windows)."
 

@@ -29,10 +29,10 @@ SPECTRUM = {"ok": "reçu", "waiting": "en attente de la réception", "starting":
 CLUSTER = {"green": "toutes les sources connectées", "orange": "sources en partie connectées", "red": "aucune source connectée"}
 RANK = {"ok": 0, "info": 0, "warn": 1, "bad": 2}
 
-# Où agir (renvois aux outils de la station) : TRX Console sous Debian, menu Démarrer sous Windows.
-DEBIAN_HINTS = {"start": "TRX Console, menu 1.1 pour la démarrer", "safe": "TRX Console, menu 1.4", "update": "TRX Console, menu 7.1"}
-WINDOWS_HINTS = {"start": "menu Démarrer > TRX distant > 3 - Démarrer la station",
-                 "safe": "voir le diagnostic : menu Démarrer > TRX distant > 2", "update": "installer le nouveau paquet"}
+# Où agir (renvois aux outils de la station) : openRemoteTRX Console sous Debian, menu Démarrer sous Windows.
+DEBIAN_HINTS = {"start": "openRemoteTRX Console, menu 1.1 pour la démarrer", "safe": "openRemoteTRX Console, menu 1.4", "update": "openRemoteTRX Console, menu 7.1"}
+WINDOWS_HINTS = {"start": "menu Démarrer > openRemoteTRX > 3 - Démarrer la station",
+                 "safe": "voir le diagnostic : menu Démarrer > openRemoteTRX > 2", "update": "installer le nouveau paquet"}
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
 

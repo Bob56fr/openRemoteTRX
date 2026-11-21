@@ -45,7 +45,7 @@ NO_AUDIO_SILENCE_S = 2.0              # plus de son de la passerelle : raison «
 S_KEEP_S = 6.0                        # S-mètre gardé (couvre des envois perdus) ; envoyé : S_SEND_S dernières secondes
 S_SEND_S = 4.0
 FATAL_STATUSES = (401, 404)           # mot de passe ou station refusés : pas de nouvel essai
-# TRX Console (menu 5.6) : demande déposée dans state_dir, réponse dans state_dir/diffusion (même mécanisme que la
+# openRemoteTRX Console (menu 5.6) : demande déposée dans state_dir, réponse dans state_dir/diffusion (même mécanisme que la
 # présence et le monitoring). La réponse peut porter le mot de passe des AUDITEURS (« reveal ») : effacée vite.
 CONSOLE_REQUEST = "diffusion-request.json"
 CONSOLE_REPLY = "console-reply.json"
@@ -259,7 +259,7 @@ class DiffusionService:
             return keyfile.read(self.key_path)
         except (keyfile.KeyFileError, OSError) as exc:
             emit_event(codes.ORT_6105, logger=log, fichier=str(self.key_path), detail=str(exc)[:200])
-            raise ActionRefused("no_secrets", f"secrets du serveur absents ou illisibles ({exc}) : TRX Console, "
+            raise ActionRefused("no_secrets", f"secrets du serveur absents ou illisibles ({exc}) : openRemoteTRX Console, "
                                               "menu 5.6, choix 6") from None
 
     def set_listener(self, args: dict) -> dict:
@@ -527,14 +527,14 @@ class DiffusionService:
             try:
                 await self.check_console()
             except Exception:
-                emit_event(codes.ORT_6110, logger=log, trace=True, contexte="demande de TRX Console")
+                emit_event(codes.ORT_6110, logger=log, trace=True, contexte="demande d'openRemoteTRX Console")
             ticks += 1
             if ticks % 10 == 0:
                 self.write_status()                    # « updated » : trx-monitor voit un module vivant
 
     async def check_console(self) -> None:
-        """Demande de TRX Console : lue puis effacée ; réponse dans state_dir/diffusion/console-reply.json (0644 : le
-        compte de la console la lit), effacée après 15 s. Mêmes actions que la page, opérateur « TRX Console »."""
+        """Demande d'openRemoteTRX Console : lue puis effacée ; réponse dans state_dir/diffusion/console-reply.json (0644 : le
+        compte de la console la lit), effacée après 15 s. Mêmes actions que la page, opérateur « openRemoteTRX Console »."""
         import json
         from ..presence.store import write_json
         reply_path = self.folder / CONSOLE_REPLY
@@ -569,15 +569,15 @@ class DiffusionService:
             log.info("demande de la console trop ancienne : ignorée")
             return
         if action == "stop":
-            args = {"operator": "TRX Console"}                 # jamais une cause choisie par la demande
+            args = {"operator": "openRemoteTRX Console"}                 # jamais une cause choisie par la demande
         elif action == "start":
-            args = {**args, "operator": "TRX Console"}
+            args = {**args, "operator": "openRemoteTRX Console"}
         try:
             reply = {"id": ident, "ok": True, "result": await self.act(action, args)}
         except ActionRefused as exc:
             reply = {"id": ident, "ok": False, "error": exc.reason, "message": str(exc)}
         except Exception:
-            emit_event(codes.ORT_6110, logger=log, trace=True, contexte=f"action « {action[:20]} » de TRX Console")
+            emit_event(codes.ORT_6110, logger=log, trace=True, contexte=f"action « {action[:20]} » d'openRemoteTRX Console")
             reply = {"id": ident, "ok": False, "error": "internal", "message": "erreur du module"}
         try:
             write_json(reply_path, reply, private=False)

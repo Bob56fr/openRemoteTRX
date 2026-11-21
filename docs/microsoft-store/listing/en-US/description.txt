@@ -4,9 +4,9 @@ The station installed by this package controls the radio through Hamlib (about 3
 
 TRANSMIT SAFETY, enforced by the station itself: toggle PTT only, cut-off after the maximum time (TOT), back to receive when the remote device stops answering, a single operator transmits at a time, STOP button always visible, independent supervisor that puts the radio back to receive on failure, even when the station is closed by force.
 
-TRX Console guides the setup: radio, serial port and sound card, operator accounts (one per device), allowed bands, phone alerts, radio tests.
+openRemoteTRX Console guides the setup: radio, serial port and sound card, operator accounts (one per device), allowed bands, phone alerts, radio tests.
 
-You need: an amateur radio transceiver connected to the PC (USB CAT cable or an interface such as Digirig / SignaLink), and Hamlib for Windows (free, installed separately; TRX Console guides you).
+You need: an amateur radio transceiver connected to the PC (USB CAT cable or an interface such as Digirig / SignaLink), and Hamlib for Windows (free, installed separately; openRemoteTRX Console guides you).
 
 For licensed radio amateurs only: you are responsible for your transmissions and for following the rules of your country.
 

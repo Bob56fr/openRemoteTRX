@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Réglage du Cluster DX sans éditer de fichier (TRX Console, menu 5.1).
+"""Réglage du Cluster DX sans éditer de fichier (openRemoteTRX Console, menu 5.1).
 
     python -m trxstation.cluster.setup --config /etc/trx-remote/station.toml
 
@@ -14,7 +14,7 @@
 - Filtres (bandes, continents, liste noire) et durées de vie.
 - Rien n'est écrit avant « Enregistrer » ; station.toml est validée avant.
 
-Textes en quatre langues (lot L3) : `trxstation/i18n/cluster.<langue>.json`, langue de TRX Console (`TRX_LANG`).
+Textes en quatre langues (lot L3) : `trxstation/i18n/cluster.<langue>.json`, langue d'openRemoteTRX Console (`TRX_LANG`).
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ _HOSTPORT = re.compile(r"([A-Za-z0-9.-]{1,253}):(\d{1,5})")
 
 
 def _t(key: str, **fields) -> str:
-    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3 : `TRX_LANG` posée par TRX Console, sinon
+    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3 : `TRX_LANG` posée par openRemoteTRX Console, sinon
     menu 0, sinon le système) ; catalogues `trxstation/i18n/cluster.<langue>.json`, le français en référence.
     Lu À CHAQUE APPEL (jamais au chargement du module : les tests changent la langue après l'import)."""
     return tool_translator("cluster")(key, **fields)

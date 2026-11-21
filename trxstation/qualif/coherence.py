@@ -7,7 +7,7 @@ Hamlib DÉCLARE, il ne garantit pas : chaque constat est une piste à vérifier,
 dont la source est Hamlib portent un texte anglais pour le brouillon de rapport aux développeurs de Hamlib.
 
 Gravités :
-  bloquant  : TRX Remote ne peut pas piloter le poste ainsi (fréquence, mode ou PTT illisibles)
+  bloquant  : openRemoteTRX ne peut pas piloter le poste ainsi (fréquence, mode ou PTT illisibles)
   attention : un comportement à vérifier à la main avant de faire confiance à la fonction
   info      : à savoir (plage non renseignée, lecture seule…)
 """
@@ -20,7 +20,7 @@ from .texts import _t, has
 
 BLOQUANT, ATTENTION, INFO = "bloquant", "attention", "info"
 SEVERITIES = (BLOQUANT, ATTENTION, INFO)
-HAMLIB, POSTE, TRX = "hamlib", "poste", "trx"   # source supposée : déclaration Hamlib, poste (ou firmware), TRX Remote
+HAMLIB, POSTE, TRX = "hamlib", "poste", "trx"   # source supposée : déclaration Hamlib, poste (ou firmware), openRemoteTRX
 DATA_MODE_PREFIXES = ("PKT",)
 DATA_MODE_SUFFIX = "-D"
 
@@ -79,7 +79,7 @@ def _list_vs_range(profile: HamlibProfile, name: str, values: tuple[int, ...], w
     return Finding(
         f"list_vs_range_{name}", ATTENTION, HAMLIB,
         f"{what} : la liste ({_fmt(values)} dB) ne suit pas la plage {name}({rng.low:g}..{rng.high:g}/{rng.step:g})",
-        f"Valeurs hors de la plage : {_fmt(off)}. TRX Remote prend la LISTE déclarée ; vérifier sur le poste quelle valeur "
+        f"Valeurs hors de la plage : {_fmt(off)}. openRemoteTRX prend la LISTE déclarée ; vérifier sur le poste quelle valeur "
         f"active quoi{example}.",
         f"{what_en}: declared list ({_fmt(values)} dB) does not match the {name}({rng.low:g}..{rng.high:g}/{rng.step:g}) range",
         f"Values outside the range: {_fmt(off)}.",
@@ -101,7 +101,7 @@ def analyse_caps(profile: HamlibProfile) -> list[Finding]:
         if can.get(key) is False:
             slug = f"cannot_{key.replace(' ', '_').lower()}"
             found.append(Finding(slug, BLOQUANT, TRX,
-                                 f"Hamlib déclare « Can {key}: N »", f"TRX Remote doit pouvoir {why} : poste inutilisable tel quel.",
+                                 f"Hamlib déclare « Can {key}: N »", f"openRemoteTRX doit pouvoir {why} : poste inutilisable tel quel.",
                                  key=slug, args={"can": key}))
     status = profile.backend_status
     if status and status.lower() != "stable":
@@ -148,7 +148,7 @@ def analyse_caps(profile: HamlibProfile) -> list[Finding]:
         blind = sorted(set(setters) - set(getters))
         if blind:
             found.append(Finding(f"{kind}_write_only", ATTENTION, HAMLIB, f"{word} réglables mais non relisibles : " + ", ".join(blind),
-                                 "Une écriture qu'on ne peut pas relire ne se vérifie pas : TRX Remote ne s'y fie pas.",
+                                 "Une écriture qu'on ne peut pas relire ne se vérifie pas : openRemoteTRX ne s'y fie pas.",
                                  f"{'Functions' if kind == 'func' else 'Levels'} settable but not readable: " + ", ".join(blind),
                                  key=f"{kind}_write_only", args={"names": ", ".join(blind)}))
     if profile.tx_ranges:
@@ -176,7 +176,7 @@ def analyse_caps(profile: HamlibProfile) -> list[Finding]:
     if profile.async_data:
         found.append(Finding("async_data", INFO, TRX, "« Has async data support: Y »",
                              "Ne pas lancer rigctld avec async=1 (réponses décalées vues sous Windows avec Hamlib 4.7.2) : "
-                             "TRX Remote ne l'utilise pas.", key="async_data"))
+                             "openRemoteTRX ne l'utilise pas.", key="async_data"))
     if profile.get_levels and "STRENGTH" not in profile.get_levels:
         found.append(Finding("no_s_meter", ATTENTION, TRX, "Pas de S-mètre (niveau STRENGTH absent)",
                              "La page n'affichera pas de S-mètre ; RAWSTR éventuel non exploité.", key="no_s_meter"))

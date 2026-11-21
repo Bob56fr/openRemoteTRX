@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
-// Indicateur TRX distant dans la barre du haut de GNOME (45 et suivants), à gauche du son et du réseau.
+// Indicateur openRemoteTRX dans la barre du haut de GNOME (45 et suivants), à gauche du son et du réseau.
 // LECTURE SEULE : lit chaque seconde les fichiers publiés par la station ; ne commande jamais la station ni le poste.
 // La logique (voyant, texte, lignes du menu) est dans status.js, testée sous Node.
 
@@ -58,7 +58,7 @@ function installedVersion() {
 const TrxIndicator = GObject.registerClass(
 class TrxIndicator extends PanelMenu.Button {
     _init() {
-        super._init(0.0, 'TRX distant');
+        super._init(0.0, 'openRemoteTRX');
         const box = new St.BoxLayout({style_class: 'panel-status-menu-box'});
         this._dot = new St.Label({text: '●', y_align: Clutter.ActorAlign.CENTER, style_class: 'trx-dot trx-off'});
         this._label = new St.Label({text: 'TRX', y_align: Clutter.ActorAlign.CENTER, style_class: 'trx-label'});
@@ -70,7 +70,7 @@ class TrxIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(this._section);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addAction('Ouvrir la page web de la station', () => this._openPage());
-        this.menu.addAction('Ouvrir TRX Console', () => this._launchDesktop('trx-console.desktop'));
+        this.menu.addAction('Ouvrir openRemoteTRX Console', () => this._launchDesktop('trx-console.desktop'));
         this.menu.addAction('Ouvrir le tableau de bord', () => this._inTerminal('trx-monitor'));
 
         this._shown = '';
@@ -126,7 +126,7 @@ class TrxIndicator extends PanelMenu.Button {
         try {
             Gio.AppInfo.launch_default_for_uri(`${tls ? 'https' : 'http'}://localhost:${port}/`, null);
         } catch (e) {
-            Main.notify('TRX distant', `Page web impossible à ouvrir : ${e.message}`);
+            Main.notify('openRemoteTRX', `Page web impossible à ouvrir : ${e.message}`);
         }
     }
 
@@ -135,7 +135,7 @@ class TrxIndicator extends PanelMenu.Button {
         if (app)
             app.launch([], null);
         else
-            Main.notify('TRX distant', 'TRX Console introuvable : relance l\'installation.');
+            Main.notify('openRemoteTRX', 'openRemoteTRX Console introuvable : relance l\'installation.');
     }
 
     _inTerminal(command) {
@@ -145,7 +145,7 @@ class TrxIndicator extends PanelMenu.Button {
                 return;
             }
         }
-        Main.notify('TRX distant', 'Aucun terminal trouvé pour le tableau de bord.');
+        Main.notify('openRemoteTRX', 'Aucun terminal trouvé pour le tableau de bord.');
     }
 
     destroy() {

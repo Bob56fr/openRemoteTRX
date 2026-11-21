@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Langues de TRX Console (trxstation/i18n/) : catalogues complets et cohérents dans TOUTES les langues, choix de la
+"""Langues d'openRemoteTRX Console (trxstation/i18n/) : catalogues complets et cohérents dans TOUTES les langues, choix de la
 langue (fichier par compte, langue du système), réponses oui / non des quatre langues."""
 from __future__ import annotations
 

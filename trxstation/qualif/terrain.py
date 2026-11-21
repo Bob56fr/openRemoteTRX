@@ -885,7 +885,7 @@ def own_station_ready(config_path: Path) -> bool:
 
 
 def station_control(config_path: Path | None, start: bool) -> int:
-    """Démarre ou arrête la station du PC comme TRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
+    """Démarre ou arrête la station du PC comme openRemoteTRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
     import subprocess
     import sys
     from ..console import TARGET, WINDOWS_TASK

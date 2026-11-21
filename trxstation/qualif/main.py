@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""`trx-qualif` : qualification d'un poste avant son intégration dans TRX Remote (lot Q1, ligne de commande).
+"""`trx-qualif` : qualification d'un poste avant son intégration dans openRemoteTRX (lot Q1, ligne de commande).
 
   trx-qualif --plan                    cahier de test du modèle de station.toml, sans toucher au poste
   trx-qualif                           qualification complète guidée, rapport dans ./qualifications/
@@ -295,7 +295,7 @@ def _split_pilot(argv: list[str]) -> tuple[list[str], list[str] | None]:
 
 @guarded("trx-qualif")
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="trx-qualif", description="Qualification d'un poste pour TRX Remote")
+    ap = argparse.ArgumentParser(prog="trx-qualif", description="Qualification d'un poste pour openRemoteTRX")
     ap.add_argument("--config", type=Path, default=None,
                     help="station.toml (défaut : emplacement standard, sinon ./station.toml)")
     ap.add_argument("--plan", action="store_true", help="afficher le cahier de test du modèle, sans toucher au poste")

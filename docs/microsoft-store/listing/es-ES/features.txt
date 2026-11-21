@@ -6,4 +6,4 @@ Supervisor independiente y guarda de fin: el equipo vuelve a recepción en caso 
 Espectro HF, S-metro, memorias, Cluster DX, medida de ROE
 Recepción FreeDV RADE
 Cuentas de operadores y visitantes solo en recepción
-TRX Console en español, inglés, francés y alemán
+openRemoteTRX Console en español, inglés, francés y alemán

@@ -251,7 +251,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Attention : {w}")
     if os.name == "nt":
         print("Windows : recherche par l'API du fabricant seulement (SDRplay) ; les clés RTL-SDR ne sont pas encore vues.")
-    print("\nLe SDR de la station se choisit par son NUMÉRO DE SÉRIE (TRX Console, menu 2.4), jamais celui d'un SDR pris.")
+    print("\nLe SDR de la station se choisit par son NUMÉRO DE SÉRIE (openRemoteTRX Console, menu 2.4), jamais celui d'un SDR pris.")
     return 0
 
 

@@ -11,7 +11,7 @@ Sécurité (cahier § 2 et § 5 ter, décisions de l'utilisateur du 2026-11-17) 
     5 échecs par adresse = blocage 15 minutes, alerte ntfy à chaque connexion ;
   * dans les deux : Origin vérifié pour toute action et pour le terminal ; cookie HttpOnly, SameSite=Strict ; le mot de
     passe sudo ne fait que traverser le terminal (jamais gardé).
-La page ne fait que ce que fait TRX Console, qui ne peut jamais déclencher d'émission.
+La page ne fait que ce que fait openRemoteTRX Console, qui ne peut jamais déclencher d'émission.
 """
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ class WebConsole:
         """Session fermée : terminal (et donc le sudo qu'il retenait) fermé, pages prévenues."""
         if self.session is None:
             return
-        log.info("TRX Console sur le réseau : session de %s fermée (%s)", self.session["account"], reason)
+        log.info("openRemoteTRX Console sur le réseau : session de %s fermée (%s)", self.session["account"], reason)
         self.session = None
         if self.terminal is not None:
             self.terminal.close()
@@ -236,7 +236,7 @@ class WebConsole:
         if account is None:
             self._failed(source)
             emit_event(codes.ORT_4021, logger=log, compte=login[:32], source=source,
-                       detail="TRX Console sur le réseau : identifiant, mot de passe ou droit d'administration refusé")
+                       detail="openRemoteTRX Console sur le réseau : identifiant, mot de passe ou droit d'administration refusé")
             return web.json_response({"ok": False}, status=401)
         self.close_session("nouvelle connexion")
         self.failures.pop(source, None)
@@ -565,7 +565,7 @@ class WebConsole:
 
     def on_exit(self) -> None:
         self.idle = False
-        self.on_output("\r\n[TRX Console terminée : actualiser la page pour la relancer en faisant F5 dans votre navigateur web]\r\n")
+        self.on_output("\r\n[openRemoteTRX Console terminée : actualiser la page pour la relancer en faisant F5 dans votre navigateur web]\r\n")
 
     async def _send(self, ws: web.WebSocketResponse, message: dict) -> None:
         try:
@@ -642,7 +642,7 @@ class WebConsole:
             await runner.cleanup()
             return False
         if self.network:
-            log.info("TRX Console sur le réseau : https://%s:%d/", bind, self.port)
+            log.info("openRemoteTRX Console sur le réseau : https://%s:%d/", bind, self.port)
         else:
             url = f"http://127.0.0.1:{self.port}/?t={self.token}"
             announce(UI_START.format(url=url, port=self.port))
@@ -686,7 +686,7 @@ UI_START = ("\nConsole web de la station : {url}\n"
             "  Depuis un autre PC : ssh -L {port}:127.0.0.1:{port} <compte>@<station>, puis cette adresse.\n"
             "  Ctrl+C pour arrêter ; arrêt seul après 30 minutes sans page ouverte.\n")
 
-EXPIRED_PAGE = ("<!doctype html><meta charset=utf-8><title>TRX Console</title>"
+EXPIRED_PAGE = ("<!doctype html><meta charset=utf-8><title>openRemoteTRX Console</title>"
                 "<p style='font-family:sans-serif;margin:2em'>Lien expiré ou déjà utilisé. Relancer "
                 "<code>trx-console --web</code> sur la station et ouvrir la nouvelle adresse.</p>")
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console sur le réseau (étape 233) : [remote_console] et `admin` des comptes, connexion d'un opérateur
+"""openRemoteTRX Console sur le réseau (étape 233) : [remote_console] et `admin` des comptes, connexion d'un opérateur
 ADMINISTRATEUR seulement, une session à la fois, fermée après le délai sans action, blocage après 5 échecs, adresses
 publiques refusées, alerte à chaque connexion, lien de la page pour les administrateurs seulement, menu 4.6, service."""
 from __future__ import annotations
@@ -121,7 +121,7 @@ def test_only_private_addresses_reach_the_console():
 
 def test_admin_operator_logs_in_and_gets_an_alert(tmp_path):
     async def body(wc, client, alerts, clock):
-        assert "Connexion à TRX Console" in await (await client.get("/")).text() or (await client.get("/")).status == 200
+        assert "Connexion à openRemoteTRX Console" in await (await client.get("/")).text() or (await client.get("/")).status == 200
         page = await (await client.get("/")).text()
         assert "login.js" in page                                        # pas de session : page de connexion
         r, headers = await login(wc, client)

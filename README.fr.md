@@ -1,4 +1,4 @@
-# TRX distant (openRemoteTRX)
+# openRemoteTRX
 
 *[English version](README.md)*
 
@@ -14,7 +14,7 @@ Piloter un émetteur-récepteur radioamateur à distance, depuis le navigateur d
 - **Waterfall de l'audio reçu** dans la page, et **spectre HF du poste** (Icom, par le second port CI-V) en plein écran ou intégré sur grand écran, avec accord au doigt.
 - **Spots du Cluster DX** (clusters radioamateurs, Reverse Beacon Network, page CB) affichés sur le spectre HF, avec l'état de chaque flux.
 - **Présence de groupe « Amis »** (désactivée par défaut) : un groupe d'amis équipés d'openRemoteTRX voit qui est en QSO, en réception, au shack ou absent, et, si chacun le veut, sur quelle fréquence ; QSY vers un ami en réception, après confirmation. Un relais ne transporte que des états chiffrés qu'il ne peut pas lire ; la fonction n'a aucun droit sur le poste.
-- **TRX Console** sur la station : assistant de configuration, diagnostic, tableau de bord, essai guidé du poste, mise à jour, modification de la configuration, seuils de température du poste, rapport de dépannage, tests automatiques.
+- **openRemoteTRX Console** sur la station : assistant de configuration, diagnostic, tableau de bord, essai guidé du poste, mise à jour, modification de la configuration, seuils de température du poste, rapport de dépannage, tests automatiques.
 - Thèmes de couleurs, mises en page, sons de la liaison, bips de fin d'émission (désactivés par défaut), « Signaler un problème ».
 
 ## Sécurités d'émission
@@ -46,17 +46,17 @@ Le détail est dans `CLAUDE.md` (« Règles de sécurité d'émission ») et `do
 
 1. Récupérez le paquet `trx-remote-debian-X.Y.Z.zip` et décompressez-le.
 2. Dans le dossier : `sudo bash install.sh` (dépendances, compte de service, services systemd).
-3. Ouvrez **TRX Console** (menu des applications ou `trx-console`) et lancez l'**assistant de configuration** (menu 2.1) : poste, ports, cartes son, accès réseau, comptes.
+3. Ouvrez **openRemoteTRX Console** (menu des applications ou `trx-console`) et lancez l'**assistant de configuration** (menu 2.1) : poste, ports, cartes son, accès réseau, comptes.
 4. Faites l'**essai guidé** (menu 2.2) sur charge fictive.
 5. Sur le téléphone, ouvrez `https://<adresse-de-la-station>:8443`.
 
-Les versions suivantes s'installent depuis TRX Console (menu 7.1 par Internet, menu 7.3 depuis un fichier zip).
+Les versions suivantes s'installent depuis openRemoteTRX Console (menu 7.1 par Internet, menu 7.3 depuis un fichier zip).
 
 ### Windows
 
 1. Installez **Hamlib 64 bits** (`hamlib-w64-X.Y.Z.exe`, [versions de Hamlib](https://github.com/Hamlib/Hamlib/releases)).
 2. Récupérez le paquet `trx-remote-windows-X.Y.Z.zip`, débloquez-le (Propriétés), extrayez-le, double-cliquez sur **`installer.cmd`**. Python est installé s'il manque (avec votre accord).
-3. Menu Démarrer > **TRX distant** : un seul raccourci, qui ouvre TRX Console (configuration, diagnostic, démarrage et arrêt de la station, tableau de bord, essai du poste, journaux). Désinstallation : Paramètres > Applications.
+3. Menu Démarrer > **openRemoteTRX** : un seul raccourci, qui ouvre openRemoteTRX Console (configuration, diagnostic, démarrage et arrêt de la station, tableau de bord, essai du poste, journaux). Désinstallation : Paramètres > Applications.
 
 La station démarre à l'ouverture de session, sans fenêtre. Notice complète : `windows/notice-windows.html` (jointe au paquet).
 
@@ -76,7 +76,7 @@ Vous restez responsable du respect de votre licence et de la réglementation de 
 
 ## Signaler un problème, contribuer
 
-- Depuis la page : section **« Signaler un problème »** (rapport relu avant envoi), puis TRX Console, menu 6.3 (rapport de dépannage, sans mot de passe).
+- Depuis la page : section **« Signaler un problème »** (rapport relu avant envoi), puis openRemoteTRX Console, menu 6.3 (rapport de dépannage, sans mot de passe).
 - Sur GitHub : onglet *Issues*, avec le formulaire de votre langue (français, anglais, allemand, espagnol).
 - Contribuer : voir [CONTRIBUTING.md](CONTRIBUTING.md).
 

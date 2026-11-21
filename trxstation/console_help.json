@@ -116,7 +116,7 @@
     },
     "indicator": {
      "admin": false,
-     "expert": "Jede Sekunde gelesene Dateien: /run/trx-remote/gateway-status.json, und in\n/var/lib/trx-remote/: safe_mode, cluster/status.json, update/latest.json,\nstation-id. Erweiterung installiert in\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. Das Menü der\nAnzeige öffnet auch die Webseite, TRX Console und die Übersicht.",
+     "expert": "Jede Sekunde gelesene Dateien: /run/trx-remote/gateway-status.json, und in\n/var/lib/trx-remote/: safe_mode, cluster/status.json, update/latest.json,\nstation-id. Erweiterung installiert in\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. Das Menü der\nAnzeige öffnet auch die Webseite, openRemoteTRX Console und die Übersicht.",
      "modifie": "Nur die Anzeige deines Desktops. Die Anzeige LIEST nur den von der Station\nveröffentlichten Zustand: sie kann nichts steuern.",
      "quand": "Einmal, nach der Installation (dann ab- und wieder anmelden), um die Station\nständig im Blick zu behalten.",
      "role": "Schaltet die Anzeige in der oberen Leiste (GNOME-Desktop) ein oder aus: eine\nLampe links vom Ton (grün Empfang, rot Senden, orange Alarm, grau Station\ngestoppt, violett abgesicherter Modus), die Frequenz oder der Countdown des\nSendens, und per Klick der vollständige Zustand: Senden, Frequenz und\nFilter, verbundene Web-Clients, Verbindung zum Transceiver, Operator vor\nOrt, letzte Abschaltung, Temperatur, Versorgung, HF-Spektrum, DX-Cluster,\nverfügbares Update, Version und Kennung. Unter Windows startet dieses Menü\ndie Anzeige neben der Uhr (gleiche Farben, nur lesend) und legt fest, ob sie\nbei jeder Anmeldung startet."
@@ -147,7 +147,7 @@
      "expert": "",
      "modifie": "Nichts, bis auf eine Taste: STOP TX erzwingt Empfang. Die Übersicht kann\nniemals Senden auslösen.",
      "quand": "Um die Station vor Ort zu überwachen oder während eines Tests.",
-     "role": "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang,\nverbundene Clients, Dienste, Hardware, Audio, Protokoll. Sie öffnet sich in\neinem neuen Tab oder Fenster (Windows Terminal, GNOME Terminal, tmux,\nscreen): TRX Console bleibt daneben offen; über SSH ohne tmux öffnet sie\nsich im selben Terminal."
+     "role": "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang,\nverbundene Clients, Dienste, Hardware, Audio, Protokoll. Sie öffnet sich in\neinem neuen Tab oder Fenster (Windows Terminal, GNOME Terminal, tmux,\nscreen): openRemoteTRX Console bleibt daneben offen; über SSH ohne tmux\nöffnet sie sich im selben Terminal."
     },
     "monitoring": {
      "admin": true,
@@ -196,7 +196,7 @@
      "expert": "",
      "modifie": "Die Konfiguration der Station (station.toml: [remote_console] und die\nMarkierung admin der Konten), mit Administratorrechten; die vorherige\nFassung bleibt erhalten. Unter Debian wird der Dienst trx-console-web@konto\ngestartet oder gestoppt; unter Windows wird die Station neu gestartet.",
      "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.",
-     "role": "Stellt TRX Console im Netzwerk bereit: dieselben Menüs im Browser jedes PCs,\nTablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung,\nunter https://<station>:8444/. Anmeldung mit einem als Administrator\nmarkierten Operatorkonto (hier gewählt); die Sitzung endet nach 30 Minuten\nohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung\nabgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung\nsendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der\nBedienseite angemeldeter Administrator findet dort auch den Link."
+     "role": "Stellt openRemoteTRX Console im Netzwerk bereit: dieselben Menüs im Browser\njedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder\nVerknüpfung, unter https://<station>:8444/. Anmeldung mit einem als\nAdministrator markierten Operatorkonto (hier gewählt); die Sitzung endet\nnach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin\neinmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten,\njede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar.\nEin auf der Bedienseite angemeldeter Administrator findet dort auch den\nLink."
     },
     "remote_power": {
      "admin": true,
@@ -414,7 +414,7 @@
     },
     "indicator": {
      "admin": false,
-     "expert": "Files read every second: /run/trx-remote/gateway-status.json, and in\n/var/lib/trx-remote/: safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extension installed in\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. The indicator menu\nalso opens the web page, TRX Console and the dashboard.",
+     "expert": "Files read every second: /run/trx-remote/gateway-status.json, and in\n/var/lib/trx-remote/: safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extension installed in\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. The indicator menu\nalso opens the web page, openRemoteTRX Console and the dashboard.",
      "modifie": "Only your desktop display. The indicator only READS the state published by\nthe station: it cannot control anything.",
      "quand": "Once, after installation (then log out and log in again), to keep an eye on\nthe station at all times.",
      "role": "Enables or disables the top bar indicator (GNOME desktop): a light to the\nleft of the sound icon (green receive, red transmit, orange alert, grey\nstation stopped, purple safe mode), the frequency or the transmit countdown,\nand on click the full status: transmission, frequency and filter, connected\nweb clients, link with the transceiver, on-site operator, last cut,\ntemperature, power supply, HF spectrum, DX Cluster, available update,\nversion and identifier. On Windows, this menu starts the indicator next to\nthe clock (same colours, read only) and chooses whether it starts at each\nsession logon."
@@ -445,7 +445,7 @@
      "expert": "",
      "modifie": "Nothing, except one key: STOP TX forces receive. The dashboard can never\nmake the transceiver transmit.",
      "quand": "To watch the station on site, or during a test.",
-     "role": "Live dashboard, in the terminal: frequency, mode, transmit or receive,\nconnected clients, services, hardware, audio, log. It opens in a new tab or\nwindow (Windows Terminal, GNOME Terminal, tmux, screen): TRX Console stays\nopen next to it; over SSH without tmux, it opens in the same terminal."
+     "role": "Live dashboard, in the terminal: frequency, mode, transmit or receive,\nconnected clients, services, hardware, audio, log. It opens in a new tab or\nwindow (Windows Terminal, GNOME Terminal, tmux, screen): openRemoteTRX\nConsole stays open next to it; over SSH without tmux, it opens in the same\nterminal."
     },
     "monitoring": {
      "admin": true,
@@ -494,7 +494,7 @@
      "expert": "",
      "modifie": "The station configuration (station.toml: [remote_console] and the admin mark\nof the accounts), with administrator rights; the previous version is kept.\nOn Debian, the trx-console-web@account service is started or stopped; on\nWindows, the station is restarted.",
      "quand": "To administer the station from another device, without knowing SSH.",
-     "role": "Puts TRX Console on the network: the same menus in the browser of any PC,\ntablet or phone on the local network or VPN, without SSH or shortcut, at\nhttps://<station>:8444/. Login with an operator account marked administrator\n(chosen here); the session closes after 30 minutes without action; the\nstation sudo password is still asked once per session. 5 failures block the\naddress for 15 minutes and every login sends an ntfy alert. Never reachable\nfrom the Internet. An administrator logged in to the control page also finds\nthe link there."
+     "role": "Puts openRemoteTRX Console on the network: the same menus in the browser of\nany PC, tablet or phone on the local network or VPN, without SSH or\nshortcut, at https://<station>:8444/. Login with an operator account marked\nadministrator (chosen here); the session closes after 30 minutes without\naction; the station sudo password is still asked once per session. 5\nfailures block the address for 15 minutes and every login sends an ntfy\nalert. Never reachable from the Internet. An administrator logged in to the\ncontrol page also finds the link there."
     },
     "remote_power": {
      "admin": true,
@@ -712,7 +712,7 @@
     },
     "indicator": {
      "admin": false,
-     "expert": "Archivos leídos cada segundo: /run/trx-remote/gateway-status.json, y en\n/var/lib/trx-remote/: safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extensión instalada en\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. El menú del\nindicador también abre la página web, TRX Console y el panel.",
+     "expert": "Archivos leídos cada segundo: /run/trx-remote/gateway-status.json, y en\n/var/lib/trx-remote/: safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extensión instalada en\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. El menú del\nindicador también abre la página web, openRemoteTRX Console y el panel.",
      "modifie": "Solo la visualización de tu escritorio. El indicador solo LEE el estado\npublicado por la estación: no puede controlar nada.",
      "quand": "Una vez, después de la instalación (y de cerrar y volver a abrir la sesión),\npara vigilar la estación en todo momento.",
      "role": "Activa o desactiva el indicador de la barra superior (escritorio GNOME): un\npiloto a la izquierda del sonido (verde recepción, rojo transmisión, naranja\nalerta, gris estación detenida, violeta modo seguro), la frecuencia o la\ncuenta atrás de transmisión y, al hacer clic, el estado completo:\ntransmisión, frecuencia y filtro, clientes web conectados, enlace con el\ntransceptor, operador in situ, último corte, temperatura, alimentación,\nespectro HF, DX Cluster, actualización disponible, versión e identificador.\nEn Windows, este menú arranca el indicador junto al reloj (mismos colores,\nsolo lectura) y elige si arranca en cada inicio de sesión."
@@ -743,7 +743,7 @@
      "expert": "",
      "modifie": "Nada, salvo una tecla: STOP TX fuerza la recepción. El panel nunca puede\nhacer transmitir.",
      "quand": "Para vigilar la estación in situ, o durante una prueba.",
-     "role": "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción,\nclientes conectados, servicios, hardware, audio, registro. Se abre en una\npestaña nueva o ventana (Windows Terminal, GNOME Terminal, tmux, screen):\nTRX Console sigue abierta al lado; por SSH sin tmux, se abre en el mismo\nterminal."
+     "role": "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción,\nclientes conectados, servicios, hardware, audio, registro. Se abre en una\npestaña nueva o ventana (Windows Terminal, GNOME Terminal, tmux, screen):\nopenRemoteTRX Console sigue abierta al lado; por SSH sin tmux, se abre en el\nmismo terminal."
     },
     "monitoring": {
      "admin": true,
@@ -792,7 +792,7 @@
      "expert": "",
      "modifie": "La configuración de la estación (station.toml: [remote_console] y la marca\nadmin de las cuentas), con derechos de administrador; se guarda la versión\nanterior. En Debian se arranca o se para el servicio trx-console-web@cuenta;\nen Windows se reinicia la estación.",
      "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH.",
-     "role": "Pone TRX Console en la red: los mismos menús en el navegador de cualquier\nPC, tableta o teléfono de la red local o del VPN, sin SSH ni acceso directo,\nen https://<station>:8444/. Conexión con una cuenta de operador marcada\nadministradora (elegida aquí); la sesión se cierra tras 30 minutos sin\nacción; la contraseña sudo de la estación se sigue pidiendo una vez por\nsesión. 5 fallos bloquean la dirección 15 minutos y cada conexión envía una\nalerta ntfy. Nunca accesible desde Internet. Un administrador conectado a la\npágina de control también encuentra allí el enlace."
+     "role": "Pone openRemoteTRX Console en la red: los mismos menús en el navegador de\ncualquier PC, tableta o teléfono de la red local o del VPN, sin SSH ni\nacceso directo, en https://<station>:8444/. Conexión con una cuenta de\noperador marcada administradora (elegida aquí); la sesión se cierra tras 30\nminutos sin acción; la contraseña sudo de la estación se sigue pidiendo una\nvez por sesión. 5 fallos bloquean la dirección 15 minutos y cada conexión\nenvía una alerta ntfy. Nunca accesible desde Internet. Un administrador\nconectado a la página de control también encuentra allí el enlace."
     },
     "remote_power": {
      "admin": true,
@@ -908,7 +908,7 @@
      "expert": "",
      "modifie": "La section [supervisor] de station.toml (notify_url, notify_lang,\nalive_every_h), par le chemin vérifié du menu 8.1 ; l'essai n'écrit rien.",
      "quand": "À la mise en service (guide, partie 6), après un changement de téléphone ou\nd'abonnement ntfy, ou quand aucune alerte n'arrive.",
-     "role": "Règle les alertes sur le téléphone par ntfy : l'adresse (un sujet long et\nsecret : qui le connaît lit les alertes ; l'écran ne la montre jamais en\nentier), la langue (fr ou en), le message « Station en service » (toutes les\nN heures, sans sonnerie), et envoie une alerte d'essai (code ORT-8025) pour\nvérifier que tout arrive."
+     "role": "Règle les alertes sur le téléphone par ntfy : l'adresse (un sujet long et\nsecret : qui le connaît lit les alertes ; l'écran ne la montre jamais en\nentier), la langue (français, anglais, allemand ou espagnol ; le journal\nreste en français), le message « Station en service » (toutes les N heures,\nsans sonnerie), et envoie une alerte d'essai (code ORT-8025) pour vérifier\nque tout arrive."
     },
     "assistant": {
      "admin": true,
@@ -962,16 +962,16 @@
     "diffusion": {
      "admin": true,
      "expert": "",
-     "modifie": "[diffusion] de station.toml (serveur, station, codec, hors bandes) par le\nchemin vérifié du menu 8.1, et le fichier diffusion.key (0600, lisible\nseulement par le service). Rien ne touche au poste : le module « diffusion »\nn'a aucun droit sur lui ; ce qui est diffusé est de votre responsabilité.",
-     "quand": "Pour faire écouter le poste à des amis ou à un club, le temps d'une soirée\nou d'un concours ; à la mise en place, avec ce que vous a donné\nl'administrateur du serveur.",
-     "role": "Fait entendre le son du TRX à quelques auditeurs sur Internet, sans compte\nsur la station : ils écoutent sur la page d'un serveur de diffusion et ne\njoignent jamais la station. On y voit l'état (en direct ou non, canal,\nauditeurs, temps restant, qui l'a lancée), on lance une diffusion (canal\nprivé par défaut, avec identifiant et mot de passe, ou public ; durée, 1\nheure par défaut ; votre voix pendant vos émissions, non par défaut) et on\nl'arrête. On y lit ou on change le mot de passe des auditeurs (« En générer\nun » : ceux qui écoutent ne sont pas coupés), on règle le serveur (adresse,\nnom de la station, codec, diffusion hors des bandes autorisées : non par\ndéfaut, silence pour les auditeurs) et on enregistre ses secrets (mot de\npasse source et clé, jamais affichés). Un avertissement est à confirmer au\ntout premier lancement."
+     "modifie": "[diffusion] de station.toml (serveur, station, codec, hors bandes) par le\nchemin vérifié du menu 8.1, et le fichier diffusion.key (0600, lisible\nseulement par le service). Rien ne touche au poste : le module « diffusion »\nn'a aucun droit sur lui ; ce qui est diffusé est de ta responsabilité.",
+     "quand": "Pour faire écouter le poste à des amis ou à un club, le temps d'une soirée\nou d'un concours ; à la mise en place, avec ce que t'a donné\nl'administrateur du serveur.",
+     "role": "Fait entendre le son du TRX à quelques auditeurs sur Internet, sans compte\nsur la station : ils écoutent sur la page d'un serveur de diffusion et ne\njoignent jamais la station. On y voit l'état (en direct ou non, canal,\nauditeurs, temps restant, qui l'a lancée), on lance une diffusion (canal\nprivé par défaut, avec identifiant et mot de passe, ou public ; durée, 1\nheure par défaut ; ta voix pendant tes émissions, non par défaut) et on\nl'arrête. On y lit ou on change le mot de passe des auditeurs (« En générer\nun » : ceux qui écoutent ne sont pas coupés), on règle le serveur (adresse,\nnom de la station, codec, diffusion hors des bandes autorisées : non par\ndéfaut, silence pour les auditeurs) et on enregistre ses secrets (mot de\npasse source et clé, jamais affichés). Un avertissement est à confirmer au\ntout premier lancement."
     },
     "edit_config": {
      "admin": true,
      "expert": "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les\ncopies de sauvegarde s'appellent\nstation.toml.avant-modification-AAAAMMJJ-HHMMSS.\n\nNotice de TOUS les réglages (rôle, valeur par défaut, bornes, sécurité, menu\nqui les modifie) : https://bob56fr.github.io/openRemoteTRX/station-toml/,\naussi sur le site rf-diy.com.",
      "modifie": "station.toml, seulement si la copie est valide : elle est vérifiée, les\ndifférences sont montrées, une confirmation est demandée et l'ancienne\nversion est gardée à côté. Une configuration invalide n'est jamais écrite.",
      "quand": "Pour un réglage précis sans relancer tout l'assistant.",
-     "role": "Modifie station.toml dans l'éditeur nano, sur une copie."
+     "role": "Modifie station.toml sur une copie : dans l'éditeur nano au terminal\n(Bloc-notes sous Windows), dans un champ de la page dans le navigateur."
     },
     "expert": {
      "admin": true,
@@ -1010,7 +1010,7 @@
     },
     "indicator": {
      "admin": false,
-     "expert": "Fichiers lus chaque seconde : /run/trx-remote/gateway-status.json, et dans\n/var/lib/trx-remote/ : safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extension installée dans\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. Le menu de\nl'indicateur ouvre aussi la page web, TRX Console et le tableau de bord.",
+     "expert": "Fichiers lus chaque seconde : /run/trx-remote/gateway-status.json, et dans\n/var/lib/trx-remote/ : safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extension installée dans\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. Le menu de\nl'indicateur ouvre aussi la page web, openRemoteTRX Console et le tableau de\nbord.",
      "modifie": "Seulement l'affichage de ton bureau. L'indicateur ne fait que LIRE l'état\npublié par la station : il ne peut rien commander.",
      "quand": "Une fois, après l'installation (puis une déconnexion et reconnexion), pour\ngarder un œil sur la station en permanence.",
      "role": "Active ou désactive l'indicateur de la barre du haut (bureau GNOME) : un\nvoyant à gauche du son (vert réception, rouge émission, orange alerte, gris\nstation arrêtée, violet mode sûr), la fréquence ou le compte à rebours\nd'émission, et au clic l'état complet : émission, fréquence et filtre,\nclients web connectés, liaison avec le poste, opérateur sur place, dernière\ncoupure, température, alimentation, spectre HF, Cluster DX, mise à jour\ndisponible, version et identifiant. Sous Windows, ce menu lance l'indicateur\nprès de l'horloge (mêmes couleurs, lecture seule) et choisit s'il démarre à\nchaque ouverture de session."
@@ -1039,15 +1039,15 @@
     "monitor": {
      "admin": false,
      "expert": "",
-     "modifie": "Rien, sauf une touche : STOP TX force la réception. Le tableau de bord ne\npeut jamais faire émettre.",
+     "modifie": "Rien, sauf une touche : STOP TX force la réception. Le tableau de bord ne\npeut jamais faire émettre. Dans le navigateur, le même tableau de bord est\ndessiné par la page, avec le même bouton STOP TX.",
      "quand": "Pour surveiller la station sur place, ou pendant un essai.",
-     "role": "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou\nréception, clients connectés, services, matériel, audio, journal. Il s'ouvre\ndans un nouvel onglet ou une nouvelle fenêtre (Windows Terminal, GNOME\nTerminal, tmux, screen) : TRX Console reste ouverte à côté ; en SSH sans\ntmux, il s'ouvre dans le même terminal."
+     "role": "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou\nréception, clients connectés, services, matériel, audio, journal. Il s'ouvre\ndans un nouvel onglet ou une nouvelle fenêtre (Windows Terminal, GNOME\nTerminal, tmux, screen) : openRemoteTRX Console reste ouverte à côté ; en\nSSH sans tmux, il s'ouvre dans le même terminal."
     },
     "monitoring": {
      "admin": true,
      "expert": "La console dépose sa demande pour le module « monlink » (fichier\nmonlink-request.json du dossier d'état, par sudo s'il le faut) et lit sa\nréponse (monlink/console-reply.json, effacée après une minute). La fonction\ns'active dans station.toml (menu 8.1) : [monitor_link] enabled = true et\n« monlink » dans [modules] run, puis redémarrer la station. Tout ce qui part\nest masqué (mots de passe, adresses, numéros de série, nom de la machine).\nLe code sert une fois et expire après 15 minutes ; des chiffres différents =\nliaison refusée. Détail : docs/cdc-monitoring.md § 17.",
      "modifie": "Les liaisons, le pseudo et ce qui est envoyé, rangés à part dans le dossier\nd'état (pas dans station.toml) ; tout passe chiffré par le relais. Rien ne\ntouche au poste : la station qui aide ne peut que lire et DEMANDER, jamais\ncommander ; l'opérateur aidé peut tout arrêter à tout moment.",
-     "quand": "Quand un opérateur a besoin d'aide pour sa station, ou quand vous en\ndemandez : au téléphone avec la personne qui aide, menu ouvert des deux\ncôtés.",
+     "quand": "Quand un opérateur a besoin d'aide pour sa station, ou quand tu en\ndemandes : au téléphone avec la personne qui aide, menu ouvert des deux\ncôtés.",
      "role": "Aider un opérateur en difficulté, ou être aidé, sans VPN ni port ouvert.\nCelui qui aide crée un code de 10 caractères et le dicte ; l'opérateur aidé\nle tape ; les deux comparent 6 chiffres de vive voix. L'opérateur aidé\nchoisit ce qu'il envoie (essentiel, ou diagnostic avec l'état du poste ;\nfréquence et mode seulement s'il le veut). On y voit les dernières nouvelles\net les derniers codes d'erreur de chaque station suivie, on demande ou on\naccepte le mode assistance (nouvelles toutes les 30 secondes, pour une durée\nchoisie), on met en pause et on termine une liaison. Celui qui aide peut\naussi demander le rapport de dépannage (celui du menu 6.3, entièrement\nmasqué) ; l'opérateur aidé l'accepte ou l'envoie de lui-même (choix 10), et\ncelui qui aide le copie sur son Bureau. Celui qui aide reçoit une alerte sur\nson téléphone (ntfy de sa station) quand une station suivie ne donne plus de\nnouvelles, quand elle revient, ou quand elle signale un événement critique."
     },
     "network": {
@@ -1068,7 +1068,7 @@
      "admin": false,
      "expert": "Même affichage en ligne de commande : trx-setup --output\n/etc/trx-remote/station.toml --empreinte. Si le certificat n'est lisible que\npar la station, la console le relit avec les droits d'administration.\nStation limitée à cette machine (boucle locale) : aucun téléphone ne peut\ns'y connecter, la console le dit. Derrière un proxy HTTPS, l'empreinte à\népingler est celle du certificat du proxy (pas de QR code). Le QR code est\ndessiné pour un terminal à fond sombre ; l'application lit aussi un terminal\nclair. S'il n'apparaît pas (paquet « segno » absent), réinstaller la station\n(menu 7.3) ou saisir l'empreinte à la main.",
      "modifie": "Rien : lecture seule.",
-     "quand": "Au moment d'ajouter la station dans l'application Android, et après avoir\nrefait le certificat (menu 2.1).",
+     "quand": "Au moment d'ajouter la station dans l'application Android, et après avoir\nrefait le certificat (menu 4.4).",
      "role": "Affiche ce qu'il faut pour appairer l'application Android avec cette\nstation : l'adresse à saisir, les comptes autorisés, l'empreinte du\ncertificat (SHA-256, sur deux lignes), puis un QR code à scanner avec\nl'application (« Scanner le QR code de la station ») : il remplit l'adresse,\nl'identifiant et l'empreinte. S'il y a plusieurs adresses ou plusieurs\ncomptes, la console demande lesquels mettre dans le QR code (Entrée = choix\nproposé). Ni le QR code ni l'écran ne contiennent de mot de passe : la\nstation ne les connaît pas en clair, il se saisit dans l'application."
     },
     "profiles": {
@@ -1090,7 +1090,7 @@
      "expert": "",
      "modifie": "La configuration de la station (station.toml : [remote_console] et la marque\nadmin des comptes), avec les droits d'administration ; l'ancienne version\nest gardée. Sous Debian, le service trx-console-web@compte est mis en marche\nou arrêté ; sous Windows, la station est redémarrée.",
      "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.",
-     "role": "Met TRX Console sur le réseau : les mêmes menus dans le navigateur de\nn'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH\nni raccourci, à l'adresse https://<station>:8444/. On s'y connecte avec un\ncompte opérateur marqué administrateur (choisis ici) ; la session se ferme\naprès 30 minutes sans action ; le mot de passe sudo de la station reste\ndemandé une fois par session. 5 échecs bloquent l'adresse 15 minutes et\nchaque connexion envoie une alerte ntfy. Jamais joignable depuis Internet.\nUn administrateur connecté à la page de pilotage y trouve aussi le lien."
+     "role": "Met openRemoteTRX Console sur le réseau : les mêmes menus dans le navigateur\nde n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans\nSSH ni raccourci, à l'adresse https://<station>:8444/. On s'y connecte avec\nun compte opérateur marqué administrateur (choisis ici) ; la session se\nferme après 30 minutes sans action ; le mot de passe sudo de la station\nreste demandé une fois par session. 5 échecs bloquent l'adresse 15 minutes\net chaque connexion envoie une alerte ntfy. Jamais joignable depuis\nInternet. Un administrateur connecté à la page de pilotage y trouve aussi le\nlien."
     },
     "remote_power": {
      "admin": true,
@@ -1179,7 +1179,7 @@
     "update": {
      "admin": true,
      "expert": "",
-     "modifie": "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 7.2).\nstation.toml et les certificats sont conservés. Refusé tant que le poste\német. Il faut taper le numéro de version pour confirmer.",
+     "modifie": "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 7.2).\nstation.toml et les certificats sont conservés. Refusé tant que le poste\német. Il faut taper le numéro de version pour confirmer. Sous Windows, le\nmenu ne fait que l'annoncer : la mise à jour se fait en lançant\ninstaller.cmd du nouveau paquet.",
      "quand": "Quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en haut de la\nconsole (jaune dans un terminal) et que le menu 7.1 est marqué « <==\nNOUVELLE VERSION ». La recherche a lieu 2 minutes après le démarrage de la\nstation puis toutes les 24 h.",
      "role": "Mise à jour par Internet : présente la nouvelle version, propose de voir la\nnature des changements (notes de CHAQUE version publiée depuis la tienne, la\nplus récente d'abord, par pages : Entrée = suite, q = arrêter là), puis\nl'installe après vérification de sa signature. À jour : propose une nouvelle\nrecherche immédiate sur GitHub."
     },

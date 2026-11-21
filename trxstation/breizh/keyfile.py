@@ -27,7 +27,7 @@ def read_key(path: str | Path) -> bytes:
         text = path.read_text(encoding="utf-8")
         mode = path.stat().st_mode
     except FileNotFoundError:
-        raise KeyFileError(f"{path} absent : crée la clé d'appairage (TRX Console)") from None
+        raise KeyFileError(f"{path} absent : crée la clé d'appairage (openRemoteTRX Console)") from None
     except OSError as exc:
         raise KeyFileError(f"{path} illisible ({exc.strerror or type(exc).__name__})") from None
     if os.name == "posix" and mode & 0o007:

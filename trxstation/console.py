@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console : point d'entrée unique de la station pour qui ne connaît pas Linux (commande `trx-console`).
+"""openRemoteTRX Console : point d'entrée unique de la station pour qui ne connaît pas Linux (commande `trx-console`).
 
 Menus sur deux niveaux, par thème (MENU_THEMES, rangés par intention depuis la station 0.166.0) : 1 Station, 2 Poste
 et matériel, 3 Sécurité d'émission et alertes, 4 Accès et comptes, 5 Fonctions, 6 Dépannage et assistance, 7 Mises
@@ -190,7 +190,7 @@ def windows_pythonw() -> str:
 
 
 def console_url(host: str, port: int) -> str:
-    """Adresse de TRX Console sur le réseau (étape 233)."""
+    """Adresse d'openRemoteTRX Console sur le réseau (étape 233)."""
     return "https://" + (f"[{host}]" if ":" in host else host) + f":{port}/"
 
 
@@ -273,7 +273,7 @@ def address_line(bind: str, port: int, tls: bool, addresses: list[str], t: Trans
 
 def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list[str],
                  t: Translator | None = None) -> str:
-    """En-tête de la console : adresse(s) de TRX Console sur le réseau ([remote_console], menu 4.6)."""
+    """En-tête de la console : adresse(s) d'openRemoteTRX Console sur le réseau ([remote_console], menu 4.6)."""
     t = t or Translator()
     menu = menu_number("remote_console")
     if not enabled or not tls or bind in ("", "127.0.0.1", "localhost", "::1"):
@@ -814,7 +814,7 @@ class Console:
         return bool(caps.can_set_power and caps.can_get_power)
 
     def remote_console(self) -> None:
-        """TRX Console sur le réseau (étape 233) : marche / arrêt, comptes opérateurs ADMINISTRATEURS, compte Linux du
+        """openRemoteTRX Console sur le réseau (étape 233) : marche / arrêt, comptes opérateurs ADMINISTRATEURS, compte Linux du
         service (Debian). La console tourne sous ce compte, jamais root : sudo reste demandé dans le terminal."""
         from .config import SSH_USER_RE
         loaded = self._load_for_edit()
@@ -876,7 +876,7 @@ class Console:
         """Debian / Pi : service systemd `trx-console-web@<compte>` (sous ce compte, groupe trx pour lire la
         configuration et le certificat). Sous Windows, c'est le superviseur qui lance la console (mode géré)."""
         def systemctl(*args: str) -> int:
-            # Dans le terminal de TRX Console sur le réseau, arrêter ou relancer son service tuerait ce menu même :
+            # Dans le terminal d'openRemoteTRX Console sur le réseau, arrêter ou relancer son service tuerait ce menu même :
             # l'ordre part 5 s plus tard, par systemd (la page se reconnecte).
             later = ["systemd-run", "--quiet", "--on-active=5"] if os.environ.get("TRX_CONSOLE_WEB") else []
             return self.runner.run([*later, "systemctl", *args], admin=True)
@@ -1049,7 +1049,7 @@ class Console:
             self.start()
 
     def monitor(self) -> None:
-        """Tableau de bord : dans un NOUVEL onglet ou une nouvelle fenêtre quand c'est possible (TRX Console reste ici),
+        """Tableau de bord : dans un NOUVEL onglet ou une nouvelle fenêtre quand c'est possible (openRemoteTRX Console reste ici),
         sinon dans ce terminal comme avant (SSH sans tmux)."""
         cmd = self.module("trxstation.monitor.main", "--config", str(self.config))
         opener = new_terminal_command(cmd, title="trx-monitor")
@@ -3265,7 +3265,7 @@ class Console:
         return f"{key}.page" if os.environ.get("TRX_CONSOLE_PAGE") else key
 
     def reopen_key(self, key: str) -> str:
-        """Message « Quitte TRX Console (q) et rouvre-la » : dans la page (menus en formulaires), la clé
+        """Message « Quitte openRemoteTRX Console (q) et rouvre-la » : dans la page (menus en formulaires), la clé
         `<clé>.page` (console sur le réseau relancée seule, actualiser la page) ou `<clé>.local` (relancer
         trx-console --web)."""
         page = os.environ.get("TRX_CONSOLE_PAGE")
@@ -3526,7 +3526,7 @@ def load_help(lang: str = "fr") -> dict[str, dict]:
 
 @guarded("trx-console")
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="trx-console", description="TRX Console : configuration, tests et dépannage")
+    ap = argparse.ArgumentParser(prog="trx-console", description="openRemoteTRX Console : configuration, tests et dépannage")
     ap.add_argument("--config", type=Path, default=CONFIG_PATH)
     ap.add_argument("--diagnostic", action="store_true", help="diagnostic complet puis sortie")
     ap.add_argument("--rapport", action="store_true", help="crée le rapport de dépannage puis sortie")
@@ -3536,7 +3536,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="console dans le navigateur (127.0.0.1 seulement, adresse à usage unique ; autre PC : tunnel SSH)")
     ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
     ap.add_argument("--reseau", action="store_true",
-                    help="TRX Console sur le réseau (service : HTTPS, comptes administrateurs, [remote_console])")
+                    help="openRemoteTRX Console sur le réseau (service : HTTPS, comptes administrateurs, [remote_console])")
     args = ap.parse_args(argv)
     if args.web:
         from .console_web.server import run

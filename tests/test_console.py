@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console : enchaînement des actions (commandes simulées)."""
+"""openRemoteTRX Console : enchaînement des actions (commandes simulées)."""
 from __future__ import annotations
 
 from trxstation import config as cfgmod

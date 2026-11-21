@@ -51,7 +51,7 @@ Guide de l'opérateur, pas à pas : `User-Guide/fr/postes/ftdx10.md`.
 - **RPORT GAIN** (dans chaque mode ; il n'y a pas de « USB MOD GAIN » sur ce poste) : à régler avec l'ALC. Le
   réglage automatique SELCALL et le voyant OVERLOAD ALC (seuil à 50 %) aident, mais l'échelle de l'ALC Yaesu n'a pas
   été relevée : seuil à vérifier. **OUT LEVEL** (SSB, AM, FM, DATA) : niveau de la prise RTTY/DATA de l'arrière seulement ; sur le FTDX10, sans effet
-  sur le son USB (essai du 2026-11-19) : son reçu faible = gain du menu 2.9 de TRX Console (`[audio] rx_gain_db`).
+  sur le son USB (essai du 2026-11-19) : son reçu faible = gain du menu 2.9 d'openRemoteTRX Console (`[audio] rx_gain_db`).
 - Touche **VOX** éteinte : avec la modulation par l'arrière, un son parasite du PC pourrait faire émettre le poste.
 - OPERATION SETTING > GENERAL : **TX TIME OUT TIMER** = 3 min (0 à 30) : seconde sécurité, indépendante de la station
   (TOT 90 s par défaut).

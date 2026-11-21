@@ -76,7 +76,7 @@ def store_page_link(family: str | None = None) -> str | None:
 
 def app_launch_command(app_id: str, family: str | None = None) -> list[str] | None:
     """Lance une application du paquet comme le fait Windows (tâche de démarrage, menu Démarrer) : seul moyen sûr de
-    démarrer la station HORS de la fenêtre de TRX Console (essai S0)."""
+    démarrer la station HORS de la fenêtre d'openRemoteTRX Console (essai S0)."""
     family = family or package_family_name()
     if not family:
         return None

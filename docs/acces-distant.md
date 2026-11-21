@@ -153,7 +153,7 @@ L'application Android n'a pas cette contrainte (elle capte le micro sans passer 
 
 ## 4 ter. Visiteurs en réception seule
 
-Des comptes **visiteurs** (`role = "listener"`, TRX Console menu 4.2) écoutent la station et voient l'écran de l'opérateur, sans aucune commande vers le poste. Ils passent par la même adresse, le même port et le même certificat que l'opérateur : rien de plus à ouvrir.
+Des comptes **visiteurs** (`role = "listener"`, openRemoteTRX Console menu 4.2) écoutent la station et voient l'écran de l'opérateur, sans aucune commande vers le poste. Ils passent par la même adresse, le même port et le même certificat que l'opérateur : rien de plus à ouvrir.
 
 - Chaque visiteur a son propre compte et son mot de passe ; les autres connectés ne voient que son **pseudo**, jamais son identifiant.
 - Par défaut (`listeners_need_operator = true`), un visiteur n'est admis que si un opérateur est connecté, et il est déconnecté 60 s après la perte de l'opérateur si celui-ci ne revient pas.
@@ -191,7 +191,7 @@ jamais un mot de passe** sur une page dont le certificat n'est pas reconnu. La s
 (`tls/station-ca.pem`, clé `tls/station-ca-key.pem` lisible par l'administrateur seul) et signe avec elle le
 certificat de la passerelle (`station-cert.pem` = certificat de la passerelle puis autorité).
 
-- Création ou renouvellement : TRX Console menu 4.4, ou `trx-setup --output station.toml --autorite-station [NOMS…]`
+- Création ou renouvellement : openRemoteTRX Console menu 4.4, ou `trx-setup --output station.toml --autorite-station [NOMS…]`
   (noms du certificat actuel plus ceux donnés) ; une nouvelle installation (`--self-signed`, assistant) l'utilise
   d'office.
 - L'autorité est publiée (certificat PUBLIC seulement, DER) sur `https://<station>:8443/station-ca.crt` ; la page

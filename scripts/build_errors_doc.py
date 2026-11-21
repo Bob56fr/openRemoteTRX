@@ -74,15 +74,15 @@ TXT = {
 }
 INTRO = {
     "fr": "Chaque problème relevé par la station porte un code stable (par exemple <code>ORT-2104</code>), visible dans les "
-          "journaux, les alertes ntfy et TRX Console. Tapez le code ou un mot pour retrouver sa page : causes, que faire, "
+          "journaux, les alertes ntfy et openRemoteTRX Console. Tapez le code ou un mot pour retrouver sa page : causes, que faire, "
           "ce que fait la station.",
     "en": "Every problem detected by the station carries a stable code (for example <code>ORT-2104</code>), shown in logs, "
-          "ntfy alerts and TRX Console. Type the code or a word to find its page: causes, what to do, what the station does.",
+          "ntfy alerts and openRemoteTRX Console. Type the code or a word to find its page: causes, what to do, what the station does.",
     "de": "Jedes von der Station erkannte Problem trägt einen festen Code (zum Beispiel <code>ORT-2104</code>), sichtbar in "
-          "den Protokollen, den ntfy-Alarmen und in TRX Console. Geben Sie den Code oder ein Wort ein, um seine Seite zu "
+          "den Protokollen, den ntfy-Alarmen und in openRemoteTRX Console. Geben Sie den Code oder ein Wort ein, um seine Seite zu "
           "finden: Ursachen, was zu tun ist, was die Station tut.",
     "es": "Cada problema detectado por la estación lleva un código estable (por ejemplo <code>ORT-2104</code>), visible en "
-          "los registros, las alertas ntfy y TRX Console. Escribe el código o una palabra para encontrar su página: "
+          "los registros, las alertas ntfy y openRemoteTRX Console. Escribe el código o una palabra para encontrar su página: "
           "causas, qué hacer, qué hace la estación.",
 }
 TITLE = {"fr": "Codes d'erreur", "en": "Error codes", "de": "Fehlercodes", "es": "Códigos de error"}
@@ -207,7 +207,7 @@ def _head(title: str, lang: str = "fr") -> list[str]:
 def _footer(up: str) -> list[str]:
     return ["<footer>",
             f'<p><a href="{up}">Tous les codes / All codes</a> · '
-            f'<a href="{up}../console/">TRX Console</a> · <a href="{up}../station-toml/">station.toml</a> · '
+            f'<a href="{up}../console/">openRemoteTRX Console</a> · <a href="{up}../station-toml/">station.toml</a> · '
             f'<a href="{base.REPO_URL}" target="_blank" rel="noopener noreferrer">code source</a> · '
             f'<a href="{base.SITE_URL}" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>',
             "</footer>"]
@@ -257,7 +257,7 @@ def render_index(data: dict) -> str:
     for code in sorted(codes, key=lambda c: (c.split("-")[0] != "ORT", c)):
         groups.setdefault(domain_of(code), []).append(code)
     names = lambda k: dict(zip(LANGS, domain_names(k, prefixes)))  # noqa: E731
-    out = _head("Codes d'erreur de TRX distant / Error codes") + ['<body class="l-fr">', "<main>",
+    out = _head("Codes d'erreur d'openRemoteTRX / Error codes") + ['<body class="l-fr">', "<main>",
            f"<h1>{_langs(TITLE)}</h1>",
            f'<p class="version">{len(codes)} codes · <span class="choix">'
            + " ".join(f'<button type="button" data-l="{lang}">{LANG_NAMES[lang]}</button>' for lang in LANGS) + "</span></p>",

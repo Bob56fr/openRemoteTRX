@@ -29,7 +29,7 @@ SERVICES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("rigctld", ("trxstation.run_rigctld", "rigctld")),
     ("passerelle", ("trxstation.gateway.main",)),
     ("superviseur", ("trxstation.supervisor.main",)),
-    ("autres trx", ("trxstation.",)),          # modules (Cluster DX…), trx-monitor, TRX Console
+    ("autres trx", ("trxstation.",)),          # modules (Cluster DX…), trx-monitor, openRemoteTRX Console
 )
 WHOLE_DISK = re.compile(r"^(mmcblk\d+|sd[a-z]+|nvme\d+n\d+|vd[a-z]+)$")
 # Bits de `vcgencmd get_throttled` (documentation Raspberry Pi) : 0-3 en ce moment, 16-19 depuis le démarrage.

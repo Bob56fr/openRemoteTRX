@@ -14,7 +14,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: "Station : en-tête de TRX Console. Application : écran de connexion."
+      description: "Station : en-tête d'openRemoteTRX Console. Application : écran de connexion."
       placeholder: "station 0.134.0 / application 0.63.0"
     validations:
       required: true
@@ -94,7 +94,7 @@ body:
     attributes:
       label: Journaux
       description: |
-        Extraits utiles du journal (TRX Console, menu 6.2). Le rapport de dépannage (menu 6.3) est un zip sans mot de passe : glissez-le dans la zone « Ce qui se passe » ci-dessus. Application Android : Réglages > « Signaler un problème ».
+        Extraits utiles du journal (openRemoteTRX Console, menu 6.2). Le rapport de dépannage (menu 6.3) est un zip sans mot de passe : glissez-le dans la zone « Ce qui se passe » ci-dessus. Application Android : Réglages > « Signaler un problème ».
       render: text
   - type: checkboxes
     id: confidentialite

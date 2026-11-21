@@ -624,7 +624,7 @@ ORT-1016:
   message: 'Erreur inattendue dans un écouteur ({partie}) : {erreur} ; la passerelle continue.'
   causes:
   - 'Défaut du programme (cas non prévu)'
-  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 de TRX Console).'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 d''openRemoteTRX Console).'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -635,19 +635,19 @@ ORT-1016:
     message: 'Unexpected error in a listener ({partie}): {erreur}; the gateway carries on.'
     causes:
     - 'Program defect (unforeseen case)'
-    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 6.3).'
+    preconisation: 'Report the problem with the troubleshooting report (openRemoteTRX Console menu 6.3).'
   de:
     titre: Unerwarteter Fehler in einem Listener des Gateways
     message: 'Unerwarteter Fehler in einem Listener ({partie}): {erreur}; das Gateway läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Fehlerbericht (Menü 6.3 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Fehlerbericht (Menü 6.3 von openRemoteTRX Console).
   es:
     titre: Error inesperado en un receptor de eventos de la pasarela
     message: 'Error inesperado en un receptor de eventos ({partie}): {erreur}; la pasarela sigue funcionando.'
     causes:
     - Fallo del programa (caso no previsto)
-    preconisation: Informa del problema con el informe de diagnóstico (menú 6.3 de TRX Console).
+    preconisation: Informa del problema con el informe de diagnóstico (menú 6.3 de openRemoteTRX Console).
 
 ORT-1017:
   gravite: avertissement
@@ -802,7 +802,7 @@ ORT-1503:
   message: 'Nouvelle version disponible : {version} (installée : {installee}).'
   causes:
   - Une version plus récente a été publiée
-  preconisation: 'TRX Console, menu 7.1 : lire les changements puis installer.'
+  preconisation: 'openRemoteTRX Console, menu 7.1 : lire les changements puis installer.'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -813,19 +813,19 @@ ORT-1503:
     message: 'New version available: {version} (installed: {installee}).'
     causes:
     - A newer version has been published
-    preconisation: 'TRX Console, menu 7.1: read the changes then install.'
+    preconisation: 'openRemoteTRX Console, menu 7.1: read the changes then install.'
   de:
     titre: Neue Version verfügbar
     message: 'Neue Version verfügbar: {version} (installiert: {installee}).'
     causes:
     - Eine neuere Version wurde veröffentlicht
-    preconisation: 'TRX Console, Menü 7.1: Lesen Sie die Änderungen und installieren Sie dann.'
+    preconisation: 'openRemoteTRX Console, Menü 7.1: Lesen Sie die Änderungen und installieren Sie dann.'
   es:
     titre: Nueva versión disponible
     message: 'Nueva versión disponible: {version} (instalada: {installee}).'
     causes:
     - Se ha publicado una versión más reciente
-    preconisation: 'TRX Console, menú 7.1: lee los cambios y luego instala.'
+    preconisation: 'openRemoteTRX Console, menú 7.1: lee los cambios y luego instala.'
 
 ORT-1504:
   gravite: avertissement
@@ -2760,7 +2760,7 @@ ORT-2312:
   - Poste pas en réception confirmée
   - Port impossible à ouvrir ou poste muet sur ce port
   - Module pyserial absent
-  preconisation: 'Arrêter la station (TRX Console), vérifier le second port et son réglage CI-V (débit, adresse,
+  preconisation: 'Arrêter la station (openRemoteTRX Console), vérifier le second port et son réglage CI-V (débit, adresse,
     CI-V USB Echo Back), puis : trx-setup --spectre PORT.'
   action_auto: refus
   ntfy_defaut: false
@@ -2775,7 +2775,7 @@ ORT-2312:
     - Radio not confirmed in receive
     - Port cannot be opened or radio silent on it
     - pyserial module missing
-    preconisation: 'Stop the station (TRX Console), check the second port and its CI-V setting (speed, address,
+    preconisation: 'Stop the station (openRemoteTRX Console), check the second port and its CI-V setting (speed, address,
       echo), then: trx-setup --spectre PORT.'
   de:
     titre: Prüfung des zweiten CI-V-Ports nicht möglich
@@ -2785,7 +2785,7 @@ ORT-2312:
     - Transceiver nicht bestätigt auf Empfang
     - Port lässt sich nicht öffnen oder Transceiver auf diesem Port stumm
     - Modul pyserial fehlt
-    preconisation: 'Stoppen Sie die Station (TRX Console), prüfen Sie den zweiten Port und seine CI-V-Einstellung (Baudrate,
+    preconisation: 'Stoppen Sie die Station (openRemoteTRX Console), prüfen Sie den zweiten Port und seine CI-V-Einstellung (Baudrate,
       Adresse, CI-V USB Echo Back), dann: trx-setup --spectre PORT.'
   es:
     titre: Imposible comprobar el segundo puerto CI-V
@@ -2795,7 +2795,7 @@ ORT-2312:
     - Equipo sin recepción confirmada
     - Puerto imposible de abrir o equipo mudo en este puerto
     - Módulo pyserial ausente
-    preconisation: 'Detén la estación (TRX Console), comprueba el segundo puerto y su ajuste CI-V (velocidad, dirección, CI-V
+    preconisation: 'Detén la estación (openRemoteTRX Console), comprueba el segundo puerto y su ajuste CI-V (velocidad, dirección, CI-V
       USB Echo Back) y luego: trx-setup --spectre PORT.'
 
 ORT-2313:
@@ -3497,9 +3497,9 @@ ORT-2805:
   titre: Allumage et extinction à distance non disponibles
   message: 'Allumage et extinction à distance non disponibles : {detail}.'
   causes:
-  - Fonction hors service sur la station (par défaut ; TRX Console, menu 2.8)
+  - Fonction hors service sur la station (par défaut ; openRemoteTRX Console, menu 2.8)
   - Poste qui ne déclare pas « set / get Power Stat » sous Hamlib
-  preconisation: Mettre la fonction en service au menu 2.8 de TRX Console, si le poste le permet.
+  preconisation: Mettre la fonction en service au menu 2.8 d'openRemoteTRX Console, si le poste le permet.
   action_auto: refus
   codes_machine:
   - power_disabled
@@ -3512,23 +3512,23 @@ ORT-2805:
     titre: Remote power on and off unavailable
     message: 'Remote power on and off unavailable: {detail}.'
     causes:
-    - Feature switched off on the station (default; TRX Console, menu 2.8)
+    - Feature switched off on the station (default; openRemoteTRX Console, menu 2.8)
     - Radio that does not declare « set / get Power Stat » in Hamlib
-    preconisation: Switch the feature on in TRX Console menu 2.8, if the radio allows it.
+    preconisation: Switch the feature on in openRemoteTRX Console menu 2.8, if the radio allows it.
   de:
     titre: Ein- und Ausschalten aus der Ferne nicht verfügbar
     message: 'Ein- und Ausschalten aus der Ferne nicht verfügbar: {detail}.'
     causes:
-    - Funktion auf der Station außer Betrieb (Standard; TRX Console, Menü 2.8)
+    - Funktion auf der Station außer Betrieb (Standard; openRemoteTRX Console, Menü 2.8)
     - Transceiver gibt unter Hamlib „set / get Power Stat“ nicht an
-    preconisation: Nehmen Sie die Funktion in Menü 2.8 von TRX Console in Betrieb, wenn der Transceiver es erlaubt.
+    preconisation: Nehmen Sie die Funktion in Menü 2.8 von openRemoteTRX Console in Betrieb, wenn der Transceiver es erlaubt.
   es:
     titre: Encendido y apagado a distancia no disponibles
     message: 'Encendido y apagado a distancia no disponibles: {detail}.'
     causes:
-    - Función desactivada en la estación (por defecto; TRX Console, menú 2.8)
+    - Función desactivada en la estación (por defecto; openRemoteTRX Console, menú 2.8)
     - Equipo que no declara «set / get Power Stat» en Hamlib
-    preconisation: Activa la función en el menú 2.8 de TRX Console, si el equipo lo permite.
+    preconisation: Activa la función en el menú 2.8 de openRemoteTRX Console, si el equipo lo permite.
 
 ORT-2806:
   gravite: info
@@ -3654,7 +3654,7 @@ ORT-2809:
   - Câble USB du poste débranché
   - Poste branché sur une autre prise USB (Windows lui donne un autre numéro COM)
   - Autre appareil sur le port de station.toml
-  preconisation: Rebrancher le poste, ou refaire le menu 2.5 de TRX Console pour choisir le bon port ; aucun port
+  preconisation: Rebrancher le poste, ou refaire le menu 2.5 d'openRemoteTRX Console pour choisir le bon port ; aucun port
     n'est ouvert tant que ce n'est pas réglé.
   action_auto: refus
   codes_machine:
@@ -3673,7 +3673,7 @@ ORT-2809:
     - Radio USB cable unplugged
     - Radio plugged into another USB socket (Windows gives it another COM number)
     - Another device on the station.toml port
-    preconisation: Plug the radio back in, or redo TRX Console menu 2.5 to choose the right port; no port is opened
+    preconisation: Plug the radio back in, or redo openRemoteTRX Console menu 2.5 to choose the right port; no port is opened
       until this is fixed.
   de:
     titre: Serieller Port des Transceivers vor dem Einschalten zu prüfen
@@ -3682,7 +3682,7 @@ ORT-2809:
     - USB-Kabel des Transceivers abgezogen
     - Transceiver an einer anderen USB-Buchse angeschlossen (Windows vergibt eine andere COM-Nummer)
     - Anderes Gerät am Port aus station.toml
-    preconisation: Schließen Sie den Transceiver wieder an oder führen Sie Menü 2.5 von TRX Console erneut aus, um den richtigen
+    preconisation: Schließen Sie den Transceiver wieder an oder führen Sie Menü 2.5 von openRemoteTRX Console erneut aus, um den richtigen
       Port zu wählen; solange das nicht eingestellt ist, wird kein Port geöffnet.
   es:
     titre: Puerto serie del equipo a comprobar antes del encendido
@@ -3691,7 +3691,7 @@ ORT-2809:
     - Cable USB del equipo desconectado
     - Equipo conectado a otra toma USB (Windows le da otro número COM)
     - Otro aparato en el puerto de station.toml
-    preconisation: Vuelve a conectar el equipo, o rehaz el menú 2.5 de TRX Console para elegir el puerto correcto; no se abre
+    preconisation: Vuelve a conectar el equipo, o rehaz el menú 2.5 de openRemoteTRX Console para elegir el puerto correcto; no se abre
       ningún puerto mientras no esté ajustado.
 
 ORT-2810:
@@ -4179,7 +4179,7 @@ ORT-3012:
   - 'Nom de la carte changé (autre prise USB, pilote mis à jour) : le nom de station.toml ne correspond plus'
   - Carte tenue par un autre logiciel (son du bureau, WSJT-X)
   preconisation: Rebrancher ou allumer le poste ; la station reprend toute seule. Si le message reste, choisir de
-    nouveau les cartes son (TRX Console, menu 2.6).
+    nouveau les cartes son (openRemoteTRX Console, menu 2.6).
   action_auto: refus
   codes_machine:
   - audio_missing
@@ -4196,7 +4196,7 @@ ORT-3012:
     - 'Card name changed (other USB socket, driver update): the name in station.toml no longer matches'
     - Card held by another program (desktop audio, WSJT-X)
     preconisation: Plug in or switch on the radio; the station recovers by itself. If the message stays, choose the
-      sound cards again (TRX Console, menu 2.6).
+      sound cards again (openRemoteTRX Console, menu 2.6).
   de:
     titre: Soundkarte des Transceivers fehlt
     message: 'Soundkarte des Transceivers fehlt: {detail}. Senden abgelehnt; die Station sucht sie alle 5 s.'
@@ -4205,7 +4205,7 @@ ORT-3012:
     - 'Name der Karte geändert (andere USB-Buchse, Treiber aktualisiert): Der Name in station.toml stimmt nicht mehr'
     - Karte von einer anderen Software belegt (Desktop-Ton, WSJT-X)
     preconisation: Schließen Sie den Transceiver wieder an oder schalten Sie ihn ein; die Station macht von selbst weiter.
-      Bleibt die Meldung, wählen Sie die Soundkarten erneut (TRX Console, Menü 2.6).
+      Bleibt die Meldung, wählen Sie die Soundkarten erneut (openRemoteTRX Console, Menü 2.6).
   es:
     titre: Tarjeta de sonido del equipo ausente
     message: 'Tarjeta de sonido del equipo ausente: {detail}. Transmisión rechazada; la estación la busca cada 5 s.'
@@ -4214,7 +4214,7 @@ ORT-3012:
     - 'Nombre de la tarjeta cambiado (otra toma USB, controlador actualizado): el nombre de station.toml ya no coincide'
     - Tarjeta ocupada por otro programa (audio del escritorio, WSJT-X)
     preconisation: Vuelve a conectar o enciende el equipo; la estación se recupera sola. Si el mensaje persiste, vuelve a
-      elegir las tarjetas de sonido (TRX Console, menú 2.6).
+      elegir las tarjetas de sonido (openRemoteTRX Console, menú 2.6).
 
 ORT-3013:
   gravite: info
@@ -4299,7 +4299,7 @@ ORT-4002:
   - Fichier visitor-kick.json illisible, mal formé ou impossible à effacer
   - Demande de plus de 10 s (horloge, console lente)
   - Identifiant qui n'est pas un visiteur connecté
-  preconisation: Refaire la demande depuis TRX Console menu 4.2 ; vérifier les droits du dossier d'état.
+  preconisation: Refaire la demande depuis openRemoteTRX Console menu 4.2 ; vérifier les droits du dossier d'état.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -4312,7 +4312,7 @@ ORT-4002:
     - visitor-kick.json unreadable, malformed or cannot be deleted
     - Request older than 10 s (clock, slow console)
     - Identifier is not a connected listener
-    preconisation: Repeat the request from TRX Console menu 4.2; check the state folder permissions.
+    preconisation: Repeat the request from openRemoteTRX Console menu 4.2; check the state folder permissions.
   de:
     titre: Trennungsanforderung eines Besuchers ignoriert
     message: 'Trennungsanforderung ignoriert: {raison}.'
@@ -4320,7 +4320,7 @@ ORT-4002:
     - Datei visitor-kick.json unlesbar, fehlerhaft oder nicht löschbar
     - Anforderung älter als 10 s (Uhr, langsame Konsole)
     - Kennung gehört keinem verbundenen Besucher
-    preconisation: Stellen Sie die Anforderung erneut aus TRX Console Menü 4.2; prüfen Sie die Rechte des Statusordners.
+    preconisation: Stellen Sie die Anforderung erneut aus openRemoteTRX Console Menü 4.2; prüfen Sie die Rechte des Statusordners.
   es:
     titre: Petición de desconexión de un visitante ignorada
     message: 'Petición de desconexión ignorada: {raison}.'
@@ -4328,7 +4328,7 @@ ORT-4002:
     - Archivo visitor-kick.json ilegible, mal formado o imposible de borrar
     - Petición de hace más de 10 s (reloj, consola lenta)
     - Identificador que no es un visitante conectado
-    preconisation: Rehaz la petición desde el menú 4.2 de TRX Console; comprueba los permisos de la carpeta de estado.
+    preconisation: Rehaz la petición desde el menú 4.2 de openRemoteTRX Console; comprueba los permisos de la carpeta de estado.
 
 ORT-4003:
   gravite: info
@@ -4381,7 +4381,7 @@ ORT-4004:
   - 'Proxy inverse non déclaré dans [network] trusted_proxies : tous les clients semblent venir de la même adresse
     et se verrouillent ensemble'
   - Tentative d'intrusion
-  preconisation: 'Vérifier l''identifiant et le mot de passe (TRX Console) ; attendre une minute après plusieurs
+  preconisation: 'Vérifier l''identifiant et le mot de passe (openRemoteTRX Console) ; attendre une minute après plusieurs
     échecs ; derrière un proxy, le déclarer dans trusted_proxies. Des refus répétés d''adresses inconnues = port
     exposé sondé : préférer un VPN.'
   action_auto: refus
@@ -4400,7 +4400,7 @@ ORT-4004:
     - 'Reverse proxy not listed in [network] trusted_proxies: all clients seem to share one address and get locked
       together'
     - Intrusion attempt
-    preconisation: 'Check login and password (TRX Console); wait a minute after several failures; behind a proxy,
+    preconisation: 'Check login and password (openRemoteTRX Console); wait a minute after several failures; behind a proxy,
       list it in trusted_proxies. Repeated refusals from unknown addresses = exposed port being probed: prefer a
       VPN.'
   de:
@@ -4412,7 +4412,7 @@ ORT-4004:
     - 'Reverse-Proxy nicht in [network] trusted_proxies eingetragen: Alle Clients scheinen von derselben Adresse zu kommen
       und werden gemeinsam gesperrt'
     - Einbruchsversuch
-    preconisation: 'Prüfen Sie Benutzername und Passwort (TRX Console); warten Sie nach mehreren Fehlschlägen eine Minute;
+    preconisation: 'Prüfen Sie Benutzername und Passwort (openRemoteTRX Console); warten Sie nach mehreren Fehlschlägen eine Minute;
       hinter einem Proxy tragen Sie ihn in trusted_proxies ein. Wiederholte Ablehnungen unbekannter Adressen = offener Port
       wird abgetastet: bevorzugen Sie ein VPN.'
   es:
@@ -4424,7 +4424,7 @@ ORT-4004:
     - 'Proxy inverso no declarado en [network] trusted_proxies: todos los clientes parecen venir de la misma dirección y se
       bloquean juntos'
     - Intento de intrusión
-    preconisation: 'Comprueba el usuario y la contraseña (TRX Console); espera un minuto tras varios fallos; detrás de un
+    preconisation: 'Comprueba el usuario y la contraseña (openRemoteTRX Console); espera un minuto tras varios fallos; detrás de un
       proxy, decláralo en trusted_proxies. Rechazos repetidos desde direcciones desconocidas = puerto expuesto sondeado: mejor
       usa una VPN.'
 
@@ -4515,7 +4515,7 @@ ORT-4007:
   titre: Compte désactivé ou expiré
   message: 'Compte « {compte} » {etat} sur la station : connexion refusée ou fermée.'
   causes:
-  - Compte désactivé par l'administrateur de la station (TRX Console menu 4.2)
+  - Compte désactivé par l'administrateur de la station (openRemoteTRX Console menu 4.2)
   - Date d'expiration du compte dépassée
   preconisation: Demander à l'administrateur de la station de réactiver ou prolonger le compte.
   action_auto: refus
@@ -4530,21 +4530,21 @@ ORT-4007:
     titre: Account disabled or expired
     message: 'Account "{compte}" {etat} on the station: connection refused or closed.'
     causes:
-    - Account disabled by the station administrator (TRX Console menu 4.2)
+    - Account disabled by the station administrator (openRemoteTRX Console menu 4.2)
     - Account expiry date passed
     preconisation: Ask the station administrator to re-enable or extend the account.
   de:
     titre: Konto deaktiviert oder abgelaufen
     message: 'Konto „{compte}“ auf der Station {etat}: Verbindung abgelehnt oder geschlossen.'
     causes:
-    - Konto vom Administrator der Station deaktiviert (TRX Console Menü 4.2)
+    - Konto vom Administrator der Station deaktiviert (openRemoteTRX Console Menü 4.2)
     - Ablaufdatum des Kontos überschritten
     preconisation: Bitten Sie den Administrator der Station, das Konto wieder zu aktivieren oder zu verlängern.
   es:
     titre: Cuenta desactivada o caducada
     message: 'Cuenta «{compte}» {etat} en la estación: conexión rechazada o cerrada.'
     causes:
-    - Cuenta desactivada por el administrador de la estación (menú 4.2 de TRX Console)
+    - Cuenta desactivada por el administrador de la estación (menú 4.2 de openRemoteTRX Console)
     - Fecha de caducidad de la cuenta superada
     preconisation: Pide al administrador de la estación que reactive o prolongue la cuenta.
 
@@ -4670,7 +4670,7 @@ ORT-4011:
   causes:
   - Client plus récent que la station
   - Client qui n'a pas vérifié hello.features avant d'afficher une fonction
-  preconisation: Mettre à jour la station (TRX Console menu 7.1) ou utiliser une version du client compatible.
+  preconisation: Mettre à jour la station (openRemoteTRX Console menu 7.1) ou utiliser une version du client compatible.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -4684,21 +4684,21 @@ ORT-4011:
     causes:
     - Client newer than the station
     - Client did not check hello.features before showing a feature
-    preconisation: Update the station (TRX Console menu 7.1) or use a compatible client version.
+    preconisation: Update the station (openRemoteTRX Console menu 7.1) or use a compatible client version.
   de:
     titre: Befehl der Station unbekannt
     message: Befehl „{commande}“ dieser Station unbekannt (Version {version}).
     causes:
     - Client neuer als die Station
     - Client hat hello.features nicht geprüft, bevor er eine Funktion anzeigt
-    preconisation: Aktualisieren Sie die Station (TRX Console Menü 7.1) oder verwenden Sie eine kompatible Version des Clients.
+    preconisation: Aktualisieren Sie die Station (openRemoteTRX Console Menü 7.1) oder verwenden Sie eine kompatible Version des Clients.
   es:
     titre: Comando desconocido para la estación
     message: Comando «{commande}» desconocido para esta estación (versión {version}).
     causes:
     - Cliente más reciente que la estación
     - Cliente que no ha comprobado hello.features antes de mostrar una función
-    preconisation: Actualiza la estación (menú 7.1 de TRX Console) o usa una versión del cliente compatible.
+    preconisation: Actualiza la estación (menú 7.1 de openRemoteTRX Console) o usa una versión del cliente compatible.
 
 ORT-4012:
   gravite: info
@@ -4909,42 +4909,42 @@ ORT-4016:
 
 ORT-4017:
   gravite: info
-  titre: Demande de TRX Console ignorée
-  message: 'Demande de {demande} de TRX Console {motif} : ignorée.'
+  titre: Demande d'openRemoteTRX Console ignorée
+  message: 'Demande de {demande} d''openRemoteTRX Console {motif} : ignorée.'
   causes:
   - Fichier de demande illisible ou mal formé
   - Demande de plus de 10 s (passerelle arrêtée au moment de la demande)
   - Visiteur déjà parti
-  preconisation: Refaire la demande depuis TRX Console pendant que la passerelle tourne.
+  preconisation: Refaire la demande depuis openRemoteTRX Console pendant que la passerelle tourne.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4017/
   depuis_version: 0.123.0
   en:
-    titre: TRX Console request ignored
-    message: '{demande} request from TRX Console {motif}: ignored.'
+    titre: openRemoteTRX Console request ignored
+    message: '{demande} request from openRemoteTRX Console {motif}: ignored.'
     causes:
     - Request file unreadable or malformed
     - Request older than 10 s (gateway stopped at the time)
     - Listener already gone
-    preconisation: Repeat the request from TRX Console while the gateway is running.
+    preconisation: Repeat the request from openRemoteTRX Console while the gateway is running.
   de:
-    titre: Anforderung von TRX Console ignoriert
-    message: 'Anforderung ({demande}) von TRX Console {motif}: ignoriert.'
+    titre: Anforderung von openRemoteTRX Console ignoriert
+    message: 'Anforderung ({demande}) von openRemoteTRX Console {motif}: ignoriert.'
     causes:
     - Anforderungsdatei unlesbar oder fehlerhaft
     - Anforderung älter als 10 s (Gateway zum Zeitpunkt der Anforderung gestoppt)
     - Besucher bereits gegangen
-    preconisation: Stellen Sie die Anforderung erneut aus TRX Console, während das Gateway läuft.
+    preconisation: Stellen Sie die Anforderung erneut aus openRemoteTRX Console, während das Gateway läuft.
   es:
-    titre: Petición de TRX Console ignorada
-    message: 'Petición de {demande} de TRX Console {motif}: ignorada.'
+    titre: Petición de openRemoteTRX Console ignorada
+    message: 'Petición de {demande} de openRemoteTRX Console {motif}: ignorada.'
     causes:
     - Archivo de petición ilegible o mal formado
     - Petición de hace más de 10 s (pasarela detenida en el momento de la petición)
     - Visitante que ya se ha ido
-    preconisation: Rehaz la petición desde TRX Console mientras la pasarela esté en marcha.
+    preconisation: Rehaz la petición desde openRemoteTRX Console mientras la pasarela esté en marcha.
 
 ORT-4018:
   gravite: erreur
@@ -4952,7 +4952,7 @@ ORT-4018:
   message: 'Session d''un client : erreur inattendue ({erreur}) ; la station continue.'
   causes:
   - Défaut du programme (cas non prévu)
-  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  preconisation: Signaler le problème avec le journal de la station (menu 8 d'openRemoteTRX Console).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -4967,19 +4967,19 @@ ORT-4018:
     message: 'Client session: unexpected error ({erreur}); the station carries on.'
     causes:
     - Program defect (unforeseen case)
-    preconisation: Report the problem with the station log (TRX Console menu 8).
+    preconisation: Report the problem with the station log (openRemoteTRX Console menu 8).
   de:
     titre: 'Unerwarteter Fehler: Sitzung eines Clients'
     message: 'Sitzung eines Clients: unerwarteter Fehler ({erreur}); die Station läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: sesión de un cliente'
     message: 'Sesión de un cliente: error inesperado ({erreur}); la estación sigue funcionando.'
     causes:
     - Fallo del programa (caso no previsto)
-    preconisation: Informa del problema con el registro de la estación (menú 8 de TRX Console).
+    preconisation: Informa del problema con el registro de la estación (menú 8 de openRemoteTRX Console).
 
 ORT-4019:
   gravite: info
@@ -5092,10 +5092,10 @@ ORT-4021:
 
 ORT-4022:
   gravite: info
-  titre: 'Connexion à TRX Console sur le réseau'
-  message: '{compte} s''est connecté à TRX Console depuis {source}.'
+  titre: 'Connexion à openRemoteTRX Console sur le réseau'
+  message: '{compte} s''est connecté à openRemoteTRX Console depuis {source}.'
   causes:
-  - 'Un opérateur administrateur a ouvert TRX Console dans son navigateur'
+  - 'Un opérateur administrateur a ouvert openRemoteTRX Console dans son navigateur'
   preconisation: 'Rien à faire si c''est toi. Sinon : change tout de suite le mot de passe de ce compte (menu 4.3) et retire-lui le droit d''administration (menu 4.6).'
   action_auto: aucune
   ntfy_defaut: true
@@ -5103,30 +5103,30 @@ ORT-4022:
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4022/
   depuis_version: 0.178.0
   en:
-    titre: 'TRX Console network login'
-    message: '{compte} logged in to TRX Console from {source}.'
+    titre: 'openRemoteTRX Console network login'
+    message: '{compte} logged in to openRemoteTRX Console from {source}.'
     causes:
-    - 'An administrator operator opened TRX Console in their browser'
+    - 'An administrator operator opened openRemoteTRX Console in their browser'
     preconisation: 'Nothing to do if it was you. Otherwise: change this account password at once (menu 4.3) and remove its administration right (menu 4.6).'
   de:
-    titre: Verbindung mit TRX Console über das Netzwerk
-    message: '{compte} hat sich von {source} aus mit TRX Console verbunden.'
+    titre: Verbindung mit openRemoteTRX Console über das Netzwerk
+    message: '{compte} hat sich von {source} aus mit openRemoteTRX Console verbunden.'
     causes:
-    - Ein Operator mit Administratorrechten hat TRX Console in seinem Browser geöffnet
+    - Ein Operator mit Administratorrechten hat openRemoteTRX Console in seinem Browser geöffnet
     preconisation: 'Nichts zu tun, wenn Sie es waren. Andernfalls: Ändern Sie sofort das Passwort dieses Kontos (Menü 4.3)
       und entziehen Sie ihm die Administratorrechte (Menü 4.6).'
   es:
-    titre: Conexión a TRX Console por la red
-    message: '{compte} se ha conectado a TRX Console desde {source}.'
+    titre: Conexión a openRemoteTRX Console por la red
+    message: '{compte} se ha conectado a openRemoteTRX Console desde {source}.'
     causes:
-    - Un operador administrador ha abierto TRX Console en su navegador
+    - Un operador administrador ha abierto openRemoteTRX Console en su navegador
     preconisation: 'Nada que hacer si eres tú. Si no: cambia enseguida la contraseña de esa cuenta (menú 4.3) y quítale el
       permiso de administración (menú 4.6).'
 
 ORT-4023:
   gravite: avertissement
-  titre: 'Connexions à TRX Console bloquées'
-  message: 'Trop d''échecs de connexion à TRX Console depuis {source} : connexions refusées pendant {minutes} minutes.'
+  titre: 'Connexions à openRemoteTRX Console bloquées'
+  message: 'Trop d''échecs de connexion à openRemoteTRX Console depuis {source} : connexions refusées pendant {minutes} minutes.'
   causes:
   - 'Mot de passe oublié ou mal tapé plusieurs fois'
   - 'Quelqu''un essaie de deviner un mot de passe sur le réseau'
@@ -5137,23 +5137,23 @@ ORT-4023:
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4023/
   depuis_version: 0.178.0
   en:
-    titre: 'TRX Console logins blocked'
-    message: 'Too many failed TRX Console logins from {source}: logins refused for {minutes} minutes.'
+    titre: 'openRemoteTRX Console logins blocked'
+    message: 'Too many failed openRemoteTRX Console logins from {source}: logins refused for {minutes} minutes.'
     causes:
     - 'Password forgotten or mistyped several times'
     - 'Someone is trying to guess a password on the network'
     preconisation: 'If it was not you: check who can reach your network or VPN, and change the administrator account passwords (menu 4.3).'
   de:
-    titre: Verbindungen mit TRX Console gesperrt
-    message: 'Zu viele fehlgeschlagene Verbindungen mit TRX Console von {source}: Verbindungen für {minutes} Minuten abgelehnt.'
+    titre: Verbindungen mit openRemoteTRX Console gesperrt
+    message: 'Zu viele fehlgeschlagene Verbindungen mit openRemoteTRX Console von {source}: Verbindungen für {minutes} Minuten abgelehnt.'
     causes:
     - Passwort vergessen oder mehrmals falsch eingegeben
     - Jemand versucht, ein Passwort im Netzwerk zu erraten
     preconisation: 'Wenn Sie es nicht waren: Prüfen Sie, wer Zugang zu Ihrem Netzwerk oder Ihrem VPN hat, und ändern Sie die
       Passwörter der Administratorkonten (Menü 4.3).'
   es:
-    titre: Conexiones a TRX Console bloqueadas
-    message: 'Demasiados fallos de conexión a TRX Console desde {source}: conexiones rechazadas durante {minutes} minutos.'
+    titre: Conexiones a openRemoteTRX Console bloqueadas
+    message: 'Demasiados fallos de conexión a openRemoteTRX Console desde {source}: conexiones rechazadas durante {minutes} minutos.'
     causes:
     - Contraseña olvidada o mal escrita varias veces
     - Alguien intenta adivinar una contraseña en la red
@@ -5162,39 +5162,39 @@ ORT-4023:
 
 ORT-4024:
   gravite: erreur
-  titre: 'TRX Console sur le réseau non démarrée'
-  message: 'TRX Console sur le réseau n''a pas démarré : {raison}.'
+  titre: 'openRemoteTRX Console sur le réseau non démarrée'
+  message: 'openRemoteTRX Console sur le réseau n''a pas démarré : {raison}.'
   causes:
   - 'Pas de certificat HTTPS, ou certificat illisible par le compte de la console'
   - 'Port déjà pris, configuration invalide ou service arrêté dans le menu 4.6'
-  preconisation: 'Ouvre le menu 4.6 sur la station (TRX Console) : il vérifie le certificat (menu 4.4), le port et le compte, puis relance le service.'
+  preconisation: 'Ouvre le menu 4.6 sur la station (openRemoteTRX Console) : il vérifie le certificat (menu 4.4), le port et le compte, puis relance le service.'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4024/
   depuis_version: 0.178.0
   en:
-    titre: 'TRX Console on the network not started'
-    message: 'TRX Console on the network did not start: {raison}.'
+    titre: 'openRemoteTRX Console on the network not started'
+    message: 'openRemoteTRX Console on the network did not start: {raison}.'
     causes:
     - 'No HTTPS certificate, or certificate unreadable by the console account'
     - 'Port already taken, invalid configuration or service stopped in menu 4.6'
-    preconisation: 'Open menu 4.6 on the station (TRX Console): it checks the certificate (menu 4.4), the port and the account, then restarts the service.'
+    preconisation: 'Open menu 4.6 on the station (openRemoteTRX Console): it checks the certificate (menu 4.4), the port and the account, then restarts the service.'
   de:
-    titre: TRX Console über das Netzwerk nicht gestartet
-    message: 'TRX Console über das Netzwerk ist nicht gestartet: {raison}.'
+    titre: openRemoteTRX Console über das Netzwerk nicht gestartet
+    message: 'openRemoteTRX Console über das Netzwerk ist nicht gestartet: {raison}.'
     causes:
     - Kein HTTPS-Zertifikat, oder Zertifikat für das Konto der Konsole nicht lesbar
     - Port bereits belegt, ungültige Konfiguration oder Dienst in Menü 4.6 gestoppt
-    preconisation: 'Öffnen Sie Menü 4.6 auf der Station (TRX Console): Es prüft das Zertifikat (Menü 4.4), den Port und das
+    preconisation: 'Öffnen Sie Menü 4.6 auf der Station (openRemoteTRX Console): Es prüft das Zertifikat (Menü 4.4), den Port und das
       Konto und startet den Dienst neu.'
   es:
-    titre: TRX Console por la red no iniciada
-    message: 'TRX Console por la red no se ha iniciado: {raison}.'
+    titre: openRemoteTRX Console por la red no iniciada
+    message: 'openRemoteTRX Console por la red no se ha iniciado: {raison}.'
     causes:
     - Sin certificado HTTPS, o certificado ilegible para la cuenta de la consola
     - Puerto ya ocupado, configuración no válida o servicio detenido en el menú 4.6
-    preconisation: 'Abre el menú 4.6 en la estación (TRX Console): comprueba el certificado (menú 4.4), el puerto y la cuenta,
+    preconisation: 'Abre el menú 4.6 en la estación (openRemoteTRX Console): comprueba el certificado (menú 4.4), el puerto y la cuenta,
       y reinicia el servicio.'
 
 ORT-4101:
@@ -5290,7 +5290,7 @@ ORT-4103:
   - Rôle inconnu (une faute de frappe ne donne jamais un compte opérateur)
   - Pseudo invalide ou égal à l'identifiant d'un compte
   - Date d'expiration mal écrite
-  preconisation: Corriger le compte par TRX Console (menus 8.1 et 4.2) ou par trx-setup --set-password / --add-client.
+  preconisation: Corriger le compte par openRemoteTRX Console (menus 8.1 et 4.2) ou par trx-setup --set-password / --add-client.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -5306,7 +5306,7 @@ ORT-4103:
     - Unknown role (a typo never grants an operator account)
     - Invalid nickname, or nickname equal to an account login
     - Badly written expiry date
-    preconisation: Fix the account with TRX Console (menus 8.1 and 4.2) or with trx-setup --set-password / --add-client.
+    preconisation: Fix the account with openRemoteTRX Console (menus 8.1 and 4.2) or with trx-setup --set-password / --add-client.
   de:
     titre: Zugangskonto falsch definiert
     message: '[[clients]] {compte}: {probleme}.'
@@ -5317,7 +5317,7 @@ ORT-4103:
     - Unbekannte Rolle (ein Tippfehler ergibt nie ein Operatorkonto)
     - Anzeigename ungültig oder gleich dem Benutzernamen eines Kontos
     - Ablaufdatum falsch geschrieben
-    preconisation: Korrigieren Sie das Konto über TRX Console (Menüs 8.1 und 4.2) oder mit trx-setup --set-password / --add-client.
+    preconisation: Korrigieren Sie das Konto über openRemoteTRX Console (Menüs 8.1 und 4.2) oder mit trx-setup --set-password / --add-client.
   es:
     titre: Cuenta de acceso mal definida
     message: '[[clients]] {compte}: {probleme}.'
@@ -5328,7 +5328,7 @@ ORT-4103:
     - Rol desconocido (un error de escritura nunca da una cuenta de operador)
     - Seudónimo no válido o igual al usuario de una cuenta
     - Fecha de caducidad mal escrita
-    preconisation: Corrige la cuenta con TRX Console (menús 8.1 y 4.2) o con trx-setup --set-password / --add-client.
+    preconisation: Corrige la cuenta con openRemoteTRX Console (menús 8.1 y 4.2) o con trx-setup --set-password / --add-client.
 
 ORT-4104:
   gravite: avertissement
@@ -5520,7 +5520,7 @@ ORT-4301:
   causes:
   - '[access] max_listeners = 0 dans station.toml'
   - Fonction coupée pendant que des visiteurs écoutaient (déconnectés)
-  preconisation: 'Administrateur : régler max_listeners (TRX Console menu 4.2) si l''écoute des visiteurs est voulue.'
+  preconisation: 'Administrateur : régler max_listeners (openRemoteTRX Console menu 4.2) si l''écoute des visiteurs est voulue.'
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -5534,14 +5534,14 @@ ORT-4301:
     causes:
     - '[access] max_listeners = 0 in station.toml'
     - Feature turned off while listeners were connected (disconnected)
-    preconisation: 'Administrator: set max_listeners (TRX Console menu 4.2) if listener access is wanted.'
+    preconisation: 'Administrator: set max_listeners (openRemoteTRX Console menu 4.2) if listener access is wanted.'
   de:
     titre: Besucherempfang auf der Station abgeschaltet
     message: Der Besucherempfang ist auf dieser Station nicht geöffnet.
     causes:
     - '[access] max_listeners = 0 in station.toml'
     - Funktion abgeschaltet, während Besucher zuhörten (getrennt)
-    preconisation: 'Administrator: Stellen Sie max_listeners ein (TRX Console Menü 4.2), wenn der Besucherempfang gewünscht
+    preconisation: 'Administrator: Stellen Sie max_listeners ein (openRemoteTRX Console Menü 4.2), wenn der Besucherempfang gewünscht
       ist.'
   es:
     titre: Escucha de los visitantes desactivada en la estación
@@ -5549,7 +5549,7 @@ ORT-4301:
     causes:
     - '[access] max_listeners = 0 en station.toml'
     - Función desactivada mientras había visitantes escuchando (desconectados)
-    preconisation: 'Administrador: ajusta max_listeners (menú 4.2 de TRX Console) si quieres la escucha de los visitantes.'
+    preconisation: 'Administrador: ajusta max_listeners (menú 4.2 de openRemoteTRX Console) si quieres la escucha de los visitantes.'
 
 ORT-4302:
   gravite: info
@@ -5660,7 +5660,7 @@ ORT-4305:
   message: Visiteur {visiteur} déconnecté par {par}.
   causes:
   - Opérateur qui a touché « Déconnecter » (page, application)
-  - Déconnexion demandée par TRX Console (menu 4.2)
+  - Déconnexion demandée par openRemoteTRX Console (menu 4.2)
   preconisation: Aucune.
   action_auto: refus
   ntfy_defaut: false
@@ -5674,21 +5674,21 @@ ORT-4305:
     message: Listener {visiteur} disconnected by {par}.
     causes:
     - Operator pressed "Disconnect" (page, app)
-    - Disconnection requested from TRX Console (menu 4.2)
+    - Disconnection requested from openRemoteTRX Console (menu 4.2)
     preconisation: None.
   de:
     titre: Besucher vom Operator getrennt
     message: Besucher {visiteur} von {par} getrennt.
     causes:
     - Operator hat „Trennen“ angetippt (Seite, App)
-    - Trennung von TRX Console angefordert (Menü 4.2)
+    - Trennung von openRemoteTRX Console angefordert (Menü 4.2)
     preconisation: Keine.
   es:
     titre: Visitante desconectado por el operador
     message: Visitante {visiteur} desconectado por {par}.
     causes:
     - Operador que ha tocado «Desconectar» (página, aplicación)
-    - Desconexión pedida por TRX Console (menú 4.2)
+    - Desconexión pedida por openRemoteTRX Console (menú 4.2)
     preconisation: Ninguna.
 
 ORT-4306:
@@ -5732,7 +5732,7 @@ ORT-4307:
   causes:
   - Client visiteur modifié qui essaie de commander le poste
   - Client défectueux en boucle
-  preconisation: Vérifier le compte visiteur concerné ; le désactiver (TRX Console menu 4.2) si c'est une tentative
+  preconisation: Vérifier le compte visiteur concerné ; le désactiver (openRemoteTRX Console menu 4.2) si c'est une tentative
     d'abus.
   action_auto: refus
   ntfy_defaut: true
@@ -5748,7 +5748,7 @@ ORT-4307:
     causes:
     - Modified listener client trying to control the rig
     - Faulty client in a loop
-    preconisation: Check the listener account; disable it (TRX Console menu 4.2) if it is an abuse attempt.
+    preconisation: Check the listener account; disable it (openRemoteTRX Console menu 4.2) if it is an abuse attempt.
   de:
     titre: 'Besucher getrennt: zu viele abgelehnte Befehle'
     message: 'Der Besucher {visiteur} hat in einer Minute mehr als {max} abgelehnte Befehle gesendet (veränderter Client?):
@@ -5756,7 +5756,7 @@ ORT-4307:
     causes:
     - Veränderter Besucher-Client, der versucht, den Transceiver zu steuern
     - Fehlerhafter Client in einer Schleife
-    preconisation: Prüfen Sie das betroffene Besucherkonto; deaktivieren Sie es (TRX Console Menü 4.2), wenn es ein Missbrauchsversuch
+    preconisation: Prüfen Sie das betroffene Besucherkonto; deaktivieren Sie es (openRemoteTRX Console Menü 4.2), wenn es ein Missbrauchsversuch
       ist.
   es:
     titre: 'Visitante desconectado: demasiados comandos rechazados'
@@ -5765,7 +5765,7 @@ ORT-4307:
     causes:
     - Cliente visitante modificado que intenta controlar el equipo
     - Cliente defectuoso en bucle
-    preconisation: Comprueba la cuenta de visitante afectada; desactívala (menú 4.2 de TRX Console) si es un intento de abuso.
+    preconisation: Comprueba la cuenta de visitante afectada; desactívala (menú 4.2 de openRemoteTRX Console) si es un intento de abuso.
 
 ORT-4308:
   gravite: erreur
@@ -5829,7 +5829,7 @@ ORT-4309:
   message: 'Trop de coupures en une heure ({n}) : l''opérateur doit rouvrir l''écoute des visiteurs.'
   causes:
   - 3 coupures pour surcharge en une heure ayant déconnecté des visiteurs
-  preconisation: Corriger la cause de la surcharge puis rouvrir à la main (page de l'opérateur ou TRX Console menu
+  preconisation: Corriger la cause de la surcharge puis rouvrir à la main (page de l'opérateur ou openRemoteTRX Console menu
     4.2), acceptée seulement au vert.
   action_auto: arreter_ecoute_visiteurs
   ntfy_defaut: false
@@ -5843,7 +5843,7 @@ ORT-4309:
     message: 'Too many cuts within one hour ({n}): the operator must reopen listener access.'
     causes:
     - 3 overload cuts within one hour that disconnected listeners
-    preconisation: Fix the overload cause then reopen by hand (operator page or TRX Console menu 4.2), accepted only
+    preconisation: Fix the overload cause then reopen by hand (operator page or openRemoteTRX Console menu 4.2), accepted only
       when back to normal.
   de:
     titre: Besucherempfang nach wiederholter Überlastung gesperrt
@@ -5857,7 +5857,7 @@ ORT-4309:
     message: 'Demasiados cortes en una hora ({n}): el operador debe reabrir la escucha de los visitantes.'
     causes:
     - 3 cortes por sobrecarga en una hora que han desconectado a visitantes
-    preconisation: Corrige la causa de la sobrecarga y reabre a mano (página del operador o menú 4.2 de TRX Console), solo
+    preconisation: Corrige la causa de la sobrecarga y reabre a mano (página del operador o menú 4.2 de openRemoteTRX Console), solo
       se acepta en verde.
 
 ORT-4310:
@@ -5904,7 +5904,7 @@ ORT-4501:
   - Connexion Internet de la box
   - WebRTC ou passerelle
   - Profil VPN partagé par un autre appareil
-  preconisation: Lire le diagnostic dans la rubrique « Qualité du réseau » (page, application, TRX Console menu
+  preconisation: Lire le diagnostic dans la rubrique « Qualité du réseau » (page, application, openRemoteTRX Console menu
     6.4) et agir sur le tronçon indiqué.
   action_auto: aucune
   ntfy_defaut: true
@@ -5923,7 +5923,7 @@ ORT-4501:
     - Router Internet connection
     - WebRTC or gateway
     - VPN profile shared with another device
-    preconisation: Read the diagnosis under "Network quality" (page, app, TRX Console menu 6.4) and act on the indicated
+    preconisation: Read the diagnosis under "Network quality" (page, app, openRemoteTRX Console menu 6.4) and act on the indicated
       segment.
   de:
     titre: Netzausfall eines Clients
@@ -5935,7 +5935,7 @@ ORT-4501:
     - Internetverbindung des Routers
     - WebRTC oder Gateway
     - VPN-Profil mit einem anderen Gerät geteilt
-    preconisation: Lesen Sie die Diagnose im Bereich „Netzwerkqualität“ (Seite, App, TRX Console Menü 6.4) und handeln Sie
+    preconisation: Lesen Sie die Diagnose im Bereich „Netzwerkqualität“ (Seite, App, openRemoteTRX Console Menü 6.4) und handeln Sie
       beim angegebenen Abschnitt.
   es:
     titre: Corte de red de un cliente
@@ -5947,7 +5947,7 @@ ORT-4501:
     - Conexión a Internet del router
     - WebRTC o pasarela
     - Perfil VPN compartido con otro aparato
-    preconisation: Lee el diagnóstico en la sección «Calidad de la red» (página, aplicación, menú 6.4 de TRX Console) y actúa
+    preconisation: Lee el diagnóstico en la sección «Calidad de la red» (página, aplicación, menú 6.4 de openRemoteTRX Console) y actúa
       sobre el tramo indicado.
 
 ORT-4502:
@@ -6107,7 +6107,7 @@ ORT-4506:
   titre: Historique de la sonde réseau effacé
   message: Historique de la sonde réseau effacé par {par}.
   causes:
-  - « Tout effacer » demandé par un opérateur ou TRX Console (menu 6.4)
+  - « Tout effacer » demandé par un opérateur ou openRemoteTRX Console (menu 6.4)
   preconisation: Aucune.
   action_auto: aucune
   ntfy_defaut: false
@@ -6118,19 +6118,19 @@ ORT-4506:
     titre: Network probe history cleared
     message: Network probe history cleared by {par}.
     causes:
-    - '"Clear all" requested by an operator or TRX Console (menu 6.4)'
+    - '"Clear all" requested by an operator or openRemoteTRX Console (menu 6.4)'
     preconisation: None.
   de:
     titre: Verlauf der Netzwerksonde gelöscht
     message: Verlauf der Netzwerksonde von {par} gelöscht.
     causes:
-    - „Alles löschen“ von einem Operator oder von TRX Console angefordert (Menü 6.4)
+    - „Alles löschen“ von einem Operator oder von openRemoteTRX Console angefordert (Menü 6.4)
     preconisation: Keine.
   es:
     titre: Historial de la sonda de red borrado
     message: Historial de la sonda de red borrado por {par}.
     causes:
-    - «Borrar todo» pedido por un operador o por TRX Console (menú 6.4)
+    - «Borrar todo» pedido por un operador o por openRemoteTRX Console (menú 6.4)
     preconisation: Ninguna.
 
 ORT-4507:
@@ -6214,7 +6214,7 @@ ORT-4509:
   message: 'Sonde de qualité réseau : erreur inattendue ({erreur}) ; la station continue.'
   causes:
   - Défaut du programme (cas non prévu)
-  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  preconisation: Signaler le problème avec le journal de la station (menu 8 d'openRemoteTRX Console).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -6227,19 +6227,19 @@ ORT-4509:
     message: 'Network quality probe: unexpected error ({erreur}); the station carries on.'
     causes:
     - Program defect (unforeseen case)
-    preconisation: Report the problem with the station log (TRX Console menu 8).
+    preconisation: Report the problem with the station log (openRemoteTRX Console menu 8).
   de:
     titre: 'Unerwarteter Fehler: Netzwerksonde'
     message: 'Netzwerksonde: unerwarteter Fehler ({erreur}); die Station läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: sonda de calidad de la red'
     message: 'Sonda de calidad de la red: error inesperado ({erreur}); la estación sigue funcionando.'
     causes:
     - Fallo del programa (caso no previsto)
-    preconisation: Informa del problema con el registro de la estación (menú 8 de TRX Console).
+    preconisation: Informa del problema con el registro de la estación (menú 8 de openRemoteTRX Console).
 
 
 # ====================================================================================================
@@ -7343,7 +7343,7 @@ ORT-5028:
   message: 'Bips de fin d''émission : erreur inattendue ({erreur}) ; la station continue.'
   causes:
   - Défaut du programme (cas non prévu)
-  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  preconisation: Signaler le problème avec le journal de la station (menu 8 d'openRemoteTRX Console).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -7354,19 +7354,19 @@ ORT-5028:
     message: 'End-of-transmission beeps: unexpected error ({erreur}); the station carries on.'
     causes:
     - Program defect (unforeseen case)
-    preconisation: Report the problem with the station log (TRX Console menu 8).
+    preconisation: Report the problem with the station log (openRemoteTRX Console menu 8).
   de:
     titre: 'Unerwarteter Fehler: Schlusstöne'
     message: 'Schlusstöne: unerwarteter Fehler ({erreur}); die Station läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: pitidos de fin de transmisión'
     message: 'Pitidos de fin de transmisión: error inesperado ({erreur}); la estación sigue funcionando.'
     causes:
     - Fallo del programa (caso no previsto)
-    preconisation: Informa del problema con el registro de la estación (menú 8 de TRX Console).
+    preconisation: Informa del problema con el registro de la estación (menú 8 de openRemoteTRX Console).
 
 ORT-5029:
   gravite: erreur
@@ -7374,7 +7374,7 @@ ORT-5029:
   message: 'Contrôle du PTT : erreur inattendue dans {partie} ({erreur}) ; la sécurité d''émission continue.'
   causes:
   - 'Défaut du programme (cas non prévu)'
-  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 de TRX Console).'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 d''openRemoteTRX Console).'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -7385,19 +7385,19 @@ ORT-5029:
     message: 'PTT control: unexpected error in {partie} ({erreur}); transmit safety carries on.'
     causes:
     - 'Program defect (unforeseen case)'
-    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 6.3).'
+    preconisation: 'Report the problem with the troubleshooting report (openRemoteTRX Console menu 6.3).'
   de:
     titre: 'Unerwarteter Fehler: PTT-Steuerung'
     message: 'PTT-Steuerung: unerwarteter Fehler in {partie} ({erreur}); die Sendesicherheit bleibt aktiv.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Fehlerbericht (Menü 6.3 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Fehlerbericht (Menü 6.3 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: control del PTT'
     message: 'Control del PTT: error inesperado en {partie} ({erreur}); la seguridad de transmisión sigue funcionando.'
     causes:
     - Fallo del programa (caso no previsto)
-    preconisation: Informa del problema con el informe de diagnóstico (menú 6.3 de TRX Console).
+    preconisation: Informa del problema con el informe de diagnóstico (menú 6.3 de openRemoteTRX Console).
 
 ORT-5030:
   gravite: avertissement
@@ -8079,7 +8079,7 @@ ORT-5106:
   causes:
   - Liste [[bands]] vide alors que enforce_bands est actif
   - Configuration incomplète après l'assistant
-  preconisation: Ajouter les bandes autorisées par votre licence dans station.toml (assistant ou TRX Console), sur
+  preconisation: Ajouter les bandes autorisées par votre licence dans station.toml (assistant ou openRemoteTRX Console), sur
     la station.
   action_auto: refus
   ntfy_defaut: false
@@ -8094,14 +8094,14 @@ ORT-5106:
     causes:
     - Empty [[bands]] list while enforce_bands is on
     - Configuration left incomplete after the setup wizard
-    preconisation: Add the bands your licence allows to station.toml (setup wizard or TRX Console), on the station.
+    preconisation: Add the bands your licence allows to station.toml (setup wizard or openRemoteTRX Console), on the station.
   de:
     titre: 'Senden abgelehnt: kein erlaubtes Band'
     message: 'In station.toml ist kein Sendeband erlaubt: Die Station ist nur auf Empfang.'
     causes:
     - Liste [[bands]] leer, obwohl enforce_bands aktiv ist
     - Unvollständige Konfiguration nach dem Assistenten
-    preconisation: Tragen Sie die von Ihrer Lizenz erlaubten Bänder in station.toml ein (Assistent oder TRX Console), auf
+    preconisation: Tragen Sie die von Ihrer Lizenz erlaubten Bänder in station.toml ein (Assistent oder openRemoteTRX Console), auf
       der Station.
   es:
     titre: 'Transmisión rechazada: ninguna banda permitida'
@@ -8109,7 +8109,7 @@ ORT-5106:
     causes:
     - Lista [[bands]] vacía con enforce_bands activo
     - Configuración incompleta tras el asistente
-    preconisation: Añade las bandas permitidas por tu licencia en station.toml (asistente o TRX Console), en la estación.
+    preconisation: Añade las bandas permitidas por tu licencia en station.toml (asistente o openRemoteTRX Console), en la estación.
 
 ORT-5107:
   gravite: avertissement
@@ -9642,7 +9642,7 @@ ORT-6101:
   titre: Diffusion en direct lancée
   message: 'Diffusion : lancée par {operateur} ({acces}, {duree}, voix émise : {voix}).'
   causes:
-  - Un opérateur a lancé la diffusion depuis la page, l'application ou TRX Console
+  - Un opérateur a lancé la diffusion depuis la page, l'application ou openRemoteTRX Console
   preconisation: Rien à faire ; l'indicateur « DIFFUSION » reste visible tant qu'elle dure.
   action_auto: aucune
   ntfy_defaut: true
@@ -9653,19 +9653,19 @@ ORT-6101:
     titre: Live broadcast started
     message: 'Broadcast: started by {operateur} ({acces}, {duree}, transmitted voice: {voix}).'
     causes:
-    - An operator started the broadcast from the page, the app or TRX Console
+    - An operator started the broadcast from the page, the app or openRemoteTRX Console
     preconisation: Nothing to do; the "BROADCAST" indicator stays visible while it lasts.
   de:
     titre: Live-Übertragung gestartet
     message: 'Übertragung: gestartet von {operateur} ({acces}, {duree}, gesendete Stimme: {voix}).'
     causes:
-    - Ein Operator hat die Übertragung über die Seite, die App oder TRX Console gestartet
+    - Ein Operator hat die Übertragung über die Seite, die App oder openRemoteTRX Console gestartet
     preconisation: Nichts zu tun; die Anzeige „DIFFUSION“ bleibt sichtbar, solange sie läuft.
   es:
     titre: Difusión en directo iniciada
     message: 'Difusión: iniciada por {operateur} ({acces}, {duree}, voz transmitida: {voix}).'
     causes:
-    - Un operador ha iniciado la difusión desde la página, la aplicación o TRX Console
+    - Un operador ha iniciado la difusión desde la página, la aplicación o openRemoteTRX Console
     preconisation: No hay nada que hacer; el indicador «DIFUSIÓN» sigue visible mientras dura.
 
 ORT-6102:
@@ -10000,7 +10000,7 @@ ORT-6110:
   message: 'Diffusion : erreur inattendue ({contexte}) ; le module continue.'
   causes:
   - Défaut du programme (cas non prévu)
-  preconisation: Signaler le problème avec le journal de la station (menu 6.3 de TRX Console).
+  preconisation: Signaler le problème avec le journal de la station (menu 6.3 d'openRemoteTRX Console).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -10011,19 +10011,19 @@ ORT-6110:
     message: 'Broadcast: unexpected error ({contexte}); the module goes on.'
     causes:
     - Program defect (unforeseen case)
-    preconisation: Report the problem with the station log (menu 6.3 of TRX Console).
+    preconisation: Report the problem with the station log (menu 6.3 of openRemoteTRX Console).
   de:
     titre: 'Unerwarteter Fehler: Übertragungsmodul'
     message: 'Übertragung: unerwarteter Fehler ({contexte}); das Modul läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 6.3 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 6.3 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: módulo de difusión'
     message: 'Difusión: error inesperado ({contexte}); el módulo continúa.'
     causes:
     - Defecto del programa (caso no previsto)
-    preconisation: Informa del problema con el registro de la estación (menú 6.3 de TRX Console).
+    preconisation: Informa del problema con el registro de la estación (menú 6.3 de openRemoteTRX Console).
 
 ORT-6401:
   gravite: erreur
@@ -10033,7 +10033,7 @@ ORT-6401:
   - Aucune source active
   - Indicatif de l'opérateur absent (obligatoire pour les clusters telnet et le RBN)
   - '« cluster » absent de [modules] run : le module ne serait jamais lancé'
-  preconisation: Compléter par TRX Console, menu 5.1 (sources, indicatif) et ajouter « cluster » à [modules] run.
+  preconisation: Compléter par openRemoteTRX Console, menu 5.1 (sources, indicatif) et ajouter « cluster » à [modules] run.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -10046,7 +10046,7 @@ ORT-6401:
     - No active source
     - Operator callsign missing (required for telnet clusters and RBN)
     - '"cluster" missing from [modules] run: the module would never start'
-    preconisation: Complete it with TRX Console, menu 5.1 (sources, callsign) and add "cluster" to [modules] run.
+    preconisation: Complete it with openRemoteTRX Console, menu 5.1 (sources, callsign) and add "cluster" to [modules] run.
   de:
     titre: Cluster DX aktiviert, aber unvollständig
     message: '[cluster] {probleme}.'
@@ -10054,7 +10054,7 @@ ORT-6401:
     - Keine aktive Quelle
     - Rufzeichen des Operators fehlt (Pflicht für Telnet-Cluster und RBN)
     - '„cluster“ fehlt in [modules] run: das Modul würde nie gestartet'
-    preconisation: Ergänzen Sie über TRX Console, Menü 5.1 (Quellen, Rufzeichen), und fügen Sie „cluster“ zu [modules] run
+    preconisation: Ergänzen Sie über openRemoteTRX Console, Menü 5.1 (Quellen, Rufzeichen), und fügen Sie „cluster“ zu [modules] run
       hinzu.
   es:
     titre: Cluster DX activado pero incompleto
@@ -10063,7 +10063,7 @@ ORT-6401:
     - Ninguna fuente activa
     - Falta el indicativo del operador (obligatorio para los clusters telnet y el RBN)
     - '«cluster» ausente de [modules] run: el módulo nunca se lanzaría'
-    preconisation: Complétalo con TRX Console, menú 5.1 (fuentes, indicativo) y añade «cluster» a [modules] run.
+    preconisation: Complétalo con openRemoteTRX Console, menú 5.1 (fuentes, indicativo) y añade «cluster» a [modules] run.
 
 ORT-6402:
   gravite: avertissement
@@ -11461,7 +11461,7 @@ ORT-6527:
   message: 'Erreur inattendue ({contexte}) : {detail}. La station continue.'
   causes:
   - Défaut du logiciel (station ou module)
-  preconisation: Faire un rapport de problème (menu 8 de TRX Console) avec le journal ; la surveillance de l'émission
+  preconisation: Faire un rapport de problème (menu 8 d'openRemoteTRX Console) avec le journal ; la surveillance de l'émission
     n'est jamais interrompue.
   action_auto: aucune
   ntfy_defaut: false
@@ -11475,20 +11475,20 @@ ORT-6527:
     message: 'Unexpected error ({contexte}): {detail}. The station carries on.'
     causes:
     - Software defect (station or module)
-    preconisation: Send a problem report (TRX Console menu 8) with the log; transmit monitoring is never interrupted.
+    preconisation: Send a problem report (openRemoteTRX Console menu 8) with the log; transmit monitoring is never interrupted.
   de:
     titre: Unerwarteter Fehler im Modulbus
     message: 'Unerwarteter Fehler ({contexte}): {detail}. Die Station läuft weiter.'
     causes:
     - Softwarefehler (Station oder Modul)
-    preconisation: Erstellen Sie einen Problembericht (Menü 8 von TRX Console) mit dem Protokoll; die Überwachung des Sendens
+    preconisation: Erstellen Sie einen Problembericht (Menü 8 von openRemoteTRX Console) mit dem Protokoll; die Überwachung des Sendens
       wird nie unterbrochen.
   es:
     titre: Error inesperado en el bus de módulos
     message: 'Error inesperado ({contexte}): {detail}. La estación continúa.'
     causes:
     - Defecto del software (estación o módulo)
-    preconisation: Haz un informe de problema (menú 8 de TRX Console) con el registro; la vigilancia de la transmisión nunca
+    preconisation: Haz un informe de problema (menú 8 de openRemoteTRX Console) con el registro; la vigilancia de la transmisión nunca
       se interrumpe.
 
 ORT-6528:
@@ -11539,7 +11539,7 @@ ORT-6531:
   - Fichier illisible par le compte de la station
   - Fichier lisible par tous les comptes (droits 0640 ou 0600 attendus)
   - Clé mal formée (43 caractères attendus)
-  preconisation: Créer ou recopier la clé d'appairage avec TRX Console (menu 5.2) et la même clé dans Breizh Audio
+  preconisation: Créer ou recopier la clé d'appairage avec openRemoteTRX Console (menu 5.2) et la même clé dans Breizh Audio
     Box ; corriger les droits du fichier.
   action_auto: repli_direct
   ntfy_defaut: false
@@ -11554,7 +11554,7 @@ ORT-6531:
     - File unreadable by the station account
     - File readable by every account (0640 or 0600 expected)
     - Malformed key (43 characters expected)
-    preconisation: Create or copy the pairing key with TRX Console (menu 5.2) and put the same key in Breizh Audio
+    preconisation: Create or copy the pairing key with openRemoteTRX Console (menu 5.2) and put the same key in Breizh Audio
       Box; fix the file permissions.
   de:
     titre: Kopplungsschlüssel von Breizh Audio Box unbrauchbar
@@ -11564,7 +11564,7 @@ ORT-6531:
     - Datei für das Konto der Station unlesbar
     - Datei für alle Konten lesbar (Rechte 0640 oder 0600 erwartet)
     - Schlüssel fehlerhaft (43 Zeichen erwartet)
-    preconisation: Erzeugen oder kopieren Sie den Kopplungsschlüssel mit TRX Console (Menü 5.2) und denselben Schlüssel in
+    preconisation: Erzeugen oder kopieren Sie den Kopplungsschlüssel mit openRemoteTRX Console (Menü 5.2) und denselben Schlüssel in
       Breizh Audio Box; korrigieren Sie die Rechte der Datei.
   es:
     titre: Clave de emparejamiento de Breizh Audio Box inutilizable
@@ -11574,7 +11574,7 @@ ORT-6531:
     - Archivo ilegible para la cuenta de la estación
     - Archivo legible por todas las cuentas (se esperan permisos 0640 o 0600)
     - Clave mal formada (se esperan 43 caracteres)
-    preconisation: Crea o copia la clave de emparejamiento con TRX Console (menú 5.2) y pon la misma clave en Breizh Audio
+    preconisation: Crea o copia la clave de emparejamiento con openRemoteTRX Console (menú 5.2) y pon la misma clave en Breizh Audio
       Box; corrige los permisos del archivo.
 
 ORT-6532:
@@ -11807,7 +11807,7 @@ ORT-6538:
   causes:
   - Défaut de Breizh Audio Box (nonce, JSON ou code d'erreur inconnu)
   - Versions de développement incompatibles
-  preconisation: Mettre à jour Breizh Audio Box et signaler le défaut à son auteur avec le journal Breizh (TRX Console
+  preconisation: Mettre à jour Breizh Audio Box et signaler le défaut à son auteur avec le journal Breizh (openRemoteTRX Console
     menu 5.2).
   action_auto: repli_direct
   ntfy_defaut: false
@@ -11824,7 +11824,7 @@ ORT-6538:
     causes:
     - Breizh Audio Box defect (nonce, JSON or unknown error code)
     - Incompatible development versions
-    preconisation: Update Breizh Audio Box and report the defect to its author with the Breizh log (TRX Console
+    preconisation: Update Breizh Audio Box and report the defect to its author with the Breizh log (openRemoteTRX Console
       menu 5.2).
   de:
     titre: Fehlerhafte Antwort von Breizh Audio Box
@@ -11840,7 +11840,7 @@ ORT-6538:
     causes:
     - Defecto de Breizh Audio Box (nonce, JSON o código de error desconocido)
     - Versiones de desarrollo incompatibles
-    preconisation: Actualiza Breizh Audio Box e informa del defecto a su autor con el registro de Breizh (TRX Console menú
+    preconisation: Actualiza Breizh Audio Box e informa del defecto a su autor con el registro de Breizh (openRemoteTRX Console menú
       5.2).
 
 ORT-6539:
@@ -11852,7 +11852,7 @@ ORT-6539:
   - Autre appareil qui envoie vers le port de la station (foreign)
   - Paquets rejoués ou hors session
   - Version de protocole différente
-  preconisation: Vérifier que la même clé d'appairage est dans les deux logiciels (TRX Console menu 5.2) ; chercher
+  preconisation: Vérifier que la même clé d'appairage est dans les deux logiciels (openRemoteTRX Console menu 5.2) ; chercher
     l'appareil qui envoie sur ce port.
   action_auto: aucune
   ntfy_defaut: false
@@ -11869,7 +11869,7 @@ ORT-6539:
     - Another device sending to the station port (foreign)
     - Replayed or out-of-session packets
     - Different protocol version
-    preconisation: Check the same pairing key is in both programs (TRX Console menu 5.2); look for the device sending
+    preconisation: Check the same pairing key is in both programs (openRemoteTRX Console menu 5.2); look for the device sending
       to this port.
   de:
     titre: Pakete von Breizh Audio Box abgelehnt
@@ -11879,7 +11879,7 @@ ORT-6539:
     - Anderes Gerät, das an den Port der Station sendet (foreign)
     - Wiederholte Pakete oder Pakete außerhalb der Sitzung
     - Andere Protokollversion
-    preconisation: Prüfen Sie, dass in beiden Programmen derselbe Kopplungsschlüssel steht (TRX Console Menü 5.2); suchen
+    preconisation: Prüfen Sie, dass in beiden Programmen derselbe Kopplungsschlüssel steht (openRemoteTRX Console Menü 5.2); suchen
       Sie das Gerät, das an diesen Port sendet.
   es:
     titre: Paquetes de Breizh Audio Box rechazados
@@ -11889,7 +11889,7 @@ ORT-6539:
     - Otro dispositivo que envía al puerto de la estación (foreign)
     - Paquetes repetidos o fuera de sesión
     - Versión de protocolo distinta
-    preconisation: Comprueba que la misma clave de emparejamiento está en los dos programas (TRX Console menú 5.2); busca
+    preconisation: Comprueba que la misma clave de emparejamiento está en los dos programas (openRemoteTRX Console menú 5.2); busca
       el dispositivo que envía a ese puerto.
 
 ORT-6540:
@@ -11941,7 +11941,7 @@ ORT-6541:
   message: 'Liaison avec Breizh Audio Box : erreur inattendue ({erreur}) ; la station continue.'
   causes:
   - Défaut du programme (cas non prévu)
-  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  preconisation: Signaler le problème avec le journal de la station (menu 8 d'openRemoteTRX Console).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -11952,19 +11952,19 @@ ORT-6541:
     message: 'Breizh Audio Box link: unexpected error ({erreur}); the station carries on.'
     causes:
     - Program defect (unforeseen case)
-    preconisation: Report the problem with the station log (TRX Console menu 8).
+    preconisation: Report the problem with the station log (openRemoteTRX Console menu 8).
   de:
     titre: 'Unerwarteter Fehler: Verbindung mit Breizh Audio Box'
     message: 'Verbindung mit Breizh Audio Box: unerwarteter Fehler ({erreur}); die Station läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: enlace con Breizh Audio Box'
     message: 'Enlace con Breizh Audio Box: error inesperado ({erreur}); la estación continúa.'
     causes:
     - Defecto del programa (caso no previsto)
-    preconisation: Informa del problema con el registro de la estación (menú 8 de TRX Console).
+    preconisation: Informa del problema con el registro de la estación (menú 8 de openRemoteTRX Console).
 
 ORT-6561:
   gravite: avertissement
@@ -12181,7 +12181,7 @@ ORT-6567:
   message: 'Mode FreeDV : erreur inattendue ({erreur}) ; la station continue.'
   causes:
   - Défaut du programme (cas non prévu)
-  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  preconisation: Signaler le problème avec le journal de la station (menu 8 d'openRemoteTRX Console).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -12192,19 +12192,19 @@ ORT-6567:
     message: 'FreeDV mode: unexpected error ({erreur}); the station carries on.'
     causes:
     - Program defect (unforeseen case)
-    preconisation: Report the problem with the station log (TRX Console menu 8).
+    preconisation: Report the problem with the station log (openRemoteTRX Console menu 8).
   de:
     titre: 'Unerwarteter Fehler: Modus FreeDV'
     message: 'Modus FreeDV: unerwarteter Fehler ({erreur}); die Station läuft weiter.'
     causes:
     - Programmfehler (unvorhergesehener Fall)
-    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Protokoll der Station (Menü 8 von openRemoteTRX Console).
   es:
     titre: 'Error inesperado: modo FreeDV'
     message: 'Modo FreeDV: error inesperado ({erreur}); la estación continúa.'
     causes:
     - Defecto del programa (caso no previsto)
-    preconisation: Informa del problema con el registro de la estación (menú 8 de TRX Console).
+    preconisation: Informa del problema con el registro de la estación (menú 8 de openRemoteTRX Console).
 
 ORT-6568:
   gravite: avertissement
@@ -12709,7 +12709,7 @@ ORT-6814:
   message: 'SELCALL : erreur inattendue ({contexte}).'
   causes:
   - Défaut du logiciel
-  preconisation: Faire un rapport de problème (menu 8 de TRX Console) avec le journal de la passerelle.
+  preconisation: Faire un rapport de problème (menu 8 d'openRemoteTRX Console) avec le journal de la passerelle.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -12720,19 +12720,19 @@ ORT-6814:
     message: 'SELCALL: unexpected error ({contexte}).'
     causes:
     - Software defect
-    preconisation: Send a problem report (TRX Console menu 8) with the gateway log.
+    preconisation: Send a problem report (openRemoteTRX Console menu 8) with the gateway log.
   de:
     titre: Unerwarteter SELCALL-Fehler
     message: 'SELCALL: unerwarteter Fehler ({contexte}).'
     causes:
     - Softwarefehler
-    preconisation: Erstellen Sie einen Problembericht (Menü 8 von TRX Console) mit dem Protokoll des Gateways.
+    preconisation: Erstellen Sie einen Problembericht (Menü 8 von openRemoteTRX Console) mit dem Protokoll des Gateways.
   es:
     titre: Error inesperado del SELCALL
     message: 'SELCALL: error inesperado ({contexte}).'
     causes:
     - Defecto del software
-    preconisation: Haz un informe de problema (menú 8 de TRX Console) con el registro de la pasarela.
+    preconisation: Haz un informe de problema (menú 8 de openRemoteTRX Console) con el registro de la pasarela.
 
 ORT-6901:
   gravite: avertissement
@@ -12783,7 +12783,7 @@ ORT-6902:
   message: 'Présence de groupe : aucun pseudo choisi, rien n''est envoyé au relais.'
   causes:
   - '[presence] activé sans pseudo'
-  preconisation: Choisir un pseudo dans le menu 5.3 de TRX Console ou la rubrique « Amis » de la page.
+  preconisation: Choisir un pseudo dans le menu 5.3 d'openRemoteTRX Console ou la rubrique « Amis » de la page.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -12796,19 +12796,19 @@ ORT-6902:
     message: 'Group presence: no nickname chosen, nothing is sent to the relay.'
     causes:
     - '[presence] enabled without a nickname'
-    preconisation: Choose a nickname in TRX Console menu 5.3 or the "Friends" section of the page.
+    preconisation: Choose a nickname in openRemoteTRX Console menu 5.3 or the "Friends" section of the page.
   de:
     titre: 'Gruppen-Anwesenheit: Anzeigename fehlt'
     message: 'Gruppen-Anwesenheit: kein Anzeigename gewählt, nichts wird an das Relais gesendet.'
     causes:
     - '[presence] aktiviert ohne Anzeigename'
-    preconisation: Wählen Sie einen Anzeigenamen im Menü 5.3 von TRX Console oder im Bereich „Freunde“ der Seite.
+    preconisation: Wählen Sie einen Anzeigenamen im Menü 5.3 von openRemoteTRX Console oder im Bereich „Freunde“ der Seite.
   es:
     titre: 'Presencia de grupo: falta el seudónimo'
     message: 'Presencia de grupo: no se ha elegido seudónimo, no se envía nada al relé.'
     causes:
     - '[presence] activado sin seudónimo'
-    preconisation: Elige un seudónimo en el menú 5.3 de TRX Console o en la sección «Amigos» de la página.
+    preconisation: Elige un seudónimo en el menú 5.3 de openRemoteTRX Console o en la sección «Amigos» de la página.
 
 ORT-6903:
   gravite: avertissement
@@ -13589,7 +13589,7 @@ ORT-6922:
   message: 'Présence de groupe : erreur inattendue ({contexte}) ; nouvel essai dans {delai_s} s.'
   causes:
   - Défaut du logiciel
-  preconisation: Faire un rapport de problème (menu 8 de TRX Console) avec presence.log.
+  preconisation: Faire un rapport de problème (menu 8 d'openRemoteTRX Console) avec presence.log.
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -13603,19 +13603,19 @@ ORT-6922:
     message: 'Group presence: unexpected error ({contexte}); retry in {delai_s} s.'
     causes:
     - Software defect
-    preconisation: Send a problem report (TRX Console menu 8) with presence.log.
+    preconisation: Send a problem report (openRemoteTRX Console menu 8) with presence.log.
   de:
     titre: Unerwarteter Fehler der Gruppen-Anwesenheit
     message: 'Gruppen-Anwesenheit: unerwarteter Fehler ({contexte}); neuer Versuch in {delai_s} s.'
     causes:
     - Softwarefehler
-    preconisation: Erstellen Sie einen Problembericht (Menü 8 von TRX Console) mit presence.log.
+    preconisation: Erstellen Sie einen Problembericht (Menü 8 von openRemoteTRX Console) mit presence.log.
   es:
     titre: Error inesperado de la presencia de grupo
     message: 'Presencia de grupo: error inesperado ({contexte}); nuevo intento en {delai_s} s.'
     causes:
     - Defecto del software
-    preconisation: Haz un informe de problema (menú 8 de TRX Console) con presence.log.
+    preconisation: Haz un informe de problema (menú 8 de openRemoteTRX Console) con presence.log.
 
 ORT-6923:
   gravite: erreur
@@ -14014,7 +14014,7 @@ ORT-7051:
   message: 'Monitoring : {station} donne de nouveau des nouvelles (après {minutes} min de silence).'
   causes:
   - Station suivie redémarrée ou de retour sur Internet
-  preconisation: Aucune ; regarder ses derniers événements (TRX Console, menu 6.5, choix 2).
+  preconisation: Aucune ; regarder ses derniers événements (openRemoteTRX Console, menu 6.5, choix 2).
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 2
@@ -14025,19 +14025,19 @@ ORT-7051:
     message: 'Monitoring: {station} sends news again (after {minutes} min of silence).'
     causes:
     - Followed station restarted or back on the Internet
-    preconisation: None; look at its latest events (TRX Console, menu 6.5, choice 2).
+    preconisation: None; look at its latest events (openRemoteTRX Console, menu 6.5, choice 2).
   de:
     titre: Beobachtete Station wieder erreichbar
     message: 'Monitoring: {station} meldet sich wieder (nach {minutes} min Stille).'
     causes:
     - Beobachtete Station neu gestartet oder wieder im Internet
-    preconisation: Keine; sehen Sie ihre letzten Ereignisse an (TRX Console, Menü 6.5, Auswahl 2).
+    preconisation: Keine; sehen Sie ihre letzten Ereignisse an (openRemoteTRX Console, Menü 6.5, Auswahl 2).
   es:
     titre: Estación seguida de nuevo accesible
     message: 'Monitorización: {station} vuelve a dar noticias (tras {minutes} min de silencio).'
     causes:
     - Estación seguida reiniciada o de vuelta en Internet
-    preconisation: Ninguna; mira sus últimos eventos (TRX Console, menú 6.5, opción 2).
+    preconisation: Ninguna; mira sus últimos eventos (openRemoteTRX Console, menú 6.5, opción 2).
 
 ORT-7052:
   gravite: erreur
@@ -14080,7 +14080,7 @@ ORT-7053:
   message: 'Monitoring : rapport de dépannage de {station} reçu ({taille_ko} ko).'
   causes:
   - Rapport envoyé par l'opérateur de la station suivie, ou demande acceptée
-  preconisation: Le copier sur le Bureau (TRX Console, menu 6.5, choix 10) pour le lire.
+  preconisation: Le copier sur le Bureau (openRemoteTRX Console, menu 6.5, choix 10) pour le lire.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
@@ -14091,19 +14091,19 @@ ORT-7053:
     message: 'Monitoring: troubleshooting report from {station} received ({taille_ko} kB).'
     causes:
     - Report sent by the operator of the followed station, or request accepted
-    preconisation: Copy it to the Desktop (TRX Console, menu 6.5, choice 10) to read it.
+    preconisation: Copy it to the Desktop (openRemoteTRX Console, menu 6.5, choice 10) to read it.
   de:
     titre: Fehlerbericht empfangen
     message: 'Monitoring: Fehlerbericht von {station} empfangen ({taille_ko} kB).'
     causes:
     - Bericht vom Operator der beobachteten Station gesendet, oder Anfrage angenommen
-    preconisation: Kopieren Sie ihn auf den Desktop (TRX Console, Menü 6.5, Auswahl 10), um ihn zu lesen.
+    preconisation: Kopieren Sie ihn auf den Desktop (openRemoteTRX Console, Menü 6.5, Auswahl 10), um ihn zu lesen.
   es:
     titre: Informe de diagnóstico recibido
     message: 'Monitorización: informe de diagnóstico de {station} recibido ({taille_ko} KB).'
     causes:
     - Informe enviado por el operador de la estación seguida, o petición aceptada
-    preconisation: Cópialo en el Escritorio (TRX Console, menú 6.5, opción 10) para leerlo.
+    preconisation: Cópialo en el Escritorio (openRemoteTRX Console, menú 6.5, opción 10) para leerlo.
 
 ORT-7054:
   gravite: avertissement
@@ -14415,7 +14415,7 @@ ORT-8008:
   - Trop de redémarrages de la machine en une heure ({n} pour {max_par_heure} permis)
   - Pannes qui persistent malgré l'échelle de reprise
   - Fichier de mode sûr illisible (on reste en mode sûr par prudence)
-  preconisation: Corriger la cause d'après les journaux, puis sortir du mode sûr sur la station (TRX Console menu
+  preconisation: Corriger la cause d'après les journaux, puis sortir du mode sûr sur la station (openRemoteTRX Console menu
     9 ou « trx-supervisor --clear-safe-mode »).
   action_auto: mode_sur
   ntfy_defaut: true
@@ -14431,7 +14431,7 @@ ORT-8008:
     - Too many machine reboots within an hour ({n} for {max_par_heure} allowed)
     - Faults persisting despite the recovery ladder
     - Safe-mode file unreadable (staying in safe mode as a precaution)
-    preconisation: Fix the cause from the logs, then leave safe mode on the station (TRX Console menu 9 or "trx-supervisor
+    preconisation: Fix the cause from the logs, then leave safe mode on the station (openRemoteTRX Console menu 9 or "trx-supervisor
       --clear-safe-mode").
   de:
     titre: 'Sicherer Modus: Station auf Empfang, Zugang gesperrt'
@@ -14441,7 +14441,7 @@ ORT-8008:
     - Störungen, die trotz der Wiederherstellungsstufen andauern
     - Datei des sicheren Modus unlesbar (aus Vorsicht bleibt der sichere Modus bestehen)
     preconisation: Beheben Sie die Ursache anhand der Protokolle und verlassen Sie dann den sicheren Modus auf der Station
-      (TRX Console Menü 9 oder „trx-supervisor --clear-safe-mode“).
+      (openRemoteTRX Console Menü 9 oder „trx-supervisor --clear-safe-mode“).
   es:
     titre: 'Modo seguro: estación en recepción, acceso cortado'
     message: 'MODO SEGURO: {raison}. Transceptor en recepción, pasarela detenida; se requiere intervención.'
@@ -14449,7 +14449,7 @@ ORT-8008:
     - Demasiados reinicios del equipo en una hora ({n} para {max_par_heure} permitidos)
     - Averías que persisten pese a la escala de recuperación
     - Archivo de modo seguro ilegible (se sigue en modo seguro por prudencia)
-    preconisation: Corrige la causa según los registros y sal del modo seguro en la estación (TRX Console menú 9 o «trx-supervisor
+    preconisation: Corrige la causa según los registros y sal del modo seguro en la estación (openRemoteTRX Console menú 9 o «trx-supervisor
       --clear-safe-mode»).
 
 ORT-8009:
@@ -14814,7 +14814,7 @@ ORT-8019:
   causes:
   - Défaut du logiciel
   - Donnée inattendue reçue d'un client ou d'un module
-  preconisation: Envoyer un rapport de problème avec le journal de la passerelle (TRX Console menu 8).
+  preconisation: Envoyer un rapport de problème avec le journal de la passerelle (openRemoteTRX Console menu 8).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -14829,7 +14829,7 @@ ORT-8019:
     causes:
     - Software defect
     - Unexpected data from a client or a module
-    preconisation: Send a problem report with the gateway log (TRX Console menu 8).
+    preconisation: Send a problem report with the gateway log (openRemoteTRX Console menu 8).
   deprecated: true
   remplace_par: ORT-4018, ORT-4509, ORT-5028, ORT-6541, ORT-6567, ORT-6922, ORT-8018 (une erreur inattendue par
     domaine)
@@ -14839,14 +14839,14 @@ ORT-8019:
     causes:
     - Softwarefehler
     - Unerwartete Daten von einem Client oder Modul empfangen
-    preconisation: Senden Sie einen Problembericht mit dem Protokoll des Gateways (TRX Console Menü 8).
+    preconisation: Senden Sie einen Problembericht mit dem Protokoll des Gateways (openRemoteTRX Console Menü 8).
   es:
     titre: Error inesperado de un componente (la estación continúa)
     message: '{composant}: error inesperado ({erreur}); la estación continúa sin él.'
     causes:
     - Defecto del software
     - Dato inesperado recibido de un cliente o de un módulo
-    preconisation: Envía un informe de problema con el registro de la pasarela (TRX Console menú 8).
+    preconisation: Envía un informe de problema con el registro de la pasarela (openRemoteTRX Console menú 8).
 
 ORT-8020:
   gravite: avertissement
@@ -14887,7 +14887,7 @@ ORT-8021:
   - Service arrêté après une panne (voir le journal)
   - Service désactivé ou non installé
   - Démarrage ou arrêt refusé par systemd
-  preconisation: 'Voir le journal (TRX Console, menu 7 : journalctl -u {service} -n 50), corriger la cause, puis
+  preconisation: 'Voir le journal (openRemoteTRX Console, menu 7 : journalctl -u {service} -n 50), corriger la cause, puis
     « Démarrer la station » ; s''il n''est pas installé : sudo bash install.sh.'
   action_auto: aucune
   ntfy_defaut: false
@@ -14901,7 +14901,7 @@ ORT-8021:
     - Service stopped after a failure (see the log)
     - Service disabled or not installed
     - Start or stop refused by systemd
-    preconisation: 'Read the log (TRX Console, menu 7: journalctl -u {service} -n 50), fix the cause, then "Start
+    preconisation: 'Read the log (openRemoteTRX Console, menu 7: journalctl -u {service} -n 50), fix the cause, then "Start
       the station"; if not installed: sudo bash install.sh.'
   de:
     titre: Dienst der Station fehlgeschlagen oder gestoppt
@@ -14910,7 +14910,7 @@ ORT-8021:
     - Dienst nach einer Störung gestoppt (siehe Protokoll)
     - Dienst deaktiviert oder nicht installiert
     - Starten oder Stoppen von systemd abgelehnt
-    preconisation: 'Sehen Sie ins Protokoll (TRX Console, Menü 7: journalctl -u {service} -n 50), beheben Sie die Ursache
+    preconisation: 'Sehen Sie ins Protokoll (openRemoteTRX Console, Menü 7: journalctl -u {service} -n 50), beheben Sie die Ursache
       und wählen Sie dann „Station starten“; ist er nicht installiert: sudo bash install.sh.'
   es:
     titre: Servicio de la estación con fallo o detenido
@@ -14919,7 +14919,7 @@ ORT-8021:
     - Servicio detenido tras una avería (mira el registro)
     - Servicio desactivado o no instalado
     - Arranque o parada rechazados por systemd
-    preconisation: 'Mira el registro (TRX Console, menú 7: journalctl -u {service} -n 50), corrige la causa y luego «Iniciar
+    preconisation: 'Mira el registro (openRemoteTRX Console, menú 7: journalctl -u {service} -n 50), corrige la causa y luego «Iniciar
       la estación»; si no está instalado: sudo bash install.sh.'
 
 ORT-8022:
@@ -14965,7 +14965,7 @@ ORT-8023:
   causes:
   - 'Système de fichiers /proc ou /sys inaccessible'
   - 'Défaut du programme'
-  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 de TRX Console).'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 d''openRemoteTRX Console).'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -14977,21 +14977,21 @@ ORT-8023:
     causes:
     - '/proc or /sys file system unavailable'
     - 'Program defect'
-    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 6.3).'
+    preconisation: 'Report the problem with the troubleshooting report (openRemoteTRX Console menu 6.3).'
   de:
     titre: Erfassung des Rechners unmöglich
     message: 'Erfassung des Rechners (Speicher, Datenträger, Pi) unmöglich ({erreur}): Alarme des Rechners ausgesetzt.'
     causes:
     - Dateisystem /proc oder /sys nicht zugänglich
     - Programmfehler
-    preconisation: Melden Sie das Problem mit dem Fehlerbericht (Menü 6.3 von TRX Console).
+    preconisation: Melden Sie das Problem mit dem Fehlerbericht (Menü 6.3 von openRemoteTRX Console).
   es:
     titre: Lectura del equipo imposible
     message: 'Lectura del equipo (memoria, disco, Pi) imposible ({erreur}): alertas del equipo suspendidas.'
     causes:
     - Sistema de archivos /proc o /sys inaccesible
     - Defecto del programa
-    preconisation: Informa del problema con el informe de diagnóstico (menú 6.3 de TRX Console).
+    preconisation: Informa del problema con el informe de diagnóstico (menú 6.3 de openRemoteTRX Console).
 
 ORT-8024:
   gravite: erreur
@@ -15031,9 +15031,9 @@ ORT-8024:
 ORT-8025:
   gravite: info
   titre: Essai des alertes
-  message: 'Essai d''alerte envoyé depuis TRX Console à {heure} : si ce message arrive sur le téléphone, les alertes de la station arriveront aussi.'
+  message: 'Essai d''alerte envoyé depuis openRemoteTRX Console à {heure} : si ce message arrive sur le téléphone, les alertes de la station arriveront aussi.'
   causes:
-  - Essai demandé dans TRX Console (menu 3.5)
+  - Essai demandé dans openRemoteTRX Console (menu 3.5)
   preconisation: Aucune.
   action_auto: aucune
   ntfy_defaut: true
@@ -15042,23 +15042,23 @@ ORT-8025:
   depuis_version: 0.168.0
   en:
     titre: Alert test
-    message: 'Test alert sent from TRX Console at {heure}: if this message reaches the phone, the station alerts will reach it too.'
+    message: 'Test alert sent from openRemoteTRX Console at {heure}: if this message reaches the phone, the station alerts will reach it too.'
     causes:
-    - Test requested in TRX Console (menu 3.5)
+    - Test requested in openRemoteTRX Console (menu 3.5)
     preconisation: None.
   de:
     titre: Test der Alarme
-    message: 'Testalarm von TRX Console um {heure} gesendet: Wenn diese Nachricht auf dem Telefon ankommt, kommen auch die
+    message: 'Testalarm von openRemoteTRX Console um {heure} gesendet: Wenn diese Nachricht auf dem Telefon ankommt, kommen auch die
       Alarme der Station an.'
     causes:
-    - Test in TRX Console angefordert (Menü 3.5)
+    - Test in openRemoteTRX Console angefordert (Menü 3.5)
     preconisation: Keine.
   es:
     titre: Prueba de las alertas
-    message: 'Alerta de prueba enviada desde TRX Console a las {heure}: si este mensaje llega al teléfono, las alertas de
+    message: 'Alerta de prueba enviada desde openRemoteTRX Console a las {heure}: si este mensaje llega al teléfono, las alertas de
       la estación también llegarán.'
     causes:
-    - Prueba pedida en TRX Console (menú 3.5)
+    - Prueba pedida en openRemoteTRX Console (menú 3.5)
     preconisation: Ninguna.
 
 ORT-8026:
@@ -15115,7 +15115,7 @@ ORT-8027:
   - Mise à jour ou désinstallation de la station par le Microsoft Store pendant qu'elle tournait
   - Processus de la station tués (Gestionnaire des tâches, fermeture de session forcée)
   - Plantage du superviseur
-  preconisation: Relancer la station (TRX Console, menu 1.1, ou rouvrir la session) ; si une émission était en cours,
+  preconisation: Relancer la station (openRemoteTRX Console, menu 1.1, ou rouvrir la session) ; si une émission était en cours,
     vérifier le poste.
   action_auto: retour_rx
   ntfy_defaut: true
@@ -15130,7 +15130,7 @@ ORT-8027:
     - Station updated or uninstalled by the Microsoft Store while it was running
     - Station processes killed (Task Manager, forced sign-out)
     - Supervisor crash
-    preconisation: Restart the station (TRX Console, menu 1.1, or sign in again); if a transmission was in progress,
+    preconisation: Restart the station (openRemoteTRX Console, menu 1.1, or sign in again); if a transmission was in progress,
       check the radio.
   de:
     titre: Station gewaltsam geschlossen, Funkgerät vom Wächter auf Empfang gesetzt
@@ -15140,7 +15140,7 @@ ORT-8027:
     - Station wurde vom Microsoft Store während des Betriebs aktualisiert oder deinstalliert
     - Prozesse der Station beendet (Task-Manager, erzwungene Abmeldung)
     - Absturz des Supervisors
-    preconisation: Starten Sie die Station neu (TRX Console, Menü 1.1, oder melden Sie sich erneut an); falls eine
+    preconisation: Starten Sie die Station neu (openRemoteTRX Console, Menü 1.1, oder melden Sie sich erneut an); falls eine
       Aussendung lief, prüfen Sie das Funkgerät.
   es:
     titre: Estación cerrada a la fuerza, equipo devuelto a recepción por la guarda
@@ -15150,7 +15150,7 @@ ORT-8027:
     - Estación actualizada o desinstalada por la Microsoft Store mientras funcionaba
     - Procesos de la estación terminados (Administrador de tareas, cierre de sesión forzado)
     - Fallo del supervisor
-    preconisation: Vuelve a arrancar la estación (TRX Console, menú 1.1, o abre de nuevo la sesión); si había una emisión
+    preconisation: Vuelve a arrancar la estación (openRemoteTRX Console, menú 1.1, o abre de nuevo la sesión); si había una emisión
       en curso, comprueba el equipo.
 
 ORT-8028:
@@ -15200,7 +15200,7 @@ ORT-8029:
     Microsoft Store ne démarre pas, deux stations se disputeraient le poste.'
   causes:
   - Station installée d'abord par le zip Windows, puis depuis le Microsoft Store
-  preconisation: Désinstaller la version zip par Paramètres > Applications > TRX distant (la configuration de
+  preconisation: Désinstaller la version zip par Paramètres > Applications > openRemoteTRX (la configuration de
     C:\ProgramData\trx-remote est gardée et reprise telle quelle), puis rouvrir openRemoteTRX.
   action_auto: refus
   ntfy_defaut: false
@@ -15213,7 +15213,7 @@ ORT-8029:
       Store station does not start, two stations would fight over the radio.'
     causes:
     - Station first installed from the Windows zip, then from the Microsoft Store
-    preconisation: Uninstall the zip version from Settings > Apps > TRX distant (the configuration in
+    preconisation: Uninstall the zip version from Settings > Apps > openRemoteTRX (the configuration in
       C:\ProgramData\trx-remote is kept and reused as is), then open openRemoteTRX again.
   de:
     titre: Zip-Version bereits installiert, Station aus dem Microsoft Store nicht gestartet
@@ -15221,7 +15221,7 @@ ORT-8029:
       aus dem Microsoft Store startet nicht, zwei Stationen würden um das Funkgerät streiten.'
     causes:
     - Station zuerst mit dem Windows-Zip installiert, dann aus dem Microsoft Store
-    preconisation: Deinstallieren Sie die Zip-Version über Einstellungen > Apps > TRX distant (die Konfiguration in
+    preconisation: Deinstallieren Sie die Zip-Version über Einstellungen > Apps > openRemoteTRX (die Konfiguration in
       C:\ProgramData\trx-remote bleibt erhalten und wird übernommen), und öffnen Sie dann openRemoteTRX erneut.
   es:
     titre: Versión zip ya instalada, estación de la Microsoft Store no arrancada
@@ -15229,7 +15229,7 @@ ORT-8029:
       la Microsoft Store no arranca, dos estaciones se disputarían el equipo.'
     causes:
     - Estación instalada primero con el zip de Windows y luego desde la Microsoft Store
-    preconisation: Desinstala la versión zip en Configuración > Aplicaciones > TRX distant (la configuración de
+    preconisation: Desinstala la versión zip en Configuración > Aplicaciones > openRemoteTRX (la configuración de
       C:\ProgramData\trx-remote se conserva y se reutiliza tal cual) y vuelve a abrir openRemoteTRX.
 
 
@@ -15245,7 +15245,7 @@ ORT-9001:
   - Fichier TOML mal écrit (guillemet, crochet ou virgule manquant)
   - Réglage refusé par la validation (voir les entrées de la famille « station.toml »)
   - Configuration écrite pour une autre version de la station
-  preconisation: Corriger la ligne indiquée (TRX Console, menu 8.1) ou relancer l'assistant de configuration (menu
+  preconisation: Corriger la ligne indiquée (openRemoteTRX Console, menu 8.1) ou relancer l'assistant de configuration (menu
     2). La station ne démarre pas tant que le fichier est refusé.
   action_auto: refus
   ntfy_defaut: false
@@ -15259,7 +15259,7 @@ ORT-9001:
     - Malformed TOML (missing quote, bracket or comma)
     - Setting rejected by validation (see the other station.toml entries)
     - Configuration written for another station version
-    preconisation: Fix the reported line (TRX Console, menu 8.1) or run the setup wizard again (menu 2). The station
+    preconisation: Fix the reported line (openRemoteTRX Console, menu 8.1) or run the setup wizard again (menu 2). The station
       will not start while the file is rejected.
   de:
     titre: station.toml ungültig
@@ -15268,7 +15268,7 @@ ORT-9001:
     - TOML-Datei falsch geschrieben (Anführungszeichen, Klammer oder Komma fehlt)
     - Einstellung von der Prüfung abgelehnt (siehe die Einträge der Familie „station.toml“)
     - Konfiguration für eine andere Version der Station geschrieben
-    preconisation: Korrigieren Sie die angegebene Zeile (TRX Console, Menü 8.1) oder starten Sie den Konfigurationsassistenten
+    preconisation: Korrigieren Sie die angegebene Zeile (openRemoteTRX Console, Menü 8.1) oder starten Sie den Konfigurationsassistenten
       erneut (Menü 2). Die Station startet nicht, solange die Datei abgelehnt wird.
   es:
     titre: station.toml no válido
@@ -15277,7 +15277,7 @@ ORT-9001:
     - Archivo TOML mal escrito (falta una comilla, un corchete o una coma)
     - Ajuste rechazado por la validación (mira las entradas de la familia «station.toml»)
     - Configuración escrita para otra versión de la estación
-    preconisation: Corrige la línea indicada (TRX Console, menú 8.1) o vuelve a lanzar el asistente de configuración (menú
+    preconisation: Corrige la línea indicada (openRemoteTRX Console, menú 8.1) o vuelve a lanzar el asistente de configuración (menú
       2). La estación no arranca mientras el archivo esté rechazado.
 
 ORT-9002:
@@ -16015,7 +16015,7 @@ ORT-9021:
   titre: Droits de station.toml incorrects
   message: 'Droits de station.toml : {probleme}.'
   causes:
-  - Fichier recopié ou édité hors de TRX Console
+  - Fichier recopié ou édité hors d'openRemoteTRX Console
   - 'Groupe trx absent du fichier : le service ne peut plus le lire'
   - Fichier lisible par tous (empreintes des mots de passe)
   preconisation: sudo chgrp trx {fichier} && sudo chmod 640 {fichier}, ou relancer l'installation.
@@ -16028,7 +16028,7 @@ ORT-9021:
     titre: Wrong station.toml permissions
     message: 'station.toml permissions: {probleme}.'
     causes:
-    - File copied or edited outside TRX Console
+    - File copied or edited outside openRemoteTRX Console
     - 'trx group missing: the service can no longer read it'
     - World-readable file (password hashes)
     preconisation: sudo chgrp trx {fichier} && sudo chmod 640 {fichier}, or rerun the installation.
@@ -16036,7 +16036,7 @@ ORT-9021:
     titre: Rechte von station.toml falsch
     message: 'Rechte von station.toml: {probleme}.'
     causes:
-    - Datei außerhalb von TRX Console kopiert oder bearbeitet
+    - Datei außerhalb von openRemoteTRX Console kopiert oder bearbeitet
     - 'Gruppe trx fehlt an der Datei: der Dienst kann sie nicht mehr lesen'
     - Datei für alle lesbar (Hashes der Passwörter)
     preconisation: sudo chgrp trx {fichier} && sudo chmod 640 {fichier}, oder starten Sie die Installation erneut.
@@ -16044,7 +16044,7 @@ ORT-9021:
     titre: Permisos de station.toml incorrectos
     message: 'Permisos de station.toml: {probleme}.'
     causes:
-    - Archivo copiado o editado fuera de TRX Console
+    - Archivo copiado o editado fuera de openRemoteTRX Console
     - 'Grupo trx ausente del archivo: el servicio ya no puede leerlo'
     - Archivo legible por todos (hashes de las contraseñas)
     preconisation: sudo chgrp trx {fichier} && sudo chmod 640 {fichier}, o vuelve a lanzar la instalación.
@@ -16056,7 +16056,7 @@ ORT-9022:
   causes:
   - Première installation
   - Configuration effacée à la désinstallation
-  preconisation: TRX Console, menu 2 (assistant de configuration).
+  preconisation: openRemoteTRX Console, menu 2 (assistant de configuration).
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -16068,21 +16068,21 @@ ORT-9022:
     causes:
     - First installation
     - Configuration erased at uninstall
-    preconisation: TRX Console, menu 2 (setup wizard).
+    preconisation: openRemoteTRX Console, menu 2 (setup wizard).
   de:
     titre: Station noch nicht konfiguriert
     message: '{fichier} fehlt: Station noch nicht konfiguriert.'
     causes:
     - Erstinstallation
     - Konfiguration bei der Deinstallation gelöscht
-    preconisation: TRX Console, Menü 2 (Konfigurationsassistent).
+    preconisation: openRemoteTRX Console, Menü 2 (Konfigurationsassistent).
   es:
     titre: Estación aún no configurada
     message: '{fichier} ausente: estación aún no configurada.'
     causes:
     - Primera instalación
     - Configuración borrada al desinstalar
-    preconisation: TRX Console, menú 2 (asistente de configuración).
+    preconisation: openRemoteTRX Console, menú 2 (asistente de configuración).
 
 ORT-9023:
   gravite: info
@@ -16276,7 +16276,7 @@ ORT-9105:
   - Fichier édité à la main (TOML invalide, table [secrets] absente)
   - Entrée au nom invalide
   - Droits de lecture
-  preconisation: Ressaisir les mots de passe des sources par TRX Console, menu 5.1 (le fichier est réécrit proprement
+  preconisation: Ressaisir les mots de passe des sources par openRemoteTRX Console, menu 5.1 (le fichier est réécrit proprement
     en 0600).
   action_auto: refus
   ntfy_defaut: false
@@ -16290,7 +16290,7 @@ ORT-9105:
     - File edited by hand (invalid TOML, missing [secrets] table)
     - Entry with an invalid name
     - Read permissions
-    preconisation: Re-enter the source passwords with TRX Console, menu 5.1 (the file is rewritten cleanly with mode
+    preconisation: Re-enter the source passwords with openRemoteTRX Console, menu 5.1 (the file is rewritten cleanly with mode
       0600).
   de:
     titre: secrets.toml unlesbar oder fehlerhaft
@@ -16299,7 +16299,7 @@ ORT-9105:
     - Datei von Hand bearbeitet (ungültiges TOML, Tabelle [secrets] fehlt)
     - Eintrag mit ungültigem Namen
     - Leserechte
-    preconisation: Geben Sie die Passwörter der Quellen über TRX Console, Menü 5.1, neu ein (die Datei wird sauber mit 0600
+    preconisation: Geben Sie die Passwörter der Quellen über openRemoteTRX Console, Menü 5.1, neu ein (die Datei wird sauber mit 0600
       neu geschrieben).
   es:
     titre: secrets.toml ilegible o mal formado
@@ -16308,7 +16308,7 @@ ORT-9105:
     - Archivo editado a mano (TOML no válido, falta la tabla [secrets])
     - Entrada con nombre no válido
     - Permisos de lectura
-    preconisation: Vuelve a escribir las contraseñas de las fuentes con TRX Console, menú 5.1 (el archivo se reescribe limpio
+    preconisation: Vuelve a escribir las contraseñas de las fuentes con openRemoteTRX Console, menú 5.1 (el archivo se reescribe limpio
       en 0600).
 
 ORT-9106:
@@ -16921,7 +16921,7 @@ ORT-9308:
 
 ORT-9309:
   gravite: erreur
-  titre: Installation de TRX distant ou activation de la version impossible
+  titre: Installation d'openRemoteTRX ou activation de la version impossible
   message: '{etape} impossible (détails dans {journal}).'
   causes:
   - Paquet abîmé
@@ -16935,7 +16935,7 @@ ORT-9309:
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9309/
   depuis_version: 0.123.0
   en:
-    titre: Installing TRX distant or activating the version failed
+    titre: Installing openRemoteTRX or activating the version failed
     message: '{etape} failed (details in {journal}).'
     causes:
     - Damaged package
@@ -16944,7 +16944,7 @@ ORT-9309:
     - --reactiver run outside /opt/trx-remote/releases/<version>
     preconisation: Read the log ({journal}), free some space if needed, then rerun from a complete zip.
   de:
-    titre: Installation von TRX distant oder Aktivierung der Version unmöglich
+    titre: Installation von openRemoteTRX oder Aktivierung der Version unmöglich
     message: '{etape} unmöglich (Details in {journal}).'
     causes:
     - Paket beschädigt
@@ -16954,7 +16954,7 @@ ORT-9309:
     preconisation: Lesen Sie den Bericht ({journal}), schaffen Sie bei Bedarf Platz und starten Sie dann erneut aus einem
       vollständigen Zip.
   es:
-    titre: Instalación de TRX distant o activación de la versión imposible
+    titre: Instalación de openRemoteTRX o activación de la versión imposible
     message: '{etape} imposible (detalles en {journal}).'
     causes:
     - Paquete dañado
@@ -17044,7 +17044,7 @@ ORT-9312:
   causes:
   - 'Défaut du logiciel dans un cas non prévu (nouveau poste, nouvelle carte son, réponse inattendue)'
   - 'Fichier ou périphérique devenu inaccessible pendant l''exécution'
-  preconisation: 'Lire le message, puis envoyer le fichier indiqué (ou le rapport du menu 6.3 de TRX Console) avec
+  preconisation: 'Lire le message, puis envoyer le fichier indiqué (ou le rapport du menu 6.3 d''openRemoteTRX Console) avec
     la description de ce qui était en cours. Le poste a été remis en réception par l''outil s''il émettait.'
   action_auto: arret_outil
   ntfy_defaut: false
@@ -17057,7 +17057,7 @@ ORT-9312:
     causes:
     - 'Software defect in an unforeseen case (new rig, new sound card, unexpected answer)'
     - 'File or device that became unreachable while running'
-    preconisation: 'Read the message, then send the file shown (or the TRX Console menu 6.3 report) with a
+    preconisation: 'Read the message, then send the file shown (or the openRemoteTRX Console menu 6.3 report) with a
       description of what was going on. The tool put the rig back to receive if it was transmitting.'
   de:
     titre: Werkzeug wegen eines unerwarteten Fehlers beendet
@@ -17065,7 +17065,7 @@ ORT-9312:
     causes:
     - Softwarefehler in einem unvorhergesehenen Fall (neues Funkgerät, neue Soundkarte, unerwartete Antwort)
     - Datei oder Gerät während der Ausführung unzugänglich geworden
-    preconisation: Lesen Sie die Meldung und senden Sie dann die angegebene Datei (oder den Bericht aus Menü 6.3 von TRX Console)
+    preconisation: Lesen Sie die Meldung und senden Sie dann die angegebene Datei (oder den Bericht aus Menü 6.3 von openRemoteTRX Console)
       mit einer Beschreibung dessen, was gerade lief. Das Funkgerät wurde vom Werkzeug auf Empfang zurückgesetzt, falls es
       sendete.
   es:
@@ -17074,7 +17074,7 @@ ORT-9312:
     causes:
     - Defecto del software en un caso no previsto (transceptor nuevo, tarjeta de sonido nueva, respuesta inesperada)
     - Archivo o dispositivo que se ha vuelto inaccesible durante la ejecución
-    preconisation: Lee el mensaje y envía el archivo indicado (o el informe del menú 6.3 de TRX Console) con la descripción
+    preconisation: Lee el mensaje y envía el archivo indicado (o el informe del menú 6.3 de openRemoteTRX Console) con la descripción
       de lo que estaba en curso. La herramienta ha devuelto el transceptor a recepción si estaba transmitiendo.
 
 ORT-9313:
@@ -17083,8 +17083,8 @@ ORT-9313:
   message: '{outil} a besoin du poste pour lui seul, mais la station est en marche : arrête-la d''abord ({comment}).'
   causes:
   - 'Essai du poste ou qualification lancé sans arrêter la station'
-  preconisation: Arrêter la station (TRX Console menu 1.2 ; sous Windows, TRX Console s'ouvre par le raccourci
-    « TRX distant »), lancer l'essai, puis redémarrer la station.
+  preconisation: Arrêter la station (openRemoteTRX Console menu 1.2 ; sous Windows, openRemoteTRX Console s'ouvre par le raccourci
+    « openRemoteTRX »), lancer l'essai, puis redémarrer la station.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -17095,22 +17095,22 @@ ORT-9313:
     message: '{outil} needs the rig for itself, but the station is running: stop it first ({comment}).'
     causes:
     - 'Rig test or qualification started without stopping the station'
-    preconisation: Stop the station (TRX Console menu 1.2; on Windows, TRX Console opens from the “TRX distant”
+    preconisation: Stop the station (openRemoteTRX Console menu 1.2; on Windows, openRemoteTRX Console opens from the “openRemoteTRX”
       shortcut), run the test, then restart the station.
   de:
     titre: 'Station läuft: Test des Funkgeräts abgelehnt'
     message: '{outil} braucht das Funkgerät für sich allein, aber die Station läuft: stoppen Sie sie zuerst ({comment}).'
     causes:
     - Test des Funkgeräts oder Qualifikation gestartet, ohne die Station zu stoppen
-    preconisation: Stoppen Sie die Station (TRX Console Menü 1.2; unter Windows öffnet sich TRX Console über die
-      Verknüpfung „TRX distant“), starten Sie den Test und starten Sie dann die Station neu.
+    preconisation: Stoppen Sie die Station (openRemoteTRX Console Menü 1.2; unter Windows öffnet sich openRemoteTRX Console über die
+      Verknüpfung „openRemoteTRX“), starten Sie den Test und starten Sie dann die Station neu.
   es:
     titre: 'Estación en marcha: prueba del transceptor rechazada'
     message: '{outil} necesita el transceptor solo para él, pero la estación está en marcha: detenla primero ({comment}).'
     causes:
     - Prueba del transceptor o cualificación lanzada sin detener la estación
-    preconisation: Detén la estación (TRX Console menú 1.2; en Windows, TRX Console se abre con el acceso directo
-      «TRX distant»), lanza la prueba y vuelve a iniciar la estación.
+    preconisation: Detén la estación (openRemoteTRX Console menú 1.2; en Windows, openRemoteTRX Console se abre con el acceso directo
+      «openRemoteTRX»), lanza la prueba y vuelve a iniciar la estación.
 
 ORT-9501:
   gravite: erreur
@@ -17615,7 +17615,7 @@ ORT-9706:
   causes:
   - Modification à la main avec une erreur
   - Fichier en cours d'écriture (illisible un instant)
-  preconisation: Corriger station.toml (TRX Console menu 8.1) ; la station reprend la nouvelle liste dès que le fichier
+  preconisation: Corriger station.toml (openRemoteTRX Console menu 8.1) ; la station reprend la nouvelle liste dès que le fichier
     est valide.
   action_auto: nouvel_essai
   ntfy_defaut: false
@@ -17628,7 +17628,7 @@ ORT-9706:
     causes:
     - Hand edit with an error
     - File being written (unreadable for a moment)
-    preconisation: Fix station.toml (TRX Console menu 8.1); the station takes the new list as soon as the file is
+    preconisation: Fix station.toml (openRemoteTRX Console menu 8.1); the station takes the new list as soon as the file is
       valid.
   de:
     titre: 'station.toml geändert, aber ungültig: Konten unverändert'
@@ -17636,7 +17636,7 @@ ORT-9706:
     causes:
     - Änderung von Hand mit einem Fehler
     - Datei wird gerade geschrieben (kurz unlesbar)
-    preconisation: Korrigieren Sie station.toml (TRX Console Menü 8.1); die Station übernimmt die neue Liste, sobald die Datei
+    preconisation: Korrigieren Sie station.toml (openRemoteTRX Console Menü 8.1); die Station übernimmt die neue Liste, sobald die Datei
       gültig ist.
   es:
     titre: 'station.toml modificado pero no válido: cuentas sin cambios'
@@ -17644,7 +17644,7 @@ ORT-9706:
     causes:
     - Modificación a mano con un error
     - Archivo en escritura (ilegible un instante)
-    preconisation: Corrige station.toml (TRX Console menú 8.1); la estación toma la nueva lista en cuanto el archivo es válido.
+    preconisation: Corrige station.toml (openRemoteTRX Console menú 8.1); la estación toma la nueva lista en cuanto el archivo es válido.
 
 ORT-9707:
   gravite: critique
@@ -17770,7 +17770,7 @@ ORT-9710:
   causes:
   - station.toml sans section [[clients]]
   - Assistant interrompu avant la création d'un compte
-  preconisation: Créer un compte opérateur avec TRX Console ou trx-setup.
+  preconisation: Créer un compte opérateur avec openRemoteTRX Console ou trx-setup.
   action_auto: repli_reception_seule
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -17782,21 +17782,21 @@ ORT-9710:
     causes:
     - station.toml without [[clients]]
     - Wizard interrupted before an account was created
-    preconisation: Create an operator account with TRX Console or trx-setup.
+    preconisation: Create an operator account with openRemoteTRX Console or trx-setup.
   de:
     titre: 'Kein Client-Konto: keine API'
     message: 'Kein erlaubter Client ([[clients]]): keine API, das Funkgerät bleibt nur auf Empfang.'
     causes:
     - station.toml ohne Abschnitt [[clients]]
     - Assistent vor dem Anlegen eines Kontos abgebrochen
-    preconisation: Legen Sie ein Operator-Konto mit TRX Console oder trx-setup an.
+    preconisation: Legen Sie ein Operator-Konto mit openRemoteTRX Console oder trx-setup an.
   es:
     titre: 'Ninguna cuenta de cliente: sin API'
     message: 'Ningún cliente autorizado ([[clients]]): sin API, el transceptor queda en solo recepción.'
     causes:
     - station.toml sin sección [[clients]]
     - Asistente interrumpido antes de crear una cuenta
-    preconisation: Crea una cuenta de operador con TRX Console o trx-setup.
+    preconisation: Crea una cuenta de operador con openRemoteTRX Console o trx-setup.
 
 ORT-9711:
   gravite: erreur

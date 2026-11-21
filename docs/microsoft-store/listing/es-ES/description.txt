@@ -4,9 +4,9 @@ La estación instalada por este paquete controla el equipo mediante Hamlib (unos
 
 SEGURIDAD DE EMISIÓN, garantizada por la propia estación: PTT solo en alternancia, corte al llegar al tiempo máximo (TOT), vuelta a recepción si el dispositivo remoto deja de responder, un solo operador emite a la vez, botón STOP siempre visible, supervisor independiente que devuelve el equipo a recepción en caso de fallo, incluso si la estación se cierra a la fuerza.
 
-TRX Console guía la puesta en marcha: equipo, puerto serie y tarjeta de sonido, cuentas de operadores (una por dispositivo), bandas autorizadas, alertas en el teléfono, pruebas del equipo.
+openRemoteTRX Console guía la puesta en marcha: equipo, puerto serie y tarjeta de sonido, cuentas de operadores (una por dispositivo), bandas autorizadas, alertas en el teléfono, pruebas del equipo.
 
-Necesitas: un equipo de radioaficionado conectado al PC (cable CAT USB o interfaz tipo Digirig / SignaLink) y Hamlib para Windows (gratuito, se instala aparte; TRX Console te guía).
+Necesitas: un equipo de radioaficionado conectado al PC (cable CAT USB o interfaz tipo Digirig / SignaLink) y Hamlib para Windows (gratuito, se instala aparte; openRemoteTRX Console te guía).
 
 Solo para radioaficionados con licencia: eres responsable de tus emisiones y del cumplimiento de las normas de tu país.
 

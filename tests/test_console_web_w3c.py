@@ -59,7 +59,7 @@ def test_the_dashboard_is_drawn_by_the_page_and_stop_tx_can_only_cut(tmp_path, m
             assert {p["key"] for p in data["panels"]} == {"radio", "audio", "connexion", "sante", "materiel", "reseau"}
             assert any("trx-monitor démarré" in e["text"] for e in data["log"])
             conn = next(p for p in data["panels"] if p["key"] == "connexion")
-            assert ["Console", "TRX Console dans le navigateur de la station", "info"] in conn["rows"]   # la console elle-même
+            assert ["Console", "openRemoteTRX Console dans le navigateur de la station", "info"] in conn["rows"]   # la console elle-même
             assert (await client.post("/api/stop_tx")).status == 403               # autre origine : refusé
             assert calls == []
             answer = await (await client.post("/api/stop_tx", headers=origin)).json()

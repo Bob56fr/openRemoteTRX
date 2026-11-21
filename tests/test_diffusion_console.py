@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Diffusion en direct, lot D3 : TRX Console (menu 5.6, interrupteur du 5.5), demandes de la console au module, alertes
+"""Diffusion en direct, lot D3 : openRemoteTRX Console (menu 5.6, interrupteur du 5.5), demandes de la console au module, alertes
 ntfy de la passerelle au début et à la fin d'une diffusion."""
 from __future__ import annotations
 

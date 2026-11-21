@@ -157,7 +157,7 @@
   "cli.starting_rigctld": "Démarrage de rigctld...",
   "cli.rts_dtr_warning": "  (PTT par RTS/DTR : ouvrir le port peut déclencher une émission brève : charge fictive branchée)",
   "cli.rigctld_failed": "rigctld n'a pas démarré (modèle, port COM ou débit incorrects ? poste éteint ?).",
-  "cli.stop_station": "TRX Console menu 1.2 (sous Windows, TRX Console s'ouvre par le raccourci « TRX distant »)",
+  "cli.stop_station": "openRemoteTRX Console menu 1.2 (sous Windows, openRemoteTRX Console s'ouvre par le raccourci « openRemoteTRX »)",
   "cli.rigctld_running": "rigctld déjà actif (lancé hors de la station) : utilisé tel quel.",
   "cli.config_invalid": "Configuration invalide :",
   "cli.config_unreadable": "Configuration illisible ({path}) : {error}. Indique-la avec --config station.toml.",

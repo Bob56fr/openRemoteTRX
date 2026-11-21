@@ -3,7 +3,7 @@
 """Recherche d'une nouvelle version sur GitHub (API publique, sans jeton) : `python -m trxstation.update.check`.
 
 Lancé par le timer systemd trx-update-check (compte trx, jamais root) au démarrage puis toutes les 24 h.
-Il n'installe RIEN : il écrit `<state_dir>/update/latest.json`, que TRX Console affiche.
+Il n'installe RIEN : il écrit `<state_dir>/update/latest.json`, qu'openRemoteTRX Console affiche.
 Tout ce qui vient de GitHub est une donnée non fiable : versions et adresses vérifiées, notes nettoyées
 (aucun caractère de contrôle ne doit atteindre le terminal). Le paquet lui-même est vérifié par sa
 signature avant toute installation (signing.py) ; ce fichier ne sert qu'à le proposer.
@@ -260,7 +260,7 @@ def http_get(url: str, *, max_bytes: int = MAX_RESPONSE_BYTES, timeout: float = 
     return data
 
 
-# ------------------------------------------------------------------ état écrit pour TRX Console
+# ------------------------------------------------------------------ état écrit pour openRemoteTRX Console
 
 @dataclass
 class UpdateState:
@@ -368,7 +368,7 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = http_get) -> int:
     elif state.release:
         print(f"Nouvelle version disponible : {state.release.version} (installée : {state.installed}).")
     else:
-        print(f"TRX distant est à jour ({state.installed}).")
+        print(f"openRemoteTRX est à jour ({state.installed}).")
     return 0                                  # un échec réseau n'est pas une panne du service
 
 

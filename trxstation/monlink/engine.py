@@ -198,7 +198,7 @@ class Engine:
         log.info("station inconnue du relais du monitoring : nouvelle inscription")
         return True
 
-    # ------------------------------------------------------------ actions de l'opérateur (TRX Console)
+    # ------------------------------------------------------------ actions de l'opérateur (openRemoteTRX Console)
     def set_pseudo(self, pseudo: object) -> dict:
         pseudo = clean_pseudo(pseudo)
         if pseudo is None:
@@ -679,7 +679,7 @@ class Engine:
                     raise
                 self._drop(peer, by="partenaire")
 
-    # ------------------------------------------------------------ vue (TRX Console, trx-monitor)
+    # ------------------------------------------------------------ vue (openRemoteTRX Console, trx-monitor)
     def view(self) -> dict:
         now = self.clock()
         links = []

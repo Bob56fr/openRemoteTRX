@@ -48,7 +48,7 @@ import com.rfdiy.openremotetrx.logic.Tr
 import java.io.File
 
 /**
- * Monitoring inter-stations (page : rubrique « Monitoring » ; TRX Console : menu 6.5) : AIDER un opérateur en difficulté
+ * Monitoring inter-stations (page : rubrique « Monitoring » ; openRemoteTRX Console : menu 6.5) : AIDER un opérateur en difficulté
  * ou ÊTRE AIDÉ. Mêmes actions et mêmes textes que la page (logic/Monitoring.kt). Le module « monlink » n'agit jamais sur
  * le poste et la station qui aide ne peut que lire et DEMANDER. Plein écran ouvert depuis les Réglages.
  */

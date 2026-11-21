@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Questions d'un outil lancé par la console web (étape 236, lot W3b).
 
-Un outil (trx-setup…) lancé par un menu ouvert dans la PAGE (TRX Console en formulaires) tourne comme une commande :
+Un outil (trx-setup…) lancé par un menu ouvert dans la PAGE (openRemoteTRX Console en formulaires) tourne comme une commande :
 sa sortie part dans la page, l'entrée vient de la page. Avant chaque question, il écrit une ligne marquée qui en dit la
 nature (choix, oui / non, nombre et bornes, mot de passe…) ; le worker de la console web la remplace par un formulaire
 et renvoie la réponse sur l'entrée de l'outil, comme une frappe. Au terminal (variable absente), rien n'est écrit :

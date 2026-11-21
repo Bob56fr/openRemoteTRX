@@ -48,7 +48,7 @@ class ProblemReportTest {
         val zone = ZoneId.systemDefault()
         val expected = ProblemReport.format(ProblemReport.Input(1_793_000_000_000, "  Le son a coupé.  ", null, null, true, "", "", null,
             emptyList(), zone))
-        assertTrue(expected.startsWith("=== Rapport de problème TRX distant ===\nDate : "))
+        assertTrue(expected.startsWith("=== Rapport de problème openRemoteTRX ===\nDate : "))
         assertTrue(text.contains("Ce qui s'est passé :\nLe son a coupé.\n"))
         assertTrue(text.contains("Station : v0.114.0, protocole 1, compte phone, connecté"))
         assertTrue(text.contains("Appareil : samsung SM-S931B, Android 15\nÉcran : 412×915 dp, portrait"))

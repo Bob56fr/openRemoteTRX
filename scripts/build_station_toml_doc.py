@@ -135,14 +135,14 @@ def render(version: str, content: dict, versions: list[str], up: str = "") -> st
            f"<title>{esc(page['titre'])} ({esc(version)})</title>",
            f"<style>{base.CSS.strip()}{EXTRA_CSS.strip()}</style>", "</head>", "<body>", "<main>",
            f"<h1>{esc(page['titre'])}</h1>",
-           f'<p class="version">TRX distant version {esc(version)}</p>',
+           f'<p class="version">openRemoteTRX version {esc(version)}</p>',
            page["intro"].strip(), f'<div class="lecture">{page["lecture"].strip()}</div>',
            '<ul class="sommaire">' + "".join(f'<li><a href="#{base._slug(s)}">{esc(_header(s, a))}</a></li>'
                                              for s, _, a in SECTIONS) + "</ul>"]
     for section, cls, array in SECTIONS:
         sec = content["sections"][section]
         relu = ("relu par la station en quelques secondes, sans redémarrer" if sec.get("relu") == "chaud"
-                else "pris en compte au redémarrage de la station (TRX Console le propose)")
+                else "pris en compte au redémarrage de la station (openRemoteTRX Console le propose)")
         out += [f'<h2 id="{base._slug(section)}">{esc(sec["titre"])}</h2>', sec["intro"].strip(),
                 f'<p class="defaut">Se modifie : {sec["ou"]} — {relu}.</p>']
         for key, value in fields_of(section, cls):
@@ -164,7 +164,7 @@ def render(version: str, content: dict, versions: list[str], up: str = "") -> st
     if up:
         archive = f'<a href="{up}">Dernière version</a>. ' + archive
     out += ["<footer>",
-            f'<p>{archive}Mode d\'emploi de TRX Console : <a href="{up}../console/">console</a>. Projet libre '
+            f'<p>{archive}Mode d\'emploi d\'openRemoteTRX Console : <a href="{up}../console/">console</a>. Projet libre '
             f'(AGPL-3.0-or-later) : <a href="{base.REPO_URL}" target="_blank" rel="noopener noreferrer">code source</a> · '
             f'<a href="{base.SITE_URL}" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>',
             "</footer>", "</main>", f"<script>{base.RESIZE_JS.strip()}</script>", "</body>", "</html>", ""]
@@ -185,7 +185,7 @@ def render_markdown(version: str, content: dict) -> str:
     page = content["page"]
     out = ["<!-- Fabriqué par scripts/build_station_toml_doc.py : ne pas modifier à la main "
            "(explications : docs/station-toml/contenu.toml). -->", "",
-           f"# {page['titre']}", "", f"TRX distant version {version}. Page du site : "
+           f"# {page['titre']}", "", f"openRemoteTRX version {version}. Page du site : "
            "https://bob56fr.github.io/openRemoteTRX/station-toml/", "", _md(page["intro"]), "", _md(page["lecture"]), ""]
     for section, cls, array in SECTIONS:
         sec = content["sections"][section]
