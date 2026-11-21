@@ -40,7 +40,7 @@ Details in `CLAUDE.md` ("Règles de sécurité d'émission") and `docs/` (in Fre
 
 ## Installation
 
-**First station?** Follow the step-by-step **operator guide**, with a checklist at the end: [User-Guide/](User-Guide/README.md) (web page: https://bob56fr.github.io/openRemoteTRX/guide/; French for now, translations to come). What follows is a summary.
+**First station?** Follow the step-by-step **operator guide**, with a checklist at the end: [User-Guide/](User-Guide/README.md) (web page: https://bob56fr.github.io/openRemoteTRX/guide/; French for now, translations to come). In a hurry? [Quick start](User-Guide/fr/demarrage-rapide.md) (French), about 15 minutes. What follows is a summary.
 
 ### Debian (recommended)
 

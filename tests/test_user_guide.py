@@ -21,7 +21,8 @@ def _builder():
 def test_published_guide_page_is_up_to_date() -> None:
     for path, text in _builder().build().items():
         assert path.exists(), f"{path} absent : lancer python scripts/build_user_guide.py"
-        assert path.read_bytes().decode("utf-8") == text, \
+        expected = text if isinstance(text, bytes) else text.encode("utf-8")
+        assert path.read_bytes() == expected, \
             f"{path.relative_to(ROOT)} périmé : lancer python scripts/build_user_guide.py"
 
 
@@ -41,6 +42,7 @@ def test_every_part_and_rig_sheet_is_in_the_page_in_order() -> None:
     files = builder.guide_files("fr")
     names = [p.relative_to(GUIDE / "fr").as_posix() for p in files]
     assert names[0] == "README.md" and names[-1].startswith("10-")
+    assert names[1] == "demarrage-rapide.md", "le démarrage rapide suit l'introduction"
     assert names[-2] == "glossaire.md", "le glossaire se place juste avant le récapitulatif"
     assert names.index("postes/ftdx10.md") == names.index(next(n for n in names if n.startswith("01-"))) + 1
     page = builder.render_page("fr")
@@ -50,7 +52,8 @@ def test_every_part_and_rig_sheet_is_in_the_page_in_order() -> None:
 
 def test_relative_links_of_the_markdown_point_to_existing_files() -> None:
     for md in GUIDE.rglob("*.md"):
-        for target in re.findall(r"\]\(([^)\s]+)\)", md.read_text(encoding="utf-8")):
+        text = re.sub(r"```.*?```", "", md.read_text(encoding="utf-8"), flags=re.S)   # exemples de syntaxe
+        for target in re.findall(r"\]\(([^)\s]+)\)", text):
             if re.match(r"^(https?:|#)", target):
                 continue
             assert (md.parent / target.split("#")[0]).exists(), f"{md.relative_to(ROOT)} : lien cassé {target}"
@@ -106,3 +109,85 @@ def test_pdf_link_of_the_page_matches_the_file_printed_at_publication() -> None:
     workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
     assert "python scripts/build_user_guide_pdf.py" in workflow and "playwright install" in workflow
     assert "docs/site/guide/**/*.pdf" in (ROOT / ".gitignore").read_text(encoding="utf-8")
+
+
+def _png(width: int, height: int, padding: int = 0) -> bytes:
+    import struct
+    import zlib
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    chunk = lambda kind, data: struct.pack(">I", len(data)) + kind + data + \
+        struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"tEXt", b"x" * padding) + chunk(b"IEND", b""))
+
+
+def _capture_renderer(tmp_path: Path, monkeypatch):
+    builder = _builder()
+    monkeypatch.setattr(builder, "GUIDE", tmp_path)
+    (tmp_path / "fr").mkdir()
+    (tmp_path / "captures").mkdir()
+    page = tmp_path / "fr" / "99-essai.md"
+    page.write_text("# Essai\n", encoding="utf-8")
+    return builder, builder.Renderer("fr", page, {page.resolve(): "p-99"})
+
+
+def test_screenshot_is_published_beside_the_page_with_its_size(tmp_path: Path, monkeypatch) -> None:
+    builder, renderer = _capture_renderer(tmp_path, monkeypatch)
+    (tmp_path / "captures" / "page-connexion.png").write_bytes(_png(1080, 2340))
+    jpeg = b"\xff\xd8" + b"\xff\xe0\x00\x04xx" + b"\xff\xc0\x00\x11\x08" + (768).to_bytes(2, "big") + \
+        (1366).to_bytes(2, "big") + b"\x03" + b"\x00" * 9
+    (tmp_path / "captures" / "console.jpg").write_bytes(jpeg)
+    html = renderer.render(["![Page de connexion](../captures/page-connexion.png)", "",
+                            "![Console](../captures/console.jpg)"])
+    assert '<figure class="capture portrait">' in html
+    assert 'src="captures/page-connexion.png" alt="Page de connexion" width="1080" height="2340"' in html
+    assert 'width="1366" height="768"' in html and '<figure class="capture">' in html
+    assert [p.name for p in renderer.images] == ["page-connexion.png", "console.jpg"]
+    page = tmp_path / "fr" / "99-essai.md"
+    english = builder.Renderer("en", page, {page.resolve(): "p-99"})       # autre langue : page dans guide/en/
+    assert 'src="../captures/console.jpg"' in english.render(["![Console](../captures/console.jpg)"])
+
+
+def test_screenshot_too_heavy_or_not_an_image_is_refused(tmp_path: Path, monkeypatch) -> None:
+    builder, renderer = _capture_renderer(tmp_path, monkeypatch)
+    (tmp_path / "captures" / "lourde.png").write_bytes(_png(10, 10, builder.CAPTURE_MAX_BYTES))
+    (tmp_path / "captures" / "fausse.png").write_bytes(b"pas une image")
+    for name in ("lourde", "fausse"):
+        try:
+            renderer.render([f"![x](../captures/{name}.png)"])
+        except builder.GuideError:
+            continue
+        raise AssertionError(f"{name}.png aurait dû être refusée")
+
+
+def test_every_screenshot_of_the_guide_is_used_and_light() -> None:
+    builder = _builder()
+    used = {p.resolve() for p in builder.build() if p.suffix in (".png", ".jpg")}
+    for image in list(GUIDE.rglob("*.png")) + list(GUIDE.rglob("*.jpg")):
+        assert image.parent == GUIDE / "captures", f"{image.name} : une capture se place dans User-Guide/captures/"
+        assert image.stat().st_size <= builder.CAPTURE_MAX_BYTES, f"{image.name} trop lourde"
+        published = builder.SITE / "captures" / image.name
+        assert published.resolve() in used, f"{image.name} : capture citée par aucune page du guide"
+
+
+def test_glossary_bubbles_mark_the_first_occurrence_per_section_outside_code_and_links() -> None:
+    builder = _builder()
+    files = builder.guide_files("fr")
+    bubbles = builder.Bubbles("fr", {p.resolve(): builder.anchor_of(p, "fr") for p in files})
+    html = bubbles.apply('<h3 id="a">TOT</h3><p>Le TOT coupe, le TOT encore ; <code>TOT</code> '
+                         '<a href="#x">TOT</a> une charge fictive, des charges fictives.</p>'
+                         '<h3 id="b">B</h3><p>Le TOT, le CATalogue.</p>')
+    assert html.count('data-def="def-tot"') == 2, "une fois par section"
+    assert "<code>TOT</code>" in html and '<a href="#x">TOT</a>' in html and '<h3 id="a">TOT</h3>' in html
+    assert html.count('data-def="def-charge-fictive"') == 1 and "CATalogue" in html and "def-cat" not in html
+    footer = bubbles.footer(builder.UI["fr"])
+    assert '<div id="defs" hidden data-more="#' in footer and 'id="def-tot" data-terme="TOT"' in footer
+
+
+def test_published_guide_has_bubbles_but_not_in_the_glossary() -> None:
+    builder = _builder()
+    page = builder.render_page("fr")
+    glossary = page[page.index('id="s-glossaire"'):]
+    glossary = glossary[:glossary.index("</section>")]
+    assert 'class="terme"' in page and 'class="terme"' not in glossary
+    for ident in set(re.findall(r'data-def="([^"]+)"', page)):
+        assert f'<div id="{ident}" data-terme=' in page, f"définition absente : {ident}"

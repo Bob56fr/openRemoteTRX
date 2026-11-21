@@ -37,6 +37,8 @@ PRINT_CSS = """
   th, td { padding: .2em .4em !important; }
   pre { font-size: .9em !important; padding: .4em .6em !important; white-space: pre-wrap !important; }
   .schema-svg { max-height: 150mm !important; width: auto !important; display: block; margin: 0 auto; }
+  .capture img { max-height: 120mm !important; width: auto !important; }
+  .capture { break-inside: avoid; }
   tr, figure, blockquote { break-inside: avoid; }
   h2, h3 { break-after: avoid; }
   .outils, .telecharger, figcaption a { display: none !important; }

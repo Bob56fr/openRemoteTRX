@@ -40,7 +40,7 @@ Le détail est dans `CLAUDE.md` (« Règles de sécurité d'émission ») et `do
 
 ## Installation
 
-**Première station ?** Suivez le **guide de l'opérateur**, pas à pas, avec un récapitulatif à cocher : [User-Guide/](User-Guide/README.md) (page web : https://bob56fr.github.io/openRemoteTRX/guide/). Ce qui suit en est le résumé.
+**Première station ?** Suivez le **guide de l'opérateur**, pas à pas, avec un récapitulatif à cocher : [User-Guide/](User-Guide/README.md) (page web : https://bob56fr.github.io/openRemoteTRX/guide/). Pressé ? [Démarrage rapide](User-Guide/fr/demarrage-rapide.md), en un quart d'heure. Ce qui suit en est le résumé.
 
 ### Debian (recommandé)
 

@@ -8,10 +8,14 @@ Ce guide t'accompagne, dans l'ordre, du déballage à la première liaison depui
 > capacités de Hamlib. Les essais de la partie 3 servent de validation : fais-les tous, sur charge fictive, et
 > rapporte le résultat (partie 8, « Demander de l'aide »).
 
+> **Pressé ?** Le [démarrage rapide](demarrage-rapide.md) mène du poste branché à la page web en un quart d'heure,
+> TOT du poste compris. Reviens aux parties ci-dessous au premier problème.
+
 ## Le parcours
 
 | Partie | Ce que tu fais | Durée indicative |
 |---|---|---|
+| [Démarrage rapide](demarrage-rapide.md) | l'essentiel pour les impatients, essais de sécurité compris | 15 min |
 | [0. Avant de commencer](00-avant-de-commencer.md) | matériel, réglementation, choix Debian ou Windows | 15 min de lecture |
 | [1. Préparer le poste](01-preparer-le-poste.md) | câblage, pilote USB, menus du FTDX10 | 30 min |
 | [2. Installer la station](02-installer-la-station.md) | logiciel sur le PC | 20 min |

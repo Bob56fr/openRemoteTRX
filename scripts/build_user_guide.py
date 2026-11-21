@@ -30,16 +30,36 @@ LANGS = ("fr",)                      # langues publiées ; « fr » = référenc
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 PART = re.compile(r"^(\d\d)-[a-z0-9-]+\.md$")
 ANNEXES = ("glossaire.md",)          # fichiers hors parties numérotées, placés avant le récapitulatif
+QUICK_START = "demarrage-rapide.md"  # démarrage rapide : juste après l'introduction, avant la partie 00
 PDF_NAME = "guide-openRemoteTRX-{lang}.pdf"   # fabriqué à la publication par scripts/build_user_guide_pdf.py
-IMAGE = re.compile(r"^!\[([^\]]+)\]\((images/[a-z0-9-]+\.svg)\)$")
+# Schéma SVG propre à la langue (images/…svg) ou capture d'écran COMMUNE à toutes les langues (../captures/…) :
+# les captures sont faites une fois (en anglais) et servent à chaque langue du guide ; leur légende est traduite.
+IMAGE = re.compile(r"^!\[([^\]]+)\]\((images/[a-z0-9-]+\.svg|\.\./captures/[a-z0-9-]+\.(?:png|jpg))\)$")
+CAPTURES = "captures"                # User-Guide/captures/ -> docs/site/guide/captures/
+CAPTURE_MAX_BYTES = 600_000          # poids maximal d'une capture d'écran (page publique, PDF, iframe du site)
 UI = {
     "fr": {"progress": "{n} / {m} étapes cochées", "reset": "Tout décocher", "print": "Imprimer",
            "saved": "Les cases cochées sont gardées dans ce navigateur.",
            "unsaved": "Ce navigateur ne garde pas les cases : imprime la page pour garder une trace.",
            "source": "Source de ce guide sur GitHub", "footer": "Projet libre (AGPL-3.0-or-later)",
            "top": "Haut de page", "enlarge": "ouvrir le schéma en grand",
-           "pdf": "Télécharger en PDF", "pdf_hint": "A4, une partie par page, à imprimer"},
+           "pdf": "Télécharger en PDF", "pdf_hint": "A4, une partie par page, à imprimer",
+           "glossary_more": "Voir le glossaire"},
 }
+
+# Infobulles : termes du glossaire (premier nom en gras d'une ligne, ou un autre nom en gras de la même ligne)
+# marqués à leur PREMIÈRE occurrence de chaque section (## du Markdown, h3 de la page) ; définition = la ligne du glossaire. Liste FERMÉE : un
+# mot courant (« poste », « station ») couvrirait la page de pointillés. Pas de bulle dans le glossaire lui-même,
+# ni dans les titres, le code, les liens et les en-têtes de tableau.
+GLOSSARY = "glossaire.md"
+BUBBLES = {
+    "fr": ("CAT", "Charge fictive", "ALC", "TOS", "Hamlib", "rigctld", "Passerelle", "Superviseur", "TRX Console",
+           "Assistant de configuration", "Tableau de bord", "station.toml", "Profil de poste", "PTT", "TOT",
+           "TOT absolu", "Battement", "Bandes autorisées", "Opérateur sur place", "Mode sûr", "HTTPS", "certificat",
+           "Empreinte du certificat", "VPN", "Profil VPN", "Port ouvert", "CGNAT", "ntfy", "Code ORT", "Appairage",
+           "Visiteur", "Compte opérateur", "WebRTC", "Réseau local", "Porte audio d'émission"),
+}
+NO_BUBBLE_TAGS = ("code", "pre", "a", "h1", "h2", "h3", "h4", "th", "figcaption", "button", "summary")
 
 CSS = """
 :root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
@@ -88,13 +108,25 @@ button{font:inherit;color:var(--texte);background:var(--fond);border:1px solid v
 button:hover{border-color:var(--accent)}
 .schema{margin:1rem 0 1.2rem;text-align:center}
 .schema-svg{display:block;width:100%;max-width:40rem;height:auto;margin:0 auto}
+.capture{margin:1rem 0 1.2rem;text-align:center}
+.capture img{display:block;max-width:100%;height:auto;margin:0 auto;border:1px solid var(--ligne);border-radius:.4rem}
+.capture.portrait img{max-width:min(100%,20rem)}
 figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
 .telecharger{margin:.2rem 0 1rem;font-size:.95rem}
 .telecharger a{display:inline-block;border:1px solid var(--ligne);border-radius:2rem;padding:.2rem .9rem;
   text-decoration:none}
 .telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+.terme{border-bottom:1px dotted var(--accent);cursor:help}
+.terme:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.bulle{position:absolute;z-index:10;max-width:min(22rem,calc(100vw - 16px));background:var(--carte);
+  border:1px solid var(--accent);border-radius:.5rem;padding:.5rem .75rem;font-size:.9rem;line-height:1.45;
+  box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.bulle>strong{display:block;margin-bottom:.15rem}
+.bulle .plus{display:inline-block;margin-top:.35rem;font-size:.85rem}
 @media print{
+  .terme{border:0}
+  .bulle{display:none}
   :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
   .outils button,.haut,.telecharger,footer{display:none}
   a{color:#000}
@@ -149,6 +181,85 @@ SCRIPT = """
 """
 
 
+# Infobulles : survol de la souris, toucher (tablette, téléphone) ou clavier (Tab puis Entrée) ; Échap, un toucher
+# ailleurs ou la souris qui s'en va (après un court délai) la ferment. Ni bibliothèque ni ressource externe.
+BUBBLES_JS = """
+(function () {
+  var defs = document.getElementById("defs");
+  if (!defs) return;
+  var bubble = null, owner = null, timer = 0, hovered = false;
+  function close() {
+    clearTimeout(timer);
+    if (bubble) { bubble.parentNode.removeChild(bubble); bubble = null; }
+    if (owner) { owner.setAttribute("aria-expanded", "false"); owner.removeAttribute("aria-describedby"); owner = null; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(close, 250); }
+  function place() {
+    var r = owner.getBoundingClientRect(), w = bubble.offsetWidth, h = bubble.offsetHeight;
+    var vw = document.documentElement.clientWidth;
+    var left = Math.max(8, Math.min(r.left, vw - w - 8)) + window.scrollX;
+    var top = r.bottom + window.scrollY + 6;
+    if (r.bottom + h + 12 > window.innerHeight && r.top > h + 12) top = r.top + window.scrollY - h - 6;
+    bubble.style.left = left + "px";
+    bubble.style.top = top + "px";
+  }
+  function open(term) {
+    clearTimeout(timer);
+    if (owner === term) return;
+    close();
+    var def = document.getElementById(term.getAttribute("data-def"));
+    if (!def) return;
+    bubble = document.createElement("div");
+    bubble.className = "bulle";
+    bubble.id = "bulle";
+    bubble.setAttribute("role", "tooltip");
+    var title = document.createElement("strong");
+    title.textContent = def.getAttribute("data-terme");
+    bubble.appendChild(title);
+    var body = document.createElement("div");
+    body.innerHTML = def.innerHTML;
+    bubble.appendChild(body);
+    var more = defs.getAttribute("data-more");
+    if (more) {
+      var a = document.createElement("a");
+      a.className = "plus";
+      a.href = more;
+      a.textContent = defs.getAttribute("data-more-label");
+      a.addEventListener("click", close);
+      bubble.appendChild(a);
+    }
+    bubble.addEventListener("pointerenter", function () { clearTimeout(timer); });
+    bubble.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") later(); });
+    document.body.appendChild(bubble);
+    owner = term;
+    term.setAttribute("aria-expanded", "true");
+    term.setAttribute("aria-describedby", "bulle");
+    place();
+  }
+  function termOf(node) { return node && node.closest ? node.closest(".terme") : null; }
+  document.addEventListener("pointerover", function (e) {
+    var t = termOf(e.target);
+    if (t && e.pointerType === "mouse") { hovered = true; open(t); }
+  });
+  document.addEventListener("pointerout", function (e) {
+    var t = termOf(e.target);
+    if (t && e.pointerType === "mouse" && !t.contains(e.relatedTarget)) { hovered = false; later(); }
+  });
+  document.addEventListener("click", function (e) {
+    var t = termOf(e.target);
+    if (t) { if (owner === t && !hovered) close(); else open(t); return; }
+    if (bubble && !bubble.contains(e.target)) close();
+  });
+  document.addEventListener("keydown", function (e) {
+    var t = termOf(e.target);
+    if (e.key === "Escape") { close(); return; }
+    if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (owner === t) close(); else open(t); }
+  });
+  window.addEventListener("resize", function () { if (bubble) place(); });
+})();
+"""
+
+
 class GuideError(Exception):
     pass
 
@@ -172,6 +283,8 @@ def guide_files(lang: str) -> list[Path]:
     rigs = sorted((folder / "postes").glob("*.md"))
     annexes = [folder / name for name in ANNEXES if (folder / name).exists()]
     ordered: list[Path] = [folder / "README.md"]
+    if (folder / QUICK_START).exists():
+        ordered.append(folder / QUICK_START)
     for part in parts:
         if part == parts[-1]:
             ordered += annexes                 # annexes juste avant la dernière partie (le récapitulatif)
@@ -192,6 +305,23 @@ def anchor_of(path: Path, lang: str) -> str:
     if not PART.match(rel.name):
         return rel.stem                        # annexe : « glossaire »
     return "p-" + rel.stem[:2]
+
+
+def image_size(data: bytes, name: str) -> tuple[int, int]:
+    """(largeur, hauteur) lues dans l'en-tête d'un PNG ou d'un JPEG ; tout autre contenu est refusé."""
+    if data[:8] == b"\x89PNG\r\n\x1a\n" and data[12:16] == b"IHDR":
+        return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+    if data[:2] == b"\xff\xd8":
+        i = 2
+        while i + 9 < len(data):
+            if data[i] != 0xFF:
+                break
+            marker = data[i + 1]
+            length = int.from_bytes(data[i + 2:i + 4], "big")
+            if marker in (0xC0, 0xC1, 0xC2):                  # début d'image : hauteur puis largeur
+                return int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")
+            i += 2 + length
+    raise GuideError(f"{name} : ni PNG ni JPEG lisible")
 
 
 class Renderer:
@@ -265,10 +395,13 @@ class Renderer:
         return f'<{tag} id="{esc(ident)}"{cls}>{self.inline(text)}</{tag}>'
 
     def figure(self, alt: str, rel: str) -> str:
-        """Schéma SVG intégré à la page (aucune ressource externe) et publié à côté pour l'ouvrir en grand."""
+        """Schéma SVG intégré à la page (aucune ressource externe), ou capture d'écran PNG / JPEG ; l'un et l'autre
+        sont publiés à côté de la page pour les ouvrir en grand."""
         source = (self.path.parent / rel).resolve()
         if not source.is_file():
             raise GuideError(f"{self.path.name} : image absente : {rel}")
+        if source.suffix != ".svg":
+            return self.capture(alt, source)
         svg = source.read_text(encoding="utf-8")
         if "<script" in svg.lower() or "<foreignobject" in svg.lower() or "href=\"http" in svg.lower():
             raise GuideError(f"{rel} : un schéma ne contient ni script, ni objet étranger, ni lien externe")
@@ -279,6 +412,24 @@ class Renderer:
         return (f'<figure class="schema">{svg}<figcaption>{esc(alt)} · '
                 f'<a href="{esc(published)}" target="_blank" rel="noopener">{esc(UI[self.lang]["enlarge"])}</a>'
                 "</figcaption></figure>")
+
+    def capture(self, alt: str, source: Path) -> str:
+        """Capture d'écran : image publiée à côté de la page, dimensions écrites (la page ne saute pas au chargement,
+        la hauteur donnée à l'iframe du site reste juste), toucher = l'ouvrir en grand."""
+        data = source.read_bytes()
+        rel = source.relative_to(GUIDE.resolve()).as_posix()          # captures/<nom>
+        if source.parent != (GUIDE / CAPTURES).resolve():
+            raise GuideError(f"{self.path.name} : une capture d'écran se place dans User-Guide/{CAPTURES}/")
+        if len(data) > CAPTURE_MAX_BYTES:
+            raise GuideError(f"{rel} : {len(data) // 1000} ko, {CAPTURE_MAX_BYTES // 1000} ko au plus "
+                             "(réduire la largeur à 1400 px, ou JPEG pour une photo)")
+        width, height = image_size(data, rel)
+        self.images.append(source)
+        cls = "capture portrait" if height > width else "capture"
+        src = rel if self.lang == "fr" else f"../{rel}"         # page française à la racine de guide/
+        return (f'<figure class="{cls}"><a href="{esc(src)}" target="_blank" rel="noopener">'
+                f'<img src="{esc(src)}" alt="{esc(alt)}" width="{width}" height="{height}"></a>'
+                f'<figcaption>{esc(alt)}</figcaption></figure>')
 
     def table(self, rows: list[str]) -> str:
         def cells(row: str) -> list[str]:
@@ -399,6 +550,95 @@ class Renderer:
         return i
 
 
+class Bubbles:
+    """Termes du glossaire à infobulle d'une langue, et pose des marques dans le HTML d'une partie."""
+
+    def __init__(self, lang: str, anchors: dict[Path, str]) -> None:
+        self.lang = lang
+        self.defs: dict[str, tuple[str, str]] = {}          # id -> (terme, définition HTML)
+        self.names: dict[str, str] = {}                     # nom (minuscules) -> id
+        self.used: list[str] = []
+        glossary = GUIDE / lang / GLOSSARY
+        self.more = ("#" + anchors[glossary.resolve()]) if glossary.resolve() in anchors else ""
+        wanted = BUBBLES.get(lang, ())
+        if not wanted:
+            self.pattern = None
+            return
+        renderer = Renderer(lang, glossary, {**anchors, glossary.resolve(): "glossaire"})
+        found: dict[str, tuple[str, list[str], str]] = {}
+        for line in glossary.read_text(encoding="utf-8").splitlines():
+            cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("|") else []
+            if len(cells) != 2:
+                continue
+            names = [n.replace("`", "").strip() for n in re.findall(r"\*\*(.+?)\*\*", cells[0])]
+            for name in names:
+                found[name] = (names[0], names, cells[1])
+        for name in wanted:
+            if name not in found:
+                raise GuideError(f"infobulle : « {name} » absent de {lang}/{GLOSSARY} (terme en gras)")
+            first, _names, definition = found[name]
+            ident = "def-" + slug(first)
+            self.defs.setdefault(ident, (first, renderer.inline(definition)))
+            self.names[name.lower()] = ident
+        alternatives = []
+        for name in sorted(wanted, key=len, reverse=True):
+            word = re.escape(name).replace("\\ ", "\\s+")
+            if name.upper() == name:                      # sigle : casse exacte, pas de pluriel
+                alternatives.append(word)
+            else:
+                alternatives.append(f"(?i:{word})(?:s|x)?")
+        self.pattern = re.compile(r"(?<![\w-])(" + "|".join(alternatives) + r")(?![\w-])")
+
+    def ident(self, found: str) -> str | None:
+        key = re.sub(r"\s+", " ", found).lower()
+        if key in self.names:
+            return self.names[key]
+        return self.names.get(key[:-1]) if key[-1:] in ("s", "x") else None
+
+    def apply(self, part_html: str) -> str:
+        """Marque la première occurrence de chaque terme par section ; rien dans les balises à éviter."""
+        if self.pattern is None:
+            return part_html
+        out: list[str] = []
+        skip = 0
+        seen: set[str] = set()
+        for piece in re.split(r"(<[^>]+>)", part_html):
+            if piece.startswith("<"):
+                tag = re.match(r"</?([a-z0-9]+)", piece)
+                name = tag.group(1) if tag else ""
+                if name in ("h2", "h3") and not piece.startswith("</"):   # partie (#) ou section (##)
+                    seen = set()
+                if name in NO_BUBBLE_TAGS:
+                    skip += -1 if piece.startswith("</") else 1
+                out.append(piece)
+                continue
+            if skip > 0 or not piece:
+                out.append(piece)
+                continue
+
+            def mark(m: re.Match[str]) -> str:
+                ident = self.ident(m.group(1))
+                if ident is None or ident in seen:
+                    return m.group(0)
+                seen.add(ident)
+                if ident not in self.used:
+                    self.used.append(ident)
+                return (f'<span class="terme" tabindex="0" role="button" aria-expanded="false" '
+                        f'data-def="{ident}">{m.group(0)}</span>')
+
+            out.append(self.pattern.sub(mark, piece))
+        return "".join(out)
+
+    def footer(self, ui: dict[str, str]) -> str:
+        """Définitions utilisées, cachées, recopiées dans la bulle par le script."""
+        if not self.used:
+            return ""
+        items = "".join(f'<div id="{i}" data-terme="{esc(self.defs[i][0])}">{self.defs[i][1]}</div>'
+                        for i in self.used)
+        more = f' data-more="{esc(self.more)}" data-more-label="{esc(ui["glossary_more"])}"' if self.more else ""
+        return f'<div id="defs" hidden{more}>{items}</div>'
+
+
 def render_page(lang: str, images: list[Path] | None = None) -> str:
     """Page complète ; `images` reçoit les schémas SVG utilisés (à publier à côté de la page)."""
     files = guide_files(lang)
@@ -407,7 +647,9 @@ def render_page(lang: str, images: list[Path] | None = None) -> str:
     body: list[str] = []
     title = ""
     total_boxes = 0
+    bubbles = Bubbles(lang, anchors)
     for path in files:
+        with_bubbles = path.name != GLOSSARY
         lines = path.read_text(encoding="utf-8").splitlines()
         if not lines or not lines[0].startswith("# "):
             raise GuideError(f"{path.name} : la première ligne doit être le titre (# …)")
@@ -418,11 +660,14 @@ def render_page(lang: str, images: list[Path] | None = None) -> str:
             # Nouvel onglet : l'iframe du site (sandbox sans allow-downloads) ne peut pas télécharger elle-même.
             body.append(f'<p class="telecharger"><a href="{esc(PDF_NAME.format(lang=lang))}" target="_blank" '
                         f'rel="noopener">{esc(ui["pdf"])}</a><span>{esc(ui["pdf_hint"])}</span></p>')
-            body.append(renderer.render(lines[1:]))
+            intro = renderer.render(lines[1:])
+            body.append(bubbles.apply(intro) if with_bubbles else intro)
             if images is not None:
                 images += renderer.images
             continue
         html_part = renderer.render(lines)
+        if with_bubbles:
+            html_part = bubbles.apply(html_part)
         if images is not None:
             images += renderer.images
         if renderer.boxes:
@@ -451,18 +696,24 @@ def render_page(lang: str, images: list[Path] | None = None) -> str:
            f'<footer>{esc(ui["footer"])} · <a href="{source}" target="_blank" rel="noopener noreferrer">'
            f'{esc(ui["source"])}</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">'
            "rf-diy.com</a></footer>",
-           "</main>", f"<script>{(SCRIPT % {'lang': lang}).strip()}</script>", "</body>", "</html>", ""]
+           "</main>", bubbles.footer(ui), f"<script>{(SCRIPT % {'lang': lang}).strip()}</script>",
+           f"<script>{BUBBLES_JS.strip()}</script>", "</body>", "</html>", ""]
     return "\n".join(out)
 
 
-def build() -> dict[Path, str]:
-    pages: dict[Path, str] = {}
+def build() -> dict[Path, str | bytes]:
+    """{fichier publié: contenu} ; texte pour la page et les schémas, octets pour les captures d'écran."""
+    pages: dict[Path, str | bytes] = {}
     for lang in LANGS:
         sub = SITE if lang == "fr" else SITE / lang
         images: list[Path] = []
         pages[sub / "index.html"] = render_page(lang, images)
         for image in images:
-            pages[sub / image.relative_to((GUIDE / lang).resolve())] = image.read_bytes().decode("utf-8")
+            data = image.read_bytes()
+            if image.suffix == ".svg":
+                pages[sub / image.relative_to((GUIDE / lang).resolve())] = data.decode("utf-8")
+            else:                                              # capture commune : publiée une fois
+                pages[SITE / CAPTURES / image.name] = data
     return pages
 
 
@@ -474,7 +725,7 @@ def main() -> int:
         return 1
     for path, text in pages.items():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(text.encode("utf-8"))
+        path.write_bytes(text if isinstance(text, bytes) else text.encode("utf-8"))
         print(f"Écrit : {path.relative_to(ROOT).as_posix()}")
     return 0
 
