@@ -63,6 +63,21 @@
     }
     $("#term-state").textContent = state.idle ? "" : "…";
   }
+  // Lien vers l'application web (page de pilotage) sous l'état de la station : même nom de machine que celui par
+  // lequel la console a été ouverte, port et schéma de la passerelle ; caché si la passerelle n'écoute que sur
+  // 127.0.0.1 et que la console est ouverte depuis un autre appareil.
+  function webappLink() {
+    const a = $("#webapp"), w = state.webapp;
+    const host = location.hostname;
+    const here = host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
+    if (!w || (w.local && !here)) { a.hidden = true; return; }
+    const name = host.includes(":") && !host.startsWith("[") ? "[" + host + "]" : host;
+    const url = w.scheme + "://" + (w.local ? "127.0.0.1" : name) + ":" + w.port + "/";
+    a.href = url;
+    a.textContent = ui("web.webapp", { url: url.replace(/\/$/, "") });
+    a.title = ui("web.webapp_open");
+    a.hidden = false;
+  }
   function header() {
     $("#title").textContent = ui("web.title");
     $("#sub").textContent = ui("web.version", { version: state.version });
@@ -82,6 +97,7 @@
       p.addEventListener("click", go);
       p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
     }
+    webappLink();
     const rig = state.rig || {};
     $("#freq").textContent = rig.frequency_hz ? fmtFreq(rig.frequency_hz) : "--.---.--";
     const meta = [];

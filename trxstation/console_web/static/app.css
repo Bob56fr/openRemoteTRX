@@ -30,6 +30,8 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
 .brand{display:grid;gap:6px;min-width:0}
 .brand h1{margin:0;font:700 1.5rem/1.15 var(--f-display);letter-spacing:.03em}
 .sub{color:#9cc2bb;font-size:13px;overflow-wrap:anywhere}
+.webapp{justify-self:start;color:#7fe0d0;font-size:13px;text-decoration:none;border-bottom:1px dotted currentColor;overflow-wrap:anywhere}
+.webapp:hover,.webapp:focus-visible{color:#fff;outline:none;border-bottom-style:solid}
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .pill{display:inline-flex;align-items:center;gap:7px;font:600 12px var(--f-display);letter-spacing:.07em;text-transform:uppercase;
   padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}

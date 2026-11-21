@@ -111,6 +111,22 @@ def test_state_lists_the_eight_themes_with_icons_and_help(tmp_path):
     scenario(tmp_path, body)
 
 
+def test_state_gives_the_web_app_link_under_the_station_state(tmp_path):
+    """Lien vers l'application web sous « Station en marche » (étape 343) : schéma et port de la passerelle, la page y
+    met le nom de machine par lequel la console a été ouverte ; « local » si la passerelle n'écoute que sur 127.0.0.1."""
+    async def body(wc, client):
+        await login(wc, client)
+        cfg, _ = cfgmod.load_unchecked(wc.config)
+        data = await (await client.get("/api/state")).json()
+        n = cfg.network
+        assert data["webapp"] == {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
+                                  "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1")}
+        assert data["ui"]["web.webapp"] == "Application Web : {url}" and data["ui"]["web.webapp_open"]
+        wc.config.unlink()                                                  # station pas encore configurée
+        assert (await (await client.get("/api/state")).json())["webapp"] is None
+    scenario(tmp_path, body)
+
+
 def test_open_types_the_menu_only_when_the_console_waits_at_the_menu(tmp_path):
     async def body(wc, client):
         origin = await login(wc, client)

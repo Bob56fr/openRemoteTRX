@@ -684,6 +684,8 @@
   "web.busy": "Im Terminal läuft ein Menü: zuerst beenden (oder seine Frage beantworten).",
   "web.running": "Station läuft",
   "web.stopped": "Station gestoppt",
+  "web.webapp": "Web-App: {url}",
+  "web.webapp_open": "Steuerseite der Station in einem neuen Tab öffnen",
   "web.not_configured": "Station nicht eingerichtet",
   "web.tx": "SENDEN",
   "web.rx": "Empfang",

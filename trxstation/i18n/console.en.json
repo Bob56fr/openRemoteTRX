@@ -684,6 +684,8 @@
   "web.busy": "A menu is running in the terminal: finish it first (or answer its question).",
   "web.running": "Station running",
   "web.stopped": "Station stopped",
+  "web.webapp": "Web app: {url}",
+  "web.webapp_open": "Open the station's control page in a new tab",
   "web.not_configured": "Station not configured",
   "web.tx": "TRANSMITTING",
   "web.rx": "Receiving",

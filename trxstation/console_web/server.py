@@ -312,7 +312,7 @@ class WebConsole:
         ptt = status.ptt if status is not None and isinstance(status.ptt, dict) else {}
         levels = rig.get("levels") if isinstance(rig.get("levels"), dict) else {}
         release = con.offered(con.update_state())
-        return {"version": __version__, "lang": t.lang, "configured": con.config.exists(),
+        return {"webapp": self.webapp(con), "version": __version__, "lang": t.lang, "configured": con.config.exists(),
                 "running": bool(con.config.exists() and con.station_running()),
                 "rig": {"connected": bool(rig.get("connected")), "frequency_hz": rig.get("frequency_hz"),
                         "mode": rig.get("mode"), "strength_db": rig.get("strength_db"), "vd": levels.get("VD_METER")},
@@ -321,6 +321,22 @@ class WebConsole:
                 "assistant": menu_number("assistant"), "update_menu": menu_number("update"), "ui": {k: t(k) for k in UI_KEYS}, "themes": themes,
                 "level": con.level, "langs": [[code, NAMES[code]] for code in LANGS],
                 "network": self.network}
+
+    @staticmethod
+    def webapp(con: Console) -> dict | None:
+        """Lien vers l'application web de la station (page de pilotage), sous l'état de la station (étape 343) : le
+        schéma et le port seulement ; la page y met le NOM par lequel la console a été ouverte (l'adresse qui marche
+        depuis cet appareil). `local` : passerelle sur 127.0.0.1, injoignable d'un autre appareil."""
+        if not con.config.exists():
+            return None
+        from .. import config as cfgmod
+        try:
+            cfg, _ = cfgmod.load_unchecked(con.config)
+        except (cfgmod.ConfigError, OSError):
+            return None
+        n = cfg.network
+        return {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
+                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1")}
 
     async def state(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request):
@@ -663,7 +679,7 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
            "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
            "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.net", "web.dash.close", "web.dash.stale",
-           "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint")
+           "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint", "web.webapp", "web.webapp_open")
 
 UI_START = ("\nConsole web de la station : {url}\n"
             "  Adresse à usage unique, à ouvrir sur CETTE machine (navigateur ouvert tout seul s'il y en a un).\n"

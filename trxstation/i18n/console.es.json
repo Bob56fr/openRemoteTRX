@@ -684,6 +684,8 @@
   "web.busy": "Hay un menú en curso en el terminal: termínalo antes (o responde a su pregunta).",
   "web.running": "Estación en marcha",
   "web.stopped": "Estación parada",
+  "web.webapp": "Aplicación web: {url}",
+  "web.webapp_open": "Abrir la página de control de la estación en una pestaña nueva",
   "web.not_configured": "Estación sin configurar",
   "web.tx": "EMISIÓN",
   "web.rx": "Recepción",
