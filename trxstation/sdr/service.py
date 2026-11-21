@@ -40,6 +40,7 @@ from .. import config as cfgmod
 from ..errors import codes
 from ..errors.emit import emit_event
 from ..paths import default_config_path
+from ..status import replace_atomic
 from .devices import core_path
 from .frames import Audio, FrameError, FrameReader, Line
 from .load import LEVEL_TEXT, TOP, Ladder, sample_rate, waterfall_rate
@@ -291,7 +292,26 @@ class SdrService:
                 "max_cpu_pct": self.sd.max_cpu_pct, "max_mem_mb": self.sd.max_mem_mb}
 
     async def publish_state(self) -> None:
-        await self._send({"kind": "sdr_state", "retain": "snapshot", "scope": "operators", **self.snapshot()})
+        snap = self.snapshot()
+        self.write_status(snap)
+        await self._send({"kind": "sdr_state", "retain": "snapshot", "scope": "operators", **snap})
+
+    def write_status(self, snap: dict) -> None:
+        """Résumé lu par le tableau de bord (trx-monitor, menu 1.3) : `state_dir/sdr/status.json` (0644, écriture
+        atomique, aucun secret). Un échec d'écriture ne gêne jamais le module."""
+        try:
+            self.folder.mkdir(parents=True, exist_ok=True)
+            tmp = self.folder / "status.json.tmp"
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+            with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+                json.dump(snap, fh, ensure_ascii=False)
+            replace_atomic(tmp, self.folder / "status.json")
+            try:
+                os.chmod(self.folder / "status.json", 0o644)
+            except OSError:
+                pass
+        except OSError as exc:
+            log.debug("état SDR non écrit : %s", exc)
 
     async def _send(self, message: dict) -> None:
         if self.bus is None or not self.bus.connected.is_set():
@@ -664,6 +684,7 @@ class SdrService:
         finally:
             self._stopping = True
             await self._stop_core()
+            self.write_status({**self.snapshot(), "state": "stopped"})   # tableau de bord : « arrêté », pas « muet »
             for t in tasks:
                 t.cancel()
 

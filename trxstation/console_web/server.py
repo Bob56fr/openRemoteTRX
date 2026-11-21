@@ -434,7 +434,7 @@ class WebConsole:
             if p["key"] == "connexion":
                 p["rows"].append(self.console_row(t))
         return {"ok": True, "fresh": snap.gateway_fresh, "ptt": ptt or "", "safe_mode": snap.safe_mode or "",
-                "panels": panels,
+                "panels": panels, "net_button": t("net.detail_hide") if net_detail else t("net.detail_show"),
                 "log": self.dash_log.entries()[-DASH_LOG:]}          # [{text, level}] : rouge = level bad
 
     def console_row(self, t) -> list:
@@ -678,7 +678,7 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.flow.stop", "web.flow.send", "web.flow.free", "web.flow.yes", "web.flow.no", "web.flow.continue",
            "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
            "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
-           "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.net", "web.dash.close", "web.dash.stale",
+           "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.close", "web.dash.stale",
            "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint", "web.webapp", "web.webapp_open")
 
 UI_START = ("\nConsole web de la station : {url}\n"

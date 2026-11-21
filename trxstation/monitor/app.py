@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Interface Textual de trx-monitor. Couche mince : tout le contenu vient de model.py.
 
-Touches : s = STOP TX (coupe l'émission), n = détail du réseau, q = quitter.
+Touches : s = STOP TX (coupe l'émission), n = détail du réseau (ou clic sur le bouton du panneau Réseau), q = quitter.
 """
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ class MonitorApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with Container(id="top"):
-            for key in ("radio", "audio", "connexion", "sante", "materiel", "reseau"):
+            for key in ("radio", "sdr", "audio", "connexion", "sante", "materiel", "reseau"):
                 yield Static("", id=key, classes="panel")
         yield Static("", id="flash")
         yield RichLog(id="log", wrap=True, markup=False)
@@ -69,10 +69,16 @@ class MonitorApp(App):
 
     def refresh_view(self) -> None:
         snapshot: Snapshot = self.source.poll()
-        for panel in build_panels(snapshot, self.net_detail, self.t):
+        panels = build_panels(snapshot, self.net_detail, self.t)
+        self.query_one("#sdr", Static).display = any(p.key == "sdr" for p in panels)   # SDR jamais lancé : masqué
+        for panel in panels:
             widget = self.query_one(f"#{panel.key}", Static)
             widget.border_title = panel.title
-            widget.update(render_markup(panel))
+            markup = render_markup(panel)
+            if panel.key == "reseau":                     # bouton cliquable (et touche n) : détail / résumé
+                label = self.t("net.detail_hide") if self.net_detail else self.t("net.detail_show")
+                markup += f"\n[@click=app.net_detail][reverse] {escape(label)} (n) [/reverse][/]"
+            widget.update(markup)
         log = self.query_one("#log", RichLog)
         for line in self.events.observe(snapshot):
             log.write(line)

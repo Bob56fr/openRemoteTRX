@@ -8,6 +8,7 @@ Lecture seule. La fraîcheur de la passerelle se juge sur le changement de `seq`
 from __future__ import annotations
 
 import json
+import socket
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -26,7 +27,8 @@ def _read_float(path: Path, scale: float = 1.0) -> float | None:
 
 
 def read_system_info(proc: str = "/proc", sys_root: str = "/sys") -> SystemInfo:
-    """Température du PROCESSEUR (cpu_temp.py), charge, mémoire libre, disponibilité (Linux ; champs None ailleurs)."""
+    """Température du PROCESSEUR (cpu_temp.py), charge, mémoire libre, disponibilité (Linux ; champs None ailleurs),
+    nom de l'ordinateur (partout)."""
     mem = None
     try:
         for line in (Path(proc) / "meminfo").read_text().splitlines():
@@ -36,7 +38,14 @@ def read_system_info(proc: str = "/proc", sys_root: str = "/sys") -> SystemInfo:
     except (OSError, ValueError, IndexError):
         pass
     return SystemInfo(temp_c=cpu_celsius(sys_root), load1=_read_float(Path(proc) / "loadavg"),
-                      mem_available_mb=mem, uptime_s=_read_float(Path(proc) / "uptime"))
+                      mem_available_mb=mem, uptime_s=_read_float(Path(proc) / "uptime"), host=_host_name())
+
+
+def _host_name() -> str | None:
+    try:
+        return socket.gethostname().split(".")[0][:40] or None
+    except OSError:
+        return None
 
 
 def read_presence(path: Path) -> dict | None:
@@ -56,6 +65,7 @@ class StatusSource:
         self.store = StateStore(state_dir)           # utilisé en lecture seule (safe_mode())
         self.presence_path = Path(state_dir) / "presence" / "status.json"   # module « presence » (sans clé)
         self.monlink_path = Path(state_dir) / "monlink" / "status.json"     # module « monlink » (sans clé)
+        self.sdr_path = Path(state_dir) / "sdr" / "status.json"             # module « sdr » (état du récepteur)
         self.watch = GatewayWatch(stale_after_s)
         self.clock, self.sleep, self.system_reader = clock, sleep, system_reader
 
@@ -66,7 +76,8 @@ class StatusSource:
         return Snapshot(status=status, gateway_fresh=self.watch.fresh(now),
                         stale_s=self.watch.age(now) if status is not None else None,
                         safe_mode=self.store.safe_mode(), system=self.system_reader(),
-                        presence=read_presence(self.presence_path), monlink=read_presence(self.monlink_path))
+                        presence=read_presence(self.presence_path), monlink=read_presence(self.monlink_path),
+                        sdr=read_presence(self.sdr_path))
 
     def poll_once(self, wait_s: float = 0.6) -> Snapshot:
         """Pour une capture unique (--once) : deux lectures espacées ; figée si `seq` n'a pas bougé."""
@@ -79,4 +90,4 @@ class StatusSource:
             return second
         return Snapshot(status=second.status, gateway_fresh=False, stale_s=wait_s,
                         safe_mode=second.safe_mode, system=second.system, presence=second.presence,
-                        monlink=second.monlink)
+                        monlink=second.monlink, sdr=second.sdr)

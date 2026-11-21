@@ -17,7 +17,7 @@
     return e;
   }
 
-  function panel(p) {
+  function panel(p, netButton) {
     const card = el("section", "dcard dcard-" + p.key);
     card.append(el("h3", "", p.title));
     const rows = el("dl", "drows");
@@ -25,6 +25,12 @@
       rows.append(el("dt", "", label), el("dd", "lv-" + (level || "info"), text));
     }
     card.append(rows);
+    if (p.key === "reseau" && netButton) {               // détail du réseau : bouton dans la carte (étape 346)
+      const b = el("button", "btn dnet" + (net ? " on" : ""), netButton);
+      b.type = "button";
+      b.addEventListener("click", () => { net = !net; poll(); });
+      card.append(b);
+    }
     return card;
   }
 
@@ -35,7 +41,7 @@
       body.replaceChildren(el("p", "dash-error", data.error || "?"));
       return;
     }
-    body.replaceChildren(...(data.panels || []).map(panel));
+    body.replaceChildren(...(data.panels || []).map((p) => panel(p, data.net_button)));
     const log = $("#dash-log-lines");
     // Niveau donné par la station (quelle que soit la langue) : grave = rouge, retour à la normale = vert
     log.replaceChildren(...(data.log || []).slice().reverse().map((e) => el("li", e.level === "bad" ? "hot" : e.level === "ok" ? "good" : "", e.text)));
@@ -86,7 +92,6 @@
   function open(label) {
     $("#dash-title").textContent = label || "";
     $("#dash-stop").textContent = "■ " + ui("web.dash.stop");
-    $("#dash-net").textContent = ui("web.dash.net");
     $("#dash-term").textContent = "⌨ " + ui("web.flow.terminal");
     $("#dash-close").textContent = ui("web.dash.close");
     $("#dash-stale").textContent = ui("web.dash.stale");
@@ -110,11 +115,6 @@
       ui = uiFn;
       toTerminal = terminalFn;
       $("#dash-stop").addEventListener("click", stopTx);
-      $("#dash-net").addEventListener("click", () => {
-        net = !net;
-        $("#dash-net").classList.toggle("on", net);
-        poll();
-      });
       $("#dash-term").addEventListener("click", () => { close(); toTerminal(); });
       $("#dash-close").addEventListener("click", close);
     },

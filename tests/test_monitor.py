@@ -85,17 +85,17 @@ def test_stale_data_is_never_shown_as_live():
 def test_absent_gateway():
     s = snap(None, fresh=False, stale_s=None)
     assert row(panel(s, "radio"), "Poste").level == "bad"
-    assert "ABSENTE" in row(panel(s, "sante"), "Passerelle").text
+    assert "ABSENTE" in row(panel(s, "sante"), "Passerelle openRemoteTRX").text
     assert panel(s, "connexion").rows[0].level == "dim"
 
 
 def test_sante_panel_alarms():
     p = panel(snap(status(fault="unkey_failed", connected=False), fresh=False, stale_s=5.4,
                    safe="trop de redémarrages"), "sante")
-    assert row(p, "Passerelle").text.startswith("FIGÉE depuis 5 s") and row(p, "Passerelle").level == "bad"
-    assert row(p, "rigctld").text == "INJOIGNABLE" and row(p, "rigctld").level == "bad"
+    assert row(p, "Passerelle openRemoteTRX").text.startswith("FIGÉE depuis 5 s") and row(p, "Passerelle openRemoteTRX").level == "bad"
+    assert row(p, "Service Hamlib (rigctld)").text == "INJOIGNABLE" and row(p, "Service Hamlib (rigctld)").level == "bad"
     assert "unkey_failed" in row(p, "Défaut PTT").text and row(p, "Défaut PTT").level == "bad"
-    assert row(p, "Mode sûr").text.startswith("ACTIF : trop de") and row(p, "Mode sûr").level == "bad"
+    assert row(p, "Mode sûr activé").text.startswith("OUI : trop de") and row(p, "Mode sûr activé").level == "bad"
     healthy = panel(snap(status()), "sante")
     assert [r.level for r in healthy.rows] == ["ok", "ok", "ok", "ok"]
 
@@ -113,13 +113,16 @@ def test_materiel_panel_levels():
         return row(panel(snap(status(), system=SystemInfo(temp_c=t)), "materiel"), "Température").level
     assert [temp_level(t) for t in (None, 50, 72, 85)] == ["dim", "ok", "warn", "bad"]
     p = panel(snap(status(), system=SystemInfo(55.0, 0.42, 812.0, 7200)), "materiel")
-    assert row(p, "Charge (1 min)").text == "0.42" and row(p, "Mémoire libre").text == "812 Mo"
-    assert row(p, "Disponibilité").text == "2 h 00 min"
+    assert row(p, "Charge du processeur (moyenne sur 1 min)").text == "0.42" and row(p, "Mémoire RAM libre").text == "812 Mo"
+    assert row(p, "En fonctionnement depuis").text == "2 h 00 min"
+    assert p.title == "Ordinateur"                                  # nom inconnu
+    named = panel(snap(status(), system=SystemInfo(host="minix")), "materiel")
+    assert named.title == "Ordinateur minix"
 
 
 def test_render_plain_is_aligned_and_complete():
     text = render_plain(build_panels(snap(status("TX", owner="phone", remaining=30))))
-    for title in ("== Radio ==", "== Connexion ==", "== Santé ==", "== Matériel =="):
+    for title in ("== Radio ==", "== Connexion ==", "== Santé ==", "== Ordinateur =="):
         assert title in text
     assert "  PTT       : ÉMISSION" in text and "  Fréquence : 14 200 000 Hz" in text   # libellés alignés
 
@@ -131,7 +134,7 @@ def test_audio_panel():
                 "tx_dropped_not_owner": 0}
     p = panel(snap(st), "audio")
     assert row(p, "Porte micro").text == "fermée" and row(p, "Porte micro").level == "ok"
-    assert row(p, "Écoutes du poste").text == "2" and "-30 dBFS" in row(p, "Réception").text
+    assert row(p, "Écoutes du poste").text == "2" and "-30 dBFS" in row(p, "Niveau BF reçu du poste").text
     st.audio.update(rx_frames=1500, tx_frames=240)
     assert "capturées 1500" in row(panel(snap(st), "audio"), "Trames").text and "passées au poste 240" in row(panel(snap(st), "audio"), "Trames").text
     st.audio.pop("rx_frames"), st.audio.pop("tx_frames")
@@ -139,9 +142,9 @@ def test_audio_panel():
     st.audio.update(gate_open=True, tx_db=-12, tx_dropped_not_owner=4)
     p = panel(snap(st), "audio")
     assert row(p, "Porte micro").text.startswith("OUVERTE") and row(p, "Porte micro").level == "bad"
-    assert row(p, "Émission").level == "bad" and row(p, "Pertes").level == "warn"
+    assert row(p, "Niveau BF émis vers le poste").level == "bad" and row(p, "Pertes").level == "warn"
     p = panel(snap(st, fresh=False), "audio")
-    assert row(p, "Réception").level == "dim"                                       # donnée périmée : grisée
+    assert row(p, "Niveau BF reçu du poste").level == "dim"                                       # donnée périmée : grisée
     assert [pn.key for pn in build_panels(snap(st))] == ["radio", "audio", "connexion", "sante", "materiel", "reseau"]
 
 
@@ -151,12 +154,12 @@ def test_audio_panel_breizh_row():
     assert not [r for r in panel(snap(st), "audio").rows if r.label == "Breizh"]          # station sans Breizh
     st.breizh = {"state": "ready", "route": "breizh", "bypass": False, "rtt_ms": 3, "late": 0, "lost": 0,
                  "reactivate_in_s": None}
-    r = row(panel(snap(st), "audio"), "Breizh")
+    r = row(panel(snap(st), "audio"), "Breizh Audio")
     assert r.level == "ok" and "prêt" in r.text and "aller-retour 3 ms" in r.text
     st.breizh.update(state="fallback", route="direct", late=7, reactivate_in_s=42)
-    r = row(panel(snap(st), "audio"), "Breizh")
+    r = row(panel(snap(st), "audio"), "Breizh Audio")
     assert r.level == "bad" and "REPLI" in r.text and "7 bloc(s)" in r.text and "retour dans 42 s" in r.text
-    assert row(panel(snap(st, fresh=False), "audio"), "Breizh").level == "dim"
+    assert row(panel(snap(st, fresh=False), "audio"), "Breizh Audio").level == "dim"
 
 
 # --------------------------------------------------------------------------- journal
@@ -243,7 +246,7 @@ def test_read_system_info(tmp_path):
     info = read_system_info(str(proc), str(tmp_path / "sys"))
     assert (info.temp_c, info.load1, info.mem_available_mb, info.uptime_s) == (47.5, 0.35, 2000.0, 3600.55)
     empty = read_system_info(str(tmp_path / "rien"), str(tmp_path / "rien"))
-    assert empty == SystemInfo()
+    assert empty == SystemInfo(host=empty.host)                   # nom de l'ordinateur lu partout
 
 
 # --------------------------------------------------------------------------- STOP TX
@@ -460,3 +463,64 @@ def test_audio_panel_selcall_rows():
     st.selcall.update(sending="2/3")
     assert row(panel(snap(st), "audio"), "SELCALL").level == "bad"
     assert row(panel(snap(st, fresh=False), "audio"), "SELCALL").level == "dim"
+
+
+# --------------------------------------------------------------------------- rubrique SDR (étape 346)
+
+SDR_STATE = {"state": "running", "driver": "sdrplay", "serial": "1705TEST", "ant": "A", "dfreq": 7_074_000, "mode": "USB",
+             "dbw": 2700, "fs": 2_000_000, "center": 7_100_000, "lna": 4, "gr": 40, "agc": True, "gain_db": 31.6,
+             "overload": 0, "overloads": 2, "audio": True, "cpu_total": 12.4, "mem_mb": 85.2, "load": 0, "t": 1000}
+
+
+def _sdr_panel(sd, now=1002.0):
+    from trxstation.monitor.model import Snapshot, _sdr_panel as build
+    return build(Snapshot(status=None, gateway_fresh=True, stale_s=None, safe_mode=None, sdr=sd), now=now)
+
+
+def test_sdr_panel_absent_or_forgotten():
+    assert _sdr_panel(None) is None and _sdr_panel({}) is None
+    assert _sdr_panel(dict(SDR_STATE), now=1000 + 2 * 86400) is None          # hors service depuis plus d'un jour
+    assert all(p.key != "sdr" for p in build_panels(snap(status())))
+
+
+def test_sdr_panel_running():
+    p = _sdr_panel(dict(SDR_STATE))
+    rows = {r.label: r for r in p.rows}
+    assert p.title == "SDR" and rows["État"].text == "en service" and rows["État"].level == "ok"
+    assert rows["Récepteur"].text == "SDRplay RSP · n° 1705TEST · antenne A"
+    assert rows["Fréquence écoutée"].text == "7 074 000 Hz · USB · filtre 2700 Hz"
+    assert rows["Largeur"].text == "2 MHz autour de 7 100 000 Hz"
+    assert rows["Gain"].text == "LNA 4 · FI automatique · gain réel 32 dB"
+    assert rows["Surcharge"].text == "non (2 depuis le démarrage)" and rows["Surcharge"].level == "warn"
+    assert rows["Écoute"].text.startswith("son démodulé")
+    assert rows["Charge du module"].text == "12 % du processeur · 85 Mo"
+
+
+def test_sdr_panel_alarms():
+    rows = {r.label: r for r in _sdr_panel({**SDR_STATE, "overload": 1}).rows}
+    assert rows["Surcharge"].level == "bad" and rows["Surcharge"].text.startswith("EN COURS")
+    rows = {r.label: r for r in _sdr_panel({**SDR_STATE, "load": 2, "load_reason": "station chargée"}).rows}
+    assert rows["État"].text == "bridé (niveau 2) : station chargée" and rows["État"].level == "warn"
+    rows = {r.label: r for r in _sdr_panel({**SDR_STATE, "state": "error", "detail": "SDR absent"}).rows}
+    assert rows["État"].text == "en erreur : SDR absent" and rows["État"].level == "bad"
+    rows = {r.label: r for r in _sdr_panel({**SDR_STATE, "agc": False, "driver": "rtlsdr"}).rows}
+    assert rows["Gain"].text.startswith("LNA 4 · FI manuelle (40 dB de réduction)")
+    assert "antenne" not in rows["Récepteur"].text                               # RTL-SDR : pas de choix d'antenne
+    stale = _sdr_panel(dict(SDR_STATE), now=1000 + 120)
+    assert stale.rows[0].text == "module muet depuis 2 min 00 s" and {r.level for r in stale.rows} == {"dim"}
+
+
+def test_sdr_panel_is_read_from_the_state_dir(tmp_path):
+    import json
+    from trxstation.monitor.source import StatusSource
+    (tmp_path / "sdr").mkdir()
+    (tmp_path / "sdr" / "status.json").write_text(json.dumps(SDR_STATE), encoding="utf-8")
+    source = StatusSource(tmp_path / "absent.json", tmp_path, system_reader=SystemInfo)
+    assert source.poll().sdr["serial"] == "1705TEST"
+
+
+def test_network_detail_is_a_button_not_a_row():
+    st = status()
+    st.net = {"clients": [], "probes": {"lan": {"ok": True, "method": "icmp", "rtt_ms": 1, "address": "192.168.1.254"}}}
+    rows = build_panels(snap(st))[-1].rows
+    assert all("touche" not in r.text and r.label != "Détail" for r in rows)

@@ -54,7 +54,7 @@ class Row:
 
 @dataclass(frozen=True)
 class Panel:
-    key: str                   # radio | audio | connexion | sante | materiel | reseau (jamais traduite)
+    key: str                   # radio | sdr | audio | connexion | sante | materiel | reseau (jamais traduite)
     title: str
     rows: tuple[Row, ...]
 
@@ -65,6 +65,7 @@ class SystemInfo:
     load1: float | None = None
     mem_available_mb: float | None = None
     uptime_s: float | None = None
+    host: str | None = None               # nom de l'ordinateur (titre du panneau, affichage local)
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,7 @@ class Snapshot:
     system: SystemInfo = SystemInfo()
     presence: dict | None = None          # state_dir/presence/status.json (module « presence »), None : absent
     monlink: dict | None = None           # state_dir/monlink/status.json (module « monlink »), None : absent
+    sdr: dict | None = None               # state_dir/sdr/status.json (module « sdr »), None : absent
 
 
 # --------------------------------------------------------------------------- formats
@@ -279,7 +281,7 @@ def _sante_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         rows.append(Row(gateway, t("gateway.active", pid=status.pid), "ok"))
     if status is not None:
         connected = bool(status.rig.get("connected"))
-        rows.append(Row("rigctld", t("rigctld.ok") if connected else t("rigctld.down"), "ok" if connected else "bad"))
+        rows.append(Row(t("label.rigctld"), t("rigctld.ok") if connected else t("rigctld.down"), "ok" if connected else "bad"))
         if status.rig.get("last_error"):
             rows.append(Row(t("label.last_error"), str(status.rig["last_error"])[:70], "warn"))
         fault = status.ptt.get("fault")
@@ -343,13 +345,82 @@ def _materiel_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
     t = translator(t)
     s = snap.system
     temp_level = "dim" if s.temp_c is None else "bad" if s.temp_c >= 80 else "warn" if s.temp_c >= 70 else "ok"
-    return Panel("materiel", t("panel.materiel"), (
+    return Panel("materiel", t("panel.materiel", name=s.host or "").strip(), (
         Row(t("label.temperature"), "--" if s.temp_c is None else f"{s.temp_c:.0f} °C", temp_level),
         Row(t("label.load"), "--" if s.load1 is None else f"{s.load1:.2f}", "info"),
         Row(t("label.memory"), "--" if s.mem_available_mb is None else t("memory.mb", mb=f"{s.mem_available_mb:.0f}"),
             "info"),
         Row(t("label.uptime"), format_duration(s.uptime_s, t), "info"),
     ))
+
+
+SDR_STALE_S = 30.0            # le module publie toutes les 5 s : au-delà, il est arrêté ou muet
+SDR_FORGET_S = 86400.0        # au-delà d'un jour sans nouvelles : rubrique masquée (SDR mis hors service)
+SDR_DRIVERS = {"sdrplay": "SDRplay RSP", "rtlsdr": "RTL-SDR"}
+
+
+def _num(v, fmt: str = "{:g}") -> str:
+    return "--" if not isinstance(v, (int, float)) or isinstance(v, bool) else fmt.format(v)
+
+
+def _sdr_panel(snap: Snapshot, t: Translator | None = None, now: float | None = None) -> Panel | None:
+    """Récepteur SDR (module « sdr », `state_dir/sdr/status.json`, étape 346) : état et bridage, récepteur, fréquence
+    écoutée, largeur, gain, surcharge, écoute, charge du module. Rien si le module n'a jamais tourné ou s'est tu depuis
+    plus d'un jour ; lignes grisées s'il ne publie plus."""
+    sd = snap.sdr
+    if not isinstance(sd, dict) or not sd:
+        return None
+    now = time.time() if now is None else now
+    stamp = sd.get("t")
+    age = now - stamp if isinstance(stamp, (int, float)) else None
+    if age is not None and age > SDR_FORGET_S:
+        return None
+    t = translator(t)
+    stale = age is None or age > SDR_STALE_S
+    state = sd.get("state")
+    if stale:
+        text, level = t("sdr.silent", age=_short(age) if age is not None else "?"), "dim"
+    elif state == "running" and sd.get("load"):
+        text = t("sdr.throttled", level=sd["load"], reason=str(sd.get("load_reason") or "")[:120])
+        level = "warn"
+    elif state == "running":
+        text, level = t("sdr.running"), "ok"
+    elif state == "starting":
+        text, level = t("sdr.starting"), "warn"
+    elif state == "suspended":
+        text, level = t("sdr.suspended", reason=str(sd.get("detail") or "")[:120]), "warn"
+    elif state == "error":
+        text, level = t("sdr.error", detail=str(sd.get("detail") or sd.get("code") or "?")[:160]), "bad"
+    else:
+        text, level = t("sdr.stopped"), "dim"
+    dim = "dim" if stale or state != "running" else "info"
+    driver = SDR_DRIVERS.get(str(sd.get("driver") or ""), str(sd.get("driver") or "SDR"))
+    device = t("sdr.device", driver=driver, serial=sd.get("serial") or "?")
+    if sd.get("ant") and sd.get("driver") == "sdrplay":
+        device += t("sdr.antenna", ant=sd["ant"])
+    rows = [Row(t("label.sdr_state"), text, level), Row(t("label.sdr_device"), device, dim)]
+    dfreq = sd.get("dfreq")
+    rows.append(Row(t("label.sdr_listened"), t("sdr.listened", freq=format_frequency(dfreq if isinstance(dfreq, int) else None),
+                                                mode=sd.get("mode") or "--", bw=_num(sd.get("dbw"))), dim))
+    fs = sd.get("fs")
+    center = sd.get("center")
+    rows.append(Row(t("label.sdr_span"), t("sdr.span", width=_num(fs / 1e6 if isinstance(fs, (int, float)) else None),
+                                            center=format_frequency(center if isinstance(center, int) else None)), dim))
+    fi = t("sdr.fi_auto") if sd.get("agc") else t("sdr.fi_manual", gr=_num(sd.get("gr")))
+    gain = t("sdr.gain", lna=_num(sd.get("lna")), fi=fi)
+    if isinstance(sd.get("gain_db"), (int, float)):
+        gain += t("sdr.gain_now", gain=_num(sd["gain_db"], "{:.0f}"))
+    rows.append(Row(t("label.sdr_gain"), gain, dim))
+    count = sd.get("overloads") or 0
+    if sd.get("overload") and not stale:
+        rows.append(Row(t("label.sdr_overload"), t("sdr.overload_now", n=count), "bad"))
+    else:
+        rows.append(Row(t("label.sdr_overload"), t("sdr.overload_none", n=count), "warn" if count and not stale else dim))
+    rows.append(Row(t("label.sdr_listen"), t("sdr.listen_on") if sd.get("audio") else t("sdr.listen_off"),
+                    "info" if sd.get("audio") and not stale else "dim"))
+    rows.append(Row(t("label.sdr_load"), t("sdr.load", cpu=_num(sd.get("cpu_total"), "{:.0f}"),
+                                            mem=_num(sd.get("mem_mb"), "{:.0f}")), dim))
+    return Panel("sdr", t("panel.sdr"), tuple(rows))
 
 
 def _db_bar(db: float | None, width: int = 16) -> str:
@@ -513,7 +584,7 @@ def _breizh_rows(snap: Snapshot, t: Translator | None = None) -> tuple[Row, ...]
         details.append(t("breizh.late", n=breizh["late"]))
     if breizh.get("reactivate_in_s") is not None:
         details.append(t("breizh.back", seconds=breizh["reactivate_in_s"]))
-    return (Row("Breizh", f"{label} · {' · '.join(details)}", level if snap.gateway_fresh else "dim"),)
+    return (Row(t("label.breizh"), f"{label} · {' · '.join(details)}", level if snap.gateway_fresh else "dim"),)
 
 
 NET_LEVELS = {"green": ("net.level.green", "ok"), "orange": ("net.level.orange", "warn"), "red": ("net.level.red", "bad"),
@@ -542,7 +613,8 @@ def _value(v, unit: str) -> str:
 
 def _reseau_panel(snap: Snapshot, detail: bool = False, t: Translator | None = None) -> Panel:
     """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 9.4) : une ligne par client, les sondes de la
-    station, la dernière coupure, les avertissements de profil VPN partagé. `detail` (touche n) : tout le détail."""
+    station, la dernière coupure, les avertissements de profil VPN partagé. `detail` (bouton « Détail » de la page,
+    touche n ou clic dans trx-monitor) : tout le détail."""
     t = translator(t)
     net = getattr(snap.status, "net", None) if snap.status is not None else None
     if not isinstance(net, dict) or not net:
@@ -597,14 +669,13 @@ def _reseau_panel(snap: Snapshot, detail: bool = False, t: Translator | None = N
             agents = " / ".join(str(a) for a in w.get("agents") or [])
             rows.append(Row(t("label.vpn"), t("net.vpn", agents=agents, address=w.get("address", "?"))
                             + (t("net.vpn_hint") if detail else ""), "bad"))
-    if not detail:
-        rows.append(Row(t("label.detail"), t("net.detail_key"), "dim"))
     return Panel("reseau", t("panel.reseau_detail") if detail else t("panel.reseau"), tuple(rows))
 
 
 def build_panels(snap: Snapshot, net_detail: bool = False, t: Translator | None = None) -> list[Panel]:
     t = translator(t)
-    return [_radio_panel(snap, t), _audio_panel(snap, t), _connexion_panel(snap, t), _sante_panel(snap, t),
+    sdr = _sdr_panel(snap, t)
+    return [_radio_panel(snap, t), *([sdr] if sdr is not None else []), _audio_panel(snap, t), _connexion_panel(snap, t), _sante_panel(snap, t),
             _materiel_panel(snap, t), _reseau_panel(snap, net_detail, t)]
 
 

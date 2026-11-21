@@ -827,3 +827,16 @@ def test_rtl_keys_stay_listed_when_the_sdrplay_service_is_down() -> None:
     out = '{"devices":[{"serial":"00000042","hw":0,"driver":"rtlsdr","product":"Blog V4"}],"api":null,"error":"service"}\n'
     found, error = devices.api_devices(sys.executable, run=lambda *a, **k: subprocess.CompletedProcess(a, 4, stdout=out, stderr=""))
     assert [d["serial"] for d in found] == ["00000042"] and "fabricant" in error
+
+
+def test_state_is_written_for_the_dashboard_without_any_bus(tmp_path: Path) -> None:
+    """Étape 346 : chaque état publié est aussi écrit dans state_dir/sdr/status.json (tableau de bord, menu 1.3)."""
+    sd = cfgmod.Sdr(enabled=True, serial="TEST1234")
+    svc = SdrService(sd, tmp_path, None)
+    asyncio.run(svc.publish_state())
+    data = json.loads((tmp_path / "sdr" / "status.json").read_text(encoding="utf-8"))
+    assert data["serial"] == "TEST1234" and data["state"] == "starting" and isinstance(data["t"], int)
+    assert not (tmp_path / "sdr" / "status.json.tmp").exists()
+    blocked = tmp_path / "file"
+    blocked.write_text("x")
+    SdrService(sd, blocked, None).write_status({"state": "running"})        # dossier impossible : aucune exception

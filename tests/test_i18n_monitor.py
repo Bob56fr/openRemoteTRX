@@ -125,7 +125,7 @@ def test_english_dashboard_has_no_french_left():
     for french in ("ÉMISSION", "Fréquence", "RÉCEPTION", "Passerelle", "coupure", "Mémoire", "Réseau", "Visiteur",
                    "aucun", "FIGÉE", "INJOIGNABLE", "MODE SÛR", "trames", "démarré"):
         assert french not in text, french
-    for english in ("TRANSMIT", "Frequency", "Gateway", "FROZEN", "Safe mode", "S-meter", "Network", "trx-monitor started",
+    for english in ("TRANSMIT", "Frequency", "openRemoteTRX gateway", "Hamlib service (rigctld)", "FROZEN", "Safe mode", "S-meter", "Network", "trx-monitor started",
                     "PTT FAULT", "VPN PROFILE PROBABLY SHARED"):
         assert english in text, english
     levels = {e["text"].split("  ", 1)[1]: e["level"] for e in log.entries()}

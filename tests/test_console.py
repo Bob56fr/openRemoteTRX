@@ -204,8 +204,8 @@ def test_main_menu_shows_themes_then_a_theme_its_menus(tmp_path):
     con, fake, out = console(tmp_path, answers=["1", "r", "7", "q"])
     assert con.loop() == 0
     text = "\n".join(out)
-    assert "  1) Station  (démarrer" in text and "  7) Mises à jour" in text and "  8) Expert et préférences" in text and "  0) Langue et niveau / Language & level" in text
-    assert "--- 1) Station ---" in text and "  2) Arrêter la station" in text and "r) Retour au menu principal" in text
+    assert "  1) Station openRemoteTRX  (démarrer" in text and "  7) Mises à jour" in text and "  8) Expert et préférences" in text and "  0) Langue et niveau / Language & level" in text
+    assert "--- 1) Station openRemoteTRX ---" in text and "  2) Arrêter la station" in text and "r) Retour au menu principal" in text
     assert "--- 7) Mises à jour ---" in text and "  3) Installer une version depuis un fichier zip" in text
     assert fake.calls == [] or all("systemctl" in c[0] and "is-active" in c[0] for c in fake.calls)
 

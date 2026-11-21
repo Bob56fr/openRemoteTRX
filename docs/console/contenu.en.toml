@@ -133,7 +133,7 @@ admin = true
 expert = "<p>The transceiver is only queried read-only. A configuration imported from an old station (<code>station.import.toml</code>) is used as a starting point.</p><p>When a transceiver is added, the wizard asks whether <strong>replay of recordings</strong> is allowed (app: record the received audio then send it back on transmit, duration limited to the maximum transmit time minus 5 s). Default answer: no. Retransmitting a station's signal to third parties is generally forbidden in the amateur service: accept only if you need it and under your own responsibility (<code>[safety] allow_replay</code>).</p>"
 
 [menus.monitor]
-role = "Live dashboard, in the terminal: frequency, mode, transmit or receive, connected clients, services, hardware, audio, log. It opens in a <strong>new tab</strong> or window (Windows Terminal, GNOME Terminal, tmux, screen): openRemoteTRX Console stays open next to it; over SSH without tmux, it opens in the same terminal."
+role = "Live dashboard, in the terminal: frequency, mode, transmit or receive, SDR receiver when it runs, connected clients, services, computer, audio, network (\"Details\" button), log. It opens in a <strong>new tab</strong> or window (Windows Terminal, GNOME Terminal, tmux, screen): openRemoteTRX Console stays open next to it; over SSH without tmux, it opens in the same terminal."
 quand = "To watch the station on site, or during a test."
 modifie = "Nothing, except one key: <strong>STOP TX</strong> forces receive. The dashboard can never make the transceiver transmit."
 admin = false

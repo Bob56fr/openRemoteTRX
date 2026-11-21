@@ -66,8 +66,14 @@ def test_the_dashboard_is_drawn_by_the_page_and_stop_tx_can_only_cut(tmp_path, m
             assert answer == {"ok": True, "message": "PTT coupé"} and calls == [4532]
             data = await (await client.get("/api/dashboard")).json()
             assert any("STOP TX : PTT coupé" in e["text"] and e["level"] == "bad" for e in data["log"])
+            assert data["net_button"] == "Détail"                                  # bouton de la carte Réseau
             net = await (await client.get("/api/dashboard?net=1")).json()
-            assert net["ok"]
+            assert net["ok"] and net["net_button"] == "Résumé"
+            (tmp_path / "etat" / "sdr").mkdir(parents=True)                       # module SDR en marche (étape 346)
+            (tmp_path / "etat" / "sdr" / "status.json").write_text(json.dumps(
+                {"state": "running", "driver": "rtlsdr", "serial": "00000001", "t": int(time.time())}), encoding="utf-8")
+            data = await (await client.get("/api/dashboard")).json()
+            assert [p["key"] for p in data["panels"]][:2] == ["radio", "sdr"]
     asyncio.run(run())
 
 
