@@ -69,6 +69,8 @@ class MonitoringTest {
         assertEquals("""{"rig":true,"events_min":"avertissement","freq_mode":false}""", Monitoring.profile("diagnostic", false).toString())
         assertEquals("2026-11-21 10:00 ORT-2104 erreur CAT lent",
                      Monitoring.eventLine(obj("""{"content":{"ts":"2026-11-21T10:00:00.000Z","code":"ORT-2104","gravite":"erreur","titre":"CAT lent"}}""")))
+        assertEquals("2026-11-21 07:58 ORT-8008 critique Mode sûr — trop de redémarrages (×7 depuis 2026-11-21 06:58)",
+                     Monitoring.eventLine(obj("""{"content":{"ts":"2026-11-21T07:58:00.000Z","code":"ORT-8008","gravite":"critique","titre":"Mode sûr"},"text":"trop de redémarrages","count":7,"first":"2026-11-21T06:58:00.000Z"}""")))
     }
 
     @Test

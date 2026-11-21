@@ -245,6 +245,7 @@
   "monitoring.link_title": "{pseudo} : {role}, {state}",
   "monitoring.machine_line": "Machine : processeur {cpu} %, mémoire {mem} %, disque {disk} %, température {temp}",
   "monitoring.no_news": "aucune nouvelle encore",
+  "monitoring.repeat": "(×{n} depuis {first})",
   "monitoring.no_news_received": "Aucune nouvelle reçue pour l'instant.",
   "monitoring.no_pseudo": "Pas encore de pseudo (ci-dessous)",
   "monitoring.not_registered": "pas encore enregistrée auprès du relais",

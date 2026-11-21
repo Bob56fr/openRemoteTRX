@@ -110,8 +110,12 @@
   }
 
   function eventLine(e) {
-    const c = (e && e.content) || {};
-    return [String(c.ts || "").slice(0, 16).replace("T", " "), c.code || "?", c.gravite || "?", c.titre || c.message || ""]
+    /* Étape 338 : texte reçu (raison du mode sûr…) après le titre, répétitions regroupées par la station. */
+    const c = (e && e.content) || {}, count = Number(e && e.count) || 1;
+    const when = (t) => String(t || "").slice(0, 16).replace("T", " ");
+    return [when(c.ts), c.code || "?", c.gravite || "?", c.titre || c.message || "",
+            e && e.text ? "— " + e.text : "",
+            count > 1 ? I18N.t("monitoring.repeat", { n: count, first: when(e.first) }) : ""]
       .filter(Boolean).join(" ");
   }
 

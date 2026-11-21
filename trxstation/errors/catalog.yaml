@@ -14042,7 +14042,7 @@ ORT-7051:
 ORT-7052:
   gravite: erreur
   titre: Événement grave chez une station suivie
-  message: 'Monitoring : {station} signale {code_recu} « {titre} ».'
+  message: 'Monitoring : {station} signale {code_recu} « {titre} » : {texte_recu}'
   causes:
   - Panne ou coupure de sécurité sur la station suivie (voir la page du code reçu)
   preconisation: Ouvrir la page du code reçu, puis joindre l'opérateur de la station suivie ; au besoin, lui demander le
@@ -14054,21 +14054,21 @@ ORT-7052:
   depuis_version: 0.161.0
   en:
     titre: Serious event at a followed station
-    message: 'Monitoring: {station} reports {code_recu} "{titre}".'
+    message: 'Monitoring: {station} reports {code_recu} "{titre}": {texte_recu}'
     causes:
     - Failure or safety cut on the followed station (see the page of the received code)
     preconisation: Open the page of the received code, then contact the operator of the followed station; if needed,
       ask for assistance mode or its troubleshooting report (menu 6.5, choice 6).
   de:
     titre: Schweres Ereignis bei einer beobachteten Station
-    message: 'Monitoring: {station} meldet {code_recu} „{titre}“.'
+    message: 'Monitoring: {station} meldet {code_recu} „{titre}“: {texte_recu}'
     causes:
     - Störung oder Sicherheitsabschaltung auf der beobachteten Station (siehe Seite des empfangenen Codes)
     preconisation: Öffnen Sie die Seite des empfangenen Codes und erreichen Sie dann den Operator der beobachteten Station;
       bitten Sie ihn bei Bedarf um den Hilfemodus oder seinen Fehlerbericht (Menü 6.5, Auswahl 6).
   es:
     titre: Evento grave en una estación seguida
-    message: 'Monitorización: {station} informa de {code_recu} «{titre}».'
+    message: 'Monitorización: {station} informa de {code_recu} «{titre}»: {texte_recu}'
     causes:
     - Avería o corte de seguridad en la estación seguida (mira la página del código recibido)
     preconisation: Abre la página del código recibido y contacta con el operador de la estación seguida; si hace falta, pídele

@@ -255,6 +255,35 @@ def test_critical_event_alerts_once_per_code_and_the_hourly_ceiling(pair):
     assert len(notifier.sent) == 1 + eng_mod.ALERTS_PER_HOUR - 1                 # plafond de 20 par heure
 
 
+
+def test_safe_mode_reason_reaches_the_helper_and_reminders_are_grouped(pair):
+    """Étape 338 : la RAISON du mode sûr (message « ALERTE ORT-8008 <raison> ») part dans l'alerte ORT-7052 et
+    s'affiche ; les rappels toutes les 10 min ne masquent plus la panne d'origine."""
+    helper, aided, clock, relay, notifier, reports = pair
+    cycle(clock, aided, helper)
+    journal(aided, code="ORT-8001", gravite="erreur", titre="Redémarrage", message="ORT-8001 passerelle relancée")
+    for _ in range(7):
+        journal(aided, code="ORT-8008", gravite="critique", titre="Mode sûr : station en réception, accès coupé",
+                message="ALERTE ORT-8008 pannes persistantes : rigctld")
+    cycle(clock, aided, helper, step=1)
+    (code, ctx), = notifier.sent
+    assert code == "ORT-7052" and ctx["texte_recu"] == "pannes persistantes : rigctld"
+    events = helper.received(aided.me, 2)
+    assert [(e["content"]["code"], e["count"], e["text"]) for e in events] == [
+        ("ORT-8008", 7, "pannes persistantes : rigctld"), ("ORT-8001", 1, "passerelle relancée")]
+    assert len(helper.received(aided.me, 1)) == 1
+
+
+def test_event_text_drops_the_code_and_a_message_equal_to_the_title():
+    assert eng_mod.event_text({"code": "ORT-8008", "message": "ALERTE ORT-8008 trop de redémarrages"}) ==         "trop de redémarrages"
+    assert eng_mod.event_text({"code": "ORT-2104", "titre": "CAT lent", "message": "CAT lent"}) == ""
+    assert eng_mod.event_text({"code": "ORT-2104"}) == ""
+    rows = [{"content": {"code": "A", "ts": "3"}}, {"content": {"code": "A", "ts": "2"}},
+            {"content": {"code": "B", "ts": "1"}}, {"content": {"code": "A", "ts": "0"}}]
+    out = eng_mod.group_events(rows, 10)
+    assert [(e["content"]["code"], e["count"], e["first"]) for e in out] == [("A", 2, "2"), ("B", 1, "1"), ("A", 1, "0")]
+
+
 # ------------------------------------------------------------------ menu 6.5 (choix 6, 7, 10)
 def test_console_report_round_trip(tmp_path, monkeypatch):
     from test_monlink_console import Clock as CClock, Station          # module voisin (tests/ dans sys.path)

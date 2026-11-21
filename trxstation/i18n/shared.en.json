@@ -245,6 +245,7 @@
   "monitoring.link_title": "{pseudo}: {role}, {state}",
   "monitoring.machine_line": "Machine: CPU {cpu} %, memory {mem} %, disk {disk} %, temperature {temp}",
   "monitoring.no_news": "no update yet",
+  "monitoring.repeat": "(×{n} since {first})",
   "monitoring.no_news_received": "No update received yet.",
   "monitoring.no_pseudo": "No nickname yet (below)",
   "monitoring.not_registered": "not yet registered with the relay",

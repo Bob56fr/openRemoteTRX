@@ -245,6 +245,7 @@
   "monitoring.link_title": "{pseudo}: {role}, {state}",
   "monitoring.machine_line": "Rechner: Prozessor {cpu} %, Speicher {mem} %, Festplatte {disk} %, Temperatur {temp}",
   "monitoring.no_news": "noch keine Meldung",
+  "monitoring.repeat": "(×{n} seit {first})",
   "monitoring.no_news_received": "Bisher keine Meldung empfangen.",
   "monitoring.no_pseudo": "Noch kein Anzeigename (unten)",
   "monitoring.not_registered": "noch nicht beim Relais registriert",

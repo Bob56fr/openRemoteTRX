@@ -36,6 +36,7 @@ from .relay import RelayRefused, RelayUnavailable
 log = logging.getLogger("trx.monlink")
 
 CYCLE_S = 60.0
+GROUP_DEPTH = 20                      # lignes relues par entrée affichée (répétitions regroupées)
 FAST_CYCLE_S = 15.0                    # assistance en cours ou empreinte à confirmer
 CHECK_LINK_S = 600.0                   # la station qui aide vérifie que la liaison existe encore (fin par l'autre)
 REQUEST_TTL_S = 24 * 3600
@@ -371,8 +372,12 @@ class Engine:
         return {"queued": True}
 
     def received(self, peer: object, limit: int = 50) -> list[dict]:
+        """Derniers événements reçus, du plus récent au plus ancien, répétitions regroupées (étape 338 : les rappels
+        ORT-8008 toutes les 10 min masquaient la panne d'origine) ; chaque entrée a `text` (le message reçu, raison
+        comprise), `count` et `first` (horodatage du plus ancien du groupe)."""
         self._link(peer, "receiver")
-        return self.store.recent(peer, ("ev",), limit)
+        limit = max(1, min(int(limit) if isinstance(limit, int) and not isinstance(limit, bool) else 50, 200))
+        return group_events(self.store.recent(peer, ("ev",), limit * GROUP_DEPTH), limit)
 
     def report_part(self, peer: object, part: object = 0) -> dict:
         """Station qui AIDE : morceau `part` du dernier rapport reçu, pour la page (un message du canal de données ne
@@ -506,7 +511,8 @@ class Engine:
                     self.store.keep(peer, "ev", event, now)
                     if event.get("gravite") == "critique" and isinstance(event.get("code"), str):
                         self._alert(codes.ORT_7052, f"{peer}:{event['code']}", station=_label(link, peer),
-                                    code_recu=event["code"][:16], titre=str(event.get("titre") or "")[:120])
+                                    code_recu=event["code"][:16], titre=str(event.get("titre") or "")[:120],
+                                    texte_recu=event_text(event)[:300] or "-")
             link["events"] = int(link.get("events", 0)) + len(events)
         elif kind == "an":
             link["answer"] = {**content, "at": int(now)}
@@ -700,3 +706,31 @@ def default_known_words() -> dict[str, str]:
     except Exception:
         pass
     return words
+
+
+def event_text(content: dict) -> str:
+    """Texte d'un événement reçu : son message sans « ALERTE ORT-NNNN » de tête (ORT-8008 : la RAISON du mode sûr),
+    sinon rien ; jamais le titre (déjà affiché)."""
+    message = str(content.get("message") or "").strip()
+    code = str(content.get("code") or "")
+    if code and code in message:
+        message = message.split(code, 1)[1].strip(" :")
+    return "" if message == str(content.get("titre") or "") else message
+
+
+def group_events(rows: list[dict], limit: int) -> list[dict]:
+    """Regroupe les événements CONSÉCUTIFS de même code et même texte (lignes du plus récent au plus ancien) : une
+    entrée par groupe (la plus récente), `count` et `first` ; `limit` entrées au plus."""
+    out: list[dict] = []
+    for row in rows:
+        content = row.get("content") if isinstance(row.get("content"), dict) else {}
+        text = event_text(content)
+        last = out[-1] if out else None
+        if last is not None and last["content"].get("code") == content.get("code") and last["text"] == text:
+            last["count"] += 1
+            last["first"] = str(content.get("ts") or "")
+            continue
+        if len(out) >= limit:
+            break
+        out.append({**row, "content": content, "text": text, "count": 1, "first": str(content.get("ts") or "")})
+    return out

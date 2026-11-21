@@ -56,6 +56,9 @@ test("dernières nouvelles et événements d'une station suivie", () => {
   assert.deepEqual(mx.stationLines({}), ["Aucune nouvelle reçue pour l'instant."]);
   assert.equal(mx.eventLine({ content: { ts: "2026-11-21T10:00:00.000Z", code: "ORT-2104", gravite: "erreur", titre: "CAT lent" } }),
                "2026-11-21 10:00 ORT-2104 erreur CAT lent");
+  assert.equal(mx.eventLine({ content: { ts: "2026-11-21T07:58:00.000Z", code: "ORT-8008", gravite: "critique", titre: "Mode sûr" },
+                              text: "trop de redémarrages", count: 7, first: "2026-11-21T06:58:00.000Z" }),
+               "2026-11-21 07:58 ORT-8008 critique Mode sûr — trop de redémarrages (×7 depuis 2026-11-21 06:58)");
 });
 
 test("rapport : morceaux base64url recollés à l'identique ; morceau illisible = refus", () => {

@@ -405,7 +405,9 @@ que lire et DEMANDER. Annoncée dans `hello.features` (`monitoring`) seulement p
   fingerprint}, `confirm` {peer, profile?} (profil obligatoire pour la station aidée : `"essentiel"`,
   `"diagnostic"` ou objet {system, rig, freq_mode, events_min, period_s}), `profile` {peer, profile}, `pause` {peer,
   paused}, `end` {peer, purge?}, `request_assist` {peer, duration_s}, `request_report` {peer}, `answer` {peer, accept},
-  `received` {peer, limit?} -> derniers événements reçus, `send_report` {peer}, `report_part` {peer, part} -> {name,
+  `received` {peer, limit?} -> derniers événements reçus (du plus récent au plus ancien, répétitions CONSÉCUTIVES de
+  même code et même texte regroupées depuis la station 0.256.0 : `{kind, at, content, text, count, first}`, `text` =
+  message reçu sans « ALERTE ORT-NNNN », par exemple la raison du mode sûr, `first` = horodatage du plus ancien), `send_report` {peer}, `report_part` {peer, part} -> {name,
   size, parts, part, data} (dernier rapport reçu par morceaux de 30 ko en base64url : le canal de données limite un
   message à 64 ko).
 - **Page web** (`monitoring.js`, rubrique « Monitoring ») : liaisons et dernières nouvelles, aider (code), être aidé

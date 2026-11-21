@@ -147,11 +147,17 @@ object Monitoring {
         return out
     }
 
-    /** Un événement reçu : « 2026-11-21 10:00 ORT-2104 erreur CAT lent ». */
+    /** Un événement reçu : « 2026-11-21 10:00 ORT-2104 erreur CAT lent », puis le texte reçu (raison du mode sûr…)
+     *  et les répétitions regroupées par la station (étape 338). */
     fun eventLine(e: JsonObject): String {
         val c = e.obj("content") ?: JsonObject(emptyMap())
-        return listOf((c.str("ts") ?: "").take(16).replace('T', ' '), c.str("code") ?: "?", c.str("gravite") ?: "?",
-                      c.str("titre") ?: c.str("message") ?: "").filter { it.isNotEmpty() }.joinToString(" ")
+        val count = e.num("count")?.toInt() ?: 1
+        fun day(t: String?) = (t ?: "").take(16).replace('T', ' ')
+        return listOf(day(c.str("ts")), c.str("code") ?: "?", c.str("gravite") ?: "?",
+                      c.str("titre") ?: c.str("message") ?: "",
+                      e.str("text")?.takeIf { it.isNotEmpty() }?.let { "— $it" } ?: "",
+                      if (count > 1) Tr.t("monitoring.repeat", "n" to count, "first" to day(e.str("first"))) else "")
+            .filter { it.isNotEmpty() }.joinToString(" ")
     }
 
     fun link(raw: JsonObject): Link {

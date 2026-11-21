@@ -2760,9 +2760,14 @@ class Console:
                 self.say(self.t("monitoring.view.events"))
                 for e in events:
                     c = e.get("content") or {}
+                    text, count = str(e.get("text") or ""), int(e.get("count") or 1)
                     self.say(self.t("monitoring.view.event", ts=str(c.get("ts", ""))[:16].replace("T", " "),
                                     code=c.get("code", "?"), gravite=c.get("gravite", "?"),
-                                    titre=c.get("titre") or c.get("message") or ""))
+                                    titre=c.get("titre") or c.get("message") or "",
+                                    texte=f" — {text}" if text else "",
+                                    repete=self.t("monitoring.view.repeat", n=count,
+                                                  first=str(e.get("first") or "")[:16].replace("T", " "))
+                                    if count > 1 else ""))
             elif events is not None:
                 self.say(self.t("monitoring.view.no_events"))
 
