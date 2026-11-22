@@ -248,5 +248,21 @@
   "label.sdr_load": "Modullast",
   "sdr.load": "{cpu} % Prozessor · {mem} MB",
   "cpu.cores": "{n} Kerne",
-  "cpu.loadavg": " · Lastmittel über 1 min {load}"
+  "cpu.loadavg": " · Lastmittel über 1 min {load}",
+  "panel.online": "Online-Dienste",
+  "label.online_presence": "Gruppenpräsenz",
+  "label.online_monlink": "Monitoring zwischen Stationen",
+  "label.online_diffusion": "Live-Übertragung",
+  "label.online_ntfy": "ntfy-Benachrichtigungen",
+  "online.ok": "erreichbar · letzter Austausch {ago} · {rtt} ms",
+  "online.fail": "nicht erreichbar seit {since} ({code}) · letzter erfolgreicher Austausch: {last}",
+  "online.ago": "vor {ago}",
+  "online.never": "nie",
+  "online.waiting": "noch nicht erreicht",
+  "online.live": "live, {n} Hörer",
+  "online.idle": "angehalten · zuletzt gestartet {when} von {operator}",
+  "online.never_started": "angehalten · nie gestartet",
+  "online.ntfy_ok": "letzte Benachrichtigung gesendet {when}",
+  "online.ntfy_fail": "letzter Versand fehlgeschlagen {when} (ORT-8013)",
+  "online.ntfy_none": "noch keine Benachrichtigung gesendet"
 }

@@ -32,6 +32,7 @@ from ..paths import default_config_path
 from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
 from ..station_id import ensure_station_id
+from ..online import ntfy_record
 from ..supervisor.notify import Notifier
 from .access_watch import AccessWatcher
 from .api.access import OPERATOR, AccessControl, ListenerSwitch, listener_muted
@@ -111,7 +112,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         await spectrum.start()                     # n'ouvre le second port qu'en réception confirmée
         manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
         power = PowerControl(cfg, link, ctrl, alert=Notifier(cfg.supervisor.notify_url,
-                                                             lang=cfg.supervisor.notify_lang).alert)
+                                                             lang=cfg.supervisor.notify_lang,
+                                                             record=ntfy_record(cfg, "passerelle")).alert)
         publisher.power_status = power.snapshot                                 # superviseur : poste éteint exprès ?
         if manager is not None:
             manager.power = power if power.available else None                  # [power] enabled et poste capable
@@ -190,7 +192,7 @@ def _rig_card(cfg: Config):
     if len(real_device_names(capture, playback)) != 2:
         return None
     from .audio.rigcard import RigCard
-    notifier = Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang)
+    notifier = Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang, record=ntfy_record(cfg, "passerelle"))
     return RigCard(capture, playback, alert=notifier.alert)
 
 
@@ -393,7 +395,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
         station_id = ""
     reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__,   # « Signaler un problème »
                           station_id=station_id)
-    notifier = Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang)
+    notifier = Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang, record=ntfy_record(cfg, "passerelle"))
     netprobe = None
     if cfg.netprobe.enabled:                       # sonde de qualité réseau : mesure et affiche, n'agit jamais sur l'émission
         from ..netprobe.probe import NetProbeHub

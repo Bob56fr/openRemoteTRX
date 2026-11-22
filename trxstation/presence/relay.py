@@ -13,6 +13,7 @@ import time
 from urllib.parse import urlsplit
 
 from ..httpread import read_capped
+from ..online import LinkHealth
 from .wire import Counter, build_request
 
 MAX_REPLY = 1024 * 1024
@@ -32,6 +33,7 @@ class HttpRelay:
         self.counter = counter or Counter()
         self.user_agent = f"openRemoteTRX-presence/{version or '0'}"
         self._session = None
+        self.health = LinkHealth("ORT-6903")       # services en ligne du tableau de bord (étape 351)
 
     async def _http(self):
         if self._session is None:
@@ -41,6 +43,16 @@ class HttpRelay:
         return self._session
 
     async def post(self, route: str, fields: dict) -> tuple[int, dict]:
+        start = time.monotonic()
+        try:
+            reply = await self._post(route, fields)
+        except RelayUnavailable:
+            self.health.fail()
+            raise
+        self.health.ok(time.monotonic() - start)
+        return reply
+
+    async def _post(self, route: str, fields: dict) -> tuple[int, dict]:
         path = f"{self.prefix}/v1/{route}"
         body, headers = build_request(self.identity, path, fields, t=int(time.time()), n=self.counter.next())
         try:

@@ -17,6 +17,7 @@ from pathlib import Path
 
 from .. import hostinfo
 from ..cpu_temp import cpu_celsius
+from ..online import read_ntfy
 from ..status import GatewayWatch, read_status
 from ..supervisor.state import StateStore
 from .model import Snapshot, SystemInfo
@@ -77,6 +78,8 @@ class StatusSource:
         self.presence_path = Path(state_dir) / "presence" / "status.json"   # module « presence » (sans clé)
         self.monlink_path = Path(state_dir) / "monlink" / "status.json"     # module « monlink » (sans clé)
         self.sdr_path = Path(state_dir) / "sdr" / "status.json"             # module « sdr » (état du récepteur)
+        self.diffusion_path = Path(state_dir) / "diffusion" / "status.json" # module « diffusion » (sans secret)
+        self.state_dir = Path(state_dir)                                     # alertes ntfy : state_dir/ntfy/*.json
         self.watch = GatewayWatch(stale_after_s)
         if system_reader is None:                     # un compteur par source : % du processeur entre deux lectures
             meter = hostinfo.CpuMeter()
@@ -91,7 +94,8 @@ class StatusSource:
                         stale_s=self.watch.age(now) if status is not None else None,
                         safe_mode=self.store.safe_mode(), system=self.system_reader(),
                         presence=read_presence(self.presence_path), monlink=read_presence(self.monlink_path),
-                        sdr=read_presence(self.sdr_path))
+                        sdr=read_presence(self.sdr_path), diffusion=read_presence(self.diffusion_path),
+                        ntfy=read_ntfy(self.state_dir))
 
     def poll_once(self, wait_s: float = 0.6) -> Snapshot:
         """Pour une capture unique (--once) : deux lectures espacées ; figée si `seq` n'a pas bougé."""
@@ -104,4 +108,4 @@ class StatusSource:
             return second
         return Snapshot(status=second.status, gateway_fresh=False, stale_s=wait_s,
                         safe_mode=second.safe_mode, system=second.system, presence=second.presence,
-                        monlink=second.monlink, sdr=second.sdr)
+                        monlink=second.monlink, sdr=second.sdr, diffusion=second.diffusion, ntfy=second.ntfy)

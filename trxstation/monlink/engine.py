@@ -700,7 +700,8 @@ class Engine:
                             reports=len(l.get("reports", [])), silent=bool(l.get("silent_since")))
             links.append(item)
         return {"id": self.me, "pseudo": self.store.data["pseudo"], "registered": self.store.data["registered"],
-                "problem": self.problem, "invites": len(self.store.data["invites"]), "links": links}
+                "problem": self.problem, "invites": len(self.store.data["invites"]), "links": links,
+                "server": _health(self.relay)}
 
 
 def default_known_words() -> dict[str, str]:
@@ -747,3 +748,9 @@ def group_events(rows: list[dict], limit: int) -> list[dict]:
             break
         out.append({**row, "content": content, "text": text, "count": 1, "first": str(content.get("ts") or "")})
     return out
+
+
+def _health(relay: object) -> dict | None:
+    """État du relais vu par son client (services en ligne, étape 351) ; None pour un faux relais d'essai."""
+    health = getattr(relay, "health", None)
+    return health.to_dict() if health is not None else None

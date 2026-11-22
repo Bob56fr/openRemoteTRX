@@ -25,6 +25,7 @@ from ... import __version__
 from ...errors import codes
 from ...errors.emit import by_machine
 from ...hostinfo import hamlib_version, host_details, shared_monitor
+from ...online import online_section
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
 from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
@@ -1038,8 +1039,10 @@ class ControlSession:
                 global _hamlib_version
                 if _hamlib_version is None:              # `rigctld --version` : une fois, hors de la boucle (3 s au plus)
                     _hamlib_version = await asyncio.to_thread(hamlib_version, self.ctrl.config.tools.hamlib_dir)
-                self._result(cmd.id, True, sections=host_details(shared_monitor(), self.ctrl.config, self.capabilities,
-                                                                 _hamlib_version, self.link.state.levels))
+                sections = host_details(shared_monitor(), self.ctrl.config, self.capabilities, _hamlib_version,
+                                        self.link.state.levels)
+                online = online_section(self.ctrl.config.supervisor.state_dir, self.lang)   # étape 351
+                self._result(cmd.id, True, sections=sections + ([online] if online else []))
             elif cmd.name.startswith("swr_"):
                 await self._swr_command(cmd)
             elif cmd.name.startswith("breizh_"):

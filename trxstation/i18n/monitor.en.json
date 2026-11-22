@@ -248,5 +248,21 @@
   "label.sdr_load": "Module load",
   "sdr.load": "{cpu} % CPU · {mem} MB",
   "cpu.cores": "{n} cores",
-  "cpu.loadavg": " · 1 min load average {load}"
+  "cpu.loadavg": " · 1 min load average {load}",
+  "panel.online": "Online services",
+  "label.online_presence": "Group presence",
+  "label.online_monlink": "Station monitoring",
+  "label.online_diffusion": "Live broadcast",
+  "label.online_ntfy": "ntfy alerts",
+  "online.ok": "reachable · last exchange {ago} · {rtt} ms",
+  "online.fail": "unreachable for {since} ({code}) · last successful exchange: {last}",
+  "online.ago": "{ago} ago",
+  "online.never": "never",
+  "online.waiting": "not reached yet",
+  "online.live": "live, {n} listener(s)",
+  "online.idle": "stopped · last started {when} by {operator}",
+  "online.never_started": "stopped · never started",
+  "online.ntfy_ok": "last alert sent {when}",
+  "online.ntfy_fail": "last sending failed {when} (ORT-8013)",
+  "online.ntfy_none": "no alert sent yet"
 }

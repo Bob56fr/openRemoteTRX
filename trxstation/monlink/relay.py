@@ -14,6 +14,7 @@ import json
 import time
 
 from ..httpread import read_capped
+from ..online import LinkHealth
 from ..presence.wire import Counter
 from . import wire
 
@@ -46,6 +47,7 @@ class HttpRelay:
         self.counter = counter or Counter()
         self.user_agent = f"openRemoteTRX-monlink/{version or '0'}"
         self._session = None
+        self.health = LinkHealth("ORT-7040")       # services en ligne du tableau de bord (étape 351)
 
     async def _http(self):
         if self._session is None:
@@ -73,8 +75,23 @@ class HttpRelay:
 
     async def call(self, route: str, fields: dict) -> dict:
         for attempt in (1, 2):
+            start = time.monotonic()
             try:
-                return check(*await self._post_once(route, fields))
+                status, reply = await self._post_once(route, fields)
+            except RelayUnavailable:
+                self.health.fail()
+                raise
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:                 # réseau, DNS, TLS, délai : un nouvel essai, puis abandon
+                if attempt == 2:
+                    self.health.fail()
+                    raise RelayUnavailable(f"{type(exc).__name__}: {exc}") from exc
+                await asyncio.sleep(RETRY_DELAY_S)
+                continue
+            self.health.ok(time.monotonic() - start)  # le relais a répondu (même par un refus)
+            try:
+                return check(status, reply)
             except (asyncio.CancelledError, RelayRefused, RelayUnavailable):
                 raise
             except Exception as exc:                 # réseau, DNS, TLS, délai : un nouvel essai, puis abandon

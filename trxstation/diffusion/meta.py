@@ -14,19 +14,22 @@ from typing import Any, Callable
 import aiohttp
 
 from ..httpread import read_capped
+from ..online import LinkHealth
 from . import protocol as p
 
 TIMEOUT_S = 10.0
 
 
 class MetaClient:
-    def __init__(self, base_url: str, station: str, key: bytes, clock: Callable[[], float] = time.time) -> None:
+    def __init__(self, base_url: str, station: str, key: bytes, clock: Callable[[], float] = time.time,
+                 health: LinkHealth | None = None) -> None:
         self.base_url = base_url.rstrip("/")
         self.station = p.check_station(station)
         self.key = key
         self.clock = clock
         self._last_ts = 0
         self._session: aiohttp.ClientSession | None = None
+        self.health = health or LinkHealth("ORT-6104")    # services en ligne (étape 351)
 
     def _ts(self) -> int:
         self._last_ts = p.next_ts_ms(int(self.clock() * 1000), self._last_ts)
@@ -36,6 +39,7 @@ class MetaClient:
         if self._session is None:
             self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=TIMEOUT_S))
         path = p.api_path(self.station, action)
+        start = time.monotonic()
         try:
             async with self._session.post(self.base_url + path, data=body,
                                           headers=p.signed_headers(self.key, path, body)) as rep:
@@ -44,8 +48,10 @@ class MetaClient:
                     obj = json.loads(raw) if raw else None
                 except ValueError:
                     obj = None
+                self.health.ok(time.monotonic() - start)
                 return rep.status, obj
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+            self.health.fail()
             return None, None
 
     async def send_meta(self, access: str, meta: dict[str, Any],

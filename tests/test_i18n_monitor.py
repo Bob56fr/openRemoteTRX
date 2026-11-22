@@ -138,7 +138,8 @@ def test_panel_keys_and_levels_do_not_depend_on_the_language():
         shapes = {lang: [(p.key, [r.level for r in p.rows]) for p in build_panels(snap, t=Translator(lang, "monitor"))]
                   for lang in LANGS}
         assert all(shape == shapes["fr"] for shape in shapes.values())
-        assert [key for key, _ in shapes["fr"]] == ["radio", "audio", "connexion", "sante", "materiel", "reseau"]
+        keys = [key for key, _ in shapes["fr"]]                 # « en_ligne » : seulement si une fonction est en service
+        assert [k for k in keys if k != "en_ligne"] == ["radio", "audio", "connexion", "sante", "materiel", "reseau"]
 
 
 def test_default_language_comes_from_the_tool_at_run_time(monkeypatch):

@@ -80,6 +80,8 @@ class Snapshot:
     presence: dict | None = None          # state_dir/presence/status.json (module « presence »), None : absent
     monlink: dict | None = None           # state_dir/monlink/status.json (module « monlink »), None : absent
     sdr: dict | None = None               # state_dir/sdr/status.json (module « sdr »), None : absent
+    diffusion: dict | None = None         # state_dir/diffusion/status.json (module « diffusion »), None : absent
+    ntfy: dict | None = None              # state_dir/ntfy/*.json fusionnés (online.read_ntfy), None : absent
 
 
 # --------------------------------------------------------------------------- formats
@@ -695,11 +697,63 @@ def _reseau_panel(snap: Snapshot, detail: bool = False, t: Translator | None = N
     return Panel("reseau", t("panel.reseau_detail") if detail else t("panel.reseau"), tuple(rows))
 
 
+def _ago(seconds: float, t: Translator) -> str:
+    s = max(0, int(seconds))
+    return t("online.ago", ago=f"{s // 86400} j" if s >= 86400 else _short(s))
+
+
+def _server_text(server: dict | None, now: float, t: Translator) -> tuple[str, str]:
+    """(texte, niveau) d'une liaison relevée par `online.LinkHealth` ; jamais d'échange = pas encore joint."""
+    server = server if isinstance(server, dict) else {}
+    ok_at, since = server.get("ok_at"), server.get("fail_since")
+    if isinstance(since, (int, float)):
+        last = _ago(now - ok_at, t) if isinstance(ok_at, (int, float)) else t("online.never")
+        return t("online.fail", since=_short(max(0, now - since)), code=server.get("code") or "?", last=last), "bad"
+    if isinstance(ok_at, (int, float)):
+        rtt = server.get("rtt_ms")
+        return t("online.ok", ago=_ago(now - ok_at, t), rtt="--" if rtt is None else rtt), "ok"
+    return t("online.waiting"), "dim"
+
+
+def _online_panel(snap: Snapshot, t: Translator | None = None, now: float | None = None) -> Panel | None:
+    """Services en ligne (étape 351) : une ligne par fonction EN SERVICE qui dépend d'un serveur (relais de la
+    présence et du monitoring, serveur de diffusion, ntfy) ; rien si aucune. Ce que les fonctions ont vécu à leurs
+    derniers échanges, sans aucune sonde de plus (adresse ntfy jamais montrée)."""
+    t = translator(t)
+    now = time.time() if now is None else now
+    rows: list[Row] = []
+    for snap_value, label in ((snap.presence, "label.online_presence"), (snap.monlink, "label.online_monlink")):
+        if isinstance(snap_value, dict) and snap_value.get("enabled"):
+            rows.append(Row(t(label), *_server_text(snap_value.get("server"), now, t)))
+    df = snap.diffusion
+    if isinstance(df, dict) and df.get("enabled"):
+        server, level = _server_text(df.get("server"), now, t)
+        if df.get("active"):
+            text = t("online.live", n=df.get("listeners") or 0) + " · " + server
+        else:
+            start = df.get("last_start") if isinstance(df.get("last_start"), dict) else None
+            text = (t("online.idle", when=_ago(now - start["at"], t), operator=start.get("operator") or "?")
+                    if start and isinstance(start.get("at"), (int, float)) else t("online.never_started"))
+            level = "dim" if level != "bad" else "warn"
+        rows.append(Row(t("label.online_diffusion"), text, level))
+    ntfy = snap.ntfy
+    if isinstance(ntfy, dict) and ntfy.get("configured"):
+        ok_at, fail_at = ntfy.get("ok_at"), ntfy.get("fail_at")
+        if isinstance(fail_at, (int, float)) and (not isinstance(ok_at, (int, float)) or fail_at > ok_at):
+            rows.append(Row(t("label.online_ntfy"), t("online.ntfy_fail", when=_ago(now - fail_at, t)), "bad"))
+        elif isinstance(ok_at, (int, float)):
+            rows.append(Row(t("label.online_ntfy"), t("online.ntfy_ok", when=_ago(now - ok_at, t)), "ok"))
+        else:
+            rows.append(Row(t("label.online_ntfy"), t("online.ntfy_none"), "dim"))
+    return Panel("en_ligne", t("panel.online"), tuple(rows)) if rows else None
+
+
 def build_panels(snap: Snapshot, net_detail: bool = False, t: Translator | None = None) -> list[Panel]:
     t = translator(t)
     sdr = _sdr_panel(snap, t)
+    online = _online_panel(snap, t)
     return [_radio_panel(snap, t), *([sdr] if sdr is not None else []), _audio_panel(snap, t), _connexion_panel(snap, t), _sante_panel(snap, t),
-            _materiel_panel(snap, t), _reseau_panel(snap, net_detail, t)]
+            _materiel_panel(snap, t), _reseau_panel(snap, net_detail, t), *([online] if online is not None else [])]
 
 
 def render_plain(panels: list[Panel]) -> str:

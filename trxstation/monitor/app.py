@@ -57,7 +57,7 @@ class MonitorApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with Container(id="top"):
-            for key in ("radio", "sdr", "audio", "connexion", "sante", "materiel", "reseau"):
+            for key in ("radio", "sdr", "audio", "connexion", "sante", "materiel", "reseau", "en_ligne"):
                 yield Static("", id=key, classes="panel")
         yield Static("", id="flash")
         yield RichLog(id="log", wrap=True, markup=False)
@@ -70,7 +70,8 @@ class MonitorApp(App):
     def refresh_view(self) -> None:
         snapshot: Snapshot = self.source.poll()
         panels = build_panels(snapshot, self.net_detail, self.t)
-        self.query_one("#sdr", Static).display = any(p.key == "sdr" for p in panels)   # SDR jamais lancé : masqué
+        for optional in ("sdr", "en_ligne"):              # SDR jamais lancé, aucun service en ligne : masqué
+            self.query_one(f"#{optional}", Static).display = any(p.key == optional for p in panels)
         for panel in panels:
             widget = self.query_one(f"#{panel.key}", Static)
             widget.border_title = panel.title

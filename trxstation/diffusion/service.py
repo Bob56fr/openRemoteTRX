@@ -31,6 +31,7 @@ from typing import Any, Callable
 from .. import config as cfgmod
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..online import LinkHealth, read_json
 from . import audio as au, keyfile, protocol as p
 from .encoder import Encoder
 from .meta import MetaClient
@@ -97,6 +98,12 @@ class DiffusionService:
         self._task: asyncio.Task | None = None
         self._session: dict[str, Any] | None = None   # diffusion en cours
         self.last_stop: dict[str, Any] | None = None
+        # services en ligne (étape 351) : liaison au serveur et dernier lancement, gardés d'un démarrage à l'autre
+        self.server_health = LinkHealth("ORT-6104")
+        previous = read_json(self.folder / "status.json") or {}
+        self.last_start: dict[str, Any] | None = previous.get("last_start") if isinstance(previous.get("last_start"), dict) else None
+        if self.last_stop is None and isinstance(previous.get("last_stop"), dict):
+            self.last_stop = previous["last_stop"]
         self._bus_seen = False
         self._reply_at: float | None = None
         self._meta_dirty = False
@@ -111,7 +118,8 @@ class DiffusionService:
     def status(self) -> dict[str, Any]:
         s = self._session
         out: dict[str, Any] = {"enabled": bool(self.df.enabled), "active": s is not None, "updated": int(self.clock()),
-                               "codec": self.df.codec, "problem": self.problem or None, "last_stop": self.last_stop}
+                               "codec": self.df.codec, "problem": self.problem or None, "last_stop": self.last_stop,
+                               "last_start": self.last_start, "server": self.server_health.to_dict()}
         if self.df.server and self.df.station:
             out["listen_page"] = p.listen_page(self.df.server, self.df.station)
         out["accepted"] = self.accepted()
@@ -321,6 +329,7 @@ class DiffusionService:
         now = self.clock()
         operator = str(args.get("operator") or "opérateur")[:32]
         self.values.update(fixed)
+        self.last_start = {"at": int(now), "operator": operator}
         self._session = {"access": access, "voice": voice, "started": int(now),
                          "ends": None if hours is None else int(p.end_time(now, hours)),
                          "phase": "connexion", "listeners": None, "operator": operator, "meta_choice": choice,
@@ -389,16 +398,22 @@ class DiffusionService:
     # ------------------------------------------------------------- une diffusion
     async def _run_session(self, s: dict) -> None:
         secrets: keyfile.Secrets = s["secrets"]
-        meta = MetaClient(self.api_base, self.df.station, secrets.meta_key_bytes, clock=self.clock)
+        meta = MetaClient(self.api_base, self.df.station, secrets.meta_key_bytes, clock=self.clock,
+                          health=self.server_health)
         meta_task = asyncio.ensure_future(self._meta_loop(s, meta))
         attempt = 0
         try:
             while self._session is s:
                 request = p.source_request(self.df.server, self.df.source_port, self.df.station, s["access"],
                                            secrets.source_password, self.df.codec, str(self.values.get("pseudo") or ""))
+                start = time.monotonic()
                 try:
                     conn = await open_source(self.df.server, self.df.source_port, request, self.ssl_context)
                 except SourceRefused as exc:
+                    if exc.status is None:                                 # pas de réponse du serveur
+                        self.server_health.fail()
+                    else:                                                  # le serveur a répondu (refus)
+                        self.server_health.ok(time.monotonic() - start)
                     if exc.status in FATAL_STATUSES:
                         emit_event(codes.ORT_6103, logger=log, serveur=self.df.server, statut=exc.status)
                         asyncio.ensure_future(self.stop("auth"))
@@ -406,6 +421,7 @@ class DiffusionService:
                     attempt += 1
                     await self._retry(s, str(exc), attempt)
                     continue
+                self.server_health.ok(time.monotonic() - start)
                 attempt = 0
                 s["phase"] = "en_direct"
                 self.write_status()

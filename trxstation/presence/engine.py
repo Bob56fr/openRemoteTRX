@@ -601,7 +601,8 @@ class Engine:
                            "share": dict(rec["share"]), "members": members})
         return {"station": self.me, "pseudo": self.pseudo, "registered": bool(self.store.data.get("registered")),
                 "problem": self.problem, "last_sync": int(self.last_sync) if self.last_sync else None,
-                "texts": list(self.store.data.get("texts") or []), "me": self.my_status(now), "groups": groups}
+                "texts": list(self.store.data.get("texts") or []), "me": self.my_status(now), "groups": groups,
+                "server": _health(self.relay)}
 
     def my_status(self, now: float) -> dict:
         """Statut que CETTE station publie (étape 297) : sans lui, « Au shack 1 h » ne se voyait nulle part chez
@@ -626,3 +627,9 @@ class Engine:
                 "next_in": self.next_in,
                 "groups": [{"g": g, "name": r["name"], "role": r["role"], "status": r["status"],
                             "members": len(r["members"])} for g, r in sorted(self.store.groups.items())]}
+
+
+def _health(relay: object) -> dict | None:
+    """État du relais vu par son client (services en ligne, étape 351) ; None pour un faux relais d'essai."""
+    health = getattr(relay, "health", None)
+    return health.to_dict() if health is not None else None

@@ -248,5 +248,21 @@
   "label.sdr_load": "Charge du module",
   "sdr.load": "{cpu} % du processeur · {mem} Mo",
   "cpu.cores": "{n} cœurs",
-  "cpu.loadavg": " · charge moyenne sur 1 min {load}"
+  "cpu.loadavg": " · charge moyenne sur 1 min {load}",
+  "panel.online": "Services en ligne",
+  "label.online_presence": "Présence de groupe",
+  "label.online_monlink": "Monitoring entre stations",
+  "label.online_diffusion": "Diffusion en direct",
+  "label.online_ntfy": "Alertes ntfy",
+  "online.ok": "joignable · dernier échange {ago} · {rtt} ms",
+  "online.fail": "injoignable depuis {since} ({code}) · dernier échange réussi : {last}",
+  "online.ago": "il y a {ago}",
+  "online.never": "jamais",
+  "online.waiting": "pas encore joint",
+  "online.live": "en direct, {n} auditeur(s)",
+  "online.idle": "à l'arrêt · dernier lancement {when} par {operator}",
+  "online.never_started": "à l'arrêt · jamais lancée",
+  "online.ntfy_ok": "dernière alerte envoyée {when}",
+  "online.ntfy_fail": "dernier envoi raté {when} (ORT-8013)",
+  "online.ntfy_none": "aucune alerte envoyée pour l'instant"
 }

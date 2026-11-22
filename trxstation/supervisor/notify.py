@@ -40,11 +40,12 @@ def _default_post(url: str, title: str, message: str, priority: str = "") -> Non
 class Notifier:
     def __init__(self, url: str = "", *, post: Callable[[str, str, str, str], None] | None = None,
                  clock: Callable[[], float] = time.monotonic, min_interval_s: float = 60.0,
-                 threaded: bool = True, lang: str = "fr"):
+                 threaded: bool = True, lang: str = "fr", record: object | None = None):
         self.url, self._post, self._clock = url, post or _default_post, clock
         self.lang = lang if lang in emit.LANGS else "fr"     # langue du TÉLÉPHONE (fr, en, de, es) ; le journal reste en français
         self.min_interval_s, self.threaded = min_interval_s, threaded
         self._last: dict[str, float] = {}
+        self.record = record          # online.NtfyRecord : résultat des envois pour le tableau de bord (étape 351)
 
     def alert(self, code: str, detail: str = "", *, key: str = "", **contexte: object) -> bool:
         """Alerte `code` du catalogue ; `detail` = texte mesuré (sinon le message du catalogue rempli par
@@ -98,6 +99,11 @@ class Notifier:
                 self._post(self.url, title, message, priority)
             except Exception as exc:          # une alerte ratée ne doit rien casser
                 emit.emit_event(emit_codes.ORT_8013, logger=log, detail=f"{title[:40]} : {exc}")
+                if self.record is not None:
+                    self.record.sent(False)
+            else:
+                if self.record is not None:
+                    self.record.sent(True)
 
         if self.threaded:
             threading.Thread(target=work, daemon=True).start()
