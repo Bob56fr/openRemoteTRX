@@ -7,6 +7,8 @@ stdlib. Résultat (une seule version, sans numéro de version de la station) :
   - `docs/site/postes/index.html` : tableau 1 (par poste : ce que propose Hamlib et ce qui est validé, partiel, en
     échec, non essayé, avec la section repliée « non exploité ») et tableau 2 (comparaison des postes : seulement le
     validé et le partiel), fonctions classées par thème, français / anglais ;
+    puis la liste des postes à USB intégré (CAT et son), `docs/postes/usb-integre.toml` (documentation des
+    fabricants, pas des essais) ;
   - `docs/site/postes/data.json` : les mêmes données, pour qui veut les lire (même origine que la page).
 Usage : python scripts/build_rigs_doc.py   (après tout changement d'une fiche ; tests/test_rigs_doc.py le vérifie).
 """
@@ -24,6 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_console_doc as base  # noqa: E402  (même style, même ajustement de hauteur dans l'iframe)
 
 DATA = ROOT / "docs" / "postes" / "donnees"
+USB_FILE = ROOT / "docs" / "postes" / "usb-integre.toml"
+HAMLIB_ETATS = ("Stable", "Beta", "Alpha", "Untested")
 SITE = ROOT / "docs" / "site"
 FOLDER = "postes"
 PAGES_URL = "https://bob56fr.github.io/openRemoteTRX/postes/"
@@ -155,6 +159,49 @@ PAGE_JS = """
 
 class DocError(Exception):
     pass
+
+
+def load_usb(path: Path = USB_FILE) -> dict:
+    """Postes potentiellement compatibles (documentation des fabricants, pas des essais) : `usb` = CAT et son par un
+    seul câble USB, `cat_seule` = USB pour la CAT, son par une interface externe."""
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def check_usb(usb: dict, rigs: list[dict]) -> None:
+    """Liste cohérente, sinon DocError : champs, numéros Hamlib uniques, fiche existante et de même numéro, tout poste
+    essayé présent dans la liste."""
+    problems, seen = [], set()
+    fiches = {r["id"]: r for r in rigs}
+    if not usb.get("hamlib_version"):
+        problems.append("usb-integre.toml : hamlib_version manquant")
+    for group in ("usb", "cat_seule"):
+        for e in usb.get(group, []):
+            name = f"usb-integre.toml [{group}] {e.get('fabricant', '?')} {e.get('modele', '?')}"
+            for key in ("fabricant", "modele", "hamlib_model", "hamlib_etat"):
+                if key not in e:
+                    problems.append(f"{name} : {key} manquant")
+            if not isinstance(e.get("hamlib_model"), int):
+                problems.append(f"{name} : hamlib_model doit être un nombre")
+            elif e["hamlib_model"] in seen:
+                problems.append(f"{name} : numéro Hamlib {e['hamlib_model']} en double")
+            seen.add(e.get("hamlib_model"))
+            if e.get("hamlib_etat") not in HAMLIB_ETATS:
+                problems.append(f"{name} : hamlib_etat inconnu {e.get('hamlib_etat')!r} ({', '.join(HAMLIB_ETATS)})")
+            if bool(e.get("remarque")) != bool(e.get("remarque_en")):
+                problems.append(f"{name} : remarque et remarque_en vont ensemble")
+            if "fiche" in e:
+                rig = fiches.get(e["fiche"])
+                if rig is None:
+                    problems.append(f"{name} : fiche inconnue {e['fiche']!r}")
+                elif rig["poste"].get("hamlib_model") != e.get("hamlib_model"):
+                    problems.append(f"{name} : numéro Hamlib différent de la fiche {e['fiche']}")
+    for rig in rigs:
+        if rig["poste"].get("hamlib_model") not in seen:
+            problems.append(f"{rig['id']} : poste essayé absent de usb-integre.toml")
+    if not usb.get("usb"):
+        problems.append("usb-integre.toml : aucun poste [[usb]]")
+    if problems:
+        raise DocError("\n".join(problems))
 
 
 def load_rigs(folder: Path = DATA) -> list[dict]:
@@ -408,7 +455,59 @@ def _table2(rigs: list[dict], marks: dict | None = None) -> list[str]:
     return out
 
 
-def render(rigs: list[dict]) -> str:
+def _usb_tables(usb: dict, rigs: list[dict]) -> list[str]:
+    fiches = {r["id"]: r for r in rigs}
+
+    def rows(entries: list[dict], with_status: bool) -> list[str]:
+        out = []
+        for e in sorted(entries, key=lambda x: (x["fabricant"].lower(), x["modele"].lower())):
+            note = _bi(e["remarque"], e["remarque_en"]) if e.get("remarque") else ""
+            if e.get("a_confirmer"):
+                note = (note + " " if note else "") + _bi("USB audio à confirmer.", "USB audio to be confirmed.")
+            cells = [html.escape(e["fabricant"]), html.escape(e["modele"]), str(e["hamlib_model"]),
+                     html.escape(e["hamlib_etat"])]
+            if with_status:
+                rig = fiches.get(e.get("fiche", ""))
+                if rig:
+                    fr, en = STATUTS[rig["poste"]["statut"]]
+                    cells.append(f'<a href="#{html.escape(rig["id"])}"><span class="statut s-{rig["poste"]["statut"]}">'
+                                 f'{_bi(fr, en)}</span></a>')
+                else:
+                    cells.append(_bi("non essayé", "not tried"))
+            cells.append(note)
+            out.append("<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
+        return out
+
+    head = (f'<tr><th>{_bi("Marque", "Brand")}</th><th>{_bi("Modèle", "Model")}</th>'
+            f'<th>{_bi("N° Hamlib", "Hamlib #")}</th>'
+            f'<th>{_bi("Pilote Hamlib", "Hamlib driver")} {html.escape(usb["hamlib_version"])}</th>')
+    out = [f'<h2 id="usb">{_bi("Postes à USB intégré (CAT et son)", "Rigs with built-in USB (CAT and audio)")}</h2>',
+           "<p>" + _bi("Un seul câble USB entre le poste et la station : port série pour la CAT et carte son du poste. "
+                       "Liste établie d’après la documentation des fabricants, PAS d’après des essais : un poste "
+                       "« non essayé » est potentiellement compatible, rien de plus (sécurité d’émission, PTT par la CAT "
+                       "et son restent à vérifier sur charge fictive). Une erreur ou un oubli : ouvrez un ticket.",
+                       "One USB cable between the rig and the station: serial port for CAT and the rig’s sound card. "
+                       "List based on the manufacturers’ documentation, NOT on tests: a “not tried” rig is potentially "
+                       "compatible, nothing more (transmit safety, CAT PTT and audio still to be checked on a dummy "
+                       "load). An error or a missing rig: open an issue.") + "</p>",
+           '<div class="wrap"><table>', head + f'<th>openRemoteTRX</th><th>{_bi("Remarque", "Note")}</th></tr>',
+           *rows(usb["usb"], True), "</table></div>"]
+    if usb.get("cat_seule"):
+        out += [f'<h3>{_bi("USB pour la CAT seulement", "USB for CAT only")}</h3>',
+                "<p>" + _bi("Le son passe par une interface externe (Digirig, SignaLink…) : possible, mais pas en un "
+                            "seul câble.",
+                            "Audio goes through an external interface (Digirig, SignaLink…): possible, but not with a "
+                            "single cable.") + "</p>",
+                '<div class="wrap"><table>', head + f'<th>{_bi("Remarque", "Note")}</th></tr>',
+                *rows(usb["cat_seule"], False), "</table></div>"]
+    out.append("<p>" + _bi("Tout autre poste reconnu par Hamlib peut fonctionner avec une interface CAT et une "
+                           "interface son externes.",
+                           "Any other rig supported by Hamlib can work with external CAT and audio interfaces.") + "</p>")
+    return out
+
+
+def render(rigs: list[dict], usb: dict | None = None) -> str:
+    usb = usb if usb is not None else load_usb()
     themes = "".join(f'<button type="button" data-t="{t}">{_bi(fr, en)}</button>' for t, fr, en in THEMES)
     legend = " · ".join(f'<span class="e-{k}">{v[0]}</span> {_bi(v[1], v[2])}' for k, v in ETATS.items())
     out = ["<!doctype html>", "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->", "<!-- Copyright (C) 2026 RF-DIY.COM -->",
@@ -423,6 +522,8 @@ def render(rigs: list[dict]) -> str:
                        "la version de Hamlib et le système indiqués.",
                        "Every state comes from a real test on the rig (qualification, dummy load). A result holds for the "
                        "Hamlib version and system shown.") + "</p>",
+           "<p>" + _bi("Postes pas encore essayés : voir la liste des ", "Rigs not tried yet: see the list of ")
+           + f'<a href="#usb">{_bi("postes à USB intégré", "rigs with built-in USB")}</a>.</p>',
            f"<p>{legend}</p>",
            f'<p class="themes"><button type="button" data-t="tous">{_bi("Tous les thèmes", "All topics")}</button>{themes}</p>',
            f'<h2>{_bi("Comparaison des postes", "Rig comparison")}</h2>',
@@ -436,6 +537,7 @@ def render(rigs: list[dict]) -> str:
     for rig in rigs:
         out += _table1(rig, marks)
     out.append(_footnotes(anchor=False))
+    out += _usb_tables(usb, rigs)
     out += ["<footer>",
             f'<p><a href="../erreurs/">{_bi("Codes d’erreur", "Error codes")}</a> · <a href="../guide/">'
             f'{_bi("Guide de l’opérateur", "Operator guide")}</a> · <a href="data.json">data.json</a> · '
@@ -445,21 +547,25 @@ def render(rigs: list[dict]) -> str:
     return "\n".join(out)
 
 
-def data_json(rigs: list[dict]) -> str:
+def data_json(rigs: list[dict], usb: dict | None = None) -> str:
+    usb = usb if usb is not None else load_usb()
     out = {"format": 1, "page": PAGES_URL,
            "themes": [{"id": t, "fr": fr, "en": en} for t, fr, en in THEMES],
            "fonctions": [{"id": f, "theme": t, "fr": fr, "en": en} for f, t, fr, en in FEATURES],
            "etats": {k: {"fr": v[1], "en": v[2]} for k, v in ETATS.items()},
            "postes": [{**{k: v for k, v in r.items()}, "note": {k: v for k, v in rating(r).items()
                                                                   if k in ("stars", "provisional", "counted", "valid")}}
-                      for r in rigs]}
+                      for r in rigs],
+           "usb_integre": usb}
     return json.dumps(out, ensure_ascii=False, indent=2) + "\n"
 
 
 def build(site: Path = SITE, rigs: list[dict] | None = None) -> dict[Path, str]:
     rigs = rigs if rigs is not None else load_rigs()
     check(rigs)
-    return {site / FOLDER / "index.html": render(rigs), site / FOLDER / "data.json": data_json(rigs)}
+    usb = load_usb()
+    check_usb(usb, rigs)
+    return {site / FOLDER / "index.html": render(rigs, usb), site / FOLDER / "data.json": data_json(rigs, usb)}
 
 
 def stale_pages(site: Path = SITE) -> list[Path]:

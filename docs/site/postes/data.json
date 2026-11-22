@@ -1081,5 +1081,246 @@
         "valid": 29
       }
     }
-  ]
+  ],
+  "usb_integre": {
+    "hamlib_version": "4.7.2",
+    "usb": [
+      {
+        "fabricant": "Icom",
+        "modele": "IC-705",
+        "hamlib_model": 3085,
+        "hamlib_etat": "Stable",
+        "fiche": "icom-ic705"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-905",
+        "hamlib_model": 3090,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7100",
+        "hamlib_model": 3070,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7200",
+        "hamlib_model": 3061,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7300",
+        "hamlib_model": 3073,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7300MK2",
+        "hamlib_model": 3094,
+        "hamlib_etat": "Beta",
+        "fiche": "icom-ic7300mk2",
+        "remarque": "Hamlib 4.7 ou plus récent exigé.",
+        "remarque_en": "Hamlib 4.7 or newer required."
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7410",
+        "hamlib_model": 3067,
+        "hamlib_etat": "Beta"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7600",
+        "hamlib_model": 3063,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7610",
+        "hamlib_model": 3078,
+        "hamlib_etat": "Stable",
+        "remarque": "A aussi une prise réseau (Ethernet), non utilisée par openRemoteTRX.",
+        "remarque_en": "Also has an Ethernet port, not used by openRemoteTRX."
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7760",
+        "hamlib_model": 3092,
+        "hamlib_etat": "Alpha",
+        "remarque": "Pilote Hamlib encore en Alpha.",
+        "remarque_en": "Hamlib driver still Alpha."
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-7850 / IC-7851",
+        "hamlib_model": 3075,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-9100",
+        "hamlib_model": 3068,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-9700",
+        "hamlib_model": 3081,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Icom",
+        "modele": "IC-R8600",
+        "hamlib_model": 3079,
+        "hamlib_etat": "Stable",
+        "remarque": "Récepteur : réception seule.",
+        "remarque_en": "Receiver: receive only."
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FT-710",
+        "hamlib_model": 1049,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FT-991 / FT-991A",
+        "hamlib_model": 1035,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FTDX10",
+        "hamlib_model": 1042,
+        "hamlib_etat": "Stable",
+        "fiche": "yaesu-ftdx10"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FTDX101D",
+        "hamlib_model": 1040,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FTDX101MP",
+        "hamlib_model": 1044,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FTX-1",
+        "hamlib_model": 1051,
+        "hamlib_etat": "Beta",
+        "a_confirmer": true
+      },
+      {
+        "fabricant": "Kenwood",
+        "modele": "TS-590S",
+        "hamlib_model": 2031,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Kenwood",
+        "modele": "TS-590SG",
+        "hamlib_model": 2037,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Kenwood",
+        "modele": "TS-890S",
+        "hamlib_model": 2041,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Kenwood",
+        "modele": "TS-990S",
+        "hamlib_model": 2039,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Elecraft",
+        "modele": "K3",
+        "hamlib_model": 2029,
+        "hamlib_etat": "Stable",
+        "remarque": "Seulement avec la carte KIO3B (USB et son).",
+        "remarque_en": "Only with the KIO3B board (USB and audio)."
+      },
+      {
+        "fabricant": "Elecraft",
+        "modele": "K3S",
+        "hamlib_model": 2043,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Elecraft",
+        "modele": "K4",
+        "hamlib_model": 2047,
+        "hamlib_etat": "Stable",
+        "a_confirmer": true,
+        "remarque": "A aussi une prise réseau (Ethernet), non utilisée par openRemoteTRX.",
+        "remarque_en": "Also has an Ethernet port, not used by openRemoteTRX."
+      },
+      {
+        "fabricant": "Xiegu",
+        "modele": "X6100",
+        "hamlib_model": 3087,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Xiegu",
+        "modele": "X6200",
+        "hamlib_model": 3091,
+        "hamlib_etat": "Stable",
+        "a_confirmer": true
+      },
+      {
+        "fabricant": "QRP Labs",
+        "modele": "QMX",
+        "hamlib_model": 2057,
+        "hamlib_etat": "Beta",
+        "remarque": "Poste QRP ; BLU selon le micrologiciel.",
+        "remarque_en": "QRP rig; SSB depends on the firmware."
+      }
+    ],
+    "cat_seule": [
+      {
+        "fabricant": "Yaesu",
+        "modele": "FT-891",
+        "hamlib_model": 1036,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FTDX1200",
+        "hamlib_model": 1034,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Yaesu",
+        "modele": "FTDX3000",
+        "hamlib_model": 1037,
+        "hamlib_etat": "Stable"
+      },
+      {
+        "fabricant": "Elecraft",
+        "modele": "KX2",
+        "hamlib_model": 2044,
+        "hamlib_etat": "Stable",
+        "remarque": "Câble USB de la CAT en option (KXUSB).",
+        "remarque_en": "Optional USB CAT cable (KXUSB)."
+      },
+      {
+        "fabricant": "Elecraft",
+        "modele": "KX3",
+        "hamlib_model": 2045,
+        "hamlib_etat": "Stable",
+        "remarque": "Câble USB de la CAT en option (KXUSB).",
+        "remarque_en": "Optional USB CAT cable (KXUSB)."
+      }
+    ]
+  }
 }

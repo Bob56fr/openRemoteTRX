@@ -3,6 +3,8 @@
 Page publique : https://bob56fr.github.io/openRemoteTRX/postes/ (comparaison des postes et fiche de chaque poste,
 français / anglais, filtre par thème). Bloc WordPress à coller une fois : `docs/wordpress/postes-iframe.html`.
 
+Postes POTENTIELLEMENT compatibles (pas essayés) : `usb-integre.toml`, postes à USB intégré pour la CAT et le son (un seul câble), d'après la documentation des fabricants ; section « Postes à USB intégré » en fin de la même page.
+
 | Poste | Modèle Hamlib | Statut | Fiche détaillée |
 | --- | --- | --- | --- |
 | Icom IC-705 | 3085 | validation en cours (qualifié deux fois, même résultat) | `donnees/icom-ic705.toml` |

@@ -175,3 +175,34 @@ def test_comparison_names_link_to_their_sheet_and_show_the_rating() -> None:
     comparison = doc.render([rig, other]).split("Comparaison des postes", 1)[1].split("Fiche de chaque poste", 1)[0]
     assert '<a href="#icom-ic7300mk2">Icom IC-7300MK2</a><br><span class="etoiles">★★★★★</span> 5/5' in comparison
     assert '<a href="#x-sans-note">' in comparison and "note attendue" in comparison
+
+
+def test_usb_list_is_consistent_and_lists_every_tried_rig() -> None:
+    usb = doc.load_usb()
+    assert len(usb["usb"]) >= 20
+    doc.check_usb(usb, doc.load_rigs())
+
+
+def test_usb_list_refuses_a_duplicate_hamlib_number_and_an_unknown_sheet() -> None:
+    rigs = doc.load_rigs()
+    usb = doc.load_usb()
+    bad = copy.deepcopy(usb)
+    bad["usb"].append(dict(bad["usb"][0]))
+    with pytest.raises(doc.DocError, match="en double"):
+        doc.check_usb(bad, rigs)
+    bad = copy.deepcopy(usb)
+    bad["usb"][0]["fiche"] = "inconnu"
+    with pytest.raises(doc.DocError, match="fiche inconnue"):
+        doc.check_usb(bad, rigs)
+    bad = copy.deepcopy(usb)
+    bad["usb"] = [e for e in bad["usb"] if e.get("fiche") != "icom-ic7300mk2"]
+    with pytest.raises(doc.DocError, match="absent"):
+        doc.check_usb(bad, rigs)
+
+
+def test_page_shows_the_usb_list_with_tried_rigs_linked() -> None:
+    page = doc.render(doc.load_rigs())
+    section = page.split('id="usb"', 1)[1]
+    assert "IC-7610" in section and "TS-890S" in section and "FT-891" in section
+    assert 'href="#icom-ic7300mk2"' in section
+    assert "non essayé" in section and "not tried" in section
