@@ -520,5 +520,8 @@
   "swrscreen.save_failed": "Cannot save.",
   "swrscreen.image_failed": "Cannot create image: {error}",
   "settings.language_next": "Screens change right away; the station gets the new language at the next connection.",
-  "settings.language_now": "Screens and the station's messages change right away."
+  "settings.language_now": "Screens and the station's messages change right away.",
+  "litewarning.title": "Phone without security updates",
+  "litewarning.text": "Android 8 and 9 no longer receive security updates. Your operator account password is stored on this phone: use an account dedicated to this phone (openRemoteTRX Console, menu 4.3), which you can delete on its own if the phone is lost or stolen.",
+  "litewarning.ok": "I understand"
 }

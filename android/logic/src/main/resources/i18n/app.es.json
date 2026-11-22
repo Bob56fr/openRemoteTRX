@@ -520,5 +520,8 @@
   "swrscreen.save_failed": "No se puede guardar.",
   "swrscreen.image_failed": "No se puede crear la imagen: {error}",
   "settings.language_next": "Las pantallas cambian enseguida; la estación recibe el nuevo idioma en la próxima conexión.",
-  "settings.language_now": "Las pantallas y los mensajes de la estación cambian al instante."
+  "settings.language_now": "Las pantallas y los mensajes de la estación cambian al instante.",
+  "litewarning.title": "Teléfono sin actualizaciones de seguridad",
+  "litewarning.text": "Android 8 y 9 ya no reciben actualizaciones de seguridad. La contraseña de tu cuenta de operador está guardada en este teléfono: usa una cuenta solo para este teléfono (openRemoteTRX Console, menú 4.3), que podrás eliminar por separado si lo pierdes o te lo roban.",
+  "litewarning.ok": "Entendido"
 }

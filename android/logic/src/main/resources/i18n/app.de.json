@@ -520,5 +520,8 @@
   "swrscreen.save_failed": "Speichern nicht möglich.",
   "swrscreen.image_failed": "Bild nicht möglich: {error}",
   "settings.language_next": "Die Bildschirme ändern sich sofort; die Station erhält die neue Sprache bei der nächsten Verbindung.",
-  "settings.language_now": "Die Bildschirme und die Meldungen der Station ändern sich sofort."
+  "settings.language_now": "Die Bildschirme und die Meldungen der Station ändern sich sofort.",
+  "litewarning.title": "Telefon ohne Sicherheitsupdates",
+  "litewarning.text": "Android 8 und 9 erhalten keine Sicherheitsupdates mehr. Das Passwort Ihres Operator-Kontos ist auf diesem Telefon gespeichert: Verwenden Sie ein Konto nur für dieses Telefon (openRemoteTRX Console, Menü 4.3), das Sie bei Verlust oder Diebstahl einzeln löschen können.",
+  "litewarning.ok": "Verstanden"
 }
