@@ -192,7 +192,7 @@
   "log.net_outage": "network outage of {duration}{agent}: {diagnosis}",
   "log.agent": " ({agent})",
   "log.vpn": "VPN PROFILE PROBABLY SHARED ({address}): one profile per device",
-  "stop.ok": "PTT released: “T 0” command sent, the rig is not transmitting",
+  "stop.ok": "PTT released: return-to-receive command (T 0) sent, the rig is not transmitting",
   "stop.failed": "FAILED: the rig is not confirmed in receive (rigctld unreachable or rig stuck)",
   "app.key_stop": "STOP TX",
   "app.key_net": "Network (detail)",

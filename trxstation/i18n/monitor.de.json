@@ -192,7 +192,7 @@
   "log.net_outage": "Netzausfall von {duration}{agent}: {diagnosis}",
   "log.agent": " ({agent})",
   "log.vpn": "VPN-PROFIL WAHRSCHEINLICH GETEILT ({address}): ein Profil pro Gerät",
-  "stop.ok": "PTT aus: Befehl „T 0“ gesendet, das Gerät sendet nicht",
+  "stop.ok": "PTT aus: Befehl zum Zurückschalten auf Empfang (T 0) gesendet, das Gerät sendet nicht",
   "stop.failed": "FEHLGESCHLAGEN: Empfang des Geräts nicht bestätigt (rigctld nicht erreichbar oder Gerät blockiert)",
   "app.key_stop": "STOP TX",
   "app.key_net": "Netzwerk (Details)",

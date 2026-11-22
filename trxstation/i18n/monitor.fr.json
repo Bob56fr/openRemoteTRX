@@ -192,7 +192,7 @@
   "log.net_outage": "coupure réseau de {duration}{agent} : {diagnosis}",
   "log.agent": " ({agent})",
   "log.vpn": "PROFIL VPN PROBABLEMENT PARTAGÉ ({address}) : un profil par appareil",
-  "stop.ok": "PTT coupé : ordre « T 0 » envoyé, le poste n'est pas en émission",
+  "stop.ok": "PTT coupé : ordre de retour en réception (T 0) envoyé, le poste n'est pas en émission",
   "stop.failed": "ÉCHEC : le poste n'est pas confirmé en réception (rigctld injoignable ou poste bloqué)",
   "app.key_stop": "STOP TX",
   "app.key_net": "Réseau (détail)",

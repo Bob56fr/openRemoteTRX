@@ -192,7 +192,7 @@
   "log.net_outage": "corte de red de {duration}{agent}: {diagnosis}",
   "log.agent": " ({agent})",
   "log.vpn": "PERFIL VPN PROBABLEMENTE COMPARTIDO ({address}): un perfil por dispositivo",
-  "stop.ok": "PTT cortado: orden «T 0» enviada, el equipo no está transmitiendo",
+  "stop.ok": "PTT cortado: orden de vuelta a recepción (T 0) enviada, el equipo no está transmitiendo",
   "stop.failed": "FALLO: no se confirma que el equipo esté en recepción (rigctld inaccesible o equipo bloqueado)",
   "app.key_stop": "STOP TX",
   "app.key_net": "Red (detalle)",

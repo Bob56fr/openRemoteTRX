@@ -88,6 +88,6 @@
   <text x="527" y="948" fill="#9aa8bb" font-size="15" text-anchor="middle">mise en sécurité</text>
 
   <!-- Étiquette posée par-dessus la ligne du son (croisement) -->
-  <rect x="305" y="441" width="30" height="17" rx="3" fill="#0f141c"/>
-  <text x="320" y="454" fill="#e0524a" font-size="13" font-weight="700" text-anchor="middle">T 0</text>
+  <rect x="263" y="441" width="114" height="17" rx="3" fill="#0f141c"/>
+  <text x="320" y="454" fill="#e0524a" font-size="13" font-weight="700" text-anchor="middle">retour RX (T 0)</text>
 </svg>

@@ -6618,7 +6618,7 @@ ORT-5009:
 ORT-5010:
   gravite: critique
   titre: PTT actif sans session cliente
-  message: 'Poste en émission alors que la passerelle est en {etat_passerelle} : « T 0 » envoyé par le superviseur.'
+  message: 'Poste en émission alors que la passerelle est en {etat_passerelle} : ordre de retour en réception (T 0) envoyé par le superviseur.'
   causes:
   - Émission locale (micro, pédale, VOX) avec allow_local_tx = false
   - Propriétaire de l'émission qui n'est plus connecté
@@ -6634,7 +6634,7 @@ ORT-5010:
   depuis_version: 0.123.0
   en:
     titre: PTT active without a client session
-    message: 'Rig transmitting while the gateway is in {etat_passerelle}: "T 0" sent by the supervisor.'
+    message: 'Rig transmitting while the gateway is in {etat_passerelle}: return-to-receive command (T 0) sent by the supervisor.'
     causes:
     - Local transmission (microphone, footswitch, VOX) with allow_local_tx = false
     - Transmission owner no longer connected
@@ -6643,7 +6643,7 @@ ORT-5010:
     preconisation: Check the rig immediately; check VOX, footswitch, other CAT software and USB SEND/Keying settings.
   de:
     titre: PTT aktiv ohne Client-Sitzung
-    message: 'Transceiver auf Senden, während das Gateway im Zustand {etat_passerelle} ist: „T 0“ vom Supervisor gesendet.'
+    message: 'Transceiver auf Senden, während das Gateway im Zustand {etat_passerelle} ist: Befehl zum Zurückschalten auf Empfang (T 0) vom Supervisor gesendet.'
     causes:
     - Lokales Senden (Mikrofon, Fußtaster, VOX) mit allow_local_tx = false
     - Inhaber des Sendens nicht mehr verbunden
@@ -6653,7 +6653,7 @@ ORT-5010:
       USB SEND/Keying.
   es:
     titre: PTT activo sin sesión de cliente
-    message: 'Equipo en transmisión mientras la pasarela está en {etat_passerelle}: «T 0» enviado por el supervisor.'
+    message: 'Equipo en transmisión mientras la pasarela está en {etat_passerelle}: orden de vuelta a recepción (T 0) enviada por el supervisor.'
     causes:
     - Transmisión local (micrófono, pedal, VOX) con allow_local_tx = false
     - Propietario de la transmisión que ya no está conectado
@@ -6971,7 +6971,7 @@ ORT-5019:
   - Câble USB débranché, retour HF sur le câble
   - Poste qui ne répond plus (fréquence illisible)
   preconisation: Vérifier le câble USB (ferrites, retour HF), rigctld et le poste ; le superviseur envoie aussi
-    « T 0 » s'il voit encore l'émission.
+    l'ordre de retour en réception (T 0) s'il voit encore l'émission.
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -6997,7 +6997,7 @@ ORT-5019:
     - USB-Kabel abgezogen, HF-Rückwirkung auf das Kabel
     - Transceiver antwortet nicht mehr (Frequenz unlesbar)
     preconisation: Prüfen Sie USB-Kabel (Ferrite, HF-Rückwirkung), rigctld und den Transceiver; der Supervisor sendet ebenfalls
-      „T 0“, wenn er das Senden noch sieht.
+      den Befehl zum Zurückschalten auf Empfang (T 0), wenn er das Senden noch sieht.
   es:
     titre: Enlace con el equipo perdido durante la transmisión
     message: 'Transmisión cortada: {cause} durante la transmisión.'
@@ -7005,7 +7005,7 @@ ORT-5019:
     - rigctld detenido o bloqueado
     - Cable USB desconectado, retorno de RF en el cable
     - Equipo que ya no responde (frecuencia ilegible)
-    preconisation: Comprueba el cable USB (ferritas, retorno de RF), rigctld y el equipo; el supervisor también envía «T 0»
+    preconisation: Comprueba el cable USB (ferritas, retorno de RF), rigctld y el equipo; el supervisor también envía la orden de vuelta a recepción (T 0)
       si sigue viendo la transmisión.
 
 ORT-5020:
@@ -7167,7 +7167,7 @@ ORT-5023:
 ORT-5024:
   gravite: critique
   titre: 'TOT absolu dépassé : coupure par le superviseur'
-  message: 'Le poste émet depuis {duree_s} s (TOT absolu {tot_abs_s} s) : « T 0 » envoyé par le superviseur.'
+  message: 'Le poste émet depuis {duree_s} s (TOT absolu {tot_abs_s} s) : ordre de retour en réception (T 0) envoyé par le superviseur.'
   causes:
   - Émission de la passerelle qui a échappé à son TOT (passerelle défaillante)
   - Émission locale au micro du poste trop longue
@@ -7183,7 +7183,7 @@ ORT-5024:
   depuis_version: 0.123.0
   en:
     titre: 'Absolute TOT exceeded: supervisor cut'
-    message: 'The rig has been transmitting for {duree_s} s (absolute TOT {tot_abs_s} s): "T 0" sent by the supervisor.'
+    message: 'The rig has been transmitting for {duree_s} s (absolute TOT {tot_abs_s} s): return-to-receive command (T 0) sent by the supervisor.'
     causes:
     - Gateway transmission that escaped its TOT (gateway failure)
     - Local transmission on the rig microphone too long
@@ -7191,7 +7191,7 @@ ORT-5024:
     preconisation: Check the rig; if the transmission came from the gateway, read its logs (recovery ladder started).
   de:
     titre: 'Absoluter TOT überschritten: Abschaltung durch den Supervisor'
-    message: 'Der Transceiver sendet seit {duree_s} s (absoluter TOT {tot_abs_s} s): „T 0“ vom Supervisor gesendet.'
+    message: 'Der Transceiver sendet seit {duree_s} s (absoluter TOT {tot_abs_s} s): Befehl zum Zurückschalten auf Empfang (T 0) vom Supervisor gesendet.'
     causes:
     - Senden des Gateways, das seinem TOT entgangen ist (Gateway fehlerhaft)
     - Zu langes lokales Senden am Mikrofon des Transceivers
@@ -7200,7 +7200,7 @@ ORT-5024:
       Wiederherstellungsstufen sind gestartet).
   es:
     titre: 'TOT absoluto superado: corte por el supervisor'
-    message: 'El equipo transmite desde hace {duree_s} s (TOT absoluto {tot_abs_s} s): «T 0» enviado por el supervisor.'
+    message: 'El equipo transmite desde hace {duree_s} s (TOT absoluto {tot_abs_s} s): orden de vuelta a recepción (T 0) enviada por el supervisor.'
     causes:
     - Transmisión de la pasarela que ha escapado a su TOT (pasarela defectuosa)
     - Transmisión local con el micrófono del equipo demasiado larga
@@ -7211,7 +7211,7 @@ ORT-5024:
 ORT-5025:
   gravite: critique
   titre: Passerelle muette pendant une émission
-  message: 'Le poste émet et la passerelle ne publie plus son état depuis {age_s} s : « T 0 » envoyé, passerelle
+  message: 'Le poste émet et la passerelle ne publie plus son état depuis {age_s} s : ordre de retour en réception (T 0) envoyé, passerelle
     relancée.'
   causes:
   - Passerelle gelée ou plantée pendant une émission
@@ -7228,7 +7228,7 @@ ORT-5025:
   depuis_version: 0.123.0
   en:
     titre: Gateway silent during transmission
-    message: 'The rig is transmitting and the gateway has not published its state for {age_s} s: "T 0" sent, gateway
+    message: 'The rig is transmitting and the gateway has not published its state for {age_s} s: return-to-receive command (T 0) sent, gateway
       restarted.'
     causes:
     - Gateway frozen or crashed during a transmission
@@ -7237,7 +7237,7 @@ ORT-5025:
     preconisation: Read the gateway logs (hang, py-spy dump); check disk space and load.
   de:
     titre: Gateway stumm während eines Sendens
-    message: 'Der Transceiver sendet und das Gateway veröffentlicht seit {age_s} s keinen Status mehr: „T 0“ gesendet, Gateway
+    message: 'Der Transceiver sendet und das Gateway veröffentlicht seit {age_s} s keinen Status mehr: Befehl zum Zurückschalten auf Empfang (T 0) gesendet, Gateway
       neu gestartet.'
     causes:
     - Gateway während eines Sendens eingefroren oder abgestürzt
@@ -7246,7 +7246,7 @@ ORT-5025:
     preconisation: Sehen Sie in die Protokolle des Gateways (Blockade, py-spy dump); prüfen Sie Speicherplatz und Last.
   es:
     titre: Pasarela muda durante una transmisión
-    message: 'El equipo transmite y la pasarela ya no publica su estado desde hace {age_s} s: «T 0» enviado, pasarela reiniciada.'
+    message: 'El equipo transmite y la pasarela ya no publica su estado desde hace {age_s} s: orden de vuelta a recepción (T 0) enviada, pasarela reiniciada.'
     causes:
     - Pasarela congelada o caída durante una transmisión
     - 'Disco lleno: archivo de estado no escrito'
@@ -7256,7 +7256,7 @@ ORT-5025:
 ORT-5026:
   gravite: critique
   titre: rigctld injoignable pendant une émission
-  message: 'rigctld ne répond plus depuis {delai_s} s alors que le poste émettait ({detail}) : « T 0 » tenté, rigctld
+  message: 'rigctld ne répond plus depuis {delai_s} s alors que le poste émettait ({detail}) : ordre de retour en réception (T 0) tenté, rigctld
     relancé.'
   causes:
   - rigctld planté ou bloqué
@@ -7272,7 +7272,7 @@ ORT-5026:
   depuis_version: 0.123.0
   en:
     titre: rigctld unreachable during transmission
-    message: 'rigctld has not answered for {delai_s} s while the rig was transmitting ({detail}): "T 0" attempted,
+    message: 'rigctld has not answered for {delai_s} s while the rig was transmitting ({detail}): return-to-receive command (T 0) attempted,
       rigctld restarted.'
     causes:
     - rigctld crashed or stuck
@@ -7281,7 +7281,7 @@ ORT-5026:
     preconisation: Check the rig immediately; check the USB cable (ferrites), then the rigctld logs.
   de:
     titre: rigctld während eines Sendens nicht erreichbar
-    message: 'rigctld antwortet seit {delai_s} s nicht mehr, während der Transceiver sendete ({detail}): „T 0“ versucht, rigctld
+    message: 'rigctld antwortet seit {delai_s} s nicht mehr, während der Transceiver sendete ({detail}): Befehl zum Zurückschalten auf Empfang (T 0) versucht, rigctld
       neu gestartet.'
     causes:
     - rigctld abgestürzt oder blockiert
@@ -7290,7 +7290,7 @@ ORT-5026:
     preconisation: Kontrollieren Sie den Transceiver sofort; prüfen Sie das USB-Kabel (Ferrite), dann die Protokolle von rigctld.
   es:
     titre: rigctld inalcanzable durante una transmisión
-    message: 'rigctld ya no responde desde hace {delai_s} s mientras el equipo transmitía ({detail}): «T 0» intentado, rigctld
+    message: 'rigctld ya no responde desde hace {delai_s} s mientras el equipo transmitía ({detail}): orden de vuelta a recepción (T 0) intentada, rigctld
       reiniciado.'
     causes:
     - rigctld caído o bloqueado
@@ -7300,8 +7300,8 @@ ORT-5026:
 
 ORT-5027:
   gravite: critique
-  titre: « T 0 » du superviseur non confirmé
-  message: Le superviseur a envoyé « T 0 » mais le poste n'est pas confirmé en réception.
+  titre: Ordre de retour en réception (T 0) du superviseur non confirmé
+  message: Le superviseur a envoyé l'ordre de retour en réception (T 0) mais le poste n'est pas confirmé en réception.
   causes:
   - rigctld injoignable
   - Poste qui ignore la commande
@@ -7313,24 +7313,24 @@ ORT-5027:
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5027/
   depuis_version: 0.123.0
   en:
-    titre: Supervisor "T 0" not confirmed
-    message: The supervisor sent "T 0" but the rig is not confirmed on receive.
+    titre: Supervisor return-to-receive command (T 0) not confirmed
+    message: The supervisor sent the return-to-receive command (T 0) but the rig is not confirmed on receive.
     causes:
     - rigctld unreachable
     - Rig ignoring the command
     - PTT held by other means
     preconisation: Check the rig immediately and switch it off by hand if needed.
   de:
-    titre: „T 0“ des Supervisors nicht bestätigt
-    message: Der Supervisor hat „T 0“ gesendet, aber der Transceiver ist nicht als auf Empfang bestätigt.
+    titre: Befehl zum Zurückschalten auf Empfang (T 0) des Supervisors nicht bestätigt
+    message: Der Supervisor hat den Befehl zum Zurückschalten auf Empfang (T 0) gesendet, aber der Transceiver ist nicht als auf Empfang bestätigt.
     causes:
     - rigctld nicht erreichbar
     - Transceiver ignoriert den Befehl
     - PTT auf anderem Weg gehalten
     preconisation: Kontrollieren Sie den Transceiver sofort und schalten Sie ihn bei Bedarf von Hand ab.
   es:
-    titre: «T 0» del supervisor no confirmado
-    message: El supervisor ha enviado «T 0» pero el equipo no está confirmado en recepción.
+    titre: Orden de vuelta a recepción (T 0) del supervisor no confirmada
+    message: El supervisor ha enviado la orden de vuelta a recepción (T 0) pero el equipo no está confirmado en recepción.
     causes:
     - rigctld inalcanzable
     - Equipo que ignora el comando
@@ -7513,12 +7513,12 @@ ORT-5032:
 ORT-5033:
   gravite: critique
   titre: 'Émission locale trop longue : coupure par le superviseur'
-  message: 'Le poste émet depuis le micro depuis {duree_s} s (plafond de l''émission locale {limite_s} s) : « T 0 »
+  message: 'Le poste émet depuis le micro depuis {duree_s} s (plafond de l''émission locale {limite_s} s) : ordre de retour en réception (T 0)
     envoyé par le superviseur.'
   causes:
   - Micro ou pédale du poste coincés
   - Opérateur sur place qui dépasse le plafond local_tx_max_s
-  preconisation: 'Contrôler le micro et la pédale du poste ; si l''émission résiste à « T 0 », l''échelle de reprise
+  preconisation: 'Contrôler le micro et la pédale du poste ; si l''émission résiste à l''ordre de retour en réception (T 0), l''échelle de reprise
     puis la mise en sécurité de la station suivent.'
   action_auto: retour_rx
   ntfy_defaut: true
@@ -7530,29 +7530,29 @@ ORT-5033:
   en:
     titre: 'Local transmission too long: supervisor cut'
     message: 'The rig has been transmitting from its microphone for {duree_s} s (local transmission ceiling {limite_s}
-      s): "T 0" sent by the supervisor.'
+      s): return-to-receive command (T 0) sent by the supervisor.'
     causes:
     - Rig microphone or footswitch stuck
     - On-site operator exceeding the local_tx_max_s ceiling
-    preconisation: 'Check the rig microphone and footswitch; if the transmission resists "T 0", the recovery ladder
+    preconisation: 'Check the rig microphone and footswitch; if the transmission resists the return-to-receive command (T 0), the recovery ladder
       then the safety lockout follow.'
   de:
     titre: 'Lokales Senden zu lang: Abschaltung durch den Supervisor'
-    message: 'Der Transceiver sendet seit {duree_s} s über das Mikrofon (Obergrenze für lokales Senden {limite_s} s): „T 0“
+    message: 'Der Transceiver sendet seit {duree_s} s über das Mikrofon (Obergrenze für lokales Senden {limite_s} s): Befehl zum Zurückschalten auf Empfang (T 0)
       vom Supervisor gesendet.'
     causes:
     - Mikrofon oder Fußtaster des Transceivers hängen
     - Operator vor Ort überschreitet die Obergrenze local_tx_max_s
-    preconisation: Kontrollieren Sie Mikrofon und Fußtaster des Transceivers; widersteht das Senden „T 0“, folgen die Wiederherstellungsstufen
+    preconisation: Kontrollieren Sie Mikrofon und Fußtaster des Transceivers; widersteht das Senden dem Befehl zum Zurückschalten auf Empfang (T 0), folgen die Wiederherstellungsstufen
       und dann die Sicherheitsabschaltung.
   es:
     titre: 'Transmisión local demasiado larga: corte por el supervisor'
     message: 'El equipo transmite desde el micrófono desde hace {duree_s} s (límite de la transmisión local {limite_s} s):
-      «T 0» enviado por el supervisor.'
+      orden de vuelta a recepción (T 0) enviada por el supervisor.'
     causes:
     - Micrófono o pedal del equipo atascados
     - Operador local que supera el límite local_tx_max_s
-    preconisation: Controla el micrófono y el pedal del equipo; si la transmisión resiste a «T 0», siguen la escala de recuperación
+    preconisation: Controla el micrófono y el pedal del equipo; si la transmisión resiste a la orden de vuelta a recepción (T 0), siguen la escala de recuperación
       y luego el bloqueo de seguridad.
 
 ORT-5034:
@@ -14338,7 +14338,7 @@ ORT-8005:
 ORT-8006:
   gravite: critique
   titre: Redémarrage de la machine par le superviseur
-  message: 'Reprise niveau 3 (reboot) : {problemes}. « T 0 » envoyé, redémarrage de la machine.'
+  message: 'Reprise niveau 3 (reboot) : {problemes}. Ordre de retour en réception (T 0) envoyé, redémarrage de la machine.'
   causes:
   - Relances de la passerelle, de rigctld et réinitialisation USB sans effet
   preconisation: Après le redémarrage, consulter les journaux ; au-delà de {max_par_heure} redémarrages par heure,
@@ -14352,21 +14352,21 @@ ORT-8006:
   depuis_version: 0.123.0
   en:
     titre: Machine reboot by the supervisor
-    message: 'Recovery level 3 (reboot): {problemes}. "T 0" sent, rebooting the machine.'
+    message: 'Recovery level 3 (reboot): {problemes}. Return-to-receive command (T 0) sent, rebooting the machine.'
     causes:
     - Gateway restart, rigctld restart and USB reset had no effect
     preconisation: After the reboot, read the logs; beyond {max_par_heure} reboots per hour the station goes into
       safety lockout.
   de:
     titre: Neustart des Rechners durch den Supervisor
-    message: 'Wiederherstellung Stufe 3 (reboot): {problemes}. „T 0“ gesendet, Neustart des Rechners.'
+    message: 'Wiederherstellung Stufe 3 (reboot): {problemes}. Befehl zum Zurückschalten auf Empfang (T 0) gesendet, Neustart des Rechners.'
     causes:
     - Neustarts von Gateway und rigctld sowie USB-Reset ohne Wirkung
     preconisation: Sehen Sie nach dem Neustart in die Protokolle; bei mehr als {max_par_heure} Neustarts pro Stunde geht die
       Station in die Sicherheitsabschaltung.
   es:
     titre: Reinicio del equipo por el supervisor
-    message: 'Recuperación nivel 3 (reboot): {problemes}. «T 0» enviado, reinicio del equipo.'
+    message: 'Recuperación nivel 3 (reboot): {problemes}. Orden de vuelta a recepción (T 0) enviada, reinicio del equipo.'
     causes:
     - Relanzamientos de la pasarela, de rigctld y reinicio USB sin efecto
     preconisation: Tras el reinicio, consulta los registros; por encima de {max_par_heure} reinicios por hora, la estación
@@ -15160,7 +15160,7 @@ ORT-8028:
     {ptt_avant} ; {rigctld}) : LE POSTE PEUT ÊTRE EN ÉMISSION.'
   causes:
   - rigctld arrêté en même temps que la station, ou injoignable
-  - Poste qui ne répond plus à la commande « T 0 »
+  - Poste qui ne répond plus à l'ordre de retour en réception (T 0)
   preconisation: Couper l'émission AU POSTE (ou son alimentation) tout de suite, puis relancer la station.
   action_auto: retour_rx
   ntfy_defaut: true
@@ -15173,7 +15173,7 @@ ORT-8028:
       (PTT before: {ptt_avant}; {rigctld}): THE RADIO MAY BE TRANSMITTING.'
     causes:
     - rigctld stopped at the same time as the station, or unreachable
-    - Radio no longer answering the "T 0" command
+    - Radio no longer answering the return-to-receive command (T 0)
     preconisation: Stop the transmission AT THE RADIO (or its power supply) right away, then restart the station.
   de:
     titre: Station gewaltsam geschlossen, Empfang vom Wächter NICHT bestätigt
@@ -15181,7 +15181,7 @@ ORT-8028:
       bestätigen (PTT vorher: {ptt_avant}; {rigctld}): DAS FUNKGERÄT KANN SENDEN.'
     causes:
     - rigctld gleichzeitig mit der Station beendet oder nicht erreichbar
-    - Funkgerät antwortet nicht mehr auf den Befehl „T 0“
+    - Funkgerät antwortet nicht mehr auf den Befehl zum Zurückschalten auf Empfang (T 0)
     preconisation: Beenden Sie die Aussendung sofort AM FUNKGERÄT (oder an seiner Stromversorgung) und starten Sie dann
       die Station neu.
   es:
@@ -15190,7 +15190,7 @@ ORT-8028:
       antes: {ptt_avant}; {rigctld}): EL EQUIPO PUEDE ESTAR TRANSMITIENDO.'
     causes:
     - rigctld detenido al mismo tiempo que la estación, o inalcanzable
-    - Equipo que ya no responde a la orden «T 0»
+    - Equipo que ya no responde a la orden de vuelta a recepción (T 0)
     preconisation: Corta la emisión EN EL EQUIPO (o su alimentación) enseguida y luego vuelve a arrancar la estación.
 
 ORT-8029:
