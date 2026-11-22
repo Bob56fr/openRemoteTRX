@@ -258,7 +258,8 @@ fun VoiceTab(
         }
     }
 
-    if (BuildConfig.SCRAMBLER && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.SCRAMBLER, ui.scrambler.tx || ui.scrambler.rx)) ScramblerPanel(ui.scrambler, panel)   // absent de la version Google Play
+    // Version Google Play : débrouillage de la réception seulement (BuildConfig.SCRAMBLER = brouillage de l'émission)
+    if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.SCRAMBLER, ui.scrambler.tx || ui.scrambler.rx)) ScramblerPanel(ui.scrambler, panel)
 
     if (replayAllowed && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.REPLAY)) ReplayPanel(transmitting, canBroadcast, onBroadcast, panel)
 
@@ -297,7 +298,7 @@ private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRa
 }
 
 /** Texte montré avant toute mise en service (décision de l'utilisateur du 2026-10-29 : message clair et confirmation). */
-val SCRAMBLER_WARNING: String get() = Tr.t("voicescreen.scrambler_warning")
+val SCRAMBLER_WARNING: String get() = Tr.t(if (BuildConfig.SCRAMBLER) "voicescreen.scrambler_warning" else "voicescreen.descrambler_warning")
 
 /** Rubrique « Scrambler » : brouiller l'émission, débrouiller la réception, mode commun avec la page, décalage fin. */
 @Composable
@@ -310,8 +311,8 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
     }
     panel {
         Text(Tr.t("voicescreen.scrambler_title"), style = MaterialTheme.typography.titleSmall)
-        Text(Tr.t("voicescreen.scrambler_hint"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(Tr.t(if (BuildConfig.SCRAMBLER) "voicescreen.scrambler_hint" else "voicescreen.descrambler_hint"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        if (BuildConfig.SCRAMBLER) Row(verticalAlignment = Alignment.CenterVertically) {   // absent de la version Google Play
             val breizh = VoiceHub.ui.value.breizh                         // Breizh et scrambler d'émission exclusifs
             AppSwitch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) }, enabled = !breizh)
             Spacer(Modifier.width(8.dp))
@@ -329,7 +330,7 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
         SliderRow(Tr.t("voicescreen.fine_offset"), scr.offsetHz.toDouble(), -Scramblers.OFFSET_MAX_HZ.toDouble()..Scramblers.OFFSET_MAX_HZ.toDouble(), 5.0, "Hz") {
             VoiceHub.setScrambler(context, scr.copy(offsetHz = it.roundToInt()))
         }
-        Text(Tr.t("voicescreen.scrambler_tuning"),
+        Text(Tr.t(if (BuildConfig.SCRAMBLER) "voicescreen.scrambler_tuning" else "voicescreen.descrambler_tuning"),
             color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
     }
     asking?.let { next ->

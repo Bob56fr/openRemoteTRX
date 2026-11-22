@@ -75,8 +75,11 @@ object VoiceHub {
      * Scrambler (décision de l'utilisateur du 2026-10-29, docs/scrambler.md) : `tx` brouille l'émission juste avant le
      * limiteur, `rx` débrouille la réception avant le haut-parleur. La confirmation est demandée par l'écran.
      */
+    /** Brouillage de l'émission permis (BuildConfig.SCRAMBLER, posé par MainActivity) ; faux par défaut et dans la version Google Play. */
+    @Volatile var txScramblerAllowed = false
+
     fun setScrambler(context: Context, settings: ScramblerSettings) {
-        var s = Scramblers.validate(settings.mode, settings.offsetHz).copy(tx = settings.tx, rx = settings.rx)
+        var s = Scramblers.validate(settings.mode, settings.offsetHz).copy(tx = settings.tx && txScramblerAllowed, rx = settings.rx)
         if (s.tx && !_ui.value.scrambler.tx && _ui.value.breizh) {               // Breizh et scrambler d'émission exclusifs
             s = s.copy(tx = false)
             RigHub.service?.onRig { session, now ->

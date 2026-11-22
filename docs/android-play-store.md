@@ -12,8 +12,9 @@ revue complète, disponible en quelques minutes). La production demandera plus t
 | `release` | `gradlew.bat assembleRelease` | `app/build/outputs/apk/release/app-release.apk` | diffusion hors Play Store (APK signé par la clé d'envoi si elle existe) |
 | `play` | `gradlew.bat bundlePlay` | `app/build/outputs/bundle/play/app-play.aab` | **envoi à la Play Console** |
 
-`play` = `release` **sans le scrambler** (`BuildConfig.SCRAMBLER = false` : la rubrique de l'onglet « Égaliseur »
-n'existe pas, rien ne peut l'activer). Raison : codage interdit en bandes radioamateur (UIT RR art. 25,
+`play` = `release` **sans le brouillage de l'émission** (`BuildConfig.SCRAMBLER = false` : la rubrique Scrambler
+de l'onglet « Audio » ne propose que le débrouillage de la réception depuis l'étape 362 ; `VoiceHub.txScramblerAllowed`
+refuse tout brouillage d'émission). Raison : codage interdit en bandes radioamateur (UIT RR art. 25,
 `docs/scrambler.md`) ; l'éditeur nommé sur le Store ne le propose pas. Android Auto reste présent (essai par les
 testeurs sans « Sources inconnues ») ; si la revue de Google le refuse, le retirer du type `play` par un manifeste
 `app/src/play/AndroidManifest.xml` (`tools:node="remove"` sur `RigAutoService` et la méta-donnée `gms.car`).

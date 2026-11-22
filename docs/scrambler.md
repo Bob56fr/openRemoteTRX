@@ -16,9 +16,12 @@ radiocommunications de l'UIT (art. 25) et la réglementation nationale interdise
 
 ## Version Google Play
 
-L'application envoyée au Play Store (`bundlePlay`, étape 89) ne contient PAS la rubrique Scrambler : l'éditeur
-nommé sur le Store ne propose pas un codage interdit en bandes radioamateur. Les versions `debug` et `release`
-(diffusion hors Store) la gardent.
+L'application envoyée au Play Store (`bundlePlay`, étape 89) ne propose PAS le brouillage de l'émission : l'éditeur
+nommé sur le Store ne propose pas un codage interdit en bandes radioamateur. Depuis l'étape 362 (application 0.90.0,
+demande de l'utilisateur du 2026-11-22), la rubrique Scrambler y est présente en RÉCEPTION SEULE (débrouiller, mode,
+décalage fin, avertissement propre : rien n'est émis, secret des correspondances) ; `VoiceHub.txScramblerAllowed`
+(posé par `MainActivity` d'après `BuildConfig.SCRAMBLER`, faux par défaut) refuse tout brouillage d'émission même si
+un écran le demandait. Les versions `debug` et `release` (diffusion hors Store) gardent les deux.
 
 ## Principe
 

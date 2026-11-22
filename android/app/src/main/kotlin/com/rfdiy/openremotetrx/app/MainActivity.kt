@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppLang.apply(this)                                       // langue choisie, sinon celle du téléphone
+        com.rfdiy.openremotetrx.core.VoiceHub.txScramblerAllowed = BuildConfig.SCRAMBLER   // Google Play : débrouillage seul
         enableEdgeToEdge()
         volumeControlStream = AudioManager.STREAM_MUSIC          // touches de volume = volume de la réception
         val store = AccountStore(this)

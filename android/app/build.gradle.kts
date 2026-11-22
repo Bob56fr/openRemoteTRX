@@ -15,8 +15,8 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 96
-        versionName = "0.89.0"
+        versionCode = 97
+        versionName = "0.90.0"
         buildConfigField("boolean", "SCRAMBLER", "true")
         // Sonde réseau : changement de cellule (autorisation de localisation, manifestes debug / release seulement)
         buildConfigField("boolean", "CELL_INFO", "true")
@@ -38,7 +38,8 @@ android {
             isMinifyEnabled = false
             signingConfig = signingConfigs.findByName("upload")
         }
-        // Google Play (bundlePlay -> app/build/outputs/bundle/play/app-play.aab) : comme release, SANS le scrambler
+        // Google Play (bundlePlay -> app/build/outputs/bundle/play/app-play.aab) : comme release, SANS le brouillage de
+        // l'émission (débrouillage de la réception permis depuis l'étape 362)
         // (codage interdit en bandes radioamateur, UIT RR art. 25 ; l'application publiée ne le propose pas).
         create("play") {
             initWith(getByName("release"))
