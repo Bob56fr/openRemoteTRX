@@ -11,11 +11,15 @@ Format FIGÉ, décrit dans docs/rapport-format.md (lu par l'analyseur des rappor
 nouveau fichier ou champ s'y ajoute, rien ne se renomme. Depuis la station 0.266.0 (étape 354) : `rapport.json` (format,
 version, heure UTC, fuseau), `noyau.txt` (messages du noyau, démarrages en cours et précédent), modèle et sous-tension du
 Pi dans `materiel.txt`, numéros de série et adresses MAC masqués, journal relu par `sudo -n` si le compte n'a pas les
-droits (l'échec du premier essai reste écrit).
+droits (l'échec du premier essai reste écrit). Depuis 0.268.0 (étape 356) : `reseau.txt` (liaisons, Wi-Fi, signal, mise en
+veille du Wi-Fi ; MAC, SSID et adresses IP publiques masqués) et `reseau/donnees.json` (historique ANONYME de la sonde
+réseau, celui de l'export de netprobe).
 """
 from __future__ import annotations
 
 import datetime
+import ipaddress
+import io
 import json
 import os
 import re
@@ -54,6 +58,61 @@ def redact_hardware(text: str) -> str:
     text = SERIAL_LINE.sub(lambda m: f"{m.group(1)}{m.group(2)}***", text)
     text = BY_ID_SERIAL.sub(r"_***\2", text)
     return MAC.sub("**:**:**:**:**:**", text)
+
+
+NETWORK = [["ip", "-br", "link"], ["iw", "dev"], ["cat", "/proc/net/wireless"]]
+NETWORK_DAYS = 30                                     # historique de la sonde réseau joint au rapport
+SSID = re.compile(r"(?im)^(\s*ssid:?[ \t]+)\S.*$")
+IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+IPV6 = re.compile(r"(?i)(?<![\w:.])[0-9a-f]{0,4}(?::[0-9a-f]{0,4}){2,7}(?![\w:])")    # vérifiée par ipaddress
+
+
+def _mask_public(match: re.Match) -> str:
+    try:
+        return "adresse-publique" if ipaddress.ip_address(match.group(0)).is_global else match.group(0)
+    except ValueError:
+        return match.group(0)
+
+
+def redact_network(text: str) -> str:
+    """reseau.txt : MAC (et BSSID), nom du réseau Wi-Fi (SSID) et adresses IP PUBLIQUES masqués ; les adresses privées
+    restent (elles aident au dépannage et ne désignent personne)."""
+    text = SSID.sub(lambda m: m.group(1) + "***", redact_hardware(text))
+    return IPV6.sub(_mask_public, IPV4.sub(_mask_public, text))
+
+
+def wifi_interfaces(iw_dev: str) -> list[str]:
+    """Interfaces Wi-Fi d'une sortie de `iw dev` (« Interface wlan0 »)."""
+    return re.findall(r"(?m)^\s*Interface\s+(\S+)", iw_dev or "")
+
+
+def network_output(sysm: System) -> str:
+    """reseau.txt : liaisons (`ip -br link`), Wi-Fi (`iw dev`, signal de /proc/net/wireless), puis pour chaque interface
+    Wi-Fi sa liaison (`iw dev X link` : signal, débit) et sa mise en veille (`iw dev X get power_save`, cause classique
+    de coupures sur un Pi)."""
+    code, iw = sysm.run(["iw", "dev"], timeout=30)
+    commands = list(NETWORK)
+    for name in wifi_interfaces(iw if code == 0 else ""):
+        commands += [["iw", "dev", name, "link"], ["iw", "dev", name, "get", "power_save"]]
+    return redact_network(_command_output(sysm, commands))
+
+
+def network_history(state_dir: Path | None, station_id: str) -> tuple[str | None, str]:
+    """(donnees.json de l'export ANONYME de la sonde réseau, ou None ; ligne d'explication pour reseau.txt)."""
+    if state_dir is None:
+        return None, "# historique de la sonde réseau : dossier d'état inconnu (configuration illisible)"
+    folder = state_dir / "netprobe"
+    if not folder.is_dir():
+        return None, "# historique de la sonde réseau : absent (sonde jamais lancée, ou [netprobe] enabled = false)"
+    try:
+        from . import __version__
+        from .netprobe.export import build_export, store_of
+        blob = build_export(store_of(state_dir), NETWORK_DAYS, version=__version__, station_id=station_id)
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            data = z.read("donnees.json").decode("utf-8")
+        return data, f"# historique de la sonde réseau : reseau/donnees.json ({NETWORK_DAYS} jours, anonyme)"
+    except Exception as exc:                          # jamais bloquant : l'échec reste écrit dans reseau.txt
+        return None, f"# historique de la sonde réseau : illisible ({type(exc).__name__} : {exc})"
 
 
 def redact_config(text: str) -> str:
@@ -198,6 +257,10 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
             text = sysm.read_text(crash)
             if text is not None:
                 archive.writestr(f"plantages/{crash.name}", text)
+        history, note = network_history(state_dir, (station_id or "").strip())
+        archive.writestr("reseau.txt", network_output(sysm) + "\n" + note + "\n")
+        if history is not None:
+            archive.writestr("reseau/donnees.json", history)
         log = sysm.read_text(INSTALL_LOG)
         archive.writestr("installation.log", log if log is not None else "# journal d'installation absent ou illisible\n")
     return target

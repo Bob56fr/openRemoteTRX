@@ -33,6 +33,8 @@ encore mises à jour : tout fichier peut manquer.
 | `rapports-page/page-AAAAMMJJ-HHMMSS-<compte>.txt` | avant 0.266.0 | Les 10 derniers « Signaler un problème » envoyés par la page, relus par l'opérateur avant l'envoi. |
 | `plantages/*.txt` | 0.153.0 | Traces des outils arrêtés sur une erreur inattendue (code ORT-9312), 10 au plus. |
 | `installation.log` | avant 0.266.0 | Journal de la dernière installation (Debian). |
+| `reseau.txt` | 0.268.0 | Sorties de commandes : `ip -br link`, `iw dev`, `cat /proc/net/wireless` (signal en dBm), puis pour chaque interface Wi-Fi `iw dev <wlan> link` (signal, débit) et `iw dev <wlan> get power_save` (mise en veille du Wi-Fi) ; dernière ligne : `# historique de la sonde réseau : …` (joint, absent avec la raison, ou illisible avec l'erreur). |
+| `reseau/donnees.json` | 0.268.0 | Historique ANONYME de la sonde réseau sur 30 jours : le `donnees.json` de l'export de la sonde (`trxstation/netprobe/export.py`, `format` 1 : réglages, statistiques, coupures, heures, dernières 24 h ; appareils renommés `appareil-N`, aucune adresse). Absent si la sonde n'a jamais tourné. |
 
 ## Sorties de commandes
 
@@ -90,6 +92,14 @@ Le rapport ne contient aucun mot de passe, jeton ni clé (`secrets.toml` n'y est
 
 - numéros de série masqués en gardant la forme de la ligne : `SerialNumber: ***`, `usb-Icom_Inc._IC-7300MK2_IC-7300MK2_***-if00` ;
 - adresses MAC remplacées par `**:**:**:**:**:**`.
+
+Depuis 0.268.0, dans `reseau.txt` en plus : nom du réseau Wi-Fi (`ssid ***`, `SSID: ***`), BSSID (comme une MAC) et
+adresses IP **publiques** (IPv4 et IPv6, remplacées par `adresse-publique`) ; les adresses privées et locales restent.
+
+## Ce que le rapport ne contient pas (encore)
+
+- Historique de la charge de la machine (processeur, mémoire, température) : la station ne garde que la mesure du
+  moment (diagnostic, tableau de bord), aucun historique.
 
 Envoyé par le monitoring entre stations, le rapport est en plus masqué par `trxstation/monlink/redact.py` (nom de la
 machine, adresses, comptes).

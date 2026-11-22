@@ -356,3 +356,40 @@ def test_diagnostic_says_when_the_system_journal_is_unreadable(tmp_path, monkeyp
     assert check.status == d.WARN and "thierry" in check.message and "systemd-journal thierry" in check.fix
     sysm.commands["journalctl --no-pager -q -n 1"] = (0, "-- No entries --")
     assert next(c for c in d.check_system(sysm) if c.name == "Journal système").status == d.OK
+
+
+# --------------------------------------------------------------------------- réseau et Wi-Fi de la station (étape 356)
+
+IW_DEV = "phy#0\n\tInterface wlan0\n\t\taddr dc:a6:32:01:02:03\n\t\tssid MaBox-1234\n\t\ttype managed"
+
+
+def test_report_network_file_masks_mac_ssid_and_public_addresses(tmp_path):
+    sysm, path = healthy(tmp_path)
+    sysm.commands["ip -br link"] = (0, "wlan0  UP  dc:a6:32:01:02:03 <BROADCAST,UP>")
+    sysm.commands["iw dev"] = (0, IW_DEV)
+    sysm.commands["cat /proc/net/wireless"] = (0, " wlan0: 0000   43.  -67.  -256        0      0      0      0     12        0")
+    sysm.commands["iw dev wlan0 link"] = (0, "Connected to 34:27:92:aa:bb:cc (on wlan0)\n\tSSID: MaBox-1234\n\tsignal: -67 dBm")
+    sysm.commands["iw dev wlan0 get power_save"] = (0, "Power save: on")
+    target = make_report(tmp_path, sysm=sysm, config_path=path)
+    with zipfile.ZipFile(target) as archive:
+        net = archive.read("reseau.txt").decode("utf-8")
+    assert "$ iw dev wlan0 get power_save  (code 0)\nPower save: on" in net and "signal: -67 dBm" in net
+    assert "MaBox" not in net and "dc:a6" not in net and "34:27:92" not in net
+    assert "ssid ***" in net and "SSID: ***" in net
+    assert "historique de la sonde réseau" in net                                 # présent ou absent : toujours dit
+
+
+def test_report_joins_the_anonymous_network_history(tmp_path, monkeypatch):
+    from trxstation import report
+    state = tmp_path / "etat"
+    (state / "netprobe").mkdir(parents=True)
+    monkeypatch.setattr(report, "_state_dir", lambda sysm, config_path: state)
+    data, note = report.network_history(state, "id-essai")
+    assert data is not None and '"format": 1' in data and "reseau/donnees.json" in note
+    assert report.network_history(tmp_path / "rien", "")[0] is None
+
+
+def test_public_addresses_are_masked_private_ones_kept():
+    from trxstation.report import redact_network
+    text = redact_network("192.168.1.19 90.12.34.56 2a01:cb00:1234:5678::1 fe80::1 10:00:00 fd00::5")
+    assert text == "192.168.1.19 adresse-publique adresse-publique fe80::1 10:00:00 fd00::5"
