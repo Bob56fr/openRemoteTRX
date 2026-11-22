@@ -113,7 +113,7 @@ def test_materiel_panel_levels():
         return row(panel(snap(status(), system=SystemInfo(temp_c=t)), "materiel"), "Température").level
     assert [temp_level(t) for t in (None, 50, 72, 85)] == ["dim", "ok", "warn", "bad"]
     p = panel(snap(status(), system=SystemInfo(55.0, 0.42, 812.0, 7200)), "materiel")
-    assert row(p, "Charge du processeur (moyenne sur 1 min)").text == "0.42" and row(p, "Mémoire RAM libre").text == "812 Mo"
+    assert row(p, "Utilisation du processeur").text == "-- · charge moyenne sur 1 min 0,42" and row(p, "Mémoire RAM libre").text == "812 Mo"
     assert row(p, "En fonctionnement depuis").text == "2 h 00 min"
     assert p.title == "Ordinateur"                                  # nom inconnu
     named = panel(snap(status(), system=SystemInfo(host="minix")), "materiel")
@@ -246,7 +246,7 @@ def test_read_system_info(tmp_path):
     info = read_system_info(str(proc), str(tmp_path / "sys"))
     assert (info.temp_c, info.load1, info.mem_available_mb, info.uptime_s) == (47.5, 0.35, 2000.0, 3600.55)
     empty = read_system_info(str(tmp_path / "rien"), str(tmp_path / "rien"))
-    assert empty == SystemInfo(host=empty.host)                   # nom de l'ordinateur lu partout
+    assert empty == SystemInfo(host=empty.host, cpu_count=empty.cpu_count)                   # nom de l'ordinateur lu partout
 
 
 # --------------------------------------------------------------------------- STOP TX
@@ -524,3 +524,32 @@ def test_network_detail_is_a_button_not_a_row():
     st.net = {"clients": [], "probes": {"lan": {"ok": True, "method": "icmp", "rtt_ms": 1, "address": "192.168.1.254"}}}
     rows = build_panels(snap(st))[-1].rows
     assert all("touche" not in r.text and r.label != "Détail" for r in rows)
+
+
+# --------------------------------------------------------------------------- utilisation du processeur (étape 348)
+
+def test_cpu_row_shows_a_percentage_of_all_cores_and_the_load_average_apart():
+    from trxstation.i18n import Translator
+    from trxstation.monitor.model import cpu_row
+    r = cpu_row(SystemInfo(load1=1.16, cpu_pct=14.4, cpu_count=8))
+    assert r.label == "Utilisation du processeur" and r.text == "14 % (8 cœurs) · charge moyenne sur 1 min 1,16" and r.level == "ok"
+    assert cpu_row(SystemInfo(cpu_pct=80, cpu_count=4)).level == "warn"
+    assert cpu_row(SystemInfo(cpu_pct=95, cpu_count=4)).level == "bad"
+    assert cpu_row(SystemInfo(cpu_count=4)).text == "4 cœurs" and cpu_row(SystemInfo(cpu_count=4)).level == "dim"
+    assert cpu_row(SystemInfo()).text == "--"                                       # Windows sans mesure : rien d'inventé
+    en = cpu_row(SystemInfo(load1=1.16, cpu_pct=14.4, cpu_count=8), Translator("en", "monitor"))
+    assert en.text == "14 % (8 cores) · 1 min load average 1.16"
+
+
+def test_cpu_percentage_is_measured_between_two_polls(tmp_path, monkeypatch):
+    from trxstation.hostinfo import CpuMeter
+    monkeypatch.setattr("trxstation.hostinfo._windows", lambda: False)     # /proc simulé, même sous Windows
+    proc = tmp_path / "proc"
+    proc.mkdir()
+    stat = proc / "stat"
+    stat.write_text("cpu  100 0 100 800 0 0 0 0 0 0\n")
+    meter = CpuMeter(proc)
+    assert read_system_info(str(proc), str(tmp_path), cpu=meter).cpu_pct is None       # première lecture
+    stat.write_text("cpu  150 0 150 900 0 0 0 0 0 0\n")                                 # 100 occupés sur 200
+    info = read_system_info(str(proc), str(tmp_path), cpu=meter)
+    assert info.cpu_pct == 50.0 and info.cpu_count and info.cpu_count >= 1

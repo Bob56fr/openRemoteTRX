@@ -8,11 +8,14 @@ Lecture seule. La fraîcheur de la passerelle se juge sur le changement de `seq`
 from __future__ import annotations
 
 import json
+import os
 import socket
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
 
+from .. import hostinfo
 from ..cpu_temp import cpu_celsius
 from ..status import GatewayWatch, read_status
 from ..supervisor.state import StateStore
@@ -26,9 +29,11 @@ def _read_float(path: Path, scale: float = 1.0) -> float | None:
         return None
 
 
-def read_system_info(proc: str = "/proc", sys_root: str = "/sys") -> SystemInfo:
+def read_system_info(proc: str = "/proc", sys_root: str = "/sys", cpu: hostinfo.CpuMeter | None = None) -> SystemInfo:
     """Température du PROCESSEUR (cpu_temp.py), charge, mémoire libre, disponibilité (Linux ; champs None ailleurs),
-    nom de l'ordinateur (partout)."""
+    nom de l'ordinateur (partout). `cpu` : compteur gardé d'un appel à l'autre (`hostinfo.CpuMeter`, Linux et Windows) :
+    utilisation du processeur en % de TOUS les cœurs entre deux lectures (None à la première). Sous Windows (pas de
+    /proc), mémoire libre et durée de marche viennent de `hostinfo`."""
     mem = None
     try:
         for line in (Path(proc) / "meminfo").read_text().splitlines():
@@ -37,8 +42,14 @@ def read_system_info(proc: str = "/proc", sys_root: str = "/sys") -> SystemInfo:
                 break
     except (OSError, ValueError, IndexError):
         pass
+    uptime = _read_float(Path(proc) / "uptime")
+    if sys.platform.startswith("win") and proc == "/proc":       # Windows : mêmes mesures que la synthèse du matériel
+        ram = hostinfo.memory()
+        mem = ram[1] * (1 - ram[0] / 100) / 1048576 if ram else None
+        uptime = hostinfo.uptime_s()
     return SystemInfo(temp_c=cpu_celsius(sys_root), load1=_read_float(Path(proc) / "loadavg"),
-                      mem_available_mb=mem, uptime_s=_read_float(Path(proc) / "uptime"), host=_host_name())
+                      mem_available_mb=mem, uptime_s=uptime, host=_host_name(),
+                      cpu_pct=cpu.read() if cpu is not None else None, cpu_count=os.cpu_count())
 
 
 def _host_name() -> str | None:
@@ -60,13 +71,16 @@ def read_presence(path: Path) -> dict | None:
 class StatusSource:
     def __init__(self, status_path: str | Path, state_dir: str | Path, stale_after_s: float = 2.0, *,
                  clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
-                 system_reader: Callable[[], SystemInfo] = read_system_info):
+                 system_reader: Callable[[], SystemInfo] | None = None):
         self.status_path = Path(status_path)
         self.store = StateStore(state_dir)           # utilisé en lecture seule (safe_mode())
         self.presence_path = Path(state_dir) / "presence" / "status.json"   # module « presence » (sans clé)
         self.monlink_path = Path(state_dir) / "monlink" / "status.json"     # module « monlink » (sans clé)
         self.sdr_path = Path(state_dir) / "sdr" / "status.json"             # module « sdr » (état du récepteur)
         self.watch = GatewayWatch(stale_after_s)
+        if system_reader is None:                     # un compteur par source : % du processeur entre deux lectures
+            meter = hostinfo.CpuMeter()
+            system_reader = lambda: read_system_info(cpu=meter)      # noqa: E731
         self.clock, self.sleep, self.system_reader = clock, sleep, system_reader
 
     def poll(self) -> Snapshot:

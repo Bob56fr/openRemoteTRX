@@ -81,7 +81,7 @@
   "presence.unregistered": "noch nicht beim Relais registriert",
   "presence.ok": "{groups} Gruppe(n), {friends} Freund(e)",
   "label.temperature": "Temperatur",
-  "label.load": "Prozessorlast (Mittel über 1 min)",
+  "label.load": "Prozessorauslastung",
   "label.memory": "Freier Arbeitsspeicher (RAM)",
   "memory.mb": "{mb} MB",
   "label.uptime": "In Betrieb seit",
@@ -246,5 +246,7 @@
   "sdr.listen_on": "demodulierter Ton an einen Operator gesendet",
   "sdr.listen_off": "niemand hört zu",
   "label.sdr_load": "Modullast",
-  "sdr.load": "{cpu} % Prozessor · {mem} MB"
+  "sdr.load": "{cpu} % Prozessor · {mem} MB",
+  "cpu.cores": "{n} Kerne",
+  "cpu.loadavg": " · Lastmittel über 1 min {load}"
 }

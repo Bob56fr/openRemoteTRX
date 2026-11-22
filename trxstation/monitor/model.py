@@ -66,6 +66,8 @@ class SystemInfo:
     mem_available_mb: float | None = None
     uptime_s: float | None = None
     host: str | None = None               # nom de l'ordinateur (titre du panneau, affichage local)
+    cpu_pct: float | None = None          # utilisation du processeur, % de tous les cœurs (étape 348)
+    cpu_count: int | None = None          # nombre de cœurs logiques
 
 
 @dataclass(frozen=True)
@@ -347,7 +349,7 @@ def _materiel_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
     temp_level = "dim" if s.temp_c is None else "bad" if s.temp_c >= 80 else "warn" if s.temp_c >= 70 else "ok"
     return Panel("materiel", t("panel.materiel", name=s.host or "").strip(), (
         Row(t("label.temperature"), "--" if s.temp_c is None else f"{s.temp_c:.0f} °C", temp_level),
-        Row(t("label.load"), "--" if s.load1 is None else f"{s.load1:.2f}", "info"),
+        cpu_row(s, t),
         Row(t("label.memory"), "--" if s.mem_available_mb is None else t("memory.mb", mb=f"{s.mem_available_mb:.0f}"),
             "info"),
         Row(t("label.uptime"), format_duration(s.uptime_s, t), "info"),
@@ -421,6 +423,27 @@ def _sdr_panel(snap: Snapshot, t: Translator | None = None, now: float | None = 
     rows.append(Row(t("label.sdr_load"), t("sdr.load", cpu=_num(sd.get("cpu_total"), "{:.0f}"),
                                             mem=_num(sd.get("mem_mb"), "{:.0f}")), dim))
     return Panel("sdr", t("panel.sdr"), tuple(rows))
+
+
+CPU_WARN, CPU_BAD = 75.0, 90.0           # mêmes seuils que la synthèse du matériel (hostinfo.LIMITS)
+
+
+def cpu_row(s: SystemInfo, t: Translator | None = None) -> Row:
+    """Utilisation du processeur en % de TOUS les cœurs (comme le Gestionnaire des tâches ou top), le nombre de cœurs
+    et, sous Linux, la charge moyenne sur 1 min (processus prêts ou en attente du disque : à comparer au nombre de
+    cœurs, jamais un pourcentage)."""
+    t = translator(t)
+    parts = []
+    if s.cpu_pct is not None:
+        parts.append(f"{s.cpu_pct:.0f} %")
+    if s.cpu_count:
+        parts.append(t("cpu.cores", n=s.cpu_count))
+    text = " ".join([parts[0], f"({parts[1]})"] if len(parts) == 2 else parts) or "--"
+    if s.load1 is not None:
+        load = f"{s.load1:.2f}"
+        text += t("cpu.loadavg", load=load if getattr(t, "lang", "en") == "en" else load.replace(".", ","))
+    level = "dim" if s.cpu_pct is None else "bad" if s.cpu_pct >= CPU_BAD else "warn" if s.cpu_pct >= CPU_WARN else "ok"
+    return Row(t("label.load"), text, level)
 
 
 def _db_bar(db: float | None, width: int = 16) -> str:

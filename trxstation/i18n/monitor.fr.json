@@ -81,7 +81,7 @@
   "presence.unregistered": "pas encore enregistrée auprès du relais",
   "presence.ok": "{groups} groupe(s), {friends} ami(s)",
   "label.temperature": "Température",
-  "label.load": "Charge du processeur (moyenne sur 1 min)",
+  "label.load": "Utilisation du processeur",
   "label.memory": "Mémoire RAM libre",
   "memory.mb": "{mb} Mo",
   "label.uptime": "En fonctionnement depuis",
@@ -246,5 +246,7 @@
   "sdr.listen_on": "son démodulé envoyé à un opérateur",
   "sdr.listen_off": "personne n'écoute",
   "label.sdr_load": "Charge du module",
-  "sdr.load": "{cpu} % du processeur · {mem} Mo"
+  "sdr.load": "{cpu} % du processeur · {mem} Mo",
+  "cpu.cores": "{n} cœurs",
+  "cpu.loadavg": " · charge moyenne sur 1 min {load}"
 }

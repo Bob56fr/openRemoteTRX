@@ -81,7 +81,7 @@
   "presence.unregistered": "aún no registrada en el relé",
   "presence.ok": "{groups} grupo(s), {friends} amigo(s)",
   "label.temperature": "Temperatura",
-  "label.load": "Carga del procesador (media de 1 min)",
+  "label.load": "Uso del procesador",
   "label.memory": "Memoria RAM libre",
   "memory.mb": "{mb} MB",
   "label.uptime": "En funcionamiento desde hace",
@@ -246,5 +246,7 @@
   "sdr.listen_on": "audio demodulado enviado a un operador",
   "sdr.listen_off": "nadie escucha",
   "label.sdr_load": "Carga del módulo",
-  "sdr.load": "{cpu} % del procesador · {mem} MB"
+  "sdr.load": "{cpu} % del procesador · {mem} MB",
+  "cpu.cores": "{n} núcleos",
+  "cpu.loadavg": " · carga media de 1 min {load}"
 }

@@ -81,7 +81,7 @@
   "presence.unregistered": "not yet registered with the relay",
   "presence.ok": "{groups} group(s), {friends} friend(s)",
   "label.temperature": "Temperature",
-  "label.load": "CPU load (1 min average)",
+  "label.load": "CPU usage",
   "label.memory": "Free RAM",
   "memory.mb": "{mb} MB",
   "label.uptime": "Running for",
@@ -246,5 +246,7 @@
   "sdr.listen_on": "demodulated audio sent to an operator",
   "sdr.listen_off": "nobody is listening",
   "label.sdr_load": "Module load",
-  "sdr.load": "{cpu} % CPU · {mem} MB"
+  "sdr.load": "{cpu} % CPU · {mem} MB",
+  "cpu.cores": "{n} cores",
+  "cpu.loadavg": " · 1 min load average {load}"
 }
