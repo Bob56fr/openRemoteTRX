@@ -137,7 +137,7 @@
   "journal.windows_file": "--- {path} (last {n} lines) ---",
   "report.1": "Cannot create report: {exc}",
   "report.2": "Report created: {path}\nIt contains no password: attach it to your request for help.",
-  "report.read": "To read it and see the problems found: menu {menu} (analyser in the browser).",
+  "report.read": "Analyse this report: {url}\n(drop the zip on it: the analysis runs in your browser, nothing is sent; help: menu {menu})",
   "analyzer.1": "Troubleshooting report analyser:\n  {url}\n\n1. Make the report: menu {report} (zip on the Desktop), or copy the one received from a friend\n   through monitoring (menu {monitoring}, choice 10).\n2. Open the page above in a browser (PC, tablet or phone).\n3. Drop the zip on it: the analysis runs IN YOUR BROWSER, the report is sent nowhere.\n   (Page in French.)",
   "clear_safe_mode.1": "The supervisor put the station into safety lockout after repeated failures.\nCheck the cause first (menu 6.1 and menu 6.2).",
   "clear_safe_mode.2": "The cause is fixed, reactivate the station",

@@ -193,6 +193,8 @@ def check_system(sysm: System) -> list[Check]:
                          "" if status == OK else _t("fix.disk")))
     except OSError:
         pass
+    if sysm.platform.startswith("linux"):                       # journal système lisible par CE compte (étape 354)
+        out.extend(check_journal(sysm))
     from .cpu_temp import read_cpu_temp
     temp = read_cpu_temp(getattr(sysm, "sys_root", "/sys"))     # processeur (coretemp...), jamais la carte mère
     if temp is not None:
@@ -200,6 +202,23 @@ def check_system(sysm: System) -> list[Check]:
         out.append(Check(s, _t("name.cpu_temp"), OK if celsius < 80 else WARN, f"{celsius:.0f} °C ({temp.source})",
                          "" if celsius < 80 else _t("fix.cpu_temp")))
     return out
+
+
+JOURNAL_DENIED = ("insufficient permissions", "no journal files were opened", "not seeing messages from other")
+
+
+def check_journal(sysm: System) -> list[Check]:
+    """Le journal système (démarrages des services, messages de rigctld, noyau) est-il lisible par ce compte ? Sinon le
+    rapport de dépannage (menu 6.3) perd ses journaux : compte hors des groupes systemd-journal / adm (cas réel d'un
+    bêta-testeur, rapport du 2026-11-19)."""
+    code, out = sysm.run(["journalctl", "--no-pager", "-q", "-n", "1"])
+    if code == 127 or "introuvable" in (out or "").lower() or "not found" in (out or "").lower():
+        return []                                              # pas de systemd : rien à dire
+    user = os.environ.get("SUDO_USER") or os.environ.get("USER") or os.environ.get("LOGNAME") or "?"
+    if any(word in (out or "").lower() for word in JOURNAL_DENIED):
+        return [Check(_t("section.system"), _t("name.journal"), WARN, _t("system.journal_denied", user=user),
+                      _t("fix.journal_denied", user=user))]
+    return [Check(_t("section.system"), _t("name.journal"), OK, _t("system.journal_ok"))]
 
 
 def hamlib_version(text: str) -> tuple[int, ...] | None:

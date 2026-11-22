@@ -170,5 +170,9 @@
   "name.new_version": "Nouvelle version",
   "update.available": "{version} disponible",
   "fix.update_menu": "Menu 7.1 d'openRemoteTRX Console",
-  "update.up_to_date": "à jour (vérifié il y a {hours} h)"
+  "update.up_to_date": "à jour (vérifié il y a {hours} h)",
+  "name.journal": "Journal système",
+  "system.journal_ok": "lisible",
+  "system.journal_denied": "illisible pour le compte {user} : le rapport de dépannage perd les journaux des services et du noyau",
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, puis fermer la session et se reconnecter"
 }

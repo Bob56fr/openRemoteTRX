@@ -170,5 +170,9 @@
   "name.new_version": "Neue Version",
   "update.available": "{version} verfügbar",
   "fix.update_menu": "Menü 7.1 von openRemoteTRX Console",
-  "update.up_to_date": "aktuell (vor {hours} h geprüft)"
+  "update.up_to_date": "aktuell (vor {hours} h geprüft)",
+  "name.journal": "Systemjournal",
+  "system.journal_ok": "lesbar",
+  "system.journal_denied": "für das Konto {user} nicht lesbar: dem Fehlerbericht fehlen die Protokolle der Dienste und des Kernels",
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, dann abmelden und wieder anmelden"
 }

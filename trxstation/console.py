@@ -1146,7 +1146,7 @@ class Console:
             self.say(self.t("report.1", exc=exc))
             return
         self.say(self.t("report.2", path=path))
-        self.say(self.t("report.read", menu=ANALYZER_MENU))
+        self.say(self.t("report.read", menu=ANALYZER_MENU, url=ANALYZER_URL))
 
     def analyzer(self) -> None:
         """Lien de l'analyseur des rapports (menu 6.3 ou rapport reçu par le monitoring) : rien n'est lancé ni envoyé."""

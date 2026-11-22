@@ -170,5 +170,9 @@
   "name.new_version": "Nueva versión",
   "update.available": "{version} disponible",
   "fix.update_menu": "Menú 7.1 de openRemoteTRX Console",
-  "update.up_to_date": "actualizado (comprobado hace {hours} h)"
+  "update.up_to_date": "actualizado (comprobado hace {hours} h)",
+  "name.journal": "Diario del sistema",
+  "system.journal_ok": "legible",
+  "system.journal_denied": "ilegible para la cuenta {user}: el informe de diagnóstico pierde los registros de los servicios y del núcleo",
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, luego cerrar la sesión y volver a entrar"
 }

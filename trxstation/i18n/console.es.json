@@ -137,7 +137,7 @@
   "journal.windows_file": "--- {path} (últimas {n} líneas) ---",
   "report.1": "Informe imposible: {exc}",
   "report.2": "Informe creado: {path}\nNo contiene ninguna contraseña: adjúntalo a tu petición de ayuda.",
-  "report.read": "Para leerlo y ver los problemas encontrados: menú {menu} (analizador en el navegador).",
+  "report.read": "Analizar este informe: {url}\n(deposita allí el zip: el análisis se hace en tu navegador, no se envía nada; ayuda: menú {menu})",
   "analyzer.1": "Analizador de los informes de diagnóstico:\n  {url}\n\n1. Crea el informe: menú {report} (zip en el Escritorio), o copia el recibido de un amigo\n   por el monitoring (menú {monitoring}, opción 10).\n2. Abre la página de arriba en un navegador (PC, tableta o teléfono).\n3. Deposita allí el zip: el análisis se hace EN TU NAVEGADOR, el informe no se envía a ninguna parte.\n   (Página en francés.)",
   "clear_safe_mode.1": "El supervisor puso la estación en bloqueo de seguridad tras fallos repetidos.\nComprueba primero la causa (menú 6.1 y menú 6.2).",
   "clear_safe_mode.2": "La causa está resuelta, reactivar la estación",

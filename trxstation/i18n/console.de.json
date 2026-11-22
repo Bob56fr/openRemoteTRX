@@ -137,7 +137,7 @@
   "journal.windows_file": "--- {path} (letzte {n} Zeilen) ---",
   "report.1": "Bericht nicht möglich: {exc}",
   "report.2": "Bericht erstellt: {path}\nEr enthält kein Passwort: füge ihn deiner Hilfeanfrage bei.",
-  "report.read": "Zum Lesen und um die gefundenen Probleme zu sehen: Menü {menu} (Analyse im Browser).",
+  "report.read": "Diesen Bericht analysieren: {url}\n(lege das Zip dort ab: die Analyse läuft in deinem Browser, nichts wird gesendet; Hilfe: Menü {menu})",
   "analyzer.1": "Analyse der Fehlerberichte:\n  {url}\n\n1. Erstelle den Bericht: Menü {report} (Zip auf dem Desktop), oder kopiere den von einem\n   Freund über das Monitoring erhaltenen (Menü {monitoring}, Auswahl 10).\n2. Öffne die obige Seite in einem Browser (PC, Tablet oder Telefon).\n3. Lege das Zip dort ab: die Analyse läuft IN DEINEM BROWSER, der Bericht wird nirgendwohin gesendet.\n   (Seite auf Französisch.)",
   "clear_safe_mode.1": "Der Supervisor hat nach wiederholten Störungen eine Sicherheitsabschaltung der Station ausgelöst.\nPrüfe zuerst die Ursache (Menü 6.1 und Menü 6.2).",
   "clear_safe_mode.2": "Die Ursache ist behoben, Station wieder in Betrieb nehmen",

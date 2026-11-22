@@ -296,3 +296,63 @@ def test_desktop_audio_advice_per_system():
     assert "Périphérique de communication par défaut" in desktop_audio_advice("win32")
     assert card_name("USB Audio Device: - (hw:2,0)") == "USB Audio Device"
     assert card_name("plughw:CARD=CODEC,DEV=0") == "CODEC"
+
+
+# --------------------------------------------------------------------------- rapport complété pour l'analyseur (étape 354)
+
+DENIED = "No journal files were opened due to insufficient permissions."
+JOURNAL = "journalctl --no-pager -n 400 " + " ".join(f"--unit={u}" for u in d.UNITS)
+
+
+def test_report_has_meta_kernel_and_pi_files_and_masks_serials(tmp_path):
+    import json
+    sysm, path = healthy(tmp_path)
+    sysm.commands["ls -l /dev/serial/by-id/"] = (0, "usb-Icom_Inc._IC-7300MK2_IC-7300MK2_13003336-if00 -> ../../ttyUSB0")
+    sysm.commands["journalctl -k -b --no-pager -n 400"] = (0, "usb 1-1.3: SerialNumber: 13003336\nUnder-voltage detected! (0x00050005)")
+    sysm.commands["vcgencmd get_throttled"] = (0, "throttled=0x50005")
+    sysm.commands["cat /proc/device-tree/model"] = (0, "Raspberry Pi 4 Model B Rev 1.5")
+    sysm.commands["timedatectl show -p Timezone --value"] = (0, "Europe/Paris\n")
+    target = make_report(tmp_path, sysm=sysm, config_path=path)
+    with zipfile.ZipFile(target) as archive:
+        assert archive.namelist()[0] == "rapport.json"                                  # en tête du zip
+        meta = json.loads(archive.read("rapport.json"))
+        kernel = archive.read("noyau.txt").decode("utf-8")
+        hardware = archive.read("materiel.txt").decode("utf-8")
+    assert meta["format"] == 1 and meta["fuseau"] == "Europe/Paris" and meta["cree_utc"].endswith("Z")
+    assert isinstance(meta["decalage_min"], int) and meta["station"]
+    assert "$ journalctl -k -b --no-pager -n 400  (code 0)" in kernel and "Under-voltage detected" in kernel
+    assert "$ journalctl -k -b -1 --no-pager -n 200  (code 0)" in kernel                 # démarrage précédent
+    assert "13003336" not in kernel + hardware and "SerialNumber: ***" in kernel
+    assert "IC-7300MK2_***-if00" in hardware and "throttled=0x50005" in hardware and "Raspberry Pi 4" in hardware
+
+
+def test_journal_refused_is_retried_by_sudo_and_both_attempts_stay_visible(tmp_path):
+    sysm, path = healthy(tmp_path)
+    sysm.commands[JOURNAL] = (1, DENIED)
+    sysm.commands["sudo -n " + JOURNAL] = (1, "sudo: a password is required")
+    target = make_report(tmp_path, sysm=sysm, config_path=path)
+    with zipfile.ZipFile(target) as archive:
+        journal = archive.read("journal.txt").decode("utf-8")
+    assert f"$ {JOURNAL}  (code 1)\n{DENIED}" in journal
+    assert f"$ sudo -n {JOURNAL}  (code 1)\nsudo: a password is required" in journal       # jamais caché
+
+
+def test_kernel_falls_back_to_dmesg_when_journalctl_gives_nothing(tmp_path):
+    sysm, path = healthy(tmp_path)
+    for cmd in ("journalctl -k -b --no-pager -n 400", "journalctl -k -b -1 --no-pager -n 200"):
+        sysm.commands[cmd] = (1, "Specifying boot ID or boot offset has no effect, no persistent journal was found.")
+    sysm.commands["dmesg --ctime"] = (0, "[lun. nov. 18 10:00:00 2026] usb 1-1.3: USB disconnect, device number 4")
+    target = make_report(tmp_path, sysm=sysm, config_path=path)
+    with zipfile.ZipFile(target) as archive:
+        kernel = archive.read("noyau.txt").decode("utf-8")
+    assert "$ dmesg --ctime  (code 0)" in kernel and "USB disconnect" in kernel
+
+
+def test_diagnostic_says_when_the_system_journal_is_unreadable(tmp_path, monkeypatch):
+    monkeypatch.setenv("SUDO_USER", "thierry")
+    sysm, path = healthy(tmp_path)
+    sysm.commands["journalctl --no-pager -q -n 1"] = (1, DENIED)
+    check = next(c for c in d.check_system(sysm) if c.name == "Journal système")
+    assert check.status == d.WARN and "thierry" in check.message and "systemd-journal thierry" in check.fix
+    sysm.commands["journalctl --no-pager -q -n 1"] = (0, "-- No entries --")
+    assert next(c for c in d.check_system(sysm) if c.name == "Journal système").status == d.OK

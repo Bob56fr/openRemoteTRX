@@ -137,7 +137,7 @@
   "journal.windows_file": "--- {path} ({n} dernières lignes) ---",
   "report.1": "Rapport impossible : {exc}",
   "report.2": "Rapport créé : {path}\nIl ne contient aucun mot de passe : joins-le à ta demande d'aide.",
-  "report.read": "Pour le lire et voir les problèmes trouvés : menu {menu} (analyseur dans le navigateur).",
+  "report.read": "Analyser ce rapport : {url}\n(dépose-y le zip : l'analyse se fait dans ton navigateur, rien n'est envoyé ; aide : menu {menu})",
   "analyzer.1": "Analyseur des rapports de dépannage :\n  {url}\n\n1. Fabrique le rapport : menu {report} (zip sur le Bureau), ou copie celui reçu d'un ami\n   par le monitoring (menu {monitoring}, choix 10).\n2. Ouvre la page ci-dessus dans un navigateur (PC, tablette ou téléphone).\n3. Dépose-y le zip : l'analyse se fait DANS TON NAVIGATEUR, le rapport n'est envoyé nulle part.",
   "clear_safe_mode.1": "Le superviseur a mis la station en sécurité après des pannes répétées.\nVérifie d'abord la cause (menu 6.1 et menu 6.2).",
   "clear_safe_mode.2": "La cause est réglée, réactiver la station",
