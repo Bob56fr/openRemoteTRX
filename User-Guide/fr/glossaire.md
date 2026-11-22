@@ -7,11 +7,11 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 
 | Terme | Ce que c'est |
 |---|---|
-| **Poste**, **TRX** | l'émetteur-récepteur radio (ici le Yaesu FTDX10) |
+| **Poste**, **TRX** | ton émetteur-récepteur radio |
 | **PC de la station** | l'ordinateur posé à côté du poste, allumé en permanence, qui fait tourner la station |
 | **Station** | l'ensemble poste + PC + logiciel openRemoteTRX ; « démarrer la station » = démarrer ses services |
 | **CAT** | *Computer Aided Transceiver* : la commande du poste par l'ordinateur (fréquence, mode, émission…) |
-| **Enhanced COM Port** / **Standard COM Port** | les deux ports série que le FTDX10 crée sur le PC par son câble USB : le premier sert au CAT, le second (lignes RTS/DTR) n'est pas utilisé par la station |
+| **Enhanced COM Port** / **Standard COM Port** | les deux ports série que certains Yaesu (FTDX10…) créent sur le PC par son câble USB : le premier sert au CAT, le second (lignes RTS/DTR) n'est pas utilisé par la station |
 | **USB Audio CODEC** | la carte son intégrée au poste, vue par le PC : son reçu vers le PC, voix vers le poste |
 | **Charge fictive** | résistance de 50 Ω qui remplace l'antenne : le poste émet sans rayonner. Obligatoire pour tous les essais |
 | **ALC** | indicateur du poste qui montre si la modulation est trop forte ; sert à régler le niveau de la voix |
@@ -24,7 +24,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | Terme | Ce que c'est |
 |---|---|
 | **openRemoteTRX** | le nom du projet ; l'application Android porte ce nom, la station s'appelle aussi « openRemoteTRX » |
-| **Hamlib** | la bibliothèque libre qui sait parler à environ 300 modèles de postes ; chaque modèle a un **numéro** (FTDX10 = 1042) |
+| **Hamlib** | la bibliothèque libre qui sait parler à environ 300 modèles de postes ; chaque modèle a un **numéro** (IC-7300MK2 = 3094, FTDX10 = 1042) |
 | **rigctld** | le programme de Hamlib qui garde la liaison avec le poste ; il n'écoute que sur le PC lui-même, jamais sur le réseau |
 | **Passerelle** (`trx-gateway`) | le cœur de la station : sert la page web, vérifie les comptes, transporte le son et **décide de l'émission** |
 | **Superviseur** (`trx-supervisor`) | le gardien indépendant : surveille la passerelle, rigctld et le PC ; il peut **seulement couper** une émission, relancer un service ou mettre la station en sécurité ; envoie les alertes |
@@ -65,7 +65,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **Opérateur sur place** | quelqu'un qui utilise le poste devant lui : l'émission à distance est bloquée pendant son émission puis 2 minutes |
 | **Porte audio d'émission** | le passage du son vers le poste, ouvert par la passerelle seulement pendant une émission autorisée |
 | **Mise en sécurité** | l'état où le superviseur met la station après des pannes répétées : arrêtée sans danger (réception, accès coupé), elle attend une intervention ; on la réactive par le menu 1.4 (« Réactiver la station ») |
-| **Minuterie du poste** (TX TIME OUT TIMER) | la coupure propre au FTDX10, indépendante de la station : la dernière barrière |
+| **Minuterie du poste** (TX TIME OUT TIMER) | la coupure propre au poste, indépendante de la station : la dernière barrière |
 
 ## Le réseau
 

@@ -27,11 +27,23 @@ panne.
 **Comment.** Dans le menu du poste, cherche « Time-Out Timer » (« Time-Out Timer (CI-V) » chez Icom) ou « TX TIME OUT TIMER » et choisis **3 minutes** :
 plus long que le TOT de la station, il ne coupe jamais une émission normale.
 
-- Icom IC-7300 / IC-7300MK2 : MENU > SET > Function > Time-Out Timer (CI-V).
-- Yaesu FTDX10 : OPERATION SETTING > GENERAL > TX TIME OUT TIMER.
-- Autre poste : son manuel, rubrique « Time-Out Timer » ou « TOT ».
+Le chemin du menu selon ta marque est dans le tableau ci-dessous. Sur l'IC-7300MK2, la station relit ce réglage à
+chaque connexion et te prévient s'il est sur OFF.
 
-Sur l'IC-7300MK2, la station relit ce réglage à chaque connexion et te prévient s'il est sur OFF.
+## Selon ta marque
+
+Ce qui change d'un poste à l'autre, en une ligne ; le détail est dans la fiche du poste quand il en a une.
+
+| | Icom | Yaesu | Kenwood | Xiegu |
+|---|---|---|---|---|
+| Pilote USB (Windows) | « Icom USB Driver », version **1.80 ou plus** | Silicon Labs **CP210x** ; port « Enhanced » pour la commande | pilote du fabricant | pilote du fabricant |
+| TOT du poste | MENU > SET > Function > Time-Out Timer (CI-V) | OPERATION SETTING > GENERAL > TX TIME OUT TIMER | manuel du poste | manuel du poste |
+| Voix par l'USB | MENU > SET > Connectors > DATA MOD = **USB** (émission en USB-D / LSB-D) | MOD SOURCE = **REAR** et REAR SELECT = **USB**, dans chaque mode | manuel du poste | manuel du poste |
+| État | **validé** (IC-7300MK2) | **en cours** (FTDX10) | pas encore essayé | pas encore essayé |
+| Fiche | [IC-7300MK2](postes/ic7300mk2.md) | [FTDX10](postes/ftdx10.md) | — | — |
+
+Sous Linux, aucun pilote à installer. Pour un poste pas encore essayé : installe le pilote USB depuis le site de son
+fabricant, et fais les trois essais de l'étape 5 avec un soin particulier.
 
 ## 1. Installer (5 min)
 

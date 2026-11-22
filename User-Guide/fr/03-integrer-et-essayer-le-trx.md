@@ -6,21 +6,21 @@
 ## 3.1 L'assistant de configuration (menu 2.1)
 
 Le poste n'est interrogé qu'**en lecture** : aucune émission pendant l'assistant. Rien n'est enregistré si tu
-abandonnes en cours de route. Réponses pour le FTDX10 :
+abandonnes en cours de route. Les valeurs propres à ton poste sont dans sa fiche :
 
 | Question | Réponse |
 |---|---|
-| Modèle du poste | **1042** (Yaesu FTDX10). L'assistant affiche alors la liste des menus du poste à vérifier (partie 1) |
-| Port série du CAT | le port **Enhanced** (Debian : proposé d'office ; Windows : le COM noté à la partie 1) |
-| Débit | **38400** (identique à CAT RATE du poste) |
+| Modèle du poste | tape son nom (`ic-7300`, `ftdx10`…) et choisis dans la liste (numéro Hamlib dans la fiche : IC-7300MK2 = 3094, FTDX10 = 1042). Pour certains postes, l'assistant rappelle les menus à vérifier (partie 1) |
+| Port série du CAT | le port de **commande** (Debian : proposé d'office ; Windows : le COM noté à la partie 1) |
+| Débit | **identique** au débit CAT réglé dans le poste |
 | Méthode de PTT | **CAT** (proposée) |
-| La voix part-elle par l'USB ? | **oui**, si MOD SOURCE = REAR et REAR SELECT = USB sont réglés ; sinon l'émission sera limitée aux modes données |
-| Cartes son (réception, émission) | « USB Audio CODEC » pour les deux |
-| Spectre HF par un second port | **aucun** (le FTDX10 n'envoie pas son spectre) |
+| La voix part-elle par l'USB ? | **oui**, si le poste module par l'USB en phonie (partie 1) ; sinon l'émission sera limitée aux modes données |
+| Cartes son (réception, émission) | celle du **poste** pour les deux (son nom est dans la fiche) |
+| Spectre HF par un second port | le **second port** du poste s'il en a un (Icom IC-7300MK2…) ; sinon **aucun** |
 | Bandes autorisées à l'émission | les bandes de **ta licence**, seulement. Liste vide = réception seule |
 | Accès réseau | « **Réseau local ou VPN, en HTTPS avec un certificat généré ici** » (recommandé) |
 | Comptes | un identifiant (lettres, chiffres, `_`, `-`) et un **mot de passe long** (Entrée = un mot de passe fort est généré : note-le) ; Entrée sur un identifiant vide pour terminer |
-| Puissance maximale du poste | **100** (watts) |
+| Puissance maximale du poste | celle de ton poste (souvent **100** watts) |
 | Durée maximale d'une émission (TOT) | **90** secondes (valeur par défaut, plafond 120) |
 | Rediffusion d'enregistrements | **non** (réponse par défaut) |
 
@@ -80,16 +80,16 @@ demande de l'aide (partie 8) avec le rapport du menu 6.3.
 ## 3.6 Pour aller plus loin (facultatif)
 
 - **Qualification du poste** (menu 8.3, `trx-qualif`) : pour un expert qui veut tout vérifier de ce que Hamlib
-  déclare pour le FTDX10. Commence par le choix 2 (exploration sans émission) ; le rapport produit est précieux pour
+  déclare pour ton poste. Commence par le choix 2 (exploration sans émission) ; le rapport produit est précieux pour
   valider la fiche du poste. Le choix 6 (« valise de qualification ») enchaîne tout pour un membre de l'équipe venu
   qualifier le poste : relevé du poste avant et après (ce qui est à remettre à la main), exploration, qualification,
   les essais de sécurité du § 3.5 chronométrés, et un rapport zip à remettre aux développeurs.
-- **Profil de poste** (menu 2.3) : enregistre la configuration sous un nom (« FTDX10 maison ») pour la recharger plus
+- **Profil de poste** (menu 2.3) : enregistre la configuration sous un nom (« IC-7300 maison ») pour la recharger plus
   tard si tu changes de poste.
 
 ## 3.7 Rapporter la validation
 
-Le FTDX10 n'ayant jamais été essayé avec la station, ton résultat compte : ouvre un ticket « Signaler un bug » en
-français (même si tout va bien, titre « FTDX10 : essais de mise en service ») avec le résumé de l'essai guidé, le
-résultat des 9 essais de sécurité et les points de la [fiche du poste](postes/ftdx10.md), section « Points à
-vérifier ».
+Si ton poste n'est pas encore validé (liste : https://bob56fr.github.io/openRemoteTRX/postes/), ton résultat
+compte : ouvre un ticket « Signaler un bug » (même si tout va bien, titre « <ton poste> : essais de mise en
+service ») avec le résumé de l'essai guidé, le résultat des 9 essais de sécurité et, s'il a une fiche, les points
+qu'elle dit de vérifier.

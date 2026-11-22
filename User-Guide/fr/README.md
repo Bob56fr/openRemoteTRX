@@ -1,12 +1,14 @@
 # Mettre en service une station openRemoteTRX : guide de l'opérateur
 
-Ce guide t'accompagne, dans l'ordre, du déballage à la première liaison depuis l'extérieur. Il est écrit pour le
-**Yaesu FTDX10** ; les parties communes valent pour tous les postes, ce qui est propre au FTDX10 est dans
-[la fiche du poste](postes/ftdx10.md).
+Ce guide t'accompagne, dans l'ordre, du déballage à la première liaison depuis l'extérieur. Il vaut pour tout poste
+connu de Hamlib ; ce qui est propre à un modèle (pilote USB, menus, ports) est dans sa **fiche de poste** :
 
-> **FTDX10 : préparé, pas encore validé sur un vrai poste.** Les réglages viennent du manuel CAT de Yaesu et des
-> capacités de Hamlib. Les essais de la partie 3 servent de validation : fais-les tous, sur charge fictive, et
-> rapporte le résultat (partie 8, « Demander de l'aide »).
+- [Icom IC-7300MK2](postes/ic7300mk2.md) : **validé** sur un vrai poste ;
+- [Yaesu FTDX10](postes/ftdx10.md) : préparé, **validation en cours**.
+
+Pour un autre poste : son manuel, le tableau « Selon ta marque » du [démarrage rapide](demarrage-rapide.md), et les
+essais de la partie 3, qui servent de validation : fais-les tous, sur charge fictive, et rapporte le résultat
+(partie 8, « Demander de l'aide »). État de chaque poste essayé : https://bob56fr.github.io/openRemoteTRX/postes/
 
 > **Pressé ?** Le [démarrage rapide](demarrage-rapide.md) mène du poste branché à la page web en un quart d'heure,
 > TOT du poste compris. Reviens aux parties ci-dessous au premier problème.
@@ -17,7 +19,7 @@ Ce guide t'accompagne, dans l'ordre, du déballage à la première liaison depui
 |---|---|---|
 | [Démarrage rapide](demarrage-rapide.md) | l'essentiel pour les impatients, essais de sécurité compris | 15 min |
 | [0. Avant de commencer](00-avant-de-commencer.md) | matériel, réglementation, choix Debian ou Windows | 15 min de lecture |
-| [1. Préparer le poste](01-preparer-le-poste.md) | câblage, pilote USB, menus du FTDX10 | 30 min |
+| [1. Préparer le poste](01-preparer-le-poste.md) | câblage, pilote USB, menus du poste | 30 min |
 | [2. Installer la station](02-installer-la-station.md) | logiciel sur le PC | 20 min |
 | [3. Intégrer le TRX et l'essayer](03-integrer-et-essayer-le-trx.md) | assistant, essais en réception puis en émission, essais de sécurité | 1 h 30 |
 | [4. Utiliser sur le réseau local](04-utilisation-sur-le-lan.md) | page web, téléphone, application Android | 30 min |
@@ -29,8 +31,8 @@ Ce guide t'accompagne, dans l'ordre, du déballage à la première liaison depui
 | [Glossaire](glossaire.md) | les mots du projet : qui est quoi | au besoin |
 | [10. Récapitulatif à cocher](10-recapitulatif.md) | savoir où tu en es | |
 
-Fiche du poste : [Yaesu FTDX10](postes/ftdx10.md). Schéma des briques de la station : partie 0, « Comment c'est
-organisé ».
+Fiches de poste : [Icom IC-7300MK2](postes/ic7300mk2.md), [Yaesu FTDX10](postes/ftdx10.md). Schéma des briques de
+la station : partie 0, « Comment c'est organisé ».
 
 ## Comment lire ce guide
 

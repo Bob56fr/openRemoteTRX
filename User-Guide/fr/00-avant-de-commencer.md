@@ -2,7 +2,7 @@
 
 ## Ce que tu vas obtenir
 
-- Ton FTDX10 piloté depuis un **navigateur** (PC, tablette, téléphone) ou l'**application Android** : fréquence,
+- Ton poste piloté depuis un **navigateur** (PC, tablette, téléphone) ou l'**application Android** : fréquence,
   mode, filtres, S-mètre, son reçu, et l'**émission en phonie** avec le micro du téléphone ou du PC.
 - Une station qui **se protège seule** : elle démarre toujours en réception, coupe l'émission au bout d'une durée
   maximale (90 s par défaut), si le téléphone ne répond plus ou si la liaison tombe, et refuse d'émettre hors des
@@ -26,10 +26,10 @@ Chaque mot est expliqué dans le [glossaire](glossaire.md).
 
 ## Le matériel
 
-| Élément | Pour le FTDX10 |
+| Élément | Ce qu'il faut |
 |---|---|
-| Le poste | Yaesu FTDX10, alimentation 13,8 V adaptée, antenne |
-| La liaison PC - poste | **un câble USB A-B** (prise USB à l'arrière du poste) : il transporte à la fois la commande (CAT) et le son ; aucune interface externe |
+| Le poste | un poste connu de Hamlib, son alimentation, une antenne. Les postes déjà essayés ont leur fiche : [Icom IC-7300MK2](postes/ic7300mk2.md) (validé), [Yaesu FTDX10](postes/ftdx10.md) (en cours de validation) |
+| La liaison PC - poste | sur la plupart des postes récents, **un câble USB** qui transporte à la fois la commande (CAT) et le son ; sinon une interface externe (Digirig, SignaLink…) |
 | Le PC de la station | PC sous **Debian 12 ou 13** avec bureau (recommandé), ou **Windows 10/11** 64 bits. Il reste allumé en permanence près du poste |
 | Le réseau | le PC relié à la box, de préférence **par câble** |
 | Pour les essais | une **charge fictive** (50 Ω) qui supporte la puissance d'essai : **obligatoire** pour toute la partie 3 |

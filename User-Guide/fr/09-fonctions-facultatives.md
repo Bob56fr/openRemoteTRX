@@ -28,5 +28,6 @@ une fonction qui demande d'autres réglages est refusée avec le menu où les fa
 > engage ta responsabilité, surtout hors des bandes radioamateur ; par défaut, visiteurs et auditeurs n'entendent
 > que du silence hors de tes bandes (deux réglages indépendants).
 
-Avec le FTDX10, deux fonctions de la page restent indisponibles : le **spectre HF du poste** (seul le spectre audio
-s'affiche) et les **préréglages de filtre FIL1/2/3** (propres aux Icom).
+Selon le poste, deux fonctions de la page peuvent manquer : le **spectre HF du poste** (seulement par le second
+port d'un Icom comme l'IC-7300MK2 ; sinon seul le spectre audio s'affiche) et les **préréglages de filtre FIL1/2/3**
+(propres aux Icom).

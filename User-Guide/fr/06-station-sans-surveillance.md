@@ -32,7 +32,7 @@ en réception, accès coupé, alerte envoyée. La mise en sécurité **survit au
 | PC | dans le BIOS / UEFI : « Restore on AC power loss » = **Power On** (le nom varie selon la carte mère) |
 | Station Debian | rien : elle démarre avec le PC, sans ouvrir de session |
 | Station Windows | elle démarre à l'**ouverture de session** : sans connexion automatique de ta session, elle reste arrêtée |
-| Poste | le FTDX10 ne se rallume **pas** seul. La station sait l'allumer par la CAT (menu **2.8**, hors service par défaut, avec un essai éteindre / rallumer) : ta connexion depuis la page ou l'application le rallume |
+| Poste | la plupart des postes ne se rallument **pas** seuls. La station sait l'allumer par la CAT (menu **2.8**, hors service par défaut, avec un essai éteindre / rallumer) : ta connexion depuis la page ou l'application le rallume |
 | Box | se rallume seule ; vérifie que le VPN aussi |
 
 Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart de ces cas.
@@ -43,8 +43,8 @@ Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart 
   antenne mise à la terre ou déconnectée en cas d'orage prévu.
 - **Puissance** : le plafond du poste (HF MAX POWER, partie 1) reste la dernière barrière.
 - **Minuteur du poste** (TX TIME OUT TIMER) : réglé à 3 min, il coupe même si tout le reste a lâché.
-- **Température** : le superviseur surveille le processeur du PC et alerte au-delà de 70 °C. Celle du FTDX10 n'est
-  pas lisible par la station : ventilation correcte autour du poste.
+- **Température** : le superviseur surveille le processeur du PC et alerte au-delà de 70 °C. Celle du poste n'est
+  pas lisible par la station sur les postes essayés (IC-7300MK2, FTDX10) : ventilation correcte autour du poste.
 - **Opérateur sur place** : si quelqu'un utilise le poste sur place, l'émission à distance est bloquée pendant
   son émission puis 2 minutes ; la station ne le coupe jamais pour ce motif. Une émission au micro est coupée par
   le TOT absolu (135 s), sauf si l'opérateur a touché le poste (volume, fréquence, mode, sortie du mode DATA…) dans

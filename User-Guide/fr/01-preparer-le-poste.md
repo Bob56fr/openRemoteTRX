@@ -1,37 +1,37 @@
 # 1. Préparer le poste
 
-Station **éteinte**, rien de branché : c'est le moment de régler le poste. Le détail des menus du FTDX10 est dans
-[la fiche du poste](postes/ftdx10.md) ; cette partie dit dans quel ordre faire les choses.
+Station **éteinte**, rien de branché : c'est le moment de régler le poste. Le détail des menus de ton poste est
+dans sa fiche ([Icom IC-7300MK2](postes/ic7300mk2.md), [Yaesu FTDX10](postes/ftdx10.md)) ; pour un autre poste,
+son manuel et le tableau « Selon ta marque » du [démarrage rapide](demarrage-rapide.md). Cette partie dit dans quel
+ordre faire les choses.
 
 ## 1.1 Installer le pilote USB (Windows seulement)
 
-Sous Windows, le pilote **Silicon Labs CP210x** doit être installé **avant** de brancher le câble USB du poste ;
-sinon Windows peut installer un mauvais pilote. Voir [la fiche du poste](postes/ftdx10.md), « Pilote USB ».
+Sous Windows, le pilote USB du poste (celui de son fabricant : « Icom USB Driver », Silicon Labs CP210x chez
+Yaesu…) s'installe **avant** de brancher le câble USB ; sinon Windows peut installer un mauvais pilote. Le nom, la
+version minimale et la marche à suivre sont dans la fiche du poste, « Pilote USB », sinon sur le site du fabricant.
 
 Sous Debian, rien à installer : le noyau reconnaît le poste tout seul.
 
 ## 1.2 Brancher
 
 1. Antenne débranchée, **charge fictive** sur la prise d'antenne utilisée.
-2. Câble USB entre l'arrière du FTDX10 et le PC.
+2. Câble USB entre le poste et le PC.
 3. Allume le poste (appui long sur ON/OFF).
 
-Le PC voit alors **deux ports série** et **une carte son** (« USB Audio CODEC ») :
+Le PC voit alors un ou deux **ports série** et une **carte son**. La fiche du poste dit lequel sert à la commande
+(IC-7300MK2 : le premier, le second sert au spectre HF ; FTDX10 : l'« Enhanced COM Port », le « Standard » ne sert
+pas).
 
-| Port | Rôle | À utiliser pour |
-|---|---|---|
-| **Enhanced COM Port** | commande du poste (CAT) | **la station** |
-| Standard COM Port | lignes RTS/DTR (PTT, manipulation CW) | rien : la station ne s'en sert pas |
-
-Sous Windows : Gestionnaire de périphériques > Ports (COM et LPT), note le numéro COM de l'« Enhanced COM Port ».
-Sous Debian, l'assistant reconnaît lui-même le bon port.
+Sous Windows : Gestionnaire de périphériques > Ports (COM et LPT), note le numéro COM du port de commande. Sous
+Debian, l'assistant reconnaît lui-même le bon port.
 
 ## 1.3 Régler les menus du poste
 
-Règle les menus listés dans [la fiche du poste](postes/ftdx10.md), section « Menus à régler ». Ils sont
+Règle les menus listés dans la fiche de ton poste, section « Menus à régler » (sinon, son manuel). Ils sont
 indispensables :
 
-- **débit du CAT** identique à celui de la station (38400 bps) ;
+- **débit du CAT** identique à celui de la station (choisi dans l'assistant) ;
 - **voix par l'USB** : sinon le poste module avec son propre micro, c'est-à-dire le bruit de la pièce. Sur un Icom
   (IC-7300MK2) : MENU > SET > Connectors > MOD Input > **DATA MOD = USB** (la station n'émet qu'en mode données) ;
   le poste n'accepte la prise USB que dans DATA MOD **ou** DATA OFF MOD. Avec le second port réglé, la station le
@@ -45,9 +45,9 @@ indispensables :
   des bandes radioamateur, le poste ne garantit pas l'accord au PTT. Pendant une émission, si le TOS dépasse 2
   plus d'une seconde, la page affiche un bandeau rouge et bipe (elle ne coupe pas) ;
 - **minuterie d'émission du poste** (TX TIME OUT TIMER) : une seconde sécurité, indépendante de la station.
-  Réglez-la (3 min conseillé) : si la station, le réseau ou le PC tombent pendant une émission, c'est elle qui coupe.
-  Pour un poste dont la lecture est qualifiée, la station la lit à chaque connexion et vous prévient si elle est sur
-  OFF ; pour les autres (dont le FTDX10 aujourd'hui), elle ne peut pas la vérifier.
+  Règle-la (3 min conseillé) : si la station, le réseau ou le PC tombent pendant une émission, c'est elle qui coupe.
+  Pour un poste dont la lecture est qualifiée (IC-7300MK2), la station la lit à chaque connexion et te prévient si
+  elle est sur OFF ; pour les autres, elle ne peut pas la vérifier.
 
 > **Sécurité.** Une sécurité en plus ne coûte rien : règle aussi une **puissance maximale** raisonnable dans le
 > poste (HF MAX POWER). La station ne peut pas la dépasser, quoi qu'il arrive.

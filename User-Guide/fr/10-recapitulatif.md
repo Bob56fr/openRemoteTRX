@@ -40,7 +40,7 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 - [ ] Essai 7 : STOP TX du tableau de bord
 - [ ] Essai 8 : arrêt de la station pendant l'émission
 - [ ] Essai 9 : aucun passage en émission au démarrage du PC
-- [ ] Résultat des essais rapporté (ticket « FTDX10 : essais de mise en service »)
+- [ ] Résultat des essais rapporté, si mon poste n'est pas encore validé (ticket « <mon poste> : essais de mise en service »)
 
 ## 4. Utiliser sur le réseau local
 
