@@ -174,5 +174,8 @@
   "name.journal": "System journal",
   "system.journal_ok": "readable",
   "system.journal_denied": "unreadable for account {user}: the troubleshooting report loses the service and kernel logs",
-  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, then log out and log back in"
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, then log out and log back in",
+  "name.iw": "Wi-Fi tool (iw)",
+  "network.iw_missing": "missing although this PC has Wi-Fi ({interfaces}): the troubleshooting report shows neither the Wi-Fi signal nor its power saving",
+  "fix.iw": "sudo apt install iw (or a station update, menu 7.1)"
 }

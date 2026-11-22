@@ -174,5 +174,8 @@
   "name.journal": "Journal système",
   "system.journal_ok": "lisible",
   "system.journal_denied": "illisible pour le compte {user} : le rapport de dépannage perd les journaux des services et du noyau",
-  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, puis fermer la session et se reconnecter"
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, puis fermer la session et se reconnecter",
+  "name.iw": "Outil Wi-Fi (iw)",
+  "network.iw_missing": "absent alors que ce PC a le Wi-Fi ({interfaces}) : le rapport de dépannage ne dit ni le signal ni la mise en veille du Wi-Fi",
+  "fix.iw": "sudo apt install iw (ou une mise à jour de la station, menu 7.1)"
 }

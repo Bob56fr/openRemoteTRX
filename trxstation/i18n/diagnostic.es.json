@@ -174,5 +174,8 @@
   "name.journal": "Diario del sistema",
   "system.journal_ok": "legible",
   "system.journal_denied": "ilegible para la cuenta {user}: el informe de diagnóstico pierde los registros de los servicios y del núcleo",
-  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, luego cerrar la sesión y volver a entrar"
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, luego cerrar la sesión y volver a entrar",
+  "name.iw": "Herramienta Wi-Fi (iw)",
+  "network.iw_missing": "ausente aunque este PC tiene Wi-Fi ({interfaces}): el informe de diagnóstico no muestra ni la señal ni el ahorro de energía del Wi-Fi",
+  "fix.iw": "sudo apt install iw (o una actualización de la estación, menú 7.1)"
 }

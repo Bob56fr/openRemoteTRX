@@ -426,3 +426,23 @@ def test_sdr_serial_from_station_toml_is_masked_too(tmp_path):
     serials = station_serials(texts)
     assert serials == {"170502E910"}                                               # « 3 » n'est pas un numéro
     assert redact_everywhere(texts[1], serials) == "sdr INFO SDR *** ouvert"
+
+
+# --------------------------------------------------------------------------- iw pour le Wi-Fi du rapport (étape 361)
+
+def test_missing_iw_is_reported_only_when_the_machine_has_wifi(tmp_path, monkeypatch):
+    sysm, path = healthy(tmp_path)
+    cfg = d.check_config(sysm, path)[1]
+    monkeypatch.setattr(sysm, "which", lambda name: None if name in ("iw", "ufw") else f"/usr/bin/{name}")
+    monkeypatch.setattr(sysm, "wifi_interfaces", lambda: ["wlo1"])
+    check = next(c for c in d.check_network(sysm, cfg) if c.name == "Outil Wi-Fi (iw)")
+    assert check.status == d.WARN and "wlo1" in check.message and "sudo apt install iw" in check.fix
+    monkeypatch.setattr(sysm, "wifi_interfaces", lambda: [])                       # câble seulement : rien à dire
+    assert all(c.name != "Outil Wi-Fi (iw)" for c in d.check_network(sysm, cfg))
+
+
+def test_install_script_installs_iw():
+    from pathlib import Path
+    script = (Path(__file__).resolve().parents[1] / "debian" / "install.sh").read_text(encoding="utf-8")
+    packages = script.split("APT_PACKAGES=(", 1)[1].split(")", 1)[0].split()
+    assert "iw" in packages

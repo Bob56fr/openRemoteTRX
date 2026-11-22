@@ -174,5 +174,8 @@
   "name.journal": "Systemjournal",
   "system.journal_ok": "lesbar",
   "system.journal_denied": "für das Konto {user} nicht lesbar: dem Fehlerbericht fehlen die Protokolle der Dienste und des Kernels",
-  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, dann abmelden und wieder anmelden"
+  "fix.journal_denied": "sudo usermod -aG systemd-journal {user}, dann abmelden und wieder anmelden",
+  "name.iw": "WLAN-Werkzeug (iw)",
+  "network.iw_missing": "fehlt, obwohl dieser PC WLAN hat ({interfaces}): der Fehlerbericht zeigt weder das WLAN-Signal noch den Energiesparmodus",
+  "fix.iw": "sudo apt install iw (oder ein Update der Station, Menü 7.1)"
 }

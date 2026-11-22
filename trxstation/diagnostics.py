@@ -154,6 +154,13 @@ class System:
         except OSError:
             return False
 
+    def wifi_interfaces(self) -> list[str]:
+        """Interfaces Wi-Fi de la machine (Linux : /sys/class/net/<nom>/wireless) ; [] ailleurs."""
+        try:
+            return sorted(p.parent.name for p in Path("/sys/class/net").glob("*/wireless"))
+        except OSError:
+            return []
+
     def local_addresses(self) -> list[str]:
         from .setup_wizard import local_addresses
         return local_addresses()
@@ -561,6 +568,9 @@ def check_network(sysm: System, cfg: Config | None) -> list[Check]:
     addresses = sysm.local_addresses()
     out.append(Check(s, _t("name.addresses"), INFO if addresses else WARN, ", ".join(addresses) or _t("common.none_f"),
                      "" if addresses else _t("fix.network")))
+    wifi = sysm.wifi_interfaces() if sysm.platform.startswith("linux") else []
+    if wifi and not sysm.which("iw"):                       # rapport de dépannage sans signal ni veille du Wi-Fi
+        out.append(Check(s, _t("name.iw"), WARN, _t("network.iw_missing", interfaces=", ".join(wifi)), _t("fix.iw")))
     if cfg is None:
         return out
     n = cfg.network

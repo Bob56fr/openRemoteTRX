@@ -33,7 +33,8 @@ ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
 GNOME_EXT_DIR=/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com   # indicateur de la barre du haut (lecture seule)
 COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif trx-journal-android trx-netreport trx-sdr)
 APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-config libffi-dev libssl-dev
-              libhamlib-utils alsa-utils libportaudio2 ca-certificates)
+              libhamlib-utils alsa-utils libportaudio2 ca-certificates
+              iw)                # iw : signal et mise en veille du Wi-Fi dans le rapport de dépannage (étape 361)
 MIN_FREE_MB=2000
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TARGET_USER=${SUDO_USER:-}
