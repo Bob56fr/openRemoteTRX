@@ -26,7 +26,7 @@ dependencies {
 // compilation : mêmes textes que la station et la page web (cahier docs/application-traduction-cahier-des-charges.md)
 val i18nDir = layout.buildDirectory.dir("generated/i18n")
 val copyI18n by tasks.registering(Copy::class) {
-    from(rootProject.file("../trxstation/i18n")) { include("client.*.json", "shared.*.json") }
+    from(project.file("../../trxstation/i18n")) { include("client.*.json", "shared.*.json") }
     into(i18nDir.map { it.dir("i18n") })
 }
 sourceSets["main"].resources.srcDir(i18nDir)
@@ -35,13 +35,13 @@ tasks.processResources { dependsOn(copyI18n) }
 tasks.test {
     useJUnitPlatform()
     // Exemples partagés avec la station et la page (tests/protocol/) et sources de la page (textes à garder alignés)
-    systemProperty("trx.repo", rootProject.file("..").absolutePath)
+    systemProperty("trx.repo", project.file("../..").absolutePath)
     // Fichiers partagés lus par les tests : déclarés, sinon Gradle croit les tests à jour quand seuls eux changent
-    inputs.dir(rootProject.file("../trxstation/gateway/api/static"))
-    inputs.dir(rootProject.file("../tests/protocol"))
-    inputs.dir(rootProject.file("../trxstation/i18n"))                  // TextsTest : tronc commun des textes
-    inputs.dir(rootProject.file("core/src/main/assets/pochettes"))     // ArtworkTest : une image par clé
-    inputs.dir(rootProject.file("core/src/main/kotlin"))               // I18nAppTest : cliquet de :core et :app
-    inputs.dir(rootProject.file("app/src/main/kotlin"))
-    inputs.file(rootProject.file("app/src/main/res/xml/locales_config.xml"))   // I18nAppTest : langues d'Android 13+
+    inputs.dir(project.file("../../trxstation/gateway/api/static"))
+    inputs.dir(project.file("../../tests/protocol"))
+    inputs.dir(project.file("../../trxstation/i18n"))                  // TextsTest : tronc commun des textes
+    inputs.dir(project.file("../core/src/main/assets/pochettes"))     // ArtworkTest : une image par clé
+    inputs.dir(project.file("../core/src/main/kotlin"))               // I18nAppTest : cliquet de :core et :app
+    inputs.dir(project.file("../app/src/main/kotlin"))
+    inputs.file(project.file("../app/src/main/res/xml/locales_config.xml"))   // I18nAppTest : langues d'Android 13+
 }

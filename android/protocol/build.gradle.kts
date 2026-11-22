@@ -24,7 +24,7 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
     // Exemples partagés avec la station et la page (tests/protocol/) et sources de la page (textes à garder alignés)
-    systemProperty("trx.repo", rootProject.file("..").absolutePath)
+    systemProperty("trx.repo", project.file("../..").absolutePath)
     // Fichiers partagés lus par les tests : déclarés, sinon Gradle croit les tests à jour quand seuls eux changent
-    inputs.dir(rootProject.file("../tests/protocol"))
+    inputs.dir(project.file("../../tests/protocol"))
 }
