@@ -63,7 +63,7 @@ BUBBLES = {
            "Empreinte du certificat", "VPN", "Profil VPN", "Port ouvert", "CGNAT", "ntfy", "Code ORT", "Appairage",
            "Visiteur", "Compte opérateur", "WebRTC", "Réseau local", "Porte audio d'émission"),
 }
-NO_BUBBLE_TAGS = ("code", "pre", "a", "h1", "h2", "h3", "h4", "th", "figcaption", "button", "summary")
+NO_BUBBLE_TAGS = ("code", "pre", "a", "h1", "h2", "h3", "h4", "th", "figcaption", "button", "summary", "svg")   # svg : schéma intégré
 
 # Infobulles : même aspect dans le guide et dans le mode d'emploi de la console (build_console_doc.py).
 BUBBLES_CSS = """

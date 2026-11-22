@@ -189,5 +189,7 @@ def test_published_guide_has_bubbles_but_not_in_the_glossary() -> None:
     glossary = page[page.index('id="s-glossaire"'):]
     glossary = glossary[:glossary.index("</section>")]
     assert 'class="terme"' in page and 'class="terme"' not in glossary
+    for svg in re.findall(r"<svg.*?</svg>", page, flags=re.S):                  # schéma intégré : jamais de bulle
+        assert "<span" not in svg, "bulle posée dans un schéma SVG (le dessin s'arrête là)"
     for ident in set(re.findall(r'data-def="([^"]+)"', page)):
         assert f'<div id="{ident}" data-terme=' in page, f"définition absente : {ident}"
