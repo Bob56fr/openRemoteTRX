@@ -47,9 +47,53 @@ KERNEL = [["journalctl", "-k", "-b", "--no-pager", "-n", "400"], ["journalctl", 
 KERNEL_FALLBACK = ["dmesg", "--ctime"]
 DENIED = re.compile(r"insufficient permissions|permission denied|operation not permitted|not seeing messages from other",
                     re.I)
-SERIAL_LINE = re.compile(r"(?i)\b(SerialNumber|Serial Number|iSerial)([ \t]*[:=]?[ \t]*(?:\d+[ \t]+)?)(\S+)")
+SERIAL_LINE = re.compile(r"(?i)\b(SerialNumber|Serial Number|iSerial)([ \t]*[:=]?[ \t]*(?:\d+[ \t]+)?)(\S[^\r\n]*)")
 BY_ID_SERIAL = re.compile(r"_([A-Za-z0-9]*\d[A-Za-z0-9]*)(-if\d+)")     # usb-Icom_…_13003336-if00 : dernier mot avant -ifNN
 MAC = re.compile(r"(?i)\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b")
+
+
+# Numéros de série de CETTE station, relevés dans le rapport puis masqués dans TOUS ses fichiers (étape 358 : un numéro
+# peut contenir une espace, « IC-7300MK2 13003336 », et revient dans station.toml, journal.txt, les journaux JSON…)
+SERIAL_SOURCES = (
+    re.compile(r"\busb-[^\s\"'/]*_([A-Za-z0-9]*\d[A-Za-z0-9]*)-if\d+"),             # noms /dev/serial/by-id
+    re.compile(r"\bSN=([^\s\"]+)"),                                                    # [rig] port_usb
+    re.compile(r"(?m)^\s*serial\s*=\s*\"([^\"]+)\""),                                    # [sdr] serial
+    re.compile(r"(?i)\bSerialNumber:[ \t]*([^\r\n]+)"),                                  # messages USB du noyau
+)
+
+
+def station_serials(texts) -> set[str]:
+    """Numéros de série trouvés dans les textes du rapport, et leurs morceaux (« IC-7300MK2 13003336 » donne aussi
+    « 13003336 », mais JAMAIS « IC-7300MK2 », nom du modèle que l'analyseur doit garder) ; seulement ce qui ressemble à un numéro (6 caractères au moins, un chiffre au moins)."""
+    found: set[str] = set()
+    for text in texts:
+        for pattern in SERIAL_SOURCES:
+            for match in pattern.finditer(text):
+                value = match.group(1).strip()
+                for part in (value, re.split(r"[\s_]+", value)[-1]):     # jamais le début : c'est le modèle
+                    if len(part) >= 6 and any(c.isdigit() for c in part):
+                        found.add(part)
+    return found
+
+
+def redact_everywhere(text: str, serials: set[str]) -> str:
+    """Masquage final d'un fichier du rapport : numéros de série relevés, puis le masquage des formes connues."""
+    for serial in sorted(serials, key=len, reverse=True):
+        text = text.replace(serial, "***")
+    return redact_hardware(text)
+
+
+class _Pending(list):
+    """Fichiers du rapport gardés en mémoire jusqu'au masquage final (même ordre que l'écriture)."""
+
+    def writestr(self, name: str, text: str) -> None:
+        self.append((name, text))
+
+    def __enter__(self) -> "_Pending":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
 
 
 def redact_hardware(text: str) -> str:
@@ -228,7 +272,7 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
     stamp = (now or datetime.datetime.now()).strftime("%Y%m%d-%H%M")
     folder = destination or desktop_dir(sysm=sysm)
     target = folder / f"trx-remote-rapport-{stamp}.zip"
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+    with _Pending() as archive:
         archive.writestr("rapport.json", report_meta(sysm))                  # en tête du zip (format, fuseau)
         archive.writestr("diagnostic.txt", format_checks(run_all(sysm, config_path)) + "\n")
         config_text = sysm.read_text(config_path)
@@ -263,4 +307,8 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
             archive.writestr("reseau/donnees.json", history)
         log = sysm.read_text(INSTALL_LOG)
         archive.writestr("installation.log", log if log is not None else "# journal d'installation absent ou illisible\n")
+    serials = station_serials(text for _, text in archive)
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as zipped:
+        for name, text in archive:                    # numéros de série et MAC masqués dans TOUS les fichiers
+            zipped.writestr(name, redact_everywhere(text, serials))
     return target

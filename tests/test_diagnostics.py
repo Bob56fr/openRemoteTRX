@@ -393,3 +393,36 @@ def test_public_addresses_are_masked_private_ones_kept():
     from trxstation.report import redact_network
     text = redact_network("192.168.1.19 90.12.34.56 2a01:cb00:1234:5678::1 fe80::1 10:00:00 fd00::5")
     assert text == "192.168.1.19 adresse-publique adresse-publique fe80::1 10:00:00 fd00::5"
+
+
+# --------------------------------------------------------------------------- numéros de série masqués partout (étape 358)
+
+def test_serial_numbers_of_the_station_are_masked_in_every_file_but_the_model_name_stays(tmp_path):
+    """Cas réel de minix-bzh (2026-11-22) : numéro de l'IC-7300MK2 avec une espace (« IC-7300MK2 13003336 ») resté en
+    clair dans noyau.txt, et numéros du poste et du SDR dans station.toml, journal.txt, diagnostic.txt."""
+    sysm, path = healthy(tmp_path)
+    by_id = "usb-Icom_Inc._IC-7300MK2_IC-7300MK2_13003336-if00"
+    config = sysm.files[str(path)] if str(path) in sysm.files else path.read_text(encoding="utf-8")
+    config += f'\n# port = "/dev/serial/by-id/{by_id}"\n# port_usb = "0C26:0052 SN=IC-7300MK2_13003336 IF=00"\n'
+    sysm.files[path.as_posix()] = sysm.files[str(path)] = config
+    sysm.commands["ls -l /dev/serial/by-id/"] = (0, f"{by_id} -> ../../ttyACM0")
+    sysm.commands["lsusb"] = (0, "Bus 003 Device 004: ID 0c26:0052 Icom Inc. IC-7300MK2")
+    sysm.commands["journalctl -k -b --no-pager -n 400"] = (0, "usb 3-2.1: SerialNumber: IC-7300MK2 13003336\n"
+                                                               "usb 3-2.1: Product: IC-7300MK2")
+    sysm.commands[JOURNAL] = (0, f"sdr INFO SDR 170502E910 ouvert\nspectre HF reçu sur /dev/serial/by-id/{by_id}")
+    target = make_report(tmp_path, sysm=sysm, config_path=path)
+    with zipfile.ZipFile(target) as archive:
+        files = {n: archive.read(n).decode("utf-8") for n in archive.namelist()}
+    everything = "\n".join(files.values())
+    assert "13003336" not in everything
+    assert "Icom Inc. IC-7300MK2" in files["materiel.txt"] and "Product: IC-7300MK2" in files["noyau.txt"]   # modèle gardé
+    assert "usb-Icom_Inc._IC-7300MK2_***-if00" in files["station.toml"] + files["journal.txt"]
+    assert "SN=*** IF=00" in files["station.toml"]
+
+
+def test_sdr_serial_from_station_toml_is_masked_too(tmp_path):
+    from trxstation.report import redact_everywhere, station_serials
+    texts = ['[sdr]\nserial = "170502E910"\n', "sdr INFO SDR 170502E910 ouvert", "SerialNumber=3"]
+    serials = station_serials(texts)
+    assert serials == {"170502E910"}                                               # « 3 » n'est pas un numéro
+    assert redact_everywhere(texts[1], serials) == "sdr INFO SDR *** ouvert"

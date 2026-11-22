@@ -87,8 +87,13 @@ Une ligne JSON par événement :
 
 ## Masquage
 
-Le rapport ne contient aucun mot de passe, jeton ni clé (`secrets.toml` n'y est jamais). Depuis 0.266.0, dans
-`materiel.txt` et `noyau.txt` :
+Le rapport ne contient aucun mot de passe, jeton ni clé (`secrets.toml` n'y est jamais).
+
+**Depuis 0.270.0, dans TOUS les fichiers du zip** (`station.toml`, `journal.txt`, journaux JSON, `diagnostic.txt`…) :
+les numéros de série de la station sont relevés (noms `/dev/serial/by-id`, `SN=` de `port_usb`, `serial` du SDR,
+`SerialNumber:` du noyau ; valeur entière et son dernier morceau, ex. `IC-7300MK2 13003336` et `13003336`) puis remplacés
+par `***` partout ; le NOM DU MODÈLE reste (`Icom Inc. IC-7300MK2`). Avant 0.270.0, ces numéros restaient en clair hors
+de `materiel.txt` et `noyau.txt`. Formes reconnues (0.266.0) :
 
 - numéros de série masqués en gardant la forme de la ligne : `SerialNumber: ***`, `usb-Icom_Inc._IC-7300MK2_IC-7300MK2_***-if00` ;
 - adresses MAC remplacées par `**:**:**:**:**:**`.
