@@ -168,6 +168,7 @@ L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvé
 
 ## Pièges et leçons (à relire avant de coder)
 
+- **Glossaire du guide (étape 353)** : ses définitions servent aussi aux infobulles du mode d'emploi de la console : après une modification de `User-Guide/fr/glossaire.md`, relancer `build_user_guide.py` ET `build_console_doc.py`.
 - **Infobulles et SVG (étape 350)** : jamais de balise HTML ajoutée dans un SVG intégré à une page (le dessin s'arrête là) : `svg` est dans `NO_BUBBLE_TAGS` ; tout traitement qui pose des marques dans du HTML exclut `<svg>`.
 - **Nom du logiciel (étape 345)** : le logiciel s'appelle « openRemoteTRX » et sa console « openRemoteTRX Console » (« TRX » seul = le poste du lecteur) ; dans ce fichier, « TRX Console » et « TRX distant » des entrées anciennes désignent la même chose. Noms TECHNIQUES gardés à jamais (installations existantes) : tâche planifiée « TRX distant », `Programs\TRX distant`, `Uninstall\TRX distant`, groupe du pare-feu, `TRX distant - indicateur.lnk`, `trx-distant@rf-diy.com`, commandes `trx-*`. Français : « d'openRemoteTRX » (pas en espagnol) ; dans une chaîne entre apostrophes (YAML, Python, JS), l'apostrophe se double ou s'échappe.
 
