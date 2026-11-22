@@ -240,3 +240,33 @@ def test_state_follows_the_display_level_and_the_page_can_change_it(tmp_path, mo
         assert (await client.post("/api/level", json={"level": "expert"}, headers=origin)).status == 200
         assert json.loads(prefs.read_text(encoding="utf-8"))["level"] == "expert"
     scenario(tmp_path, body)
+
+
+def test_state_gives_the_documentation_tiles_in_the_console_language(tmp_path):
+    """Tuiles « Guides » et « Références » (étape 349) : sans numéro, mode d'emploi de la console en tête, liens publics
+    en https ; une documentation pas encore traduite mène au français ; langues publiées = celles des fabriques."""
+    import importlib.util
+    from pathlib import Path
+
+    from trxstation.console_web import docs
+
+    async def body(wc, client):
+        await login(wc, client)
+        data = await (await client.get("/api/state")).json()
+        groups = data["docs"]
+        assert [g["id"] for g in groups] == ["guides", "refs"]
+        assert groups[0]["links"][0]["key"] == "console" and groups[0]["title"] == "Guides"
+        for group in groups:
+            for link in group["links"]:
+                assert link["url"].startswith("https://") and link["label"] and not link["label"].startswith("web.")
+    scenario(tmp_path, body)
+    english = {d["id"]: {l["key"]: l["url"] for l in d["links"]} for d in docs.doc_tiles(lambda k: k, "en")}
+    assert english["guides"]["console"].endswith("/console/en/")
+    assert english["guides"]["guide"] == docs.SITE + "guide/"                           # guide encore en français
+    assert english["guides"]["pdf"].endswith("guide-openRemoteTRX-fr.pdf")
+    root = Path(__file__).resolve().parents[1] / "scripts"
+    for name, langs in (("build_user_guide", docs.GUIDE_LANGS), ("build_console_doc", docs.CONSOLE_LANGS)):
+        spec = importlib.util.spec_from_file_location(name, root / f"{name}.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        assert tuple(module.LANGS) == langs, name

@@ -180,6 +180,30 @@
       card.append(head, list);
       grid.append(card);
     });
+    // Guides et références (étape 349) : liens vers les documentations publiées, sans numéro, nouvel onglet
+    (state.docs || []).forEach((group, i) => {
+      const card = el("article", "card docs");
+      card.dataset.docs = group.id;
+      card.style.setProperty("--c", group.color);
+      card.style.animationDelay = (state.themes.length + i) * 45 + "ms";
+      const head = el("header");
+      head.dataset.toggle = group.id;
+      const titles = el("div");
+      titles.append(el("h2", "", group.title));
+      head.append(el("span", "ico", group.icon), titles);
+      const list = el("ul", "items");
+      for (const link of group.links) {
+        const li = el("li"), a = el("a", "", link.label);
+        a.href = link.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.append(el("span", "ext", "↗"));
+        li.append(a);
+        list.append(li);
+      }
+      card.append(head, list);
+      grid.append(card);
+    });
     filter();
   }
   function find(key) {
@@ -285,7 +309,17 @@
   // ---------------------------------------------------------------- recherche, boutons, souris
   function filter() {
     const q = $("#q").value.trim().toLowerCase();
-    for (const card of document.querySelectorAll(".card")) {
+    for (const card of document.querySelectorAll(".card.docs")) {          // guides : recherche dans les titres
+      let any = false;
+      card.querySelectorAll(".items li").forEach((li) => {
+        const hit = !q || li.textContent.toLowerCase().includes(q);
+        li.hidden = !hit;
+        any = any || hit;
+      });
+      card.hidden = !any;
+      if (q) card.classList.remove("closed");
+    }
+    for (const card of document.querySelectorAll(".card:not(.docs)")) {
       const th = state.themes.find((x) => x.number === card.dataset.t);
       let any = false;
       card.querySelectorAll(".items li").forEach((li, k) => {

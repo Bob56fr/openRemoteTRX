@@ -854,5 +854,16 @@
   "rx_gain.no_level": "  Niveau reçu inconnu (station arrêtée ou poste muet) : démarrez la station, mettez le poste sur une fréquence avec du signal, puis revenez à ce menu pour avoir une valeur proposée.",
   "rx_gain.2": "Gain du son reçu, en dB",
   "rx_gain.3": "Limiteur du son reçu en service (conseillé)",
-  "rx_gain.warning": "ATTENTION : limiteur coupé, un gain positif ou un signal fort peut saturer (son distordu). À garder pour un diagnostic seulement."
+  "rx_gain.warning": "ATTENTION : limiteur coupé, un gain positif ou un signal fort peut saturer (son distordu). À garder pour un diagnostic seulement.",
+  "web.docs.guides": "Guides",
+  "web.docs.refs": "Références",
+  "web.docs.console": "Mode d'emploi de la console",
+  "web.docs.quick": "Démarrage rapide (15 min)",
+  "web.docs.guide": "Guide de l'opérateur",
+  "web.docs.pdf": "Guide en PDF (à imprimer)",
+  "web.docs.errors": "Codes d'erreur (ORT-NNNN)",
+  "web.docs.rigs": "Postes essayés",
+  "web.docs.toml": "Notice de station.toml",
+  "web.docs.autotest": "Autotest d'un poste (Chrome)",
+  "web.docs.github": "GitHub : signaler un problème"
 }

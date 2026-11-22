@@ -854,5 +854,16 @@
   "rx_gain.no_level": "  Empfangener Pegel unbekannt (Station angehalten oder Funkgerät stumm): Station starten, das Funkgerät auf eine Frequenz mit Signal stellen und dieses Menü erneut öffnen, um einen Vorschlag zu erhalten.",
   "rx_gain.2": "Verstärkung des Empfangstons, in dB",
   "rx_gain.3": "Begrenzer des Empfangstons in Betrieb (empfohlen)",
-  "rx_gain.warning": "ACHTUNG: Begrenzer aus, eine positive Verstärkung oder ein starkes Signal kann übersteuern (verzerrter Ton). Nur zur Fehlersuche."
+  "rx_gain.warning": "ACHTUNG: Begrenzer aus, eine positive Verstärkung oder ein starkes Signal kann übersteuern (verzerrter Ton). Nur zur Fehlersuche.",
+  "web.docs.guides": "Anleitungen",
+  "web.docs.refs": "Referenzen",
+  "web.docs.console": "Bedienungsanleitung der Konsole",
+  "web.docs.quick": "Schnellstart (15 Min., Französisch)",
+  "web.docs.guide": "Betreiberhandbuch (Französisch)",
+  "web.docs.pdf": "Handbuch als PDF (Französisch, zum Drucken)",
+  "web.docs.errors": "Fehlercodes (ORT-NNNN)",
+  "web.docs.rigs": "Getestete Transceiver",
+  "web.docs.toml": "Referenz von station.toml",
+  "web.docs.autotest": "Autotest eines Transceivers (Chrome)",
+  "web.docs.github": "GitHub: Problem melden"
 }

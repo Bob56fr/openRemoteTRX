@@ -38,6 +38,7 @@ from ..console import MENU_THEMES, Console, load_help, menu_level, menu_number
 from ..i18n import LANGS, LEVELS, NAMES, load_lang, load_level, prefs_path, save_lang, save_level
 from ..errors import codes
 from ..errors.emit import emit_event
+from .docs import doc_tiles
 from .flow import Flow
 from .terminal import IDLE_MARK, Terminal, make_terminal
 
@@ -320,7 +321,7 @@ class WebConsole:
                 "idle": self.idle and self.terminal is not None and self.terminal.alive,
                 "assistant": menu_number("assistant"), "update_menu": menu_number("update"), "ui": {k: t(k) for k in UI_KEYS}, "themes": themes,
                 "level": con.level, "langs": [[code, NAMES[code]] for code in LANGS],
-                "network": self.network}
+                "network": self.network, "docs": doc_tiles(t, t.lang)}
 
     @staticmethod
     def webapp(con: Console) -> dict | None:

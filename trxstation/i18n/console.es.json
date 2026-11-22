@@ -854,5 +854,16 @@
   "rx_gain.no_level": "  Nivel recibido desconocido (estación parada o equipo mudo): arranque la estación, ponga el equipo en una frecuencia con señal y vuelva a este menú para obtener un valor propuesto.",
   "rx_gain.2": "Ganancia del audio recibido, en dB",
   "rx_gain.3": "Limitador del audio recibido en servicio (aconsejado)",
-  "rx_gain.warning": "ATENCIÓN: limitador apagado, una ganancia positiva o una señal fuerte puede saturar (audio distorsionado). Solo para un diagnóstico."
+  "rx_gain.warning": "ATENCIÓN: limitador apagado, una ganancia positiva o una señal fuerte puede saturar (audio distorsionado). Solo para un diagnóstico.",
+  "web.docs.guides": "Guías",
+  "web.docs.refs": "Referencias",
+  "web.docs.console": "Manual de la consola",
+  "web.docs.quick": "Inicio rápido (15 min, en francés)",
+  "web.docs.guide": "Guía del operador (en francés)",
+  "web.docs.pdf": "Guía en PDF (en francés, para imprimir)",
+  "web.docs.errors": "Códigos de error (ORT-NNNN)",
+  "web.docs.rigs": "Equipos probados",
+  "web.docs.toml": "Referencia de station.toml",
+  "web.docs.autotest": "Autotest de un equipo (Chrome)",
+  "web.docs.github": "GitHub: informar de un problema"
 }

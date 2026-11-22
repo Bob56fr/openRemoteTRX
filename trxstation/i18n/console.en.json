@@ -854,5 +854,16 @@
   "rx_gain.no_level": "  Received level unknown (station stopped or rig silent): start the station, tune the rig to a frequency with signal, then come back to this menu for a suggested value.",
   "rx_gain.2": "Receive audio gain, in dB",
   "rx_gain.3": "Receive limiter in service (recommended)",
-  "rx_gain.warning": "WARNING: limiter off, a positive gain or a strong signal may clip (distorted audio). Keep it for troubleshooting only."
+  "rx_gain.warning": "WARNING: limiter off, a positive gain or a strong signal may clip (distorted audio). Keep it for troubleshooting only.",
+  "web.docs.guides": "Guides",
+  "web.docs.refs": "References",
+  "web.docs.console": "Console user manual",
+  "web.docs.quick": "Quick start (15 min, French)",
+  "web.docs.guide": "Operator guide (French)",
+  "web.docs.pdf": "Guide as PDF (French, to print)",
+  "web.docs.errors": "Error codes (ORT-NNNN)",
+  "web.docs.rigs": "Rigs tried",
+  "web.docs.toml": "station.toml reference",
+  "web.docs.autotest": "Rig autotest (Chrome)",
+  "web.docs.github": "GitHub: report a problem"
 }
