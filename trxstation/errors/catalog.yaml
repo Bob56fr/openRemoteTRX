@@ -15232,6 +15232,96 @@ ORT-8029:
     preconisation: Desinstala la versión zip en Configuración > Aplicaciones > openRemoteTRX (la configuración de
       C:\ProgramData\trx-remote se conserva y se reutiliza tal cual) y vuelve a abrir openRemoteTRX.
 
+ORT-8030:
+  gravite: avertissement
+  titre: 'Arrêt précédent non propre : la machine s''est arrêtée brutalement'
+  message: 'La station ne s''est pas arrêtée proprement : la machine a redémarré sans passer par l''arrêt de la
+    station. Dernier signe de vie du superviseur : {dernier_signe}.'
+  causes:
+  - Coupure de courant, alimentation insuffisante ou débranchée (Raspberry Pi)
+  - Plantage du système (noyau, carte SD), redémarrage par le chien de garde matériel
+  - Machine éteinte par le bouton ou le câble d'alimentation
+  preconisation: Vérifier l'alimentation (sur un Raspberry Pi, bloc adapté et câble court ; sous-tension et messages du
+    noyau dans le rapport de dépannage, menu 6.3). Le poste a été remis en réception au démarrage de la station.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8030/
+  depuis_version: 0.267.0
+  en:
+    titre: 'Previous stop not clean: the machine stopped abruptly'
+    message: 'The station did not stop cleanly: the machine restarted without going through the station shutdown.
+      Last sign of life of the supervisor: {dernier_signe}.'
+    causes:
+    - Power cut, insufficient or unplugged power supply (Raspberry Pi)
+    - System crash (kernel, SD card), restart by the hardware watchdog
+    - Machine switched off with the button or the power cable
+    preconisation: Check the power supply (on a Raspberry Pi, suitable supply and short cable; under-voltage and kernel
+      messages in the troubleshooting report, menu 6.3). The rig was put back on receive when the station started.
+  de:
+    titre: 'Vorheriges Anhalten nicht sauber: der Rechner ist abrupt ausgegangen'
+    message: 'Die Station wurde nicht sauber angehalten: der Rechner ist neu gestartet, ohne die Station herunterzufahren.
+      Letztes Lebenszeichen des Supervisors: {dernier_signe}.'
+    causes:
+    - Stromausfall, unzureichende oder getrennte Stromversorgung (Raspberry Pi)
+    - Systemabsturz (Kernel, SD-Karte), Neustart durch den Hardware-Watchdog
+    - Rechner mit dem Schalter oder dem Netzkabel ausgeschaltet
+    preconisation: Prüfen Sie die Stromversorgung (beim Raspberry Pi passendes Netzteil und kurzes Kabel; Unterspannung und
+      Kernelmeldungen im Fehlerbericht, Menü 6.3). Das Funkgerät wurde beim Start der Station auf Empfang gesetzt.
+  es:
+    titre: 'Parada anterior no limpia: la máquina se detuvo bruscamente'
+    message: 'La estación no se detuvo limpiamente: la máquina se reinició sin pasar por la parada de la estación.
+      Última señal de vida del supervisor: {dernier_signe}.'
+    causes:
+    - Corte de corriente, alimentación insuficiente o desconectada (Raspberry Pi)
+    - Bloqueo del sistema (núcleo, tarjeta SD), reinicio por el perro guardián del hardware
+    - Máquina apagada con el botón o el cable de alimentación
+    preconisation: Comprueba la alimentación (en un Raspberry Pi, fuente adecuada y cable corto; subtensión y mensajes del
+      núcleo en el informe de diagnóstico, menú 6.3). El equipo se puso en recepción al arrancar la estación.
+
+ORT-8031:
+  gravite: avertissement
+  titre: 'Arrêt précédent non propre : superviseur arrêté sans prévenir'
+  message: 'Le superviseur s''était arrêté sans passer par l''arrêt de la station, la machine restant en marche.
+    Dernier signe de vie : {dernier_signe}.'
+  causes:
+  - Superviseur tué (Gestionnaire des tâches, kill -9) ou planté
+  - Mémoire épuisée (processus arrêté par le système)
+  preconisation: Consulter les journaux de la station (menu 6.2) autour de l'heure du dernier signe de vie ; arrêter
+    la station par le menu 1.2 plutôt qu'en tuant ses processus. Le poste a été remis en réception au démarrage.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8031/
+  depuis_version: 0.267.0
+  en:
+    titre: 'Previous stop not clean: supervisor stopped without warning'
+    message: 'The supervisor had stopped without going through the station shutdown, while the machine kept running.
+      Last sign of life: {dernier_signe}.'
+    causes:
+    - Supervisor killed (Task Manager, kill -9) or crashed
+    - Out of memory (process stopped by the system)
+    preconisation: Read the station logs (menu 6.2) around the time of the last sign of life; stop the station with menu
+      1.2 rather than by killing its processes. The rig was put back on receive at startup.
+  de:
+    titre: 'Vorheriges Anhalten nicht sauber: Supervisor ohne Vorwarnung beendet'
+    message: 'Der Supervisor war beendet worden, ohne die Station herunterzufahren, während der Rechner weiterlief.
+      Letztes Lebenszeichen: {dernier_signe}.'
+    causes:
+    - Supervisor beendet (Task-Manager, kill -9) oder abgestürzt
+    - Speicher erschöpft (Prozess vom System beendet)
+    preconisation: Sehen Sie in die Protokolle der Station (Menü 6.2) um die Zeit des letzten Lebenszeichens; halten Sie
+      die Station mit Menü 1.2 an, statt ihre Prozesse zu beenden. Das Funkgerät wurde beim Start auf Empfang gesetzt.
+  es:
+    titre: 'Parada anterior no limpia: supervisor detenido sin avisar'
+    message: 'El supervisor se había detenido sin pasar por la parada de la estación, mientras la máquina seguía en marcha.
+      Última señal de vida: {dernier_signe}.'
+    causes:
+    - Supervisor matado (Administrador de tareas, kill -9) o bloqueado
+    - Memoria agotada (proceso detenido por el sistema)
+    preconisation: Consulta los registros de la estación (menú 6.2) alrededor de la hora de la última señal de vida;
+      detén la estación con el menú 1.2 en lugar de matar sus procesos. El equipo se puso en recepción al arrancar.
+
 
 # ====================================================================================================
 # 9000–9999 : Configuration et installation

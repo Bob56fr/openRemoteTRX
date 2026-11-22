@@ -25,6 +25,7 @@ from .actions import SystemActions
 from .backends import GuardUnavailable, choose_backend
 from .core import Supervisor, default_read_host
 from .rigctl import RigctlProbe
+from .runmark import RunMark
 from .sdnotify import sd_notify
 from .state import StateStore
 
@@ -82,6 +83,14 @@ def run_forever(sup: Supervisor, poll_interval_s: float, *, stop: Callable[[], b
     return 0
 
 
+def _with_mark(tick: Callable[[], None], runmark: RunMark) -> Callable[[], None]:
+    """Passage de supervision, puis le dernier signe de vie du témoin de marche (une écriture par minute)."""
+    def run() -> None:
+        tick()
+        runmark.refresh()
+    return run
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-supervisor", description="Superviseur autonome de la station TRX")
     ap.add_argument("--config", type=Path, default=default_config_path())
@@ -123,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
               f"{cfg.supervisor.instance_lock_port} occupé).", file=sys.stderr)
         return 4
     add_json_journal("superviseur", cfg.supervisor.state_dir)
+    runmark = RunMark(cfg.supervisor.state_dir)
+    unclean = runmark.start()                                 # arrêt précédent non propre ? (étape 355)
     stop_file = stop_request_path(cfg)
     stop_file.unlink(missing_ok=True)                         # demande d'arrêt d'une session précédente : oubliée
     status_path = cfg.supervisor.status_path
@@ -132,6 +143,9 @@ def main(argv: list[str] | None = None) -> int:
     sup = Supervisor(cfg, read_status=lambda: read_status(status_path), probe_rig=probe.read,
                      actions=SystemActions(cfg, backend), store=store, port_exists=port_present,
                      read_host=lambda: default_read_host(host_paths))
+    if unclean is not None:
+        sup.actions.notifier.alert(codes.ORT_8030 if unclean.machine else codes.ORT_8031,
+                                   dernier_signe=time.strftime("%Y-%m-%d %H:%M", time.localtime(unclean.last_seen)))
     stopping = False
 
     def _stop(*_: object) -> None:
@@ -158,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         launcher = None
     try:
         return run_forever(sup, cfg.supervisor.poll_interval_s, stop=lambda: stopping or stop_file.exists(),
-                           tick=make_tick(backend.maintain, launcher))
+                           tick=_with_mark(make_tick(backend.maintain, launcher), runmark))
     finally:
         if launcher is not None:
             try:
@@ -167,6 +181,7 @@ def main(argv: list[str] | None = None) -> int:
                 emit_event(codes.ORT_8024, logger=log, trace=True, action="arrêt", erreur="voir la trace")
         backend.stop_all(force_rx=sup.actions.force_rx)       # no-op sous systemd ; « T 0 » avant d'arrêter rigctld
         stop_file.unlink(missing_ok=True)
+        runmark.clean_stop()                                  # arrêt propre : témoin retiré
 
 
 if __name__ == "__main__":
