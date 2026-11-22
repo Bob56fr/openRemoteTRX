@@ -299,7 +299,7 @@ admin = true
 expert = "<p>Journal complet : <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>. Sous Windows : dernières lignes des fichiers du dossier <code>logs</code> placé à côté de <code>station.toml</code>.</p>"
 
 [menus.report]
-role = "Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic, journaux, configuration <strong>sans aucun mot de passe</strong>, versions, matériel détecté, rapports envoyés depuis la page, identifiant de la station."
+role = "Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic, journaux, configuration <strong>sans aucun mot de passe</strong>, versions, matériel détecté, rapports envoyés depuis la page, identifiant de la station. Dans la console web, un bouton <strong>« Télécharger le rapport »</strong> le récupère sur l'appareil qui affiche la page (PC, tablette, téléphone). Numéros de série et adresses masqués."
 quand = "Pour demander de l'aide : joins ce zip à ta demande."
 modifie = "Rien (un fichier est créé sur le Bureau)."
 admin = false

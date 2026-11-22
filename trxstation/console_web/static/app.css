@@ -151,6 +151,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .flow header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
 .flow header h2{margin:0;font:600 1.1rem/1.25 var(--f-display);flex:1;min-width:0}
 .flow header .btn{white-space:nowrap}
+.msg a.download{display:inline-block;margin-top:8px;text-decoration:none}
 @media (max-width:540px){.flow header{flex-wrap:wrap}.flow header h2{flex-basis:100%;order:-1}}
 .flow .fkey{font:600 13px var(--f-mono);color:var(--accent)}
 .flow-log{overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:8px;min-height:0}

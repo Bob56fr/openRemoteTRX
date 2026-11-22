@@ -28,7 +28,8 @@
 
 ## 8.3 Demander de l'aide
 
-1. Menu **6.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe** (Windows comme Debian). Les traces des outils arrêtés sur une erreur
+1. Menu **6.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe** (Windows comme Debian). Depuis la console web, le bouton
+   **« Télécharger le rapport »** le récupère directement sur ton PC ou ton téléphone. Les traces des outils arrêtés sur une erreur
    (code ORT-9312) sont dans le dossier `plantages` du dossier d'état de la station, et le rapport les joint.
    Pour le lire toi-même : menu **6.6**, qui donne le lien de l'**analyseur** ; tu y déposes le zip et l'analyse se
    fait dans ton navigateur (le rapport n'est envoyé nulle part).

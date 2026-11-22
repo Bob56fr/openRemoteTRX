@@ -769,6 +769,7 @@
   "web.flow.tab": "Menü {key} läuft",
   "web.dash.stop": "STOP TX",
   "web.dash.close": "Schließen",
+  "web.report.download": "Bericht herunterladen",
   "web.dash.stale": "Gateway eingefroren oder abwesend: die Werte sind nicht mehr aktuell.",
   "web.dash.log": "Protokoll",
   "web.edit.save": "Prüfen und speichern",

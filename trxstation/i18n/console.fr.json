@@ -769,6 +769,7 @@
   "web.flow.tab": "Menu {key} en cours",
   "web.dash.stop": "STOP TX",
   "web.dash.close": "Fermer",
+  "web.report.download": "Télécharger le rapport",
   "web.dash.stale": "Passerelle figée ou absente : les valeurs ne sont plus à jour.",
   "web.dash.log": "Journal",
   "web.edit.save": "Vérifier et enregistrer",

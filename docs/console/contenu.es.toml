@@ -165,7 +165,7 @@ admin = true
 expert = "<p>Registro completo: <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>. En Windows: últimas líneas de los archivos de la carpeta <code>logs</code> junto a <code>station.toml</code>.</p>"
 
 [menus.report]
-role = "Crea un informe de solución de problemas (archivo zip en el Escritorio): diagnóstico, registros, configuración <strong>sin ninguna contraseña</strong>, versiones, hardware detectado, informes enviados desde la página, identificador de la estación."
+role = "Crea un informe de solución de problemas (archivo zip en el Escritorio): diagnóstico, registros, configuración <strong>sin ninguna contraseña</strong>, versiones, hardware detectado, informes enviados desde la página, identificador de la estación. En la consola web, un botón <strong>«Descargar el informe»</strong> lo descarga en el aparato que muestra la página (PC, tableta, teléfono). Números de serie y direcciones enmascarados."
 quand = "Para pedir ayuda: adjunta este zip a tu solicitud."
 modifie = "Nada (se crea un archivo en el Escritorio)."
 admin = false

@@ -19,6 +19,7 @@ import asyncio
 import hmac
 import ipaddress
 import json
+import re
 import logging
 import os
 import secrets
@@ -117,6 +118,7 @@ class WebConsole:
         app.router.add_post("/api/lang", self.set_lang)
         app.router.add_get("/api/dashboard", self.dashboard)
         app.router.add_post("/api/stop_tx", self.stop_tx)
+        app.router.add_get("/api/report/{name}", self.report_download)
         app.router.add_get("/ws", self.websocket)
         if self.network:
             app.router.add_post("/api/login", self.login)
@@ -459,6 +461,27 @@ class WebConsole:
             raise web.HTTPForbidden()
         return web.json_response(await asyncio.to_thread(self.dash_snapshot, request.query.get("net") == "1"))
 
+    async def report_download(self, request: web.Request) -> web.StreamResponse:
+        """Rapport de dépannage du menu 6.3 téléchargé depuis la page (étape 359) : session exigée, NOM au format du
+        rapport seulement (`trx-remote-rapport-AAAAMMJJ-HHMM.zip`), et seulement dans le dossier où le menu 6.3 l'écrit
+        (Bureau du compte de la console) : jamais un autre fichier ni un autre dossier."""
+        if not self.has_session(request):
+            raise web.HTTPForbidden()
+        name = request.match_info["name"]
+        if not REPORT_NAME.fullmatch(name):
+            raise web.HTTPNotFound()
+        from ..report import desktop_dir
+        folder = desktop_dir()
+        path = folder / name
+        try:
+            if path.resolve().parent != folder.resolve() or not path.is_file():
+                raise web.HTTPNotFound()
+        except OSError:
+            raise web.HTTPNotFound() from None
+        self.touch()
+        return web.FileResponse(path, headers={"Content-Type": "application/zip",
+                                               "Content-Disposition": f'attachment; filename="{name}"'})
+
     async def stop_tx(self, request: web.Request) -> web.StreamResponse:
         """STOP TX du tableau de bord : « T 0 » direct à rigctld (`monitor/actions.py`), comme la touche s de
         trx-monitor. Ne peut que COUPER une émission, jamais en déclencher une."""
@@ -679,7 +702,7 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.flow.stop", "web.flow.send", "web.flow.free", "web.flow.yes", "web.flow.no", "web.flow.continue",
            "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
            "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
-           "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.close", "web.dash.stale",
+           "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.close", "web.dash.stale", "web.report.download",
            "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint", "web.webapp", "web.webapp_open")
 
 UI_START = ("\nConsole web de la station : {url}\n"
@@ -705,6 +728,9 @@ def _dummy_hash() -> str:
         from ..passwords import hash_password
         _DUMMY.append(hash_password(secrets.token_hex(16)))
     return _DUMMY[0]
+
+
+REPORT_NAME = re.compile(r"trx-remote-rapport-\d{8}-\d{4}\.zip")    # rapport du menu 6.3 (report.py)
 
 
 def private_source(remote: str | None) -> bool:

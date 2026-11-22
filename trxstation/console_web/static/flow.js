@@ -37,6 +37,7 @@
   const toneOf = (line) => { const t = TONES.find(([re]) => re.test(line)); return t ? t[1] : ""; };
   // Une adresse https:// d'un message devient un lien (nouvel onglet), ex. l'analyseur des rapports (menu 6.6,
   // étape 352) ; tout le reste reste du texte (jamais de HTML venu de la console).
+  const REPORT = /trx-remote-rapport-\d{8}-\d{4}\.zip/;
   const URL_RE = /(https:\/\/[^\s"<>«»]+[^\s"<>«».,;:!?)])/;
   function linked(cls, line) {
     const span = el("span", cls);
@@ -134,6 +135,13 @@
       if (!text.trim()) return;
       const box = QR.test(text) ? el("pre", "qr", text) : message(text);
       box.dataset.id = ev.id;
+      const report = REPORT.exec(text);                    // rapport du menu 6.3 : téléchargeable (étape 359)
+      if (report) {
+        const a = el("a", "btn download", "⬇ " + ui("web.report.download"));
+        a.href = "/api/report/" + report[0];
+        a.download = report[0];
+        box.append(document.createTextNode("\n"), a);
+      }
       if (/ORT-\d{4}/.test(text)) box.classList.add("warn");
       if (["bad", "unchanged", "success"].includes(ev.tone)) box.classList.add(ev.tone);  // refus, abandon, réussite
       l.append(box);

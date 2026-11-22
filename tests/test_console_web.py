@@ -270,3 +270,26 @@ def test_state_gives_the_documentation_tiles_in_the_console_language(tmp_path):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         assert tuple(module.LANGS) == langs, name
+
+
+def test_troubleshooting_report_is_downloadable_and_nothing_else(tmp_path, monkeypatch):
+    """Étape 359 : rapport du menu 6.3 téléchargé depuis la page ; session exigée, nom du rapport seulement, Bureau
+    seulement."""
+    desktop = tmp_path / "Bureau"
+    desktop.mkdir()
+    (desktop / "trx-remote-rapport-20261122-1259.zip").write_bytes(b"PK\x05\x06" + b"\0" * 18)
+    (desktop / "secret.txt").write_text("non")
+    (tmp_path / "trx-remote-rapport-20261122-1300.zip").write_bytes(b"ailleurs")
+    monkeypatch.setattr("trxstation.report.desktop_dir", lambda *a, **k: desktop)
+
+    async def body(wc, client):
+        url = "/api/report/trx-remote-rapport-20261122-1259.zip"
+        assert (await client.get(url)).status == 403                                     # sans session
+        await login(wc, client)
+        r = await client.get(url)
+        assert r.status == 200 and r.headers["Content-Type"] == "application/zip"
+        assert "attachment" in r.headers["Content-Disposition"] and (await r.read()).startswith(b"PK")
+        for bad in ("secret.txt", "trx-remote-rapport-20261122-9999.zip", "..%2Ftrx-remote-rapport-20261122-1300.zip",
+                    "trx-remote-rapport-20261122-1259.zip.txt"):
+            assert (await client.get("/api/report/" + bad)).status == 404, bad
+    scenario(tmp_path, body)

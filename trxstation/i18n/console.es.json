@@ -769,6 +769,7 @@
   "web.flow.tab": "Menú {key} en curso",
   "web.dash.stop": "STOP TX",
   "web.dash.close": "Cerrar",
+  "web.report.download": "Descargar el informe",
   "web.dash.stale": "Pasarela congelada o ausente: los valores ya no están al día.",
   "web.dash.log": "Registro",
   "web.edit.save": "Comprobar y guardar",

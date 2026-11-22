@@ -165,7 +165,7 @@ admin = true
 expert = "<p>Vollständiges Protokoll: <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>. Unter Windows: letzte Zeilen der Dateien im Ordner <code>logs</code> neben <code>station.toml</code>.</p>"
 
 [menus.report]
-role = "Erstellt einen Fehlerbericht (Zip-Datei auf dem Schreibtisch): Diagnose, Protokolle, Konfiguration <strong>ohne jedes Passwort</strong>, Versionen, erkannte Hardware, von der Webseite gesendete Berichte, Kennung der Station."
+role = "Erstellt einen Fehlerbericht (Zip-Datei auf dem Schreibtisch): Diagnose, Protokolle, Konfiguration <strong>ohne jedes Passwort</strong>, Versionen, erkannte Hardware, von der Webseite gesendete Berichte, Kennung der Station. In der Web-Konsole holt eine Schaltfläche <strong>„Bericht herunterladen“</strong> ihn auf das Gerät, das die Seite zeigt (PC, Tablet, Telefon). Seriennummern und Adressen maskiert."
 quand = "Um Hilfe zu bitten: hänge dieses Zip an deine Anfrage an."
 modifie = "Nichts (eine Datei wird auf dem Schreibtisch angelegt)."
 admin = false
