@@ -395,6 +395,12 @@ expert = "<p>Die Konsole legt ihre Anfrage für das Modul „monlink“ ab (Date
 
 # ------------------------------------------------------------------ erweiterte Fehlersuche
 
+[menus.analyzer]
+role = "Gibt den Link der <strong>Analyse der Fehlerberichte</strong>: eine Seite der Website rf-diy.com, auf der man das Zip aus Menü 6.3 ablegt (oder das von einem Freund über das Monitoring erhaltene, Menü 6.5 Auswahl 10). Die Analyse läuft <strong>in deinem Browser</strong>: der Bericht wird nirgendwohin gesendet. Die Seite ist auf Französisch."
+quand = "Nach Menü 6.3, um die gefundenen Probleme zu sehen, bevor du um Hilfe bittest, oder wenn du jemandem hilfst, der dir seinen Bericht geschickt hat."
+modifie = "Nichts: das Menü zeigt nur den Link und die Schritte."
+admin = false
+
 [[expert]]
 titre = "Kopfzeilen der Konsole"
 texte = """

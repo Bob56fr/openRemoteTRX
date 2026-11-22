@@ -30,6 +30,8 @@
 
 1. Menu **6.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe** (Windows comme Debian). Les traces des outils arrêtés sur une erreur
    (code ORT-9312) sont dans le dossier `plantages` du dossier d'état de la station, et le rapport les joint.
+   Pour le lire toi-même : menu **6.6**, qui donne le lien de l'**analyseur** ; tu y déposes le zip et l'analyse se
+   fait dans ton navigateur (le rapport n'est envoyé nulle part).
 2. Depuis la page web : section « Signaler un problème » (texte relu avant l'envoi).
 3. Ouvre un ticket sur https://github.com/Bob56fr/openRemoteTRX/issues avec le formulaire **en français**
    (« Signaler un bug »), décris ce que tu faisais, ce que tu attendais, ce qui s'est passé, et joins le rapport.

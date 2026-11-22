@@ -232,7 +232,8 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators", "certificate", "sdr", "monitoring",
                                                                  "rig", "sound", "hf_spectrum", "bands", "transmit", "access_network",
                                                                  "local_operator", "alerts", "features_switch",
-                                                                 "remote_console", "diffusion", "remote_power", "rx_gain"}
+                                                                 "remote_console", "diffusion", "remote_power", "rx_gain",
+                                                                 "analyzer"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "7.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:
@@ -495,3 +496,15 @@ def test_every_menu_number_quoted_to_the_operator_exists():
                 assert number in valid, f"{path.name} : menu {number} inexistant"
             else:
                 assert not 10 <= int(number) <= 24, f"{path.name} : ancien numéro de menu {number}"
+
+
+def test_analyzer_menu_gives_the_link_and_says_nothing_is_sent(tmp_path):
+    """Étape 352 : menu 6.6 = lien de l'analyseur des rapports (analyse dans le navigateur), rien n'est lancé."""
+    import trxstation.console as module
+    write_config(tmp_path)
+    con, fake, out = console(tmp_path)
+    con.analyzer()
+    text = "\n".join(out)
+    assert module.ANALYZER_URL in text and "DANS TON NAVIGATEUR" in text and "menu 6.3" in text
+    assert module.menu_number("analyzer") == "6.6" and module.menu_level("analyzer") == "basic"
+    assert fake.calls == []                                                   # rien de lancé

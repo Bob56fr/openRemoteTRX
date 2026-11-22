@@ -176,6 +176,7 @@
   "index.friends_intro": "A group of friends sees who is active on their station. The presence relay only sees encrypted states; a QSY to a friend is done in receive, after confirmation, never during a transmission.",
   "index.mo_invite": "Help someone: create a code",
   "index.monitoring_intro": "Help an operator in trouble, or get help, without VPN or open port: the helped station sends what ITS operator has chosen, always masked and encrypted through the relay. The helping station can only read and request; nothing controls the rig. Same actions as menu 6.5 of openRemoteTRX Console.",
+  "index.mo_analyzer": "Analyse a received troubleshooting report (web page in French: the analysis runs in your browser, nothing is sent)",
   "index.dif_page_label": "Listeners' page:",
   "index.dif_copy": "Copy the address",
   "index.dif_user_label": "Listeners of the private broadcast: username",

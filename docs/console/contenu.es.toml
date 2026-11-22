@@ -395,6 +395,12 @@ expert = "<p>La consola deja su solicitud para el módulo « monlink » (archivo
 
 # ------------------------------------------------------------------ solución de problemas avanzada
 
+[menus.analyzer]
+role = "Da el enlace del <strong>analizador de los informes de diagnóstico</strong>: una página del sitio rf-diy.com donde se deposita el zip del menú 6.3 (o el recibido de un amigo por el monitoring, menú 6.5 opción 10). El análisis se hace <strong>en tu navegador</strong>: el informe no se envía a ninguna parte. La página está en francés."
+quand = "Después del menú 6.3, para ver los problemas encontrados antes de pedir ayuda, o cuando ayudas a alguien que te ha enviado su informe."
+modifie = "Nada: el menú solo muestra el enlace y los pasos a seguir."
+admin = false
+
 [[expert]]
 titre = "Cabecera de la consola"
 texte = """

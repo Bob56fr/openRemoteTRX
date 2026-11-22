@@ -71,7 +71,7 @@ MENU_THEMES = (
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
-    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring")),
+    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer")),
     ("7", "updates", ("update", "rollback", "install_zip")),
     ("8", "expert", ("edit_config", "expert", "qualif", "indicator")),
 )
@@ -95,7 +95,7 @@ OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
 # Niveau de chaque menu (étape 234) : Basic = mettre en service, utiliser, demander de l'aide ; Expert = réglages fins et
 # outils de développement ; tout le reste = Normal. « 0 » (langue et niveau) est toujours montré.
 BASIC_MENUS = frozenset({"start", "stop", "monitor", "clear_safe_mode", "assistant", "hwtest", "pairing", "operators",
-                         "diagnostic", "report", "update"})
+                         "diagnostic", "report", "analyzer", "update"})
 EXPERT_MENUS = frozenset({"temperature", "edit_config", "expert", "qualif"})
 
 
@@ -112,6 +112,10 @@ def menu_number(method: str) -> str:
 
 
 UPDATE_MENU = menu_number("update")
+# Analyseur des rapports de dépannage (dépôt à part, page du site) : le zip est lu DANS LE NAVIGATEUR, rien n'est
+# envoyé au serveur (étape 352).
+ANALYZER_MENU, REPORT_MENU, MONITORING_MENU = menu_number("analyzer"), menu_number("report"), menu_number("monitoring")
+ANALYZER_URL = "https://rf-diy.com/analyseur-de-fichier-de-log-depannage-openremotetrx/"
 # Console web (étape 229) : la console texte tourne dans le terminal intégré de la page ; elle écrit cette séquence
 # OSC (invisible) quand elle attend au menu, seul moment où la page peut taper un numéro de menu à sa place.
 WEB_MODE = os.environ.get("TRX_CONSOLE_WEB") == "1"
@@ -1142,6 +1146,11 @@ class Console:
             self.say(self.t("report.1", exc=exc))
             return
         self.say(self.t("report.2", path=path))
+        self.say(self.t("report.read", menu=ANALYZER_MENU))
+
+    def analyzer(self) -> None:
+        """Lien de l'analyseur des rapports (menu 6.3 ou rapport reçu par le monitoring) : rien n'est lancé ni envoyé."""
+        self.say(self.t("analyzer.1", url=ANALYZER_URL, report=REPORT_MENU, monitoring=MONITORING_MENU))
 
     def clear_safe_mode(self) -> None:
         self.say(self.t("clear_safe_mode.1"))
@@ -2879,7 +2888,7 @@ class Console:
         except OSError as exc:
             self.say(self.t("monitoring.report.copy_failed", exc=exc, path=result["path"]))
             return
-        self.say(self.t("monitoring.report.copied", path=target))
+        self.say(self.t("monitoring.report.copied", menu=ANALYZER_MENU, path=target))
 
     def _mon_manage(self) -> None:
         link = self._mon_pick(lambda l: l.get("role") == "emitter" and l.get("state") in ("active", "paused"))

@@ -176,6 +176,7 @@
   "index.friends_intro": "Eine Gruppe von Freunden sieht, wer an seiner Station aktiv ist. Das Anwesenheits-Relais sieht nur verschlüsselte Zustände; ein QSY zu einem Freund erfolgt auf Empfang, nach Bestätigung, nie während des Sendens.",
   "index.mo_invite": "Jemandem helfen: Code erzeugen",
   "index.monitoring_intro": "Einem Operator in Schwierigkeiten helfen oder sich helfen lassen, ohne VPN und ohne offenen Port: die unterstützte Station sendet, was IHR Operator ausgewählt hat, immer maskiert und verschlüsselt über das Relais. Die helfende Station kann nur lesen und anfragen; nichts steuert den Transceiver. Dieselben Aktionen wie Menü 6.5 von openRemoteTRX Console.",
+  "index.mo_analyzer": "Einen erhaltenen Fehlerbericht analysieren (Webseite auf Französisch: die Analyse läuft in Ihrem Browser, nichts wird gesendet)",
   "index.dif_page_label": "Seite der Hörer:",
   "index.dif_copy": "Adresse kopieren",
   "index.dif_user_label": "Hörer der privaten Übertragung: Benutzername",

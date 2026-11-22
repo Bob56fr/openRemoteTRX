@@ -395,6 +395,12 @@ expert = "<p>The console leaves its request for the \"monlink\" module (file <co
 
 # ------------------------------------------------------------------ advanced troubleshooting
 
+[menus.analyzer]
+role = "Gives the link of the <strong>troubleshooting report analyser</strong>: a page of the rf-diy.com site where you drop the zip of menu 6.3 (or the one received from a friend through monitoring, menu 6.5 choice 10). The analysis runs <strong>in your browser</strong>: the report is sent nowhere. The page is in French."
+quand = "After menu 6.3, to see the problems found before asking for help, or when you help someone who sent you their report."
+modifie = "Nothing: the menu only shows the link and the steps to follow."
+admin = false
+
 [[expert]]
 titre = "Console header"
 texte = """

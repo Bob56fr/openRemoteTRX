@@ -176,6 +176,7 @@
   "index.friends_intro": "Un grupo de amigos ve quién está activo en su estación. El relé de presencia solo ve estados cifrados; un QSY hacia un amigo se hace en recepción, tras confirmación, nunca durante una transmisión.",
   "index.mo_invite": "Ayudar a alguien: crear un código",
   "index.monitoring_intro": "Ayudar a un operador en apuros, o recibir ayuda, sin VPN ni puerto abierto: la estación ayudada envía lo que SU operador ha elegido, siempre enmascarado y cifrado a través del relé. La estación que ayuda solo puede leer y pedir; nada controla el equipo. Las mismas acciones que el menú 6.5 de openRemoteTRX Console.",
+  "index.mo_analyzer": "Analizar un informe de diagnóstico recibido (página web en francés: el análisis se hace en su navegador, no se envía nada)",
   "index.dif_page_label": "Página de los oyentes:",
   "index.dif_copy": "Copiar la dirección",
   "index.dif_user_label": "Oyentes de la difusión privada: usuario",

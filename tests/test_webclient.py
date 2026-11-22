@@ -32,8 +32,11 @@ def test_page_has_no_inline_code_and_no_external_resource():
     assert not re.search(r"<script(?![^>]*\bsrc=)", HTML) and "<style" not in HTML     # compatible CSP stricte
     assert not re.search(r"\son[a-z]+\s*=", HTML)                                       # aucun gestionnaire en ligne
     site = '<a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer"'
-    assert HTML.count(site) == 1                                                        # SEUL lien sortant : le site du projet,
-    assert not re.search(r"https?://", HTML.replace(site, "") + JS + CSS)               # nouvel onglet, sans référent ; aucune ressource externe
+    assert HTML.count(site) == 1                                                        # liens sortants : le site du projet,
+    analyzer = ('<a id="mo-analyzer" href="https://rf-diy.com/analyseur-de-fichier-de-log-depannage-openremotetrx/" '
+                'target="_blank" rel="noopener noreferrer"')                            # et son analyseur des rapports (étape 352)
+    assert HTML.count(analyzer) == 1
+    assert not re.search(r"https?://", HTML.replace(site, "").replace(analyzer, "") + JS + CSS)               # nouvel onglet, sans référent ; aucune ressource externe
     for dangerous in ("eval(", "innerHTML", "document.write", "new Function"):
         assert dangerous not in JS, dangerous
 

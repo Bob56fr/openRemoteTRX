@@ -16,6 +16,13 @@
      "quand": "Bei der Inbetriebnahme (Handbuch, Teil 6), nach einem Wechsel des Telefons\noder des ntfy-Abonnements, oder wenn kein Alarm ankommt.",
      "role": "Stellt die Alarme auf dem Telefon über ntfy ein: die Adresse (ein langes\ngeheimes Thema: wer es kennt, liest die Alarme; der Bildschirm zeigt sie nie\nvollständig), die Sprache (fr oder en), die Meldung „Station in Betrieb“\n(alle N Stunden, ohne Ton), und sendet einen Testalarm (Code ORT-8025), um\nzu prüfen, dass alles ankommt."
     },
+    "analyzer": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nichts: das Menü zeigt nur den Link und die Schritte.",
+     "quand": "Nach Menü 6.3, um die gefundenen Probleme zu sehen, bevor du um Hilfe\nbittest, oder wenn du jemandem hilfst, der dir seinen Bericht geschickt hat.",
+     "role": "Gibt den Link der Analyse der Fehlerberichte: eine Seite der Website\nrf-diy.com, auf der man das Zip aus Menü 6.3 ablegt (oder das von einem\nFreund über das Monitoring erhaltene, Menü 6.5 Auswahl 10). Die Analyse\nläuft in deinem Browser: der Bericht wird nirgendwohin gesendet. Die Seite\nist auf Französisch."
+    },
     "assistant": {
      "admin": true,
      "expert": "Der Transceiver wird nur lesend abgefragt. Eine aus einer alten Station\nimportierte Konfiguration (station.import.toml) dient als Ausgangspunkt.\n\nBeim Hinzufügen eines Transceivers fragt der Assistent, ob das\nWiederaussenden von Aufnahmen erlaubt ist (App: empfangenes Audio aufnehmen\nund dann senden, Dauer begrenzt auf die maximale Sendezeit minus 5 s).\nStandardantwort: nein. Die Aussendung einer Station an Dritte weiterzusenden\nist im Amateurfunkdienst in der Regel verboten: nur zustimmen, wenn du es\nwirklich brauchst, und auf eigene Verantwortung ([safety] allow_replay).",
@@ -313,6 +320,13 @@
      "modifie": "The [supervisor] section of station.toml (notify_url, notify_lang,\nalive_every_h), through the checked path of menu 8.1; the test writes\nnothing.",
      "quand": "At commissioning (guide, part 6), after changing phone or ntfy subscription,\nor when no alert arrives.",
      "role": "Sets the alerts on the phone through ntfy: the address (a long secret topic:\nwhoever knows it reads the alerts; the screen never shows it in full), the\nlanguage (fr or en), the \"Station in service\" message (every N hours,\nsilent), and sends a test alert (code ORT-8025) to check that everything\narrives."
+    },
+    "analyzer": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nothing: the menu only shows the link and the steps to follow.",
+     "quand": "After menu 6.3, to see the problems found before asking for help, or when\nyou help someone who sent you their report.",
+     "role": "Gives the link of the troubleshooting report analyser: a page of the\nrf-diy.com site where you drop the zip of menu 6.3 (or the one received from\na friend through monitoring, menu 6.5 choice 10). The analysis runs in your\nbrowser: the report is sent nowhere. The page is in French."
     },
     "assistant": {
      "admin": true,
@@ -612,6 +626,13 @@
      "quand": "En la puesta en servicio (guía, parte 6), tras cambiar de teléfono o de\nsuscripción ntfy, o cuando no llega ninguna alerta.",
      "role": "Ajusta las alertas en el teléfono por ntfy: la dirección (un tema largo y\nsecreto: quien lo conoce lee las alertas; la pantalla nunca la muestra\nentera), el idioma (fr o en), el mensaje «Estación en servicio» (cada N\nhoras, sin sonido), y envía una alerta de prueba (código ORT-8025) para\ncomprobar que todo llega."
     },
+    "analyzer": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nada: el menú solo muestra el enlace y los pasos a seguir.",
+     "quand": "Después del menú 6.3, para ver los problemas encontrados antes de pedir\nayuda, o cuando ayudas a alguien que te ha enviado su informe.",
+     "role": "Da el enlace del analizador de los informes de diagnóstico: una página del\nsitio rf-diy.com donde se deposita el zip del menú 6.3 (o el recibido de un\namigo por el monitoring, menú 6.5 opción 10). El análisis se hace en tu\nnavegador: el informe no se envía a ninguna parte. La página está en\nfrancés."
+    },
     "assistant": {
      "admin": true,
      "expert": "El transceptor solo se consulta en lectura. Una configuración importada de\nuna estación anterior (station.import.toml) sirve de punto de partida.\n\nAl añadir un transceptor, el asistente pregunta si se autoriza la\nretransmisión de grabaciones (aplicación: grabar el audio recibido y luego\nreenviarlo en transmisión, con una duración limitada al tiempo máximo de\ntransmisión menos 5 s). Respuesta por defecto: no. Retransmitir a terceros\nla emisión de una estación suele estar prohibido en el servicio de\naficionados: acepta solo si lo necesitas y bajo tu responsabilidad ([safety]\nallow_replay).",
@@ -909,6 +930,13 @@
      "modifie": "La section [supervisor] de station.toml (notify_url, notify_lang,\nalive_every_h), par le chemin vérifié du menu 8.1 ; l'essai n'écrit rien.",
      "quand": "À la mise en service (guide, partie 6), après un changement de téléphone ou\nd'abonnement ntfy, ou quand aucune alerte n'arrive.",
      "role": "Règle les alertes sur le téléphone par ntfy : l'adresse (un sujet long et\nsecret : qui le connaît lit les alertes ; l'écran ne la montre jamais en\nentier), la langue (français, anglais, allemand ou espagnol ; le journal\nreste en français), le message « Station en service » (toutes les N heures,\nsans sonnerie), et envoie une alerte d'essai (code ORT-8025) pour vérifier\nque tout arrive."
+    },
+    "analyzer": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Rien : le menu affiche seulement le lien et la marche à suivre.",
+     "quand": "Après le menu 6.3, pour voir les problèmes trouvés avant de demander de\nl'aide, ou quand tu aides quelqu'un qui t'a envoyé son rapport.",
+     "role": "Donne le lien de l'analyseur des rapports de dépannage : une page du site\nrf-diy.com où l'on dépose le zip du menu 6.3 (ou celui reçu d'un ami par le\nmonitoring, menu 6.5 choix 10). L'analyse se fait dans ton navigateur : le\nrapport n'est envoyé nulle part."
     },
     "assistant": {
      "admin": true,

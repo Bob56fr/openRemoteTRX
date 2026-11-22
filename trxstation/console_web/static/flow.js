@@ -35,12 +35,27 @@
     [/^\s*(!|\[(ATTENTION|WARNING|WARN|ACHTUNG|AVISO)\])/i, "warn"],
     [/^\s*\[(ERREUR|ERROR|FEHLER|ÉCHEC|FAIL)\]|^\s*(Erreur|Error|Fehler)\b/i, "bad"], [/^\s*->/, "hint"]];
   const toneOf = (line) => { const t = TONES.find(([re]) => re.test(line)); return t ? t[1] : ""; };
+  // Une adresse https:// d'un message devient un lien (nouvel onglet), ex. l'analyseur des rapports (menu 6.6,
+  // étape 352) ; tout le reste reste du texte (jamais de HTML venu de la console).
+  const URL_RE = /(https:\/\/[^\s"<>«»]+[^\s"<>«».,;:!?)])/;
+  function linked(cls, line) {
+    const span = el("span", cls);
+    line.split(URL_RE).forEach((part, i) => {
+      if (i % 2) {
+        const a = el("a", "", part);
+        a.href = part; a.target = "_blank"; a.rel = "noopener noreferrer";
+        span.append(a);
+      } else if (part) span.append(document.createTextNode(part));
+    });
+    return span;
+  }
   function message(text) {
     const box = el("div", "msg");
     const lines = text.split("\n");
     lines.forEach((line, i) => {
       const tone = toneOf(line);
-      box.append(tone ? el("span", "tone " + tone, line) : document.createTextNode(line));
+      if (URL_RE.test(line)) box.append(linked(tone ? "tone " + tone : "", line));
+      else box.append(tone ? el("span", "tone " + tone, line) : document.createTextNode(line));
       if (i < lines.length - 1) box.append(document.createTextNode("\n"));
     });
     return box;
