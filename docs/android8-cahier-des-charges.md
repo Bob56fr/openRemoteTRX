@@ -55,6 +55,40 @@ Android 12), langue de l'application dans ses propres Réglages (pas celle d'And
 Erreurs du lint sans rapport avec la version (aussi présentes dans l'application principale) : `ContextCastToActivity`
 (FriendsViews.kt), `StateFlowValueCalledInComposition` (VoiceScreen.kt), `MissingPermission` (NetRadio.kt, supprimé).
 
+## 4 bis. Comparaison des deux applications (après le lot 1)
+
+| Fonction | openRemoteTRX (Android 10+) | openRemoteTRX Lite (Android 8 / 9) |
+|---|---|---|
+| Connexion, appairage par QR code (caméra), comptes, plusieurs stations | oui | oui |
+| QR code lu dans une image | oui | oui (autre méthode de lecture) |
+| Écoute, volume, muet, écran éteint (service au premier plan) | oui | oui |
+| PTT toggle, gros PTT rond, STOP, compte à rebours du TOT, bips | oui | oui |
+| PTT et micro du casque Bluetooth, touches média du volant (Bluetooth) | oui | oui |
+| Fréquence, bandes, modes, filtres, S-mètre, Po / TOS / ALC, NB, NR, split, RIT | oui | oui |
+| Mémoires et favoris | oui | oui |
+| Spectre HF, waterfall du son | oui | oui, **éteints par défaut** |
+| Cluster DX (spots) | oui | oui |
+| Égaliseur, effets de voix, profils | oui | oui, **éteints par défaut** |
+| Spatialisation stéréo « ST » | oui | oui |
+| Scrambler | oui | oui |
+| SELCALL (squelch, appel) | oui | oui |
+| SELCALL : export du son d'essai dans Téléchargements | oui | **non** |
+| Mesure de TOS | oui | oui |
+| Mesure de TOS : image enregistrée dans Images | oui | **non** (partage seulement) |
+| Rediffusion d'un enregistrement | oui | oui |
+| Breizh Audio Box, FreeDV, diffusion en direct | oui | oui |
+| Amis (présence de groupe), monitoring entre stations | oui | oui |
+| Allumage / extinction du poste | oui | oui |
+| Visiteurs (réception seule) | oui | oui |
+| Qualité du réseau (sonde, coupures, export) | oui | oui |
+| Qualité du réseau : radio du téléphone (4G / 5G, dBm, antenne-relais) | oui | **non** |
+| Android Auto | oui (Android 11+ exigé par Google) | **non** |
+| Mode conduite | automatique avec la voiture, ou manuel | **manuel seulement** |
+| Disposition tablette | oui | oui |
+| Langues FR / EN / DE / ES | oui (aussi par les Réglages d'Android 13+) | oui (Réglages de l'application) |
+| Signaler un problème | oui | oui |
+| Avertissement « téléphone sans mises à jour de sécurité » à la 1re connexion | non | **oui** |
+
 ## 5. Performances
 
 Sur un téléphone d'Android 8 / 9 : spectre HF, waterfall, égaliseur et effets **éteints par défaut** (rallumables) ;
@@ -69,11 +103,11 @@ le son et le PTT passent avant tout.
   10 émissions, 30 min d'écoute écran éteint, casque Bluetooth).
 - **Lot 3** : publication (APK sur les Releases de Lite, puis Google Play, seconde fiche) et guide de l'opérateur.
 
-## 7. Questions encore ouvertes
+## 7. Décisions suivantes (2026-11-22)
 
 1. Avertissement à la première connexion : « téléphone sans mises à jour de sécurité, le mot de passe de l'opérateur
-   y est enregistré » (proposé) ?
-2. Téléphone réel pour le lot 2 ?
+   y est enregistré » : **OUI** (lot 1 ; texte dans `app.<langue>.json`, 4 langues).
+2. Téléphone réel pour le lot 2 : l'utilisateur en cherche un ; en attendant, émulateurs.
 
 ## 8. Risques
 
