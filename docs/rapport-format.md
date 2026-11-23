@@ -18,7 +18,7 @@ encore mises à jour : tout fichier peut manquer.
 | Fichier | Depuis | Contenu |
 |---|---|---|
 | `rapport.json` | 0.266.0 | Premier fichier du zip : description du rapport (ci-dessous). |
-| `diagnostic.txt` | avant 0.266.0 | Résultat du diagnostic (menu 6.1), texte dans la langue de l'outil. |
+| `diagnostic.txt` | avant 0.266.0 | Résultat du diagnostic (menu 6.1), texte dans la langue de l'outil. Depuis 0.279.0, rubrique matériel : lignes « Ports USB » (une par bus qui porte le poste, une carte son ou un SDR : vitesse, périphériques avec leur rôle, débit estimé et charge en %, puis chaque constat avec sa marche à suivre ; nom du produit seulement, jamais de numéro de série). |
 | `station.toml` | avant 0.266.0 | Configuration, secrets masqués (`"***"`), adresse ntfy réduite à son serveur. |
 | `systeme.txt` | avant 0.266.0 | Sorties de commandes : `uname -a`, `/etc/os-release`, `systemctl get-default`. |
 | `materiel.txt` | avant 0.266.0 | Sorties de commandes : ports série `/dev/serial/by-id/`, `lsusb`, cartes son (`arecord -l`, `aplay -l`) ; depuis 0.266.0 : modèle du Pi (`cat /proc/device-tree/model`) et sous-tension (`vcgencmd get_throttled`, valeur brute `throttled=0x…`). |

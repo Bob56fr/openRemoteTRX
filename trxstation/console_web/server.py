@@ -423,8 +423,10 @@ class WebConsole:
             except (cfgmod.ConfigError, OSError) as exc:
                 problems = getattr(exc, "problems", None) or [str(exc)]
                 return {"ok": False, "error": "; ".join(problems)[:500]}
+            from .. import usbcheck
             self.dash_source = StatusSource(cfg.supervisor.status_path, cfg.supervisor.state_dir,
-                                            cfg.supervisor.stale_after_s)
+                                            cfg.supervisor.stale_after_s,
+                                            usb_reader=usbcheck.cached_reader(**usbcheck.for_config(cfg)))
             self.dash_log = EventLog()
         snap = self.dash_source.poll()
         t = self.dash_translator()                       # langue de la page (lot L3), relue à chaque appel

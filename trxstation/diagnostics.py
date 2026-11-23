@@ -73,6 +73,7 @@ class System:
     """Accès en LECTURE au système ; remplacé par un faux dans les tests."""
 
     platform = sys.platform
+    sys_root = "/sys"                       # ports USB (usbcheck) ; les tests le pointent vers un faux /sys
 
     def run(self, cmd: list[str], timeout: float = 15) -> tuple[int, str]:
         try:
@@ -345,6 +346,29 @@ def check_hardware(sysm: System, cfg: Config | None) -> list[Check]:
     if linux:
         out += _check_usb_intruders(sysm)
         out += _check_audio(sysm, cfg)
+        out += check_usb_ports(sysm, cfg)
+    return out
+
+
+def check_usb_ports(sysm: System, cfg: Config | None) -> list[Check]:
+    """Ports USB (étape 384) : une ligne par bus qui porte le poste, une carte son ou un SDR (débit estimé), puis
+    chaque constat (bus chargé, SDR ralenti, SDR sur le hub du poste, hub trop sollicité) avec sa marche à suivre.
+    Textes du catalogue « monitor » (mêmes mots que la carte ORDINATEUR du tableau de bord)."""
+    from . import usbcheck
+    tm = tool_translator("monitor")
+    try:
+        report = usbcheck.analyze(getattr(sysm, "sys_root", "/sys"), **(usbcheck.for_config(cfg) if cfg else {}))
+    except Exception:                                    # jamais de diagnostic interrompu pour ce relevé
+        return []
+    if report is None:
+        return []
+    s, name = _t("section.hardware"), tm("label.usb")
+    out = [Check(s, name, INFO, line) for line in usbcheck.bus_lines(report, tm)]
+    if not report.findings:
+        text, _ = usbcheck.summary(report, tm)
+        out.append(Check(s, name, OK, text))
+    for f in report.findings:
+        out.append(Check(s, name, WARN, usbcheck.finding_text(f, tm), tm(f"usb.fix.{f.code}") + "\n" + tm("usb.note")))
     return out
 
 

@@ -27,7 +27,9 @@ def main(argv: list[str] | None = None) -> int:
     except cfgmod.ConfigError as exc:
         print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return 2
-    source = StatusSource(cfg.supervisor.status_path, cfg.supervisor.state_dir, cfg.supervisor.stale_after_s)
+    from .. import usbcheck
+    source = StatusSource(cfg.supervisor.status_path, cfg.supervisor.state_dir, cfg.supervisor.stale_after_s,
+                          usb_reader=usbcheck.cached_reader(**usbcheck.for_config(cfg)))
     if args.once:
         print(render_plain(build_panels(source.poll_once())), end="")
         return 0

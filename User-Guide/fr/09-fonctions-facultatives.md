@@ -23,6 +23,9 @@ une fonction qui demande d'autres réglages est refusée avec le menu où les fa
 > selon ton matériel. La station ne peut pas le faire à ta place (une émission au micro du poste n'est vue qu'après
 > coup). Le SDR se désigne par son **numéro de série** : sur une machine qui en a plusieurs, ne mets jamais celui
 > d'un SDR utilisé par une autre application. Branche-le sur son propre port USB, jamais sur le hub du poste.
+> La ligne « Ports USB » de la carte ORDINATEUR (tableau de bord, menu 1.3) dit si un bus USB est trop chargé ou si
+> le SDR est ralenti ; le détail et la marche à suivre sont dans le diagnostic (menu 6.1). Une prise bleue (USB 3)
+> n'accélère pas un SDR USB 2 : il partage les 480 Mbit/s de la partie USB 2 de l'ordinateur.
 
 > **Sécurité.** Retransmettre à des tiers ce que la station reçoit (visiteurs, auditeurs de la diffusion)
 > engage ta responsabilité, surtout hors des bandes radioamateur ; par défaut, visiteurs et auditeurs n'entendent

@@ -82,6 +82,7 @@ class Snapshot:
     sdr: dict | None = None               # state_dir/sdr/status.json (module « sdr »), None : absent
     diffusion: dict | None = None         # state_dir/diffusion/status.json (module « diffusion »), None : absent
     ntfy: dict | None = None              # state_dir/ntfy/*.json fusionnés (online.read_ntfy), None : absent
+    usb: object = None                    # usbcheck.UsbReport (Linux, étape 384), None : pas de ligne « Ports USB »
 
 
 # --------------------------------------------------------------------------- formats
@@ -355,7 +356,18 @@ def _materiel_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         Row(t("label.memory"), "--" if s.mem_available_mb is None else t("memory.mb", mb=f"{s.mem_available_mb:.0f}"),
             "info"),
         Row(t("label.uptime"), format_duration(s.uptime_s, t), "info"),
+        *_usb_rows(snap, t),
     ))
+
+
+def _usb_rows(snap: Snapshot, t: Translator) -> tuple[Row, ...]:
+    """Ligne « Ports USB » (étape 384, Linux) : OK ou le constat le plus grave ; détail au diagnostic (menu 6.1)."""
+    report = getattr(snap, "usb", None)
+    if report is None:
+        return ()
+    from ..usbcheck import summary
+    text, level = summary(report, t)
+    return (Row(t("label.usb"), text, level),)
 
 
 SDR_STALE_S = 30.0            # le module publie toutes les 5 s : au-delà, il est arrêté ou muet

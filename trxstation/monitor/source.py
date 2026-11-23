@@ -72,7 +72,8 @@ def read_presence(path: Path) -> dict | None:
 class StatusSource:
     def __init__(self, status_path: str | Path, state_dir: str | Path, stale_after_s: float = 2.0, *,
                  clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
-                 system_reader: Callable[[], SystemInfo] | None = None):
+                 system_reader: Callable[[], SystemInfo] | None = None,
+                 usb_reader: Callable[[], object] | None = None):
         self.status_path = Path(status_path)
         self.store = StateStore(state_dir)           # utilisé en lecture seule (safe_mode())
         self.presence_path = Path(state_dir) / "presence" / "status.json"   # module « presence » (sans clé)
@@ -85,6 +86,7 @@ class StatusSource:
             meter = hostinfo.CpuMeter()
             system_reader = lambda: read_system_info(cpu=meter)      # noqa: E731
         self.clock, self.sleep, self.system_reader = clock, sleep, system_reader
+        self.usb_reader = usb_reader                 # ports USB (usbcheck.cached_reader), None : pas de ligne
 
     def poll(self) -> Snapshot:
         status = read_status(self.status_path)
@@ -95,7 +97,7 @@ class StatusSource:
                         safe_mode=self.store.safe_mode(), system=self.system_reader(),
                         presence=read_presence(self.presence_path), monlink=read_presence(self.monlink_path),
                         sdr=read_presence(self.sdr_path), diffusion=read_presence(self.diffusion_path),
-                        ntfy=read_ntfy(self.state_dir))
+                        ntfy=read_ntfy(self.state_dir), usb=self.usb_reader() if self.usb_reader else None)
 
     def poll_once(self, wait_s: float = 0.6) -> Snapshot:
         """Pour une capture unique (--once) : deux lectures espacées ; figée si `seq` n'a pas bougé."""
@@ -108,4 +110,4 @@ class StatusSource:
             return second
         return Snapshot(status=second.status, gateway_fresh=False, stale_s=wait_s,
                         safe_mode=second.safe_mode, system=second.system, presence=second.presence,
-                        monlink=second.monlink, sdr=second.sdr, diffusion=second.diffusion, ntfy=second.ntfy)
+                        monlink=second.monlink, sdr=second.sdr, diffusion=second.diffusion, ntfy=second.ntfy, usb=second.usb)
