@@ -193,6 +193,50 @@ def top_programs(before: ProcSnap, after: ProcSnap, hz: int, count: int) -> list
     return used[:count]
 
 
+@dataclass
+class HotPeriod:
+    """Relevés chauds de suite : temps processeur cumulé par programme, maximums de température et de charge."""
+    seconds: float = 0.0
+    cpu_s: float = 0.0                                  # % de la machine × secondes
+    programs: dict[str, float] = field(default_factory=dict)   # nom -> % d'un cœur × secondes
+    temp_max: float | None = None
+    hottest: list | None = None                         # [capteur, °C] le plus chaud vu pendant la période
+    core_max: float | None = None
+
+    def add(self, line: dict, programs: list[list], seconds: float) -> None:
+        if seconds <= 0:
+            return
+        self.seconds += seconds
+        self.cpu_s += line.get("cpu_pct", 0.0) * seconds
+        for name, pct, _ in programs:
+            self.programs[name] = self.programs.get(name, 0.0) + pct * seconds
+        temp = line.get("temp_c")
+        if temp is not None and (self.temp_max is None or temp > self.temp_max):
+            self.temp_max = temp
+        hot = line.get("plus_chaud")
+        if hot and (self.hottest is None or hot[1] > self.hottest[1]):
+            self.hottest = list(hot)
+        cores = line.get("coeurs_pct")
+        if cores:
+            self.core_max = max(cores) if self.core_max is None else max(self.core_max, max(cores))
+
+    def summary(self, count: int = 5) -> str:
+        if self.seconds <= 0:
+            return ""
+        parts = []
+        if self.hottest:
+            parts.append(f"capteur le plus chaud : {self.hottest[0]} (jusqu'à {self.hottest[1]:.0f} °C)")
+        load = f"processeur occupé à {self.cpu_s / self.seconds:.0f} % en moyenne"
+        if self.core_max is not None:
+            load += f" (cœur le plus chargé : jusqu'à {self.core_max:.0f} %)"
+        parts.append(load)
+        ranked = sorted(self.programs.items(), key=lambda kv: (-kv[1], kv[0]))[:count]
+        shown = [f"{name} {total / self.seconds:.0f} %" for name, total in ranked if total / self.seconds >= MIN_PCT]
+        if shown:
+            parts.append(f"programmes en moyenne sur {self.seconds:.0f} s : " + ", ".join(shown))
+        return " ; ".join(parts)
+
+
 class HeatLog:
     def __init__(self, path: str | Path, *, proc_root: str | Path = "/proc", sys_root: str | Path = "/sys",
                  wall: Callable[[], float] = time.time, every_s: float = EVERY_S, max_bytes: int = MAX_BYTES):
@@ -207,6 +251,7 @@ class HeatLog:
         self._at = -1e18
         self._was_hot = False
         self.last: dict | None = None               # dernier relevé écrit (résumé de l'alerte ORT-1010)
+        self.hot_period = HotPeriod()               # relevés chauds de suite : cause de la chauffe (étape 378)
 
     @property
     def available(self) -> bool:
@@ -214,6 +259,8 @@ class HeatLog:
 
     def tick(self, now: float, hot: bool = False) -> dict | None:
         """Relevé si EVERY_S est passé, ou tout de suite au passage du seuil (`hot`). Retourne la ligne écrite."""
+        if not hot:
+            self.hot_period = HotPeriod()           # sous le seuil : la période chaude est finie
         due = now - self._at >= self.every_s or (hot and not self._was_hot and now - self._at >= HOT_MIN_GAP_S)
         if not due:
             self._was_hot = self._was_hot and hot      # passage du seuil trop proche : relevé chaud au passage suivant
@@ -226,12 +273,15 @@ class HeatLog:
         prev, self._prev = self._prev, snap
         if prev is None:
             return None                             # premier relevé : référence, rien à comparer encore
-        line = self.sample(prev, snap, hot)
+        programs = top_programs(prev, snap, self.hz, 10**6)
+        line = self.sample(prev, snap, hot, programs)
+        if hot:
+            self.hot_period.add(line, programs, snap.wall - prev.wall)
         self.write(line)
         self.last = line
         return line
 
-    def sample(self, prev: ProcSnap, snap: ProcSnap, hot: bool) -> dict:
+    def sample(self, prev: ProcSnap, snap: ProcSnap, hot: bool, programs: list[list] | None = None) -> dict:
         cpu = read_cpu_temp(self.sys_root)
         line: dict = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(snap.wall)),
                       "temp_c": round(cpu.celsius, 1) if cpu else None,
@@ -239,7 +289,8 @@ class HeatLog:
                       "charge_1min": load_1min(self.proc_root),
                       "mhz_max": max_freq_mhz(self.sys_root),
                       "cpu_pct": _pct(snap.total[0] - prev.total[0], snap.total[1] - prev.total[1]),
-                      "top": top_programs(prev, snap, self.hz, TOP_HOT if hot else TOP)}
+                      "top": (programs if programs is not None
+                              else top_programs(prev, snap, self.hz, 10**6))[:TOP_HOT if hot else TOP]}
         if hot:
             sensors = read_sensors(self.sys_root)
             line["chaud"] = True
@@ -269,6 +320,10 @@ class HeatLog:
                 os.chmod(self.path, 0o644)          # lu par le compte du bureau (rapport du menu 6.3)
             except OSError:
                 pass
+
+    def hot_summary(self) -> str:
+        """Résumé de TOUTE la période chaude en cours (alerte après une chauffe durable), sinon du dernier relevé."""
+        return self.hot_period.summary() or self.summary()
 
     def summary(self) -> str:
         """Résumé du dernier relevé pour l'alerte : capteur le plus chaud, charge, programmes."""

@@ -72,6 +72,7 @@ RIG_LOST_TX_S = 1.0        # rigctld injoignable depuis ce délai pendant une é
 RENOTIFY_S = 600.0
 HOST_EVERY_S = 30.0         # mémoire, disque, ralentissement du Pi : relevés toutes les 30 s (vcgencmd est un processus)
 HOST_SUSTAIN_S = 60.0       # seuil dépassé depuis ce délai : alerte (un pic passager n'alerte pas)
+CPU_HOT_HYSTERESIS_C = 3.0  # chauffe en cours : finie seulement sous le seuil moins cet écart (une baisse d'un instant)
 HOST_RENOTIFY_S = 3600.0    # puis une alerte par heure au plus (décision de l'utilisateur, 2026-11-09)
 HOST_PROBLEMS = ("memory_high", "disk_high", "pi_throttled", "rig_off_unexpected")   # une alerte par heure au plus
 SAFE_MODE_STOP_EVERY_S = 30.0
@@ -148,6 +149,7 @@ class Supervisor:
         self._host_since: dict[str, float] = {}
         self.heat = heat                                           # historique de chauffe (Linux, étape 377)
         self._heat_failed = False
+        self._cpu_hot_since: float | None = None                   # processeur au-dessus du seuil depuis (étape 378)
         self.watch = GatewayWatch(self.sup.stale_after_s)
         self._started = clock()
         self._tx_since: float | None = None
@@ -301,11 +303,17 @@ class Supervisor:
                        [replace(p, level=None) for p in problems if p.name != "usb_missing"]
 
         temperature = self.read_temp()
-        hot = temperature is not None and temperature >= s.temp_alert_c
+        hot = temperature is not None and (temperature >= s.temp_alert_c or (
+            self._cpu_hot_since is not None and temperature > s.temp_alert_c - CPU_HOT_HYSTERESIS_C))
         self._heat_tick(now, hot)
-        if hot:
-            detail = f"{temperature:.0f} °C (seuil {s.temp_alert_c:g} °C)"
-            summary = self.heat.summary() if self.heat is not None else ""
+        if not hot:
+            self._cpu_hot_since = None
+        elif self._cpu_hot_since is None:
+            self._cpu_hot_since = now
+        if hot and now - self._cpu_hot_since >= HOST_SUSTAIN_S:   # chauffe DURABLE seulement (étape 378)
+            detail = (f"{temperature:.0f} °C, au-dessus du seuil ({s.temp_alert_c:g} °C) depuis "
+                      f"{now - self._cpu_hot_since:.0f} s")
+            summary = self.heat.hot_summary() if self.heat is not None else ""
             problems.append(Problem("cpu_hot", detail + (f" — {summary}" if summary else ""), None, False))
         problems += self._host_problems(now)
         status = self.watch.status

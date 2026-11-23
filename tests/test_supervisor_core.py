@@ -613,8 +613,28 @@ def test_rig_lost_while_transmitting_still_escalates(tmp_path):
 def test_cpu_hot_only_alerts(tmp_path):
     w = W(tmp_path)
     w.temp = 85.0
-    w.run(10)
+    w.run(61)
     assert w.calls == [] and "cpu_hot" in w.alerts
+
+
+def test_cpu_hot_alerts_only_after_sixty_seconds(tmp_path):
+    """Pointes de quelques secondes (turbo du processeur, tâche périodique) : aucune alerte (étape 378)."""
+    w = W(tmp_path)
+    for _ in range(5):
+        w.temp = 85.0
+        w.run(5)
+        w.temp = 50.0
+        w.run(5)
+    assert "cpu_hot" not in w.alerts
+    w.temp = 85.0
+    w.run(30)
+    w.temp = 68.5                                   # baisse d'un instant, au-dessus du seuil moins 3 °C : toujours chaud
+    w.run(1)
+    w.temp = 85.0
+    w.run(25)
+    assert "cpu_hot" not in w.alerts
+    w.run(5)
+    assert "cpu_hot" in w.alerts
 
 
 def test_hot_rig_only_alerts(tmp_path):

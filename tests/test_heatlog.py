@@ -194,23 +194,41 @@ def test_supervisor_alert_names_the_hot_sensor_and_programs(tmp_path):
     from test_supervisor_core import World
     host, clock, log = make(tmp_path)
     host.spawn(11, "AIS-catcher")
+    host.spawn(12, "sdr-core")
     w = World(tmp_path)
     w.sup = Supervisor(w.cfg, read_status=lambda: w.status, probe_rig=lambda: w.rig, actions=w, store=w.store,
                        clock=lambda: w.now, wall=lambda: w.wall, port_exists=lambda p: True,
                        read_temp=lambda: w.temp, heat=log)
-    w.run(0.25)                                                  # première lecture (référence)
-    w.run(1)
-    clock.t += 5
-    host.temp(83000, cores=(80000, 79000, 84000, 70000))
-    host.run(5, {11: 0.97}, [0.1, 0.1, 1.0, 0.1])
-    w.temp = 83.0
     details = []
     w.notify = lambda code, detail="", key="": details.append((code, detail))
-    w.run(3)
+    w.run(0.25)                                                  # première lecture (référence)
+    host.temp(83000, cores=(80000, 79000, 84000, 70000))
+    w.temp = 83.0
+    for second in range(70):                                     # 70 s au-dessus du seuil
+        clock.t += 1
+        host.run(1, {11: 0.9 if second < 35 else 0.5, 12: 0.15}, [0.1, 0.1, 1.0, 0.1])
+        w.run(1)
     assert w.calls == []
     hot = [d for c, d in details if c == "ORT-1010"]
-    assert hot and hot[0].startswith("83 °C (seuil 70 °C) — capteur le plus chaud : coretemp Core 2 (84 °C)")
-    assert "AIS-catcher 97 %" in hot[0]
+    assert len(hot) == 1
+    assert hot[0].startswith("83 °C, au-dessus du seuil (70 °C) depuis 60 s — capteur le plus chaud : "
+                             "coretemp Core 2 (jusqu'à 84 °C)")
+    assert "cœur le plus chargé : jusqu'à 100 %" in hot[0]
+    assert "programmes en moyenne sur 51 s : AIS-catcher 77 %" in hot[0]   # relevés de 10 s : 51 s couvertes à 60 s
+    assert hot[0].index("AIS-catcher") < hot[0].index("sdr-core 15 %")
+
+
+def test_hot_period_resets_when_temperature_drops(tmp_path):
+    host, clock, log = make(tmp_path)
+    host.spawn(11, "AIS-catcher")
+    log.tick(0.0)
+    clock.t += 10
+    host.run(10, {11: 1.0}, [1, 0, 0, 0])
+    log.tick(10.0, hot=True)
+    assert "AIS-catcher 100 %" in log.hot_summary()
+    log.tick(11.0, hot=False)
+    assert log.hot_period.seconds == 0
+    assert log.hot_summary() == log.summary()                  # plus de période : dernier relevé
 
 
 def test_supervisor_survives_an_unwritable_history(tmp_path, monkeypatch):
