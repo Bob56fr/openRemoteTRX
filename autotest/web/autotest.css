@@ -158,6 +158,13 @@ table.res td.c{font-family:var(--f-num);color:var(--dim);width:44px}
 .terms .t-anon h3{color:var(--ok)}
 .terms .t-legal{border:1px solid #5a2a2a;background:#1d1213;border-radius:8px;padding:10px 12px}
 .terms .t-legal h3{color:var(--bad)}
+/* Conditions d'utilisation sur un écran large : fenêtre élargie et texte sur deux colonnes, lisible sans barre de
+   défilement (demande de l'utilisateur du 2026-11-23) ; téléphone inchangé (une colonne, défilement). */
+@media (min-width:980px){
+  #o-terms .dlg{width:min(1180px,100%)}
+  #o-terms .terms{display:block;columns:2;column-gap:28px}
+  #o-terms .terms>*{break-inside:avoid;margin:0 0 12px}
+}
 .dlg-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;background:var(--panel2)}
 .dlg-foot .go{font-size:18px;padding:12px 16px}
 footer{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
@@ -167,5 +174,11 @@ footer{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding-
 .zones .z-half-ok{width:50%;background:var(--ok)}.zones .z-half-bad{width:50%;background:var(--bad)}
 /* Accueil : deux façons de faire le test, côte à côte (l'une sous l'autre sur un téléphone). */
 .choice2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-.choice2 .opt { border: 1px solid var(--line, #2a3a44); border-radius: 10px; padding: 12px 14px; }
+.choice2 .opt { border: 1px solid var(--line, #2a3a44); border-radius: 10px; padding: 12px 14px;
+               display: flex; flex-direction: column; gap: 8px; }
+/* Boutons des deux choix alignés en bas, quelle que soit la longueur du texte ; même style (choix de même rang). */
+.choice2 .opt p { margin: 0; }
+.choice2 .opt .row { margin-top: auto; padding-top: 4px; }
+.choice2 .btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+                box-sizing: border-box; min-height: 44px; line-height: 1.2; }
 .choice2 h4 { margin: 0 0 6px; }

@@ -39,7 +39,7 @@
           <p data-t="home.b.p">À lancer sur le PC relié au poste : il pilote le poste par Hamlib, donc <b>tous les postes
             connus de Hamlib</b> (plus de 300). Non signé : Windows demande « Informations complémentaires » puis
             « Exécuter quand même ».</p>
-          <div class="row"><a class="btn primary" id="b-get-exe" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.10.5/openRemoteTRX-Autotest-0.10.5.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
+          <div class="row"><a class="btn primary" id="b-get-exe" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.10.6/openRemoteTRX-Autotest-0.10.6.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
         </div>
         <div class="opt" id="home-hl" hidden>
           <h4 data-t="home.hl.h">b) Test par Hamlib (mode B)</h4>
@@ -67,7 +67,7 @@
       </ul>
       <h3 data-t="home.need.h">Il vous faut</h3>
       <ul data-t="home.need.l">
-        <li>Le poste relié en USB à cet ordinateur, et <b>sur une charge fictive</b> pour les émissions.</li>
+        <li>Le poste relié en USB à cet ordinateur, de préférence <b>sur une charge fictive</b> pour les émissions.</li>
         <li>Chrome ou Edge sur un ordinateur (Windows, Linux ou macOS).</li>
         <li>Aucun autre logiciel qui utilise le port du poste (WSJT-X, logiciel du constructeur, station openRemoteTRX).</li>
       </ul>
@@ -241,7 +241,7 @@
         <h3 data-t="terms.h2">Ce qui va se passer</h3>
         <ul>
           <li data-t="terms.l1">Des lectures sans émission, puis un petit changement de fréquence et de mode, remis ensuite.</li>
-          <li data-t="terms.l2">Après une seconde autorisation de votre part : 4 émissions courtes, 10 secondes au plus chacune, à 10 % de la puissance maximale du poste.</li>
+          <li data-t="terms.l2">Après une seconde autorisation de votre part : des émissions courtes, 10 secondes au plus chacune, à 10 % de la puissance maximale du poste, sauf la montée de la tonalité, faite à 50 % pour conseiller le réglage audio, et l'accord du coupleur d'antenne s'il y en a un (15 secondes au plus, à la puissance choisie par le poste).</li>
           <li data-t="terms.l3">À la fin, la fréquence, le mode et la puissance d'origine sont remis.</li>
         </ul>
       </div>
@@ -253,7 +253,7 @@
         <h3 data-t="terms.h4">Votre responsabilité</h3>
         <ul>
           <li data-t="terms.r1">Vous êtes radioamateur titulaire d'un certificat d'opérateur, ou cibiste sur une bande où vous avez le droit d'émettre.</li>
-          <li data-t="terms.r2">Le poste est branché sur une <b>charge fictive</b> adaptée à sa puissance, jamais sur une antenne pendant les émissions.</li>
+          <li data-t="terms.r2">Le poste est branché de préférence sur une <b>charge fictive</b> adaptée à sa puissance ; sur une antenne, vous émettez sous votre seule responsabilité, sur une fréquence où vous en avez le droit.</li>
           <li data-t="terms.r3">Vous restez devant le poste pendant tout le test, prêt à le repasser en réception ou à le couper (bouton STOP, touche Échap, interrupteur du poste).</li>
           <li data-t="terms.r4">Vous connaissez votre station et vérifiez avant de commencer qu'elle est en état d'émettre sans risque (câbles, alimentation, ventilation).</li>
         </ul>
@@ -274,7 +274,7 @@
     <h2 data-t="auth.t">Autorisation d'émettre</h2>
     <p id="auth-where"></p>
     <ul id="auth-list"></ul>
-    <p data-t="auth.p" class="what">Chaque émission est coupée par la page au plus tard à 10 s. STOP ou Échap à tout moment.</p>
+    <p data-t="auth.p" class="what">Chaque émission est coupée par la page au plus tard à 10 s (15 s pour l'accord du coupleur). STOP ou Échap à tout moment.</p>
     <div id="auth-tuner" hidden>
       <label class="field"><span data-t="auth.tuner">Coupleur d'antenne branché sur le poste (déclaré par vous, la CAT ne donne pas le modèle)</span>
         <select id="auth-tuner-type">
@@ -290,7 +290,7 @@
       <p class="what" data-t="auth.tunerWarn">Avec un coupleur, l'essai E7 fait ÉMETTRE le poste pendant l'accord
         (le poste choisit lui-même le mode et la puissance : CW, environ 10 W avec un AH-4), jusqu'à 15 s.</p>
     </div>
-    <label class="check"><input type="checkbox" id="auth-load"><span data-t="auth.load">Mon poste est sur une <b>charge fictive</b>.</span></label>
+    <label class="check"><input type="checkbox" id="auth-load"><span data-t="auth.load">Mon poste est sur une <b>charge fictive</b>, ou sur une antenne sous ma seule responsabilité.</span></label>
     <div class="row"><button data-t="auth.ok" type="button" class="btn primary" id="auth-ok" disabled>J'autorise les émissions d'essai</button>
       <button type="button" class="btn" id="auth-no" data-t="auth.no">Ne pas émettre</button></div>
   </div>
