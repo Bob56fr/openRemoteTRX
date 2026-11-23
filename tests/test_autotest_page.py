@@ -139,3 +139,10 @@ def test_every_text_has_its_english_translation() -> None:
     assert len(keys) == len(set(keys)) and set(keys) <= set(page), set(keys) - set(page)
     assert html.index('src="i18n.js"') < html.index('src="en.js"') < html.index('src="civ.js"')
     assert 'href="?lang=en"' in html and 'href="?lang=fr"' in html
+
+
+def test_no_duplicate_id_in_the_page() -> None:
+    """Un identifiant en double fait agir un bouton à la place d'un autre (0.10.0 : le lien de téléchargement de
+    l'utilitaire portait l'identifiant du bouton « Télécharger le rapport »)."""
+    ids = re.findall(r'\bid="([^"]+)"', (WEB / "index.html").read_text(encoding="utf-8"))
+    assert len(ids) == len(set(ids)), sorted({i for i in ids if ids.count(i) > 1})

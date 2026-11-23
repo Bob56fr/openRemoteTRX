@@ -21,7 +21,9 @@
   const hasSerial = "serial" in navigator;
   if (!hasSerial && !modeB) { $("noserial").hidden = false; $("b-start").disabled = true; }
   // Page servie par l'utilitaire : rien à télécharger, le bouton lance le choix (mode A ou B).
-  if (modeB) $("home-b").hidden = true;
+  // Page servie par l'utilitaire : le choix b) n'est plus « télécharger » mais « commencer par Hamlib ».
+  if (modeB) { $("home-b").hidden = true; $("home-hl").hidden = false; }
+  $("b-start-hl").onclick = () => { S.brand = { id: "hamlib", name: "Hamlib", family: "hamlib" }; openHamlib(); };
   $("b-start").onclick = () => { buildBrands(); show("s-brand"); };
   // Conditions d'utilisation : à CHAQUE visite (rien n'est retenu), le bouton n'agit que case cochée.
   $("terms-ok").checked = false; $("terms-go").disabled = true;
@@ -29,9 +31,8 @@
   $("terms-go").onclick = () => {
     if (!$("terms-ok").checked) return;
     $("o-terms").hidden = true;
-    // Page publiée : on RESTE sur l'accueil (deux choix : test rapide ou utilitaire à télécharger ; avant la 0.10.1 la
-    // page sautait au choix de la marque et l'accueil n'était jamais vu). Page de l'utilitaire : choix du mode tout de suite.
-    if (modeB) { buildBrands(); show("s-brand"); }
+    // On RESTE sur l'accueil et ses deux choix (avant la 0.10.2 la page sautait au choix de la marque : accueil jamais vu).
+    show("s-home");
   };
 
   function buildBrands() {
