@@ -86,7 +86,11 @@
     const pill = (cls, text) => { const p = el("span", "pill " + cls); p.append(el("span", "dot"), document.createTextNode(text)); pills.append(p); };
     if (!state.configured) pill("warn", ui("web.not_configured"));
     else pill(state.running ? "on" : "off", ui(state.running ? "web.running" : "web.stopped"));
-    if (state.running) pill(state.ptt !== "RX" ? "tx" : "", ui(state.ptt !== "RX" ? "web.tx" : "web.rx"));
+    // Émission annoncée par la passerelle : toujours montrée. « Réception » seulement si le poste répond : poste éteint,
+    // débranché ou passerelle muette = « poste : pas de nouvelles », jamais une réception supposée.
+    const rigOk = !!(state.rig && state.rig.connected);
+    if (state.running && state.ptt !== "RX") pill("tx", ui("web.tx"));
+    else if (state.running) pill(rigOk ? "" : "warn", ui(rigOk ? "web.rx" : "web.no_rig"));
     if (state.update) {                                   // nouvelle version publiée : un clic ouvre la mise à jour
       pill("warn update", ui("web.update", { version: state.update }));
       const p = pills.lastChild;
@@ -105,7 +109,7 @@
       if (rig.mode) meta.push(rig.mode);
       if (typeof rig.strength_db === "number") meta.push(sText(rig.strength_db));
       if (typeof rig.vd === "number") meta.push(rig.vd.toFixed(1).replace(".", ",") + " V");
-    } else meta.push(ui("web.no_rig"));
+    } else if (!state.running) meta.push(ui("web.no_rig"));   // station en marche : dit par la pastille
     $("#meta").textContent = meta.join(" · ");
     const first = $("#first");
     first.hidden = state.configured;
