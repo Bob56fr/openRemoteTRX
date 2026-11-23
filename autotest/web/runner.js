@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
 /* openRemoteTRX-Autotest, enchaînement des essais (docs/prequalif-web-cahier-des-charges.md § 4 à § 6) : détection,
-   réception R1 à R8, autorisation unique, émissions E1 à E4 et E6, remise de l'état d'origine.
+   réception R1 à R10, autorisation unique, émissions E1 à E4 et E6, remise de l'état d'origine.
    Sécurités gardées (§ 5) : AUCUNE émission avant l'autorisation ; chaque émission coupée par la garde au plus tard à
    `maxTx` (10 s), même si l'essai ou la page se bloque ; STOP, erreur, onglet caché = retour en réception ; PTT relu
    après chaque retour ; état d'origine remis dans tous les cas. Indépendant de la page : testé sous Node. */
@@ -10,12 +10,12 @@
   const civ = (typeof module !== "undefined" && module.exports) ? require("./civ.js") : root.AtCiv;
   const { T } = (typeof module !== "undefined" && module.exports) ? require("./i18n.js") : root.AtI18n;
 
-  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10 };
+  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 3000 };
 
   const STEPS = [
     ["R1", "Port et vitesse"], ["R2", "Modèle identifié"], ["R3", "Fréquence et mode lus"], ["R4", "S-mètre"],
     ["R5", "Temps de réponse"], ["R6", "PTT lu"], ["R7", "Carte son du poste"], ["R8", "Écriture de fréquence et de mode"],
-    ["R9", "Fonctions du poste (ATT, P.AMP, NB, NR, RIT, split, VFO…)"],
+    ["R9", "Fonctions du poste (ATT, P.AMP, NB, NR, RIT, split, VFO…)"], ["R10", "Spectre (waterfall du poste)"],
     ["E1", "Émission par la CAT"], ["E2", "Puissance lue"], ["E3", "TOS lu"], ["E4", "Tonalité 1 kHz"],
     ["E6", "STOP de la page"], ["RS", "Remise de l'état d'origine"],
   ];
@@ -211,6 +211,64 @@
       // R9
       this.step("R9", "cur"); this.now(T("Fonctions du poste : lecture, changement, relecture, remise…"));
       await this._r9();
+      if (this.aborted) return;
+      // R10
+      this.step("R10", "cur"); this.now(T("Spectre du poste : sortie des données mise en marche, balayages comptés…"));
+      await this._r10();
+    }
+
+    /* R10, SANS émission : affichage et sortie du spectre lus, mis en marche, trames 27 00 écoutées `scope` ms, puis
+       remis comme ils étaient (et revérifiés dans la remise finale). Icom (mode A) seulement. */
+    async _r10() {
+      const L = this.link;
+      if (!L.scopeCapture) {
+        this.result("R10", "na", this.detected.hamlib ? T("Spectre non lu par Hamlib (mode B) : essai du mode A, postes Icom.") : T("Spectre non essayé pour cette marque (postes Icom seulement)."));
+        return;
+      }
+      const s0 = await L.scopeRead();
+      if (s0.display == null || s0.output == null) { this.result("R10", "na", T("Spectre non géré par ce poste en CI-V (commandes 27 10 / 27 11 refusées ou sans réponse).")); return; }
+      this.orig.scope = s0;
+      let st = null, on = false;
+      try {
+        on = await L.scopeSet(1, 1);
+        if (on && !this.aborted) st = await L.scopeCapture(this.o.scope, ms => this.wait(ms));
+      } finally {
+        await L.scopeSet(s0.display, s0.output);
+      }
+      if (this.aborted) { this.result("R10", "saute", T("Essais arrêtés.")); return; }
+      if (!on) { this.result("R10", "avert", T("Mise en marche du spectre refusée par le poste.")); return; }
+      const back = await L.scopeRead();
+      const restored = back.display === s0.display && back.output === s0.output;
+      const vals = { trames: st.frames, autres: st.other, balayages: st.sweeps, incomplets: st.incomplete, illisibles: st.unreadable,
+                     points: st.lengths, formes: st.layouts, niveau_min: st.levelMin, niveau_max: st.levelMax, remis: restored,
+                     octets_non_traces: st.untraced };
+      const parts = []; let status = "ok";
+      if (!st.frames) {
+        status = "avert";
+        parts.push(st.other ? T("{n} trames du spectre reçues pour un autre contrôleur, aucune pour la page : station ou autre logiciel ouvert ?", { n: st.other })
+                            : T("aucune donnée du spectre reçue : sortie du spectre réservée à un autre port USB sur ce modèle, ou vitesse CI-V USB à régler sur « Auto » ?"));
+      } else if (!st.sweeps) {
+        status = "avert";
+        parts.push(T("{n} trames reçues mais aucun balayage complet (vitesse trop basse ?)", { n: st.frames }));
+      } else {
+        const dur = st.lastT - st.firstT, rate = st.sweeps > 1 && dur > 0 ? (st.sweeps - 1) / dur : null;
+        const lens = Object.keys(st.lengths).map(Number), main = lens.sort((a, b) => st.lengths[b] - st.lengths[a])[0];
+        const edges = civ.scopeEdges(st.last), hz = this.orig.freq;
+        vals.par_seconde = rate == null ? null : Math.round(rate * 10) / 10;
+        vals.bornes_hz = edges; vals.mode = st.last.mode; vals.hors_plage = st.last.outOfRange;
+        vals.apercu = civ.scopePreview(st.last.points, 64);
+        parts.push(T("{n} balayages de {p} points{r}", { n: st.sweeps, p: main, r: rate != null ? T(" ({r} par seconde)", { r: fr(rate, 1) }) : "" }));
+        if (lens.length > 1) { status = "avert"; parts.push(T("longueurs différentes : {l}", { l: lens.join(", ") })); }
+        if (st.levelMax > civ.LEVEL_MAX) { status = "avert"; parts.push(T("niveaux hors de l'échelle (jusqu'à {v})", { v: st.levelMax })); }
+        else if (st.levelMax === 0) { status = "avert"; parts.push(T("spectre plat à zéro : niveau de référence ou antenne ?")); }
+        if (!edges) { status = "avert"; parts.push(T("fréquences du balayage illisibles")); }
+        else if (hz != null && (hz < edges[0] || hz > edges[1])) { status = "avert"; parts.push(T("fréquence du poste {f} hors du balayage ({a} à {b})", { f: fmtHz(hz), a: fmtHz(edges[0]), b: fmtHz(edges[1]) })); }
+        else parts.push(T("de {a} à {b} MHz", { a: fmtHz(edges[0]), b: fmtHz(edges[1]) }));
+        if (st.incomplete || st.unreadable) parts.push(T("{n} balayage(s) incomplet(s) ou illisible(s)", { n: st.incomplete + st.unreadable }));
+        if (st.other) parts.push(T("{n} trames pour un autre contrôleur", { n: st.other }));
+      }
+      if (!restored) { status = "echec"; parts.push(T("affichage ou sortie du spectre NON REMIS (à remettre à la main)")); }
+      this.result("R10", status, parts.join(" ; ") + ".", vals);
     }
 
     async _r9() {
@@ -457,6 +515,11 @@
         if (o.data) await L.setDataMode(o.data.on, o.data.filter);
         if (o.freq != null) await L.setFreq(o.freq);
         if (o.power != null) await L.setPower(o.power);
+        if (o.scope && L.scopeRead) {                                // spectre (R10) : déjà remis, revérifié ici
+          let sc = await L.scopeRead();
+          if (sc.display !== o.scope.display || sc.output !== o.scope.output) { await L.scopeSet(o.scope.display, o.scope.output); sc = await L.scopeRead(); }
+          if (sc.display !== o.scope.display || sc.output !== o.scope.output) { status = "avert"; lines.push(T("spectre à remettre à la main")); }
+        }
         const f = await L.readFreq(), m = await L.readMode(), d = o.data ? await L.readDataMode() : null, p = o.power != null ? await L.meter("power") : null;
         if (o.freq != null) { if (f === o.freq) lines.push(T("fréquence {f}", { f: fmtHz(f) })); else { status = "avert"; lines.push(T("fréquence relue {r} au lieu de {o}", { r: fmtHz(f), o: fmtHz(o.freq) })); } }
         if (o.mode) { if (m && m.code === o.mode.code) lines.push(T("mode {m}", { m: m.name })); else { status = "avert"; lines.push(T("mode relu {r} au lieu de {o}", { r: m ? m.name : "—", o: o.mode.name })); } }

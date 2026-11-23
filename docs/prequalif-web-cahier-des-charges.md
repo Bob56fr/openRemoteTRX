@@ -166,7 +166,8 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 - Trames `FE FE <poste> <contrôleur> … FD`, écho du bus à ignorer, réponses NG (`FA`).
 - Identification : `19 00` (adresse du poste), sinon adresses par défaut des modèles de la marque choisie.
 - Lectures : fréquence `03`, mode `04`, S-mètre `15 02`, PTT `1C 00`, Po `15 11`, TOS `15 12`, ALC `15 13`,
-  puissance réglée `14 0A`, mode données `1A 06` (selon le modèle).
+  puissance réglée `14 0A`, mode données `1A 06` (selon le modèle) ; spectre (essai R10) : affichage `27 10` et sortie
+  `27 11` lus, mis en marche, trames `27 00` écoutées, puis remis comme ils étaient (la page n'envoie jamais de `27 00`).
 - Écritures (liste fermée) : PTT `1C 00`, fréquence `05` (essai R8), mode et mode données pour la tonalité, puissance
   `14 0A` pour l'essai, puis remise.
 - **Xiegu** (G90, G106, X6100, X6200, X5105) : dialecte partiel du CI-V. Une commande non gérée peut rester SANS
@@ -202,6 +203,8 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 | R6 | PTT lu = réception | non |
 | R7 | Carte son du poste : entrée trouvée, niveau du bruit de réception | non |
 | R8 | Écriture de la fréquence (+1 kHz dans la même bande) et du mode, relues, puis remises | non |
+| R9 | Fonctions du poste (ATT, P.AMP, NB, NR, RIT, split, VFO…) : lues, changées, relues, remises | non |
+| R10 | Spectre (waterfall) : balayages complets reçus en 3 s, nombre de points, fréquence du poste dans le balayage, niveaux dans l'échelle, affichage et sortie remis ; Icom en mode A seulement (étape 367, Autotest 0.8.0), « non disponible » ailleurs ; trames adressées à un autre contrôleur comptées, jamais reprises | non |
 | E1 | Émission par la CAT puis retour, PTT relu, temps mesurés | oui |
 | E2 | Puissance (Po) lue pendant l'émission, non nulle | oui |
 | E3 | TOS lu (charge fictive : bas) | oui |

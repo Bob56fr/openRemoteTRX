@@ -14,7 +14,7 @@ const { FakeIcom, fakeAudio } = require("./autotest_fake_icom.js");
 
 const tests = [];
 function test(name, fn) { tests.push([name, fn]); }
-const FAST = { e1: 150, e2: 250, e4: 250, e6: 120, sample: 20, maxTx: 2000, settle: 10 };
+const FAST = { e1: 150, e2: 250, e4: 250, e6: 120, sample: 20, maxTx: 2000, settle: 10, scope: 250 };
 const MK2 = models.ICOM.find(m => m.id === "ic7300mk2");
 
 function ui(over) {
@@ -72,7 +72,7 @@ test("parcours complet : tout réussi, état d'origine remis, émissions courtes
   const { rig, r } = await setup({ echo: true });
   rig.st.mode = 0x01; rig.st.freq = 28074000; rig.st.power = 128;
   const out = await r.run();
-  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
+  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
   assert.equal(rig.st.freq, 28074000); assert.equal(rig.st.mode, 0x01); assert.equal(rig.st.data, 0); assert.equal(rig.st.power, 128);
   assert.equal(rig.st.ptt, false);
   assert.equal(JSON.stringify(rig.fn), rig.initialFn);                  // fonctions remises (R9)
@@ -223,6 +223,78 @@ test("R9 : niveau arrondi au cran du poste = OK (pas « relu faux »), un vrai �
   assert.equal(row("COMP niv.").statut, "ok");
   assert.equal(row("NB niv.").statut, "ecart");                          // valeur jamais prise : vrai défaut
   assert.equal(JSON.stringify(rig.fn), rig.initialFn);
+});
+
+// ---- R10 : spectre du poste (trames 27 00), SANS émission
+async function r10(rigOpts, opts) {
+  const { rig, r, d } = await setup(rigOpts, null, opts);
+  r.orig.freq = rig.st.freq;
+  await r._r10();
+  rig.stopScope();
+  return { rig, r, d, r10: r.results.find(x => x.code === "R10") };
+}
+
+test("R10 : balayages complets comptés, bornes autour de la fréquence, spectre remis comme il était", async () => {
+  const { rig, r, d, r10: x } = await r10({ scopeDisplay: 1, scopeOutput: 0 });
+  assert.equal(x.status, "ok", x.text);
+  assert.ok(x.values.balayages >= 3, JSON.stringify(x.values));
+  assert.deepEqual(Object.keys(x.values.points), ["475"]);
+  assert.deepEqual(x.values.bornes_hz, [14024000, 14124000]);
+  assert.equal(x.values.apercu.length, 64); assert.equal(x.values.remis, true);
+  assert.deepEqual(rig.scope, { display: 1, output: 0 });                     // sortie recoupée
+  assert.ok(!rig.writes.some(w => w.ptt), "écriture pendant une émission");
+  assert.ok(!rig.writes.some(w => w.cmd.startsWith("1C 00 01")), "émission pendant R10");
+  // Trace limitée pendant la capture, le reste compté.
+  assert.ok(x.values.octets_non_traces > 0, "octets non tracés non comptés");
+  assert.ok(d.link.trace.every(t => /^[0-9A-F ]+$/.test(t.h)));
+  assert.equal(r.orig.scope.output, 0);
+});
+
+test("R10 : affichage du spectre éteint au départ = allumé pour l'essai puis éteint de nouveau", async () => {
+  const { rig, r10: x } = await r10({ scopeDisplay: 0, scopeOutput: 0 });
+  assert.equal(x.status, "ok", x.text); assert.deepEqual(rig.scope, { display: 0, output: 0 });
+});
+
+test("R10 : poste sans spectre CI-V = non disponible, jamais un échec", async () => {
+  const { r10: x } = await r10({ scope: false });
+  assert.equal(x.status, "na", x.text);
+});
+
+test("R10 : trames adressées à un autre contrôleur (station en E1) comptées, jamais prises", async () => {
+  const { r10: x } = await r10({ scopeTo: 0xE1 });
+  assert.equal(x.status, "avert", x.text);
+  assert.equal(x.values.trames, 0); assert.ok(x.values.autres > 0); assert.ok(/autre contrôleur/.test(x.text));
+});
+
+test("R10 : aucune trame reçue, fréquence hors du balayage, spectre non remis", async () => {
+  const none = await r10({ scopeEvery: 100000 });
+  assert.equal(none.r10.status, "avert"); assert.ok(/aucune donnée du spectre/.test(none.r10.text), none.r10.text);
+  const off = await r10({ scopeCenter: 7100000 });
+  assert.equal(off.r10.status, "avert"); assert.ok(/hors du balayage/.test(off.r10.text), off.r10.text);
+  const stuck = await r10({ scopeOutput: 1, scopeDisplay: 1 });
+  assert.equal(stuck.r10.status, "ok", stuck.r10.text); assert.deepEqual(stuck.rig.scope, { display: 1, output: 1 });   // en marche au départ : laissé en marche
+  stuck.rig.stopScope();
+});
+
+test("R10 : STOP pendant la capture = essai sauté et spectre remis", async () => {
+  const { rig, r } = await setup({}, null, { scope: 2000 });
+  r.orig.freq = rig.st.freq;
+  const p = r._r10();
+  setTimeout(() => r.stop("stop"), 100);
+  const t0 = Date.now(); await p; rig.stopScope();
+  assert.ok(Date.now() - t0 < 1500, "STOP pas pris en compte");
+  assert.equal(r.results.find(x => x.code === "R10").status, "saute");
+  assert.deepEqual(rig.scope, { display: 1, output: 0 });
+});
+
+test("R10 : découpeur et assemblage d'un balayage coupé en blocs, liste fermée du spectre", () => {
+  const rig = new FakeIcom(), bytes = [].concat(...rig.sweepFrames()), p = new civ.Parser(), asm = new civ.ScopeAssembler();
+  let sweep = null;
+  for (let i = 0; i < bytes.length; i += 5) for (const f of p.push(bytes.slice(i, i + 5))) sweep = asm.feed(f.payload.slice(2), 0) || sweep;
+  assert.equal(sweep.points.length, 475); assert.equal(sweep.f1, 14074000); assert.equal(sweep.f2, 50000);
+  assert.deepEqual(civ.scopeEdges(sweep), [14024000, 14124000]);
+  assert.throws(() => civ.frame(0xB6, civ.CMD.SCOPE_OUT, [0x02]), /hors de la liste/);
+  assert.throws(() => civ.frame(0xB6, [0x27, 0x00], []), /hors de la liste/);        // la page n'envoie jamais de données du spectre
 });
 
 test("liste fermée : commande exacte, jamais l'accord du coupleur, le VOX ni un préfixe", () => {

@@ -18,7 +18,11 @@ class FakeIcom {
   constructor(opts) {
     this.o = Object.assign({ addr: 0xB6, baud: 115200, echo: false, idSupported: true, delay: 2, swrRaw: 10, alcRaw: 40,
                              silent: [], ng: [], ignorePttOff: 0, alreadyTx: false, sRaw: 50,
-                             ngWrite: [], stuck: [], pampClearsAtt: false, fn: {} }, opts || {});
+                             ngWrite: [], stuck: [], pampClearsAtt: false, fn: {},
+                             // Spectre (R10) : scope = false -> 27 10 / 27 11 refusés ; scopeTo = destination des trames
+                             // 27 00 (E0 = la page) ; scopeEvery = un balayage toutes les N ms ; scopeStuck = écriture ignorée.
+                             scope: true, scopeDisplay: 1, scopeOutput: 0, scopeTo: 0xE0, scopeEvery: 30, scopePoints: 475,
+                             scopeLevel: 60, scopeSpan: 50000, scopeCenter: null, scopeStuck: false }, opts || {});
     this.st = { freq: 14074000, mode: 0x01, filter: 1, data: 0, dataFilter: 0, power: 255, ptt: !!this.o.alreadyTx,
                 otherFreq: 7100000 };
     // Fonctions (essai R9) : clé = commande en hexadécimal, valeur = octets de la donnée.
@@ -28,12 +32,34 @@ class FakeIcom {
     this.initialFn = JSON.stringify(this.fn);
     this.toneOn = false; this.txLog = []; this.txSince = this.st.ptt ? Date.now() : null; this.writes = [];
     this.parser = new civ.Parser();
+    this.scope = { display: this.o.scopeDisplay, output: this.o.scopeOutput }; this.scopeTimer = null; this.scopeSent = 0;
+    this.cb = () => {};
   }
+  // Un balayage : division 1 = en-tête (centré : centre puis demi-largeur, BCD), puis 10 divisions de points.
+  sweepFrames() {
+    const o = this.o, pts = Array.from({ length: o.scopePoints }, (_, i) => Math.min(160, o.scopeLevel + (i % 7)));
+    const bcd = n => ((Math.floor(n / 10)) << 4) | (n % 10), top = 11, out = [];
+    const head = [0x00, ...civ.encodeFreq(o.scopeCenter == null ? this.st.freq : o.scopeCenter), ...civ.encodeFreq(o.scopeSpan), 0x00];
+    out.push([0x27, 0x00, 0x00, bcd(1), bcd(top), ...head]);
+    const per = Math.ceil(pts.length / (top - 1));
+    for (let d = 2; d <= top; d++) out.push([0x27, 0x00, 0x00, bcd(d), bcd(top), ...pts.slice((d - 2) * per, (d - 1) * per)]);
+    return out.map(p => [0xFE, 0xFE, this.o.scopeTo, this.o.addr, ...p, 0xFD]);
+  }
+  _scopeTick() {
+    const on = this.scope.display && this.scope.output && !this.st.ptt;
+    if (on && !this.scopeTimer) this.scopeTimer = setInterval(() => {
+      // Envoyé en blocs coupés n'importe où (comme un port série).
+      const bytes = [].concat(...this.sweepFrames()); this.scopeSent++;
+      for (let i = 0; i < bytes.length; i += 37) this.cb(Uint8Array.from(bytes.slice(i, i + 37)));
+    }, this.o.scopeEvery);
+    if (!on && this.scopeTimer) { clearInterval(this.scopeTimer); this.scopeTimer = null; }
+  }
+  stopScope() { if (this.scopeTimer) clearInterval(this.scopeTimer); this.scopeTimer = null; }
   // Transport ouvert à une vitesse : le poste ne comprend que la sienne.
   transport(baud) {
     const rig = this; let cb = () => {}; let open = true;
     return {
-      onData(f) { cb = f; },
+      onData(f) { cb = f; rig.cb = b => { if (open) f(b); }; },
       async write(bytes) {
         if (!open) throw new Error("port fermé");
         if (rig.o.echo) setTimeout(() => cb(Uint8Array.from(bytes)), 0);
@@ -43,7 +69,7 @@ class FakeIcom {
           if (reply) setTimeout(() => cb(Uint8Array.from([0xFE, 0xFE, 0xE0, rig.o.addr, ...reply, 0xFD])), rig.o.delay);
         }
       },
-      async close() { open = false; },
+      async close() { open = false; rig.stopScope(); },
     };
   }
   key(on) {
@@ -51,6 +77,7 @@ class FakeIcom {
     if (on && !this.st.ptt) this.txSince = now;
     if (!on && this.st.ptt) { this.txLog.push(now - this.txSince); this.txSince = null; }
     this.st.ptt = on;
+    this._scopeTick();                                   // spectre figé pendant l'émission (comme l'IC-7300)
   }
   maxTx() { return Math.max(0, ...this.txLog, this.st.ptt ? Date.now() - this.txSince : 0); }
   handle(f) {
@@ -72,6 +99,14 @@ class FakeIcom {
       return ok;
     }
     switch (p[0]) {
+      case 0x27: {
+        if (!this.o.scope || (p[1] !== 0x10 && p[1] !== 0x11)) return [0xFA];
+        const k = p[1] === 0x10 ? "display" : "output";
+        if (p.length === 2) return [0x27, p[1], this.scope[k]];
+        if (p[2] > 1) return [0xFA];
+        if (!this.o.scopeStuck) this.scope[k] = p[2];
+        this._scopeTick(); return ok;
+      }
       case 0x07: if (p[1] !== 0xB0 || s.ptt) return [0xFA]; [s.freq, s.otherFreq] = [s.otherFreq, s.freq]; return ok;
       case 0x25: return p[1] === 0x01 ? [0x25, 0x01, ...civ.encodeFreq(s.otherFreq)] : [0x25, 0x00, ...civ.encodeFreq(s.freq)];
       case 0x19: return this.o.idSupported ? [0x19, 0x00, this.o.addr] : null;
