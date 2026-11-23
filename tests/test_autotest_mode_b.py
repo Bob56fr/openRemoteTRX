@@ -156,7 +156,11 @@ def test_transmit_guard_of_the_program_cuts_a_long_or_orphan_transmission() -> N
         assert all(c["rx"] for c in server.cuts)
         # STOP de la page : « T 0 » par une connexion à part.
         await client.post("/api/cmd", json={"c": "T 1"}, headers=h)
-        assert (await (await client.post("/api/ptt_off", headers=h)).json())["rx"] is True and fake.ptt == 0
+        stop = await (await client.post("/api/ptt_off", headers=h)).json()
+        assert stop["rx"] is True and fake.ptt == 0
+        # détail rendu pour la trace du rapport (étape 374) : l'ordre puis la relecture du PTT
+        assert [(s["h"], s["rprt"]) for s in stop["trace"]] == [("T 0", 0), ("t", 0)]
+        assert stop["trace"][1]["valeurs"] == ["0"] and server.tx_since is None
         # Déconnexion pendant une émission : « T 0 » d'abord.
         await client.post("/api/cmd", json={"c": "T 1"}, headers=h)
         await client.post("/api/disconnect", headers=h)
@@ -212,6 +216,9 @@ def test_real_rigctld_with_the_dummy_rig() -> None:
             assert (await link.query("f"))["rprt"] == 0
             assert (await link.query("T 1"))["rprt"] == 0
             assert await link.ptt_off() is True
+            assert (await link.query("T 1"))["rprt"] == 0
+            detail = await link.ptt_off_detail()
+            assert detail["rx"] is True and [s["h"] for s in detail["trace"]] == ["T 0", "t"]
             assert (await link.query("t"))["valeurs"] == ["0"]
         finally:
             await link.stop()

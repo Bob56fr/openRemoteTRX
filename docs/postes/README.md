@@ -11,6 +11,12 @@ Postes POTENTIELLEMENT compatibles (pas essayés) : `usb-integre.toml`, postes �
 | Icom IC-7300MK2 | 3094 | validation en cours | `donnees/icom-ic7300mk2.toml` |
 | Yaesu FTDX10 | 1042 | validation en cours (réception seulement, jamais essayé en émission) | `donnees/yaesu-ftdx10.toml`, préparation : `yaesu-ftdx10-ftdx101.md` |
 
+PRÉQUALIFICATIONS (étape 374) : rapports de l'openRemoteTRX-Autotest dans `autotest/*.toml`, montrés À PART
+(section « Préqualifications en cours (Autotest) ») pour qu'un visiteur voie qu'un poste est en cours d'essai. Ils ne
+changent JAMAIS une fiche ni une note. Import : `python scripts/import_autotest.py RAPPORT.json [--source utilisateur]`
+(champs publics seulement, empreinte de la trace vérifiée), puis écrire `resume` / `resume_en`, chaque `texte_en`, et
+`note` / `note_en` quand un résultat est trompeur ; enfin `python scripts/build_rigs_doc.py`.
+
 ## Données
 
 Une fiche par poste dans `donnees/<fabricant>-<modèle>.toml`, source unique des tableaux. Après tout changement :

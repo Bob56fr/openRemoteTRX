@@ -93,7 +93,19 @@
     async readPtt() { const v = await this.get("t"); return v ? (v[0] !== "0") : null; }
     async setPtt(on) { return (await this.put(on ? "T 1" : "T 0")).ok; }
     // Retour en réception d'urgence : connexion à part du programme (pas derrière une lecture en cours).
-    async pttOffNow() { try { await this.api.pttOff(); } catch (e) { await this.put("T 0"); } }
+    // Les commandes de cette connexion à part entrent dans la trace (`c: "urgence"`) : sans elles, le rapport ne
+    // prouvait pas le retour en réception (rapport de l'IC-7100 du 2026-11-23, étape 374).
+    async pttOffNow() {
+      let r;
+      const t = this.clock() - this.t0;
+      try { r = await this.api.pttOff(); } catch (e) {
+        this.trace.push({ t, d: "tx", h: "T 0", c: "urgence", e: "page" });
+        await this.put("T 0"); return;
+      }
+      const steps = (r && Array.isArray(r.trace)) ? r.trace : [];
+      if (!steps.length) this.trace.push({ t, d: "tx", h: "T 0", c: "urgence", e: "sans_detail", rx: !!(r && r.rx) });
+      for (const s of steps) this.trace.push({ t, d: "tx", h: s.h, r: s.rprt, v: s.valeurs, ms: s.ms, e: s.erreur, c: "urgence" });
+    }
 
     async fnRead(f) {
       const v = await this.get((f.kind === "func" ? "u " : "l ") + f.name);

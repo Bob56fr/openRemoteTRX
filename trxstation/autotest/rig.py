@@ -231,28 +231,45 @@ class Rigctld:
 
     async def ptt_off(self) -> bool:
         """« T 0 » par une connexion À PART (pas derrière une lecture en cours), puis PTT relu. Ne peut que couper."""
+        return (await self.ptt_off_detail())["rx"]
+
+    async def ptt_off_detail(self) -> dict:
+        """Comme `ptt_off`, avec le détail des deux commandes pour la trace du rapport (étape 374 : le retour en
+        réception d'urgence n'y figurait pas, le service du § 9.2 ne pouvait pas le recalculer) :
+        {rx, trace: [{h, rprt, valeurs, ms} | {h, erreur, ms}]}."""
+        steps: list[dict] = []
         if not self.tcp_port or not self.alive():
-            return False
+            return {"rx": False, "trace": [{"h": "T 0", "erreur": "rigctld_absent", "ms": 0}]}
+        t_open = time.perf_counter()
         try:
             reader, writer = await asyncio.wait_for(asyncio.open_connection("127.0.0.1", self.tcp_port), 2.0)
         except (OSError, asyncio.TimeoutError):
-            return False
+            return {"rx": False, "trace": [{"h": "T 0", "erreur": "connexion",
+                                            "ms": round((time.perf_counter() - t_open) * 1000)}]}
         try:
-            async def ask(line: str) -> str:
-                writer.write(f"+{line}\n".encode())
-                await writer.drain()
-                buf = b""
-                while not buf.startswith(b"RPRT") and b"\nRPRT" not in buf:
-                    chunk = await reader.readline()
-                    if not chunk:
-                        break
-                    buf += chunk
-                return buf.decode(errors="replace")
-            await asyncio.wait_for(ask("T 0"), 3.0)
-            code, values = parse_reply(await asyncio.wait_for(ask("t"), 3.0))
-            return code == 0 and bool(values) and values[0] == "0"
+            async def ask(line: str) -> tuple[int | None, list[str]]:
+                t0 = time.perf_counter()
+                try:
+                    writer.write(f"+{line}\n".encode())
+                    await writer.drain()
+                    buf = b""
+                    while not buf.startswith(b"RPRT") and b"\nRPRT" not in buf:
+                        chunk = await asyncio.wait_for(reader.readline(), 3.0)
+                        if not chunk:
+                            break
+                        buf += chunk
+                except (OSError, asyncio.TimeoutError, ConnectionError):
+                    steps.append({"h": line, "erreur": "liaison", "ms": round((time.perf_counter() - t0) * 1000)})
+                    raise
+                code, values = parse_reply(buf.decode(errors="replace"))
+                steps.append({"h": line, "rprt": code, "valeurs": values,
+                              "ms": round((time.perf_counter() - t0) * 1000)})
+                return code, values
+            await ask("T 0")
+            code, values = await ask("t")
+            return {"rx": code == 0 and bool(values) and values[0] == "0", "trace": steps}
         except (OSError, asyncio.TimeoutError, ConnectionError):
-            return False
+            return {"rx": False, "trace": steps}
         finally:
             writer.close()
 

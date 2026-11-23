@@ -220,7 +220,12 @@ class AutotestServer:
         return web.json_response(answer)
 
     async def ptt_off_route(self, request: web.Request) -> web.StreamResponse:
-        return web.json_response({"rx": await self.ptt_off("page")})
+        if self.rig is None:
+            return web.json_response({"rx": False, "trace": []})
+        detail = await self.rig.ptt_off_detail()     # T 0 et relecture rendus pour la trace du rapport (§ 9.2)
+        if detail["rx"]:
+            self.tx_since = None
+        return web.json_response(detail)
 
     async def disconnect(self, request: web.Request) -> web.StreamResponse:
         await self._close_rig()

@@ -1322,5 +1322,106 @@
         "remarque_en": "Optional USB CAT cable (KXUSB)."
       }
     ]
-  }
+  },
+  "prequalifications": [
+    {
+      "rapport": {
+        "fabricant": "Icom",
+        "modele": "IC-7100",
+        "hamlib_model": 3070,
+        "date": "2026-11-23",
+        "heure_utc": "15:07",
+        "outil": "0.9.0",
+        "mode": "B",
+        "hamlib": "4.7.2",
+        "systeme": "Windows",
+        "source": "projet",
+        "arret": "stop",
+        "empreinte_trace": "d07ae0472741c3dffd173e125dbc664c039c69232c8bb68fb3af8dc108cbe6ff",
+        "resume": "Lecture, écriture de la fréquence et du mode, fonctions de réception et PTT par la CAT réussis. Essais arrêtés par l'opérateur après la première émission : puissance, TOS, ALC, modulation par l'USB et coupleur pas encore essayés.",
+        "resume_en": "Reading, frequency and mode writing, receive functions and CAT PTT succeeded. Tests stopped by the operator after the first transmission: power, SWR, ALC, USB modulation and tuner not tried yet."
+      },
+      "essais": [
+        {
+          "code": "R1",
+          "statut": "ok",
+          "texte": "Le poste répond par Hamlib (vitesse par défaut du modèle).",
+          "texte_en": "The radio answers through Hamlib (model's default speed)."
+        },
+        {
+          "code": "R2",
+          "statut": "ok",
+          "texte": "Hamlib : Icom IC-7100 (modèle 3070, Hamlib 4.7.2).",
+          "texte_en": "Hamlib: Icom IC-7100 (model 3070, Hamlib 4.7.2)."
+        },
+        {
+          "code": "R3",
+          "statut": "ok",
+          "texte": "27.430.000 MHz, USB.",
+          "texte_en": "27.430.000 MHz, USB."
+        },
+        {
+          "code": "R4",
+          "statut": "ok",
+          "texte": "De S0 à S0.",
+          "texte_en": "From S0 to S0.",
+          "note": "Aucun signal pendant l'essai : la lecture marche, l'échelle n'est pas vérifiée.",
+          "note_en": "No signal during the test: reading works, the scale is not checked."
+        },
+        {
+          "code": "R5",
+          "statut": "ok",
+          "texte": "Médiane 24 ms, pire 43 ms sur 12 lectures.",
+          "texte_en": "Median 24 ms, worst 43 ms over 12 readings."
+        },
+        {
+          "code": "R6",
+          "statut": "ok",
+          "texte": "Réception.",
+          "texte_en": "Receive."
+        },
+        {
+          "code": "R7",
+          "statut": "ok",
+          "texte": "Entrée trouvée, bruit de réception -19 dBFS, sortie choisie pour la tonalité.",
+          "texte_en": "Input found, receive noise -19 dBFS, output chosen for the tone."
+        },
+        {
+          "code": "R8",
+          "statut": "ok",
+          "texte": "fréquence 27.431.000 écrite et relue ; mode LSB écrit et relu.",
+          "texte_en": "frequency 27.431.000 written and read back; LSB mode written and read back."
+        },
+        {
+          "code": "R9",
+          "statut": "avert",
+          "texte": "10 OK : P.AMP, NB, NR, ANF, COMP, MN, NR niv., NB niv., COMP niv., VFO A/B ; écriture refusée : ATT.",
+          "texte_en": "10 OK: P.AMP, NB, NR, ANF, COMP, MN, NR level, NB level, COMP level, VFO A/B; write refused: ATT.",
+          "note": "Refus de l'ATT dû à l'outil (Autotest 0.9.0 essayait 20 dB, le poste n'a que 12 dB), corrigé en 0.10.0 : à refaire.",
+          "note_en": "ATT refusal caused by the tool (Autotest 0.9.0 tried 20 dB, the radio only has 12 dB), fixed in 0.10.0: to be redone."
+        },
+        {
+          "code": "R10",
+          "statut": "na",
+          "texte": "Spectre non lu par Hamlib (mode B) : essai du mode A, postes Icom.",
+          "texte_en": "Spectrum not read through Hamlib (mode B): mode A test, Icom radios."
+        },
+        {
+          "code": "E1",
+          "statut": "ok",
+          "texte": "Émission relue en 25 ms, réception relue en 254 ms.",
+          "texte_en": "Transmit read back in 25 ms, receive read back in 254 ms.",
+          "note": "Puissance lue nulle : normal en USB sans modulation. La puissance se mesure aux essais E2 à E4, pas encore faits.",
+          "note_en": "Power read as zero: normal in USB without modulation. Power is measured by tests E2 to E4, not done yet."
+        },
+        {
+          "code": "RS",
+          "statut": "ok",
+          "texte": "fréquence 27.430.000, mode USB, mode données coupé, puissance 72 %.",
+          "texte_en": "frequency 27.430.000, USB mode, data mode off, power 72 %."
+        }
+      ],
+      "id": "icom-ic-7100-20261123-1507"
+    }
+  ]
 }

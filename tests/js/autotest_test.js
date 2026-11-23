@@ -575,6 +575,15 @@ test("Hamlib : aucune émission sans autorisation ; STOP pendant la porteuse = c
   const out = await b.r.run();
   assert.equal(b.rig.ptt, 0); assert.equal(b.rig.txLog.length, 2); assert.ok(b.rig.txLog[1] < 400); assert.ok(b.rig.pttOffs >= 1);
   assert.ok(Date.now() - t0 < 1500); assert.equal(res(out, "RS").status, "ok");
+  // le retour en réception d'urgence est dans la trace du rapport (étape 374) : ordre puis relecture
+  const urg = b.link.trace.filter(x => x.c === "urgence");
+  assert.deepEqual(urg.slice(0, 2).map(x => [x.h, x.r]), [["T 0", 0], ["t", 0]]);
+  assert.deepEqual(urg[1].v, ["0"]);
+  // connexion à part impossible : l'ordre repasse par la file normale, et la trace le dit
+  const c = setupH();
+  c.rig.pttOff = async () => { throw new Error("hors service"); };
+  await c.link.pttOffNow();
+  assert.deepEqual(c.link.trace.slice(-2).map(x => [x.h, x.c || null, x.e || null]), [["T 0", "urgence", "page"], ["T 0", null, null]]);
 });
 
 test("Hamlib : poste déjà en émission, fonction refusée, niveau figé, backend non stable", async () => {

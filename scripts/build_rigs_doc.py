@@ -9,6 +9,8 @@ stdlib. Résultat (une seule version, sans numéro de version de la station) :
     validé et le partiel), fonctions classées par thème, français / anglais ;
     puis la liste des postes à USB intégré (CAT et son), `docs/postes/usb-integre.toml` (documentation des
     fabricants, pas des essais) ;
+    puis les PRÉQUALIFICATIONS en cours (`docs/postes/autotest/*.toml`, rapports de l'Autotest importés par
+    `scripts/import_autotest.py`), à part : elles ne changent ni les fiches ni les notes ;
   - `docs/site/postes/data.json` : les mêmes données, pour qui veut les lire (même origine que la page).
 Usage : python scripts/build_rigs_doc.py   (après tout changement d'une fiche ; tests/test_rigs_doc.py le vérifie).
 """
@@ -27,6 +29,7 @@ import build_console_doc as base  # noqa: E402  (même style, même ajustement d
 
 DATA = ROOT / "docs" / "postes" / "donnees"
 USB_FILE = ROOT / "docs" / "postes" / "usb-integre.toml"
+AUTOTEST = ROOT / "docs" / "postes" / "autotest"      # préqualifications (scripts/import_autotest.py), étape 374
 HAMLIB_ETATS = ("Stable", "Beta", "Alpha", "Untested")
 SITE = ROOT / "docs" / "site"
 FOLDER = "postes"
@@ -119,6 +122,39 @@ WEIGHTS = {"valide": 1.0, "partiel": 0.5, "echec": 0.0}
 STARS_IF_FAULTS = 3.0                 # défauts aléatoires constatés : 3 étoiles au plus
 NEEDS_NOTE = ("partiel", "echec")
 
+# Préqualifications par l'openRemoteTRX-Autotest (décision de l'utilisateur du 2026-11-23, étape 374) : montrées À
+# PART, pour que le visiteur voie qu'un poste est en cours d'essai ; elles ne changent JAMAIS une fiche ni une note.
+# Essais : mêmes codes et libellés que `STEPS` de autotest/web/runner.js (vérifié par les tests).
+AUTOTEST_STEPS = [
+    ("R1", "Port et vitesse", "Port and speed"), ("R2", "Modèle identifié", "Model identified"),
+    ("R3", "Fréquence et mode lus", "Frequency and mode read"), ("R4", "S-mètre", "S-meter"),
+    ("R5", "Temps de réponse", "Response time"), ("R6", "PTT lu", "PTT read"),
+    ("R7", "Carte son du poste", "Radio sound card"),
+    ("R8", "Écriture de fréquence et de mode", "Frequency and mode writing"),
+    ("R9", "Fonctions du poste (ATT, P.AMP, NB, NR, RIT, split, VFO…)",
+     "Radio functions (ATT, P.AMP, NB, NR, RIT, split, VFO…)"),
+    ("R10", "Spectre (waterfall du poste)", "Spectrum (the radio's waterfall)"),
+    ("E1", "Émission par la CAT", "CAT transmit"), ("E2", "Puissance lue", "Power read"),
+    ("E3", "TOS lu", "SWR read"), ("E4", "Tonalité 1 kHz", "1 kHz tone"), ("E6", "STOP de la page", "Page STOP"),
+    ("E7", "Accord du coupleur d'antenne", "Antenna tuner tuning"),
+    ("RS", "Remise de l'état d'origine", "Original state restored"),
+]
+AUTOTEST_ETATS = {   # statut du rapport : (symbole, classe d'état de la page, français, anglais)
+    "ok": ("✓", "valide", "réussi", "passed"),
+    "avert": ("◐", "partiel", "à vérifier", "to check"),
+    "echec": ("✗", "echec", "échec", "failed"),
+    "na": ("·", "non_declare", "non disponible", "not available"),
+    "saute": ("–", "non_teste", "sauté", "skipped"),
+    "absent": ("?", "non_teste", "pas encore fait", "not done yet"),
+}
+AUTOTEST_SOURCES = {"projet": ("essai du projet", "project test"),
+                    "utilisateur": ("rapport d'un utilisateur", "user report")}
+AUTOTEST_MODES = {"A": ("mode A, navigateur sans Hamlib", "mode A, browser without Hamlib"),
+                  "B": ("mode B, utilitaire avec Hamlib", "mode B, utility with Hamlib")}
+AUTOTEST_ARRETS = {"stop": ("essais arrêtés par l'opérateur (STOP)", "tests stopped by the operator (STOP)")}
+AUTOTEST_REQUIRED = ("fabricant", "modele", "date", "outil", "mode", "systeme", "source", "empreinte_trace",
+                     "resume", "resume_en")
+
 EXTRA_CSS = """
 [hidden]{display:none !important}
 .en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
@@ -202,6 +238,104 @@ def check_usb(usb: dict, rigs: list[dict]) -> None:
         problems.append("usb-integre.toml : aucun poste [[usb]]")
     if problems:
         raise DocError("\n".join(problems))
+
+
+def load_autotest(folder: Path = AUTOTEST) -> list[dict]:
+    """Préqualifications, la plus récente d'abord ; `id` = nom du fichier."""
+    reports = []
+    for path in sorted(folder.glob("*.toml")) if folder.is_dir() else []:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        data["id"] = path.stem
+        reports.append(data)
+    reports.sort(key=lambda r: (r.get("rapport", {}).get("date", ""), r.get("rapport", {}).get("heure_utc", "")),
+                 reverse=True)
+    return reports
+
+
+def check_autotest(reports: list[dict]) -> None:
+    """Préqualifications complètes, bilingues et différentes, sinon DocError."""
+    codes = {c for c, *_ in AUTOTEST_STEPS}
+    problems, seen = [], {}
+    for rep in reports:
+        name, r = rep["id"], rep.get("rapport", {})
+        for key in AUTOTEST_REQUIRED:
+            if not r.get(key):
+                problems.append(f"autotest/{name} : [rapport] {key} manquant ou vide")
+        if r.get("source") and r["source"] not in AUTOTEST_SOURCES:
+            problems.append(f"autotest/{name} : source inconnue {r['source']!r}")
+        if r.get("mode") and r["mode"] not in AUTOTEST_MODES:
+            problems.append(f"autotest/{name} : mode inconnu {r['mode']!r}")
+        if r.get("arret") and r["arret"] not in AUTOTEST_ARRETS:
+            problems.append(f"autotest/{name} : arrêt inconnu {r['arret']!r}")
+        digest = r.get("empreinte_trace")
+        if digest in seen:
+            problems.append(f"autotest/{name} : même trace que {seen[digest]} (rapport en double)")
+        seen[digest] = name
+        if not rep.get("essais"):
+            problems.append(f"autotest/{name} : aucun essai")
+        done = set()
+        for e in rep.get("essais", []):
+            code = e.get("code")
+            if code not in codes:
+                problems.append(f"autotest/{name} : essai inconnu {code!r}")
+            elif code in done:
+                problems.append(f"autotest/{name} : essai {code} en double")
+            done.add(code)
+            if e.get("statut") not in AUTOTEST_ETATS or e.get("statut") == "absent":
+                problems.append(f"autotest/{name} : {code} : statut inconnu {e.get('statut')!r}")
+            if not e.get("texte") or not e.get("texte_en"):
+                problems.append(f"autotest/{name} : {code} : texte et texte_en obligatoires")
+            if bool(e.get("note")) != bool(e.get("note_en")):
+                problems.append(f"autotest/{name} : {code} : note et note_en vont ensemble")
+    if problems:
+        raise DocError("\n".join(problems))
+
+
+def _autotest_section(reports: list[dict]) -> list[str]:
+    out = [f'<h2 id="autotest">{_bi("Préqualifications en cours (Autotest)", "Prequalifications in progress (Autotest)")}</h2>',
+           "<p>" + _bi("Postes en cours d’essai avec l’outil openRemoteTRX-Autotest (lecture, écriture, PTT par la CAT, "
+                       "mesures et son du poste, quelques secondes d’émission sur charge fictive). Une préqualification "
+                       "n’est PAS une qualification : la sécurité d’émission à distance (TOT, battements, coupures) n’y "
+                       "est pas essayée, et elle ne donne ni fiche ni note au poste. Un résultat vaut pour les versions "
+                       "indiquées.",
+                       "Rigs being tried with the openRemoteTRX-Autotest tool (reading, writing, CAT PTT, the rig’s "
+                       "meters and audio, a few seconds of transmission into a dummy load). A prequalification is NOT a "
+                       "qualification: remote transmit safety (TOT, heartbeats, cut-offs) is not tested, and it gives "
+                       "the rig neither a sheet nor a rating. A result holds for the versions shown.") + "</p>"]
+    if not reports:
+        return out + [f'<p>{_bi("Aucune préqualification en cours.", "No prequalification in progress.")}</p>']
+    for rep in reports:
+        r = rep["rapport"]
+        by_code = {e["code"]: e for e in rep["essais"]}
+        mfr, men = AUTOTEST_MODES[r["mode"]]
+        sfr, sen = AUTOTEST_SOURCES[r["source"]]
+        info = [f'{html.escape(r["date"])}', f'Autotest {html.escape(r["outil"])}', _bi(mfr, men)]
+        if r.get("hamlib"):
+            info.append(f'Hamlib {html.escape(r["hamlib"])}')
+        info += [html.escape(r["systeme"]), _bi(sfr, sen)]
+        if r.get("arret"):
+            info.append(_bi(*AUTOTEST_ARRETS[r["arret"]]))
+        hamlib_n = f' · {_bi("Modèle Hamlib", "Hamlib model")} {r["hamlib_model"]}' if r.get("hamlib_model") else ""
+        out += [f'<section class="poste" id="at-{html.escape(rep["id"])}">',
+                f'<h3>{html.escape(r["fabricant"])} {html.escape(r["modele"])} '
+                f'<span class="statut s-validation_en_cours">{_bi("préqualification", "prequalification")}</span></h3>',
+                f'<p>{_bi(r["resume"], r["resume_en"])}{hamlib_n}</p>', "<p>" + " · ".join(info) + "</p>",
+                '<div class="wrap"><table>',
+                f'<tr><th>{_bi("Essai", "Test")}</th><th>{_bi("Résultat", "Result")}</th>'
+                f'<th>{_bi("Détail", "Detail")}</th></tr>']
+        for code, fr, en in AUTOTEST_STEPS:
+            e = by_code.get(code)
+            status = e["statut"] if e else "absent"
+            sym, cls, efr, een = AUTOTEST_ETATS[status]
+            detail = _bi(e["texte"], e["texte_en"]) if e else ""
+            if e and e.get("note"):
+                detail += f'<br><small>{_bi(e["note"], e["note_en"])}</small>'
+            out.append(f'<tr><td>{code} · {_bi(fr, en)}</td><td class="e e-{cls}">{sym} {_bi(efr, een)}</td>'
+                       f'<td>{detail}</td></tr>')
+        out += ["</table></div>",
+                f'<p><small>{_bi("Empreinte de la trace", "Trace fingerprint")} : '
+                f'<code>{html.escape(r["empreinte_trace"][:16])}…</code></small></p>', "</section>"]
+    return out
 
 
 def load_rigs(folder: Path = DATA) -> list[dict]:
@@ -455,8 +589,11 @@ def _table2(rigs: list[dict], marks: dict | None = None) -> list[str]:
     return out
 
 
-def _usb_tables(usb: dict, rigs: list[dict]) -> list[str]:
+def _usb_tables(usb: dict, rigs: list[dict], reports: list[dict] | None = None) -> list[str]:
     fiches = {r["id"]: r for r in rigs}
+    prequal = {}                                   # numéro Hamlib -> préqualification la plus récente
+    for rep in reports or []:
+        prequal.setdefault(rep["rapport"].get("hamlib_model"), rep)
 
     def rows(entries: list[dict], with_status: bool) -> list[str]:
         out = []
@@ -472,6 +609,10 @@ def _usb_tables(usb: dict, rigs: list[dict]) -> list[str]:
                     fr, en = STATUTS[rig["poste"]["statut"]]
                     cells.append(f'<a href="#{html.escape(rig["id"])}"><span class="statut s-{rig["poste"]["statut"]}">'
                                  f'{_bi(fr, en)}</span></a>')
+                elif e["hamlib_model"] in prequal:
+                    cells.append(f'<a href="#at-{html.escape(prequal[e["hamlib_model"]]["id"])}">'
+                                 f'<span class="statut s-validation_en_cours">'
+                                 f'{_bi("préqualification en cours", "prequalification in progress")}</span></a>')
                 else:
                     cells.append(_bi("non essayé", "not tried"))
             cells.append(note)
@@ -506,8 +647,9 @@ def _usb_tables(usb: dict, rigs: list[dict]) -> list[str]:
     return out
 
 
-def render(rigs: list[dict], usb: dict | None = None) -> str:
+def render(rigs: list[dict], usb: dict | None = None, reports: list[dict] | None = None) -> str:
     usb = usb if usb is not None else load_usb()
+    reports = reports if reports is not None else load_autotest()
     themes = "".join(f'<button type="button" data-t="{t}">{_bi(fr, en)}</button>' for t, fr, en in THEMES)
     legend = " · ".join(f'<span class="e-{k}">{v[0]}</span> {_bi(v[1], v[2])}' for k, v in ETATS.items())
     out = ["<!doctype html>", "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->", "<!-- Copyright (C) 2026 RF-DIY.COM -->",
@@ -523,7 +665,9 @@ def render(rigs: list[dict], usb: dict | None = None) -> str:
                        "Every state comes from a real test on the rig (qualification, dummy load). A result holds for the "
                        "Hamlib version and system shown.") + "</p>",
            "<p>" + _bi("Postes pas encore essayés : voir la liste des ", "Rigs not tried yet: see the list of ")
-           + f'<a href="#usb">{_bi("postes à USB intégré", "rigs with built-in USB")}</a>.</p>',
+           + f'<a href="#usb">{_bi("postes à USB intégré", "rigs with built-in USB")}</a> ; '
+           + _bi("postes en cours d’essai : ", "rigs being tried: ")
+           + f'<a href="#autotest">{_bi("préqualifications (Autotest)", "prequalifications (Autotest)")}</a>.</p>',
            f"<p>{legend}</p>",
            f'<p class="themes"><button type="button" data-t="tous">{_bi("Tous les thèmes", "All topics")}</button>{themes}</p>',
            f'<h2>{_bi("Comparaison des postes", "Rig comparison")}</h2>',
@@ -537,7 +681,8 @@ def render(rigs: list[dict], usb: dict | None = None) -> str:
     for rig in rigs:
         out += _table1(rig, marks)
     out.append(_footnotes(anchor=False))
-    out += _usb_tables(usb, rigs)
+    out += _autotest_section(reports)
+    out += _usb_tables(usb, rigs, reports)
     out += ["<footer>",
             f'<p><a href="../erreurs/">{_bi("Codes d’erreur", "Error codes")}</a> · <a href="../guide/">'
             f'{_bi("Guide de l’opérateur", "Operator guide")}</a> · <a href="data.json">data.json</a> · '
@@ -547,8 +692,9 @@ def render(rigs: list[dict], usb: dict | None = None) -> str:
     return "\n".join(out)
 
 
-def data_json(rigs: list[dict], usb: dict | None = None) -> str:
+def data_json(rigs: list[dict], usb: dict | None = None, reports: list[dict] | None = None) -> str:
     usb = usb if usb is not None else load_usb()
+    reports = reports if reports is not None else load_autotest()
     out = {"format": 1, "page": PAGES_URL,
            "themes": [{"id": t, "fr": fr, "en": en} for t, fr, en in THEMES],
            "fonctions": [{"id": f, "theme": t, "fr": fr, "en": en} for f, t, fr, en in FEATURES],
@@ -556,7 +702,8 @@ def data_json(rigs: list[dict], usb: dict | None = None) -> str:
            "postes": [{**{k: v for k, v in r.items()}, "note": {k: v for k, v in rating(r).items()
                                                                   if k in ("stars", "provisional", "counted", "valid")}}
                       for r in rigs],
-           "usb_integre": usb}
+           "usb_integre": usb,
+           "prequalifications": reports}
     return json.dumps(out, ensure_ascii=False, indent=2) + "\n"
 
 
@@ -565,7 +712,10 @@ def build(site: Path = SITE, rigs: list[dict] | None = None) -> dict[Path, str]:
     check(rigs)
     usb = load_usb()
     check_usb(usb, rigs)
-    return {site / FOLDER / "index.html": render(rigs, usb), site / FOLDER / "data.json": data_json(rigs, usb)}
+    reports = load_autotest()
+    check_autotest(reports)
+    return {site / FOLDER / "index.html": render(rigs, usb, reports),
+            site / FOLDER / "data.json": data_json(rigs, usb, reports)}
 
 
 def stale_pages(site: Path = SITE) -> list[Path]:

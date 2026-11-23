@@ -85,7 +85,10 @@ class FakeHamlib {
       default: return { rprt: -4, valeurs: [], ms: 2 };
     }
   }
-  async pttOff() { this.pttOffs++; this._ptt(0); return { rx: true }; }
+  async pttOff() {
+    this.pttOffs++; this._ptt(0);
+    return { rx: true, trace: [{ h: "T 0", rprt: 0, valeurs: [], ms: 1 }, { h: "t", rprt: 0, valeurs: ["0"], ms: 1 }] };
+  }
   state() { return JSON.stringify({ l: this.levels, f: this.funcs }); }
 }
 

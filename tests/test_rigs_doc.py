@@ -206,3 +206,71 @@ def test_page_shows_the_usb_list_with_tried_rigs_linked() -> None:
     assert "IC-7610" in section and "TS-890S" in section and "FT-891" in section
     assert 'href="#icom-ic7300mk2"' in section
     assert "non essayé" in section and "not tried" in section
+
+
+# --- Préqualifications par l'Autotest (étape 374)
+
+def _reports() -> list[dict]:
+    return copy.deepcopy(doc.load_autotest())
+
+
+def test_prequalifications_are_consistent_and_never_change_a_sheet_or_a_rating() -> None:
+    reports = _reports()
+    assert reports and all(r["rapport"]["empreinte_trace"] for r in reports)
+    doc.check_autotest(reports)
+    rigs = doc.load_rigs()
+    assert {r["poste"]["hamlib_model"] for r in rigs}.isdisjoint({3070}), "l'IC-7100 n'a pas de fiche (préqualifié)"
+    page = doc.render(rigs, reports=reports)
+    assert 'id="autotest"' in page and 'id="at-icom-ic-7100-20261123-1507"' in page
+    assert "n’est PAS une qualification" in page and "is NOT a qualification" in page
+    # l'IC-7100 de la liste USB renvoie vers sa préqualification, jamais vers une fiche
+    assert 'href="#at-icom-ic-7100-20261123-1507"' in page
+    assert "IC-7100" not in "".join(doc._table2(rigs))
+
+
+def test_prequalification_steps_are_those_of_the_autotest_page() -> None:
+    runner = (ROOT / "autotest" / "web" / "runner.js").read_text(encoding="utf-8")
+    steps = re.findall(r'\["(R\d+|E\d|RS)", "([^"]+)"\]', runner.split("const STEPS")[1].split("];")[0])
+    assert steps == [(c, fr) for c, fr, _ in doc.AUTOTEST_STEPS]
+
+
+def test_a_prequalification_needs_english_texts_known_codes_and_a_unique_trace() -> None:
+    for change in (lambda r: r["essais"][0].update(texte_en=""),
+                   lambda r: r["rapport"].update(resume_en=""),
+                   lambda r: r["essais"][0].update(code="Z9"),
+                   lambda r: r["essais"][0].update(statut="absent"),
+                   lambda r: r["essais"][0].update(note="seulement en français"),
+                   lambda r: r["rapport"].update(source="inconnue"),
+                   lambda r: r["rapport"].pop("empreinte_trace")):
+        reports = _reports()
+        change(reports[0])
+        with pytest.raises(doc.DocError):
+            doc.check_autotest(reports)
+    twice = _reports() + _reports()
+    twice[1]["id"] = "copie"
+    with pytest.raises(doc.DocError, match="double"):
+        doc.check_autotest(twice)
+
+
+def test_tests_not_done_are_shown_as_not_done_yet() -> None:
+    page = "".join(doc._autotest_section(_reports()))
+    row = re.search(r"<tr><td>E2 · .*?</tr>", page)
+    assert row and "pas encore fait" in row.group(0)
+
+
+def test_import_keeps_only_public_fields_and_checks_the_trace(tmp_path: Path) -> None:
+    import import_autotest as imp
+    trace = [{"t": 5, "d": "tx", "h": "f", "r": 0, "v": ["7074000"], "ms": 21}, {"t": 9, "d": "tx", "h": "l ALC", "r": 0, "v": ["0.0333334"], "ms": 0}]
+    report = {"schema": imp.SCHEMA, "outil": {"version": "0.10.5", "mode": "B"}, "date": "2026-11-23T15:07:58.240Z",
+              "systeme": "Windows", "poste": {"marque": "Hamlib", "modele_reconnu": "IC-7100", "hamlib_model": 3070,
+                                              "hamlib": {"nom": "Icom IC-7100", "version": "4.7.2"}},
+              "carte_son": {"entree": "Microphone (2- USB Audio CODEC )"}, "port": "COM9",
+              "essais": [{"code": "R1", "statut": "ok", "texte": "Le poste répond."}],
+              "trace": trace, "empreinte_trace": imp.trace_digest(trace)}
+    name, text = imp.convert(report)
+    assert name == "icom-ic-7100-20261123-1507.toml"
+    assert "COM9" not in text and "CODEC" not in text and "7074000" not in text
+    assert 'texte_en = ""' in text and 'resume_en = ""' in text           # à écrire à la main
+    report["empreinte_trace"] = "0" * 64
+    with pytest.raises(ValueError, match="empreinte"):
+        imp.convert(report)

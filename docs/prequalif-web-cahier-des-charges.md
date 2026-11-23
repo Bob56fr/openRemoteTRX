@@ -284,6 +284,7 @@ Un essai que le modèle ne permet pas est « non disponible », jamais un échec
   `[[essais]]`), niveau « préqualification navigateur (sans Hamlib) » ou « préqualification Hamlib ».
 - Anonyme : ni adresse, ni nom de machine, ni numéro de série (les noms de ports et de cartes son sont nettoyés).
 - Ne modifie PAS les fiches publiques des postes (seules les qualifications y entrent) ; usage : § 11, question 8.
+  Montré À PART sur la page des postes depuis l'étape 374 (section « Préqualifications en cours », `scripts/import_autotest.py`).
 
 ### 9.1 Envoi en un bouton (proposition de la v2)
 
@@ -343,7 +344,7 @@ TOUTES TRANCHÉES (v4).
 5. ~~Mode B~~ : TRANCHÉ (openRemoteTRX-Autotest, EXE, Microsoft Store, § 8.1).
 6. ~~Langues~~ : TRANCHÉ (français et anglais).
 7. ~~Android~~ : TRANCHÉ (non).
-8. ~~Rapports reçus sur le site public~~ : TRANCHÉ (non pour l'instant ; base de données plus tard). Question d'origine : la page publique des postes
+8. ~~Rapports reçus sur le site public~~ : TRANCHÉ (non pour l'instant ; base de données plus tard). REVU le 2026-11-23 (étape 374) : OUI pour les préqualifications choisies par le projet, dans une section À PART de la page des postes, sans fiche ni note. Question d'origine : la page publique des postes
    (https://bob56fr.github.io/openRemoteTRX/postes/) ne montre aujourd'hui que les postes QUALIFIÉS par le projet.
    Montrer aussi ce que disent les rapports reçus (« IC-7300 : 4 rapports d'utilisateurs, tous OK » ; « Xiegu G90 :
    1 rapport, PTT par la CAT en échec »), dans une partie à part et après relecture ? Ou garder les rapports pour le
