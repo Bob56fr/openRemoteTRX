@@ -29,7 +29,9 @@
   $("terms-go").onclick = () => {
     if (!$("terms-ok").checked) return;
     $("o-terms").hidden = true;
-    if (hasSerial || modeB) { buildBrands(); show("s-brand"); }        // sinon l'accueil montre pourquoi (Chrome ou Edge)
+    // Page publiée : on RESTE sur l'accueil (deux choix : test rapide ou utilitaire à télécharger ; avant la 0.10.1 la
+    // page sautait au choix de la marque et l'accueil n'était jamais vu). Page de l'utilitaire : choix du mode tout de suite.
+    if (modeB) { buildBrands(); show("s-brand"); }
   };
 
   function buildBrands() {
