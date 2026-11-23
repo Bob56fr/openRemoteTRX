@@ -10,14 +10,14 @@
   const civ = (typeof module !== "undefined" && module.exports) ? require("./civ.js") : root.AtCiv;
   const { T } = (typeof module !== "undefined" && module.exports) ? require("./i18n.js") : root.AtI18n;
 
-  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 3000 };
+  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 3000, tune: 15000 };
 
   const STEPS = [
     ["R1", "Port et vitesse"], ["R2", "Modèle identifié"], ["R3", "Fréquence et mode lus"], ["R4", "S-mètre"],
     ["R5", "Temps de réponse"], ["R6", "PTT lu"], ["R7", "Carte son du poste"], ["R8", "Écriture de fréquence et de mode"],
     ["R9", "Fonctions du poste (ATT, P.AMP, NB, NR, RIT, split, VFO…)"], ["R10", "Spectre (waterfall du poste)"],
     ["E1", "Émission par la CAT"], ["E2", "Puissance lue"], ["E3", "TOS lu"], ["E4", "Tonalité 1 kHz"],
-    ["E6", "STOP de la page"], ["RS", "Remise de l'état d'origine"],
+    ["E6", "STOP de la page"], ["E7", "Accord du coupleur d'antenne"], ["RS", "Remise de l'état d'origine"],
   ];
 
   const FUNCS = civ.FUNCS;                                  // compatibilité (fonctions Icom)
@@ -37,6 +37,18 @@
       this.unkeying = null;
     }
     arm() { this.armed = true; }
+    /* Accord du coupleur (essai E7) : émission lancée par le POSTE, pas par le PTT. Même garde : autorisation exigée,
+       coupure armée AVANT, au plus `maxMs` (15 s, décision de l'utilisateur du 2026-11-23) ; une coupure met d'abord
+       le coupleur hors service (arrêt de l'accord) puis renvoie la réception, relue. */
+    startTune(label, maxMs) {
+      if (!this.armed) throw new Error("accord refusé : pas d'autorisation");
+      if (this.on) throw new Error("accord refusé : émission en cours");
+      this.on = true; this.tuning = true; this.since = Date.now(); this.label = label;
+      this.timer = setTimeout(() => { this.unkey("duree_max"); }, maxMs);
+      this.onChange({ on: true, label, maxTx: maxMs });
+    }
+    // Fin normale d'un accord : le coupleur reste dans l'état choisi par le poste (pas d'arrêt d'urgence).
+    endTune() { this.tuning = false; }
     disarm() { this.armed = false; }
     async key(label) {
       if (!this.armed) throw new Error("émission refusée : pas d'autorisation");
@@ -51,11 +63,13 @@
        relue. Appels simultanés : un seul retour en cours. */
     unkey(reason) {
       if (this.unkeying) return this.unkeying;
-      const wasOn = this.on;
+      const wasOn = this.on, wasTuning = !!this.tuning;
+      this.tuning = false;
       clearTimeout(this.timer); this.timer = null;
       if (this.audio) { try { this.audio.stopTone(); } catch (e) { /* rien */ } }
       this.unkeying = (async () => {
         let rx = null;
+        if (wasTuning && this.link.tunerAbortNow) { try { await this.link.tunerAbortNow(); } catch (e) { /* port perdu */ } }
         for (let i = 0; i < 3; i++) {
           try { await this.link.pttOffNow(); } catch (e) { /* port perdu : rien d'autre à faire */ }
           await sleep(this.o.settle);
@@ -102,6 +116,7 @@
       this.guard = new TxGuard(link, { maxTx: this.o.maxTx, settle: this.o.settle, audio,
         onChange: s => this.emit(Object.assign({ type: "tx" }, s)) });
       this.na = new Set();
+      if (model && model.att) link.attValues = model.att;
     }
     emit(ev) { try { this.ui.event(ev); } catch (e) { /* l'affichage ne doit jamais bloquer les essais */ } }
     now(text) { this.emit({ type: "now", text }); }
@@ -133,7 +148,7 @@
         if (this.aborted) return this._finish();
         const go = await this._authorize();
         if (go && !this.aborted) await this._emissions();
-        else for (const c of ["E1", "E2", "E3", "E4", "E6"]) if (!this.results.find(r => r.code === c)) this.result(c, "saute", go ? T("Essais arrêtés.") : T("Émissions non autorisées."));
+        else for (const c of ["E1", "E2", "E3", "E4", "E6", "E7"]) if (!this.results.find(r => r.code === c)) this.result(c, "saute", go ? T("Essais arrêtés.") : T("Émissions non autorisées."));
       } catch (e) {
         this.emit({ type: "error", text: String(e && e.message || e) });
         await this.guard.unkey("erreur");
@@ -144,7 +159,8 @@
       }
       return this._finish();
     }
-    _finish() { this.emit({ type: "done", results: this.results }); return { results: this.results, samples: this.samples, orig: this.orig, stop: this.stopReason || null }; }
+    _finish() { this.emit({ type: "done", results: this.results }); return { results: this.results, samples: this.samples, orig: this.orig, stop: this.stopReason || null,
+                                                                      tuner: this.orig.tuner == null ? null : this.orig.tuner, tunerDeclared: this.tunerDeclared || null }; }
 
     _r2() {
       const d = this.detected, m = this.model, hexA = a => a.toString(16).toUpperCase().padStart(2, "0") + "h";
@@ -197,6 +213,9 @@
       this.step("R6", "cur"); this.now(T("Lecture du PTT…"));
       const ptt = await L.readPtt();
       this.pttReadable = ptt !== null;
+      // Coupleur d'antenne : LU seulement (0 / 1 ; 2 = accord en cours, compté comme en service) ; null = pas vu.
+      this.orig.tuner = null;
+      if (L.tunerRead) { const tn = await L.tunerRead(); this.orig.tuner = tn == null ? null : (tn ? 1 : 0); }
       if (ptt === true) { this.result("R6", "echec", T("Le poste est DÉJÀ en émission : essais arrêtés (la page ne touche pas à une émission de l'opérateur).")); this.aborted = true; this.stopReason = "deja_en_emission"; return; }
       if (ptt === null) this.result("R6", "avert", T("PTT illisible par la CAT : les émissions d'essai ne seront pas faites (retour en réception impossible à vérifier)."));
       else this.result("R6", "ok", L.pttTracked ? T("Réception (ce poste ne se lit pas en émission par la CAT : état suivi par ses annonces automatiques AI, mises en marche pour l'essai).") : T("Réception."));
@@ -282,16 +301,19 @@
           const v0 = await L.fnRead(f);
           if (v0 == null) { row.statut = "absent"; out.push(row); continue; }
           row.avant = v0;
-          const v1 = L.fnOther(f, v0); row.essai = v1;
+          let v1 = L.fnOther(f, v0); row.essai = v1;
           const w = await L.fnWrite(f, v1);
           if (!w.ok) { row.statut = w.ng ? "refus" : "absent"; out.push(row); continue; }
+          if (w.written) { v1 = w.written; row.essai = v1; }
           changed.push({ f, v0 });
           const r1 = await L.fnRead(f); row.relu = r1;
           await L.fnWrite(f, v0);
           const r2 = await L.fnRead(f); row.remis = r2;
           const near = L.fnNear(f, r1, v1);                    // niveau arrondi au cran du poste (voir civ.js)
           if (near && !same(r1, v1)) row.note = T("arrondi au cran du poste (écrit {w}, relu {r})", { w: L.fnShow(v1), r: L.fnShow(r1) });
-          row.statut = !same(r2, v0) ? "remise" : !(same(r1, v1) || near) ? "ecart" : "ok";
+          const back = same(r2, v0) || L.fnNear(f, r2, v0);
+          if (back && !same(r2, v0)) row.note = (row.note ? row.note + " ; " : "") + T("remis au cran du poste (avant {a}, relu {b})", { a: L.fnShow(v0), b: L.fnShow(r2) });
+          row.statut = !back ? "remise" : !(same(r1, v1) || near) ? "ecart" : "ok";
           out.push(row);
         }
         out.push(await this._vfo());
@@ -299,11 +321,11 @@
         // Seconde passe : une fonction peut en changer une autre (P.AMP coupe l'ATT…) : tout est relu et remis.
         for (const { f, v0 } of changed) {
           const now = await L.fnRead(f);
-          if (same(now, v0)) continue;
+          if (same(now, v0) || L.fnNear(f, now, v0)) continue;
           await L.fnWrite(f, v0);
           const back = await L.fnRead(f);
           const row = out.find(x => x.code === f.code);
-          if (row) { row.remis = back; row.statut = same(back, v0) ? (row.statut === "remise" ? "ecart" : row.statut) : "remise"; row.repasse = true; }
+          if (row) { row.remis = back; row.statut = (same(back, v0) || L.fnNear(f, back, v0)) ? (row.statut === "remise" ? "ecart" : row.statut) : "remise"; row.repasse = true; }
         }
       }
       const by = s => out.filter(x => x.statut === s).map(x => x.code);
@@ -315,7 +337,9 @@
       if (abs.length) parts.push(T("absentes : {list}", { list: abs.join(", ") }));
       if (bad.length) parts.push(T("NON REMISES (à remettre à la main) : {list}", { list: bad.join(", ") }));
       const status = bad.length ? "echec" : (ec.length || ref.length) ? "avert" : ok.length ? "ok" : "na";
-      this.result("R9", status, parts.join(" ; ") + ".", { fonctions: out });
+      const tn = this.orig.tuner;
+      if (tn != null) parts.push(tn ? T("coupleur en service (lu, essayé en émission : E7)") : T("coupleur hors service (lu, essayé en émission : E7)"));
+      this.result("R9", status, parts.join(" ; ") + ".", { fonctions: out, coupleur_lu: tn == null ? null : tn });
     }
 
     // VFO A / B : échange, relecture, échange de nouveau, relecture (on ne sait pas lire QUEL VFO est choisi).
@@ -376,8 +400,15 @@
       const info = { hz: this.orig.freq, mode: this.orig.mode && this.orig.mode.name, pct, watts: maxW ? maxW * pct / 100 : null, maxW,
                      emissions: [["E1", T("émission par la CAT, sans modulation"), this.o.e1], ["E2", T("porteuse en FM : puissance et TOS"), this.o.e2],
                                  ["E4", T("tonalité 1 kHz en mode données"), this.o.e4], ["E6", T("coupure par la page (STOP)"), this.o.e6]] };
+      if (this.orig.tuner != null) {
+        info.tuner = this.orig.tuner;
+        info.emissions.push(["E7", T("accord du coupleur d'antenne (le poste choisit le mode et la puissance : CW, environ 10 W avec un AH-4)"), this.o.tune]);
+      }
       this.now(T("En attente de l'autorisation d'émettre…"));
-      const ok = await this.ui.authorize(info);
+      const a = await this.ui.authorize(info);
+      const ok = a === true || !!(a && a.ok);
+      // Modèle du coupleur DÉCLARÉ par l'opérateur : gardé tel quel dans le rapport, jamais une preuve.
+      this.tunerDeclared = a && a.tuner ? { type: String(a.tuner.type || "").slice(0, 20), texte: String(a.tuner.texte || "").slice(0, 40) } : null;
       if (!ok || this.aborted) return false;
       // Puissance : 10 % (ou le minimum du poste), relue.
       const raw = this.link.powerRaw(pct);
@@ -448,6 +479,10 @@
         if (!e2) return;
         if (!e2.rx) { this.result("E2", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; return; }
         const pos = e2.samples.map(s => s.po).filter(v => v != null), swrs = e2.samples.map(s => s.swr).filter(v => v != null);
+        // ALC sur la porteuse SANS modulation : chez Icom, une puissance réduite est tenue par l'ALC (IC-7100 : ~130 sur
+        // 120 à 10 %) ; sert de référence pour juger l'ALC de la tonalité (E4).
+        const alcs2 = e2.samples.map(s => s.alc).filter(v => v != null);
+        this.alcCarrier = alcs2.length ? Math.max(...alcs2) : null;
         const pct = Math.max(this.o.power, this.model && this.model.minPct || 0);
         if (!pos.length) this.result("E2", "na", T("Puissance (Po) non lue par la CAT."));
         else {
@@ -485,7 +520,12 @@
           if (toneErr) { /* déjà noté */ }
           else if (po == null) this.result("E4", "na", T("Puissance non lue : modulation impossible à vérifier."));
           else if (po < 2) this.result("E4", "echec", T("Tonalité envoyée mais aucune puissance : réglage « DATA MOD » du poste sur USB ? volume de la carte son à 100 dans l'ordinateur ?"), { po_pct: po, alc_pct: alc });
-          else this.result("E4", "ok", T("Modulation par la carte son : Po {po} %{alc}.", { po: po.toFixed(0), alc: alc != null ? ", ALC " + alc.toFixed(0) + " %" + (alc > 50 ? T(" (hors de la zone ALC : baissez le niveau USB MOD)") : "") : "" }), { po_pct: po, alc_pct: alc });
+          else {
+            const ac = this.alcCarrier, byPower = alc != null && alc > 50 && ac != null && ac >= alc - 10;
+            const note = alc == null || alc <= 50 ? "" : byPower ? T(" (déjà {c} % sur la porteuse sans modulation (E2) : le poste tient sa puissance réduite par l'ALC, valeur non concluante pour le niveau audio)", { c: ac.toFixed(0) })
+                                                                 : T(" (hors de la zone ALC : baissez le niveau USB MOD)");
+            this.result("E4", "ok", T("Modulation par la carte son : Po {po} %{alc}.", { po: po.toFixed(0), alc: alc != null ? ", ALC " + alc.toFixed(0) + " %" + note : "" }), { po_pct: po, alc_pct: alc, alc_porteuse_pct: ac });
+          }
         }
       }
       if (this.aborted) return;
@@ -503,6 +543,64 @@
       if (!on) this.result("E6", "na", T("Émission non relue."));
       else if (!rx) { this.result("E6", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; }
       else this.result("E6", ms < 1000 ? "ok" : "avert", T("Réception relue {ms} ms après l'ordre de coupure.", { ms }), { ms });
+      if (this.aborted) return;
+      await this._e7();
+    }
+
+    /* E7 : accord du coupleur, sous la garde (au plus `tune` ms). En service au départ : mis hors service puis remis en
+       service. La remise en service lance l'accord sur certains coupleurs (AH-4) ; sinon la page le lance (1C 01 02).
+       Fin : 01 = accord réussi, 00 = accord impossible (coupleur en dérivation). État d'origine : hors service remis
+       hors service ; en service laissé en service (le remettre lancerait un nouvel accord). */
+    async _e7() {
+      const L = this.link, t0 = this.orig.tuner, dec = this.tunerDeclared;
+      this.step("E7", "cur");
+      if (!L.tunerRead) { this.result("E7", "na", T("Essai du coupleur pas encore écrit pour cette marque (postes Icom seulement).")); return; }
+      if (t0 == null) { this.result("E7", "na", T("Aucun coupleur d'antenne vu par la CAT.")); return; }
+      if (dec && dec.type === "aucun") {
+        this.result("E7", t0 ? "avert" : "na", t0 ? T("Coupleur en service alors que « aucun coupleur » a été déclaré : essai sauté.") : T("Aucun coupleur déclaré : essai sauté."), { declare: dec });
+        return;
+      }
+      this.now(T("E7 : accord du coupleur d'antenne…"));
+      await L.setMode(L.modeCode((this.orig.mode && this.orig.mode.name) || "USB") ?? L.modeCode("USB"), (this.orig.mode && this.orig.mode.filter) || 1);
+      this.emit({ type: "tx-info", code: "E7", ms: this.o.tune, info: { hz: await L.readFreq(), what: T("Accord du coupleur d'antenne"), mode: "CW" } });
+      const g = this.guard, t = Date.now(), seen = [];
+      let started = false, last = null, startRefused = false, swr = null, po = null;
+      g.startTune("E7", this.o.tune);
+      try {
+        if (t0 === 1) { await L.tunerSet(0); seen.push(await L.tunerRead()); }
+        await L.tunerSet(1);
+        for (let i = 0; i < 5 && g.on && !this.aborted; i++) {           // accord lancé par le poste lui-même ?
+          last = await L.tunerRead(); seen.push(last);
+          if (last === 2) { started = true; break; }
+          await this.wait(150);
+        }
+        if (!started && g.on && !this.aborted) {
+          const w = await L.tunerStart(g);
+          if (w.ok) started = true; else startRefused = true;
+        }
+        while (started && g.on && !this.aborted) {
+          await this.wait(200);
+          if (!g.on) break;
+          last = await L.tunerRead(); seen.push(last);
+          const p = await L.meter("po"), s = await L.meter("swr");
+          if (p != null) po = Math.max(po || 0, L.scale.poPercent(p));
+          if (s != null && p) swr = L.scale.swrValue(s);
+          if (last !== 2) break;
+        }
+      } finally {
+        if (g.on && g.tuning && !this.aborted && last !== 2) g.endTune();
+      }
+      const timedOut = g.lastStop && g.lastStop.reason === "duree_max" && !g.on;
+      const rx = g.on ? await g.unkey("fin_essai") : (g.unkeying ? await g.unkeying : !!(g.lastStop && g.lastStop.rx));
+      const secs = fr((Date.now() - t) / 1000, 1), vals = { avant: t0, lu: seen, declare: dec, duree_s: Number(secs.replace(",", ".")), po_pct: po, swr };
+      if (!rx) { this.result("E7", "echec", T("Retour en réception NON relu : coupez le poste à la main."), vals); this.aborted = true; return; }
+      if (this.aborted && !timedOut) { this.result("E7", "saute", T("Essais arrêtés (accord interrompu, coupleur hors service)."), vals); return; }
+      if (timedOut || last === 2) { this.result("E7", "echec", T("Accord non terminé en {s} s : coupleur mis hors service, réception relue.", { s: this.o.tune / 1000 }), vals); return; }
+      if (startRefused && !started) { this.result("E7", "avert", T("Coupleur mis en service mais accord refusé par le poste (1C 01 02)."), vals); }
+      else if (last === 1) this.result("E7", "ok", T("Accord réussi en {s} s{swr}.", { s: secs, swr: swr != null ? T(", TOS {v} pendant l'accord", { v: fr(swr, 2) }) : "" }), vals);
+      else if (last === 0) this.result("E7", "avert", T("Accord impossible : le coupleur s'est mis en dérivation (antenne hors de sa plage, demi-onde ?)."), vals);
+      else this.result("E7", "avert", T("État du coupleur illisible après l'accord."), vals);
+      if (t0 === 0) { await L.tunerSet(0); }                             // hors service au départ : remis hors service
     }
 
     async _restore() {
@@ -515,6 +613,12 @@
         if (o.data) await L.setDataMode(o.data.on, o.data.filter);
         if (o.freq != null) await L.setFreq(o.freq);
         if (o.power != null) await L.setPower(o.power);
+        if (o.tuner != null && L.tunerRead) {
+          let tn = await L.tunerRead();
+          if (o.tuner === 0 && tn) { await L.tunerSet(0); tn = await L.tunerRead(); }
+          if (o.tuner === 0 && tn) { status = "avert"; lines.push(T("coupleur à mettre hors service à la main")); }
+          if (o.tuner === 1 && tn === 0) { status = "avert"; lines.push(T("coupleur hors service : remettez-le en service à la main (un accord sera lancé)")); }
+        }
         if (o.scope && L.scopeRead) {                                // spectre (R10) : déjà remis, revérifié ici
           let sc = await L.scopeRead();
           if (sc.display !== o.scope.display || sc.output !== o.scope.output) { await L.scopeSet(o.scope.display, o.scope.output); sc = await L.scopeRead(); }

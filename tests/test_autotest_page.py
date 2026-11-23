@@ -19,7 +19,7 @@ def test_logic_and_transmit_guard_under_node() -> None:
     if not node:
         return                                                                          # Node absent : test ignoré
     done = subprocess.run([node, str(ROOT / "tests" / "js" / "autotest_test.js")], capture_output=True, text=True,
-                          encoding="utf-8", timeout=120)
+                          encoding="utf-8", timeout=300)   # ~2 min 30 : parcours complets simulés
     assert done.returncode == 0, done.stdout + done.stderr
 
 

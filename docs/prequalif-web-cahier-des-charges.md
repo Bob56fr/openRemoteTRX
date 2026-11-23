@@ -168,6 +168,10 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 - Lectures : fréquence `03`, mode `04`, S-mètre `15 02`, PTT `1C 00`, Po `15 11`, TOS `15 12`, ALC `15 13`,
   puissance réglée `14 0A`, mode données `1A 06` (selon le modèle) ; spectre (essai R10) : affichage `27 10` et sortie
   `27 11` lus, mis en marche, trames `27 00` écoutées, puis remis comme ils étaient (la page n'envoie jamais de `27 00`).
+- Atténuateur (R9) : valeur du modèle (`att` de la table : IC-7100 = 12 dB, IC-7300 / IC-705 = 20 dB), sinon les valeurs
+  connues chez Icom essayées l'une après l'autre (20, 12, 10, 6, 18, 30), relues puis remises.
+- Coupleur `1C 01` : 00 / 01 lus au début ; écrit seulement par l'essai E7 (`02` = lancer l'accord, seulement sous la
+  garde d'émission) : chez Icom, la mise en service d'un AH-4 / AH-740 LANCE l'accord (émission).
 - Écritures (liste fermée) : PTT `1C 00`, fréquence `05` (essai R8), mode et mode données pour la tonalité, puissance
   `14 0A` pour l'essai, puis remise.
 - **Xiegu** (G90, G106, X6100, X6200, X5105) : dialecte partiel du CI-V. Une commande non gérée peut rester SANS
@@ -211,6 +215,7 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 | E4 | Tonalité 1 kHz par la carte son en mode données : Po et ALC montent | oui |
 | E5 | Émission par RTS ou DTR (si l'opérateur utilise une interface de ce type) | oui |
 | E6 | Retour en réception par STOP de la page, PTT relu | oui |
+| E7 | Accord du coupleur d'antenne (étape 368, Autotest 0.9.0 ; Icom en mode A) : coupleur LU au début (jamais écrit en R9) ; après l'autorisation, sous la garde : en service = mis hors service puis remis en service (un AH-4 accorde alors seul : CW ~10 W, manuel IC-7100 p. 16-5), sinon accord lancé par `1C 01 02` ; 15 s au plus (décision de l'utilisateur du 2026-11-23) ; STOP ou durée dépassée = coupleur hors service puis réception relue ; modèle du coupleur DEMANDÉ à l'opérateur (la CAT ne le donne pas, coupleurs d'autres marques identiques à l'AH-4), noté « déclaré » dans le rapport ; jamais remis EN service hors de la garde | oui |
 
 Un essai que le modèle ne permet pas est « non disponible », jamais un échec.
 

@@ -22,13 +22,18 @@ class FakeIcom {
                              // Spectre (R10) : scope = false -> 27 10 / 27 11 refusés ; scopeTo = destination des trames
                              // 27 00 (E0 = la page) ; scopeEvery = un balayage toutes les N ms ; scopeStuck = écriture ignorée.
                              scope: true, scopeDisplay: 1, scopeOutput: 0, scopeTo: 0xE0, scopeEvery: 30, scopePoints: 475,
-                             scopeLevel: 60, scopeSpan: 50000, scopeCenter: null, scopeStuck: false }, opts || {});
+                             scopeLevel: 60, scopeSpan: 50000, scopeCenter: null, scopeStuck: false,
+                             // Coupleur : "interne" (01 = en service sans accord, 02 = accord), "ah4" (01 LANCE l'accord),
+                             // "aucun" (1C 01 refusé) ; tuner0 = état de départ ; tuneMs = durée de l'accord ; tuneResult =
+                             // état en fin d'accord (1 réussi, 0 dérivation) ; att = valeurs d'atténuateur acceptées.
+                             tuner: "interne", tuner0: 0, tuneMs: 120, tuneResult: 1, att: [0x20] }, opts || {});
     this.st = { freq: 14074000, mode: 0x01, filter: 1, data: 0, dataFilter: 0, power: 255, ptt: !!this.o.alreadyTx,
                 otherFreq: 7100000 };
     // Fonctions (essai R9) : clé = commande en hexadécimal, valeur = octets de la donnée.
     this.fn = Object.assign({ "11": [0x00], "16 02": [0x01], "16 12": [0x02], "16 22": [0x00], "16 40": [0x01], "16 41": [0x00],
                               "16 44": [0x00], "16 65": [0x00], "14 06": [0x01, 0x28], "14 12": [0x00, 0x50], "14 0E": [0x00, 0x30],
-                              "0F": [0x00], "21 01": [0x00], "1C 01": [0x00] }, this.o.fn);
+                              "0F": [0x00], "21 01": [0x00] }, this.o.fn);
+    this.tunerState = this.o.tuner0; this.tuning = false; this.tuneTimer = null; this.tunes = [];
     this.initialFn = JSON.stringify(this.fn);
     this.toneOn = false; this.txLog = []; this.txSince = this.st.ptt ? Date.now() : null; this.writes = [];
     this.parser = new civ.Parser();
@@ -54,7 +59,18 @@ class FakeIcom {
     }, this.o.scopeEvery);
     if (!on && this.scopeTimer) { clearInterval(this.scopeTimer); this.scopeTimer = null; }
   }
-  stopScope() { if (this.scopeTimer) clearInterval(this.scopeTimer); this.scopeTimer = null; }
+  stopScope() { if (this.scopeTimer) clearInterval(this.scopeTimer); this.scopeTimer = null; if (this.tuneTimer) clearTimeout(this.tuneTimer); this.tuneTimer = null; }
+  // Accord : le poste émet (CW, ~10 W) pendant tuneMs, puis le coupleur passe à tuneResult.
+  startTune() {
+    this.tuning = true; this.tunerState = 2; const t0 = Date.now();
+    this.tuneTimer = setTimeout(() => { this.tuning = false; this.tunerState = this.o.tuneResult; this.tunes.push(Date.now() - t0); this.tuneTimer = null; }, this.o.tuneMs);
+    this.tuneSince = t0;
+  }
+  abortTune() {
+    if (!this.tuning) return;
+    clearTimeout(this.tuneTimer); this.tuneTimer = null; this.tuning = false; this.tunes.push(Date.now() - this.tuneSince);
+  }
+  maxTune() { return Math.max(0, ...this.tunes, this.tuning ? Date.now() - this.tuneSince : 0); }
   // Transport ouvert à une vitesse : le poste ne comprend que la sienne.
   transport(baud) {
     const rig = this; let cb = () => {}; let open = true;
@@ -87,6 +103,18 @@ class FakeIcom {
     if (this.o.silent.includes(key)) return null;
     if (this.o.ng.includes(key)) return [0xFA];
     const s = this.st, ok = [0xFB];
+    if (key === "1C 01") {                                                     // coupleur d'antenne
+      if (this.o.tuner === "aucun") return [0xFA];
+      if (p.length === 2) return [0x1C, 0x01, this.tunerState];
+      const v = p[2];
+      if (v === 0) { this.abortTune(); this.tunerState = 0; return ok; }
+      if (this.tuning || s.ptt) return [0xFA];
+      if (v === 1) { if (this.o.tuner === "ah4" && this.tunerState === 0) this.startTune(); else this.tunerState = 1; return ok; }
+      if (v === 2) { this.startTune(); return ok; }
+      return [0xFA];
+    }
+    if (key === "11" && p.length > 1 && p[1] !== 0x00 && !this.o.att.includes(p[1])) return [0xFA];   // atténuateur du modèle
+    if (this.tuning && [0x05, 0x06, 0x07].includes(p[0])) return [0xFA];       // poste en émission pendant l'accord
     if (key in this.fn) {                                                      // fonctions de l'essai R9
       const n = one ? 1 : 2, data = p.slice(n);
       if (!data.length) return [...p.slice(0, n), ...this.fn[key]];
@@ -123,9 +151,9 @@ class FakeIcom {
       }
       case 0x1A: if (p[1] !== 0x06) return [0xFA]; if (p.length > 2) { if (s.ptt) return [0xFA]; s.data = p[2]; s.dataFilter = p[3] || 0; return ok; } return [0x1A, 0x06, s.data, s.dataFilter];
       case 0x1C:
-        if (p[1] !== 0x00) return [0xFA];   // 1C 01 (coupleur) : traité avec les fonctions
+        if (p[1] !== 0x00) return [0xFA];   // 1C 01 (coupleur) : traité plus haut
         if (p.length > 2) { if (p[2] === 0 && this.o.ignorePttOff > 0) { this.o.ignorePttOff--; return ok; } this.key(p[2] === 1); return ok; }
-        return [0x1C, 0x00, s.ptt ? 1 : 0];
+        return [0x1C, 0x00, s.ptt || this.tuning ? 1 : 0];
       default: return [0xFA];
     }
   }

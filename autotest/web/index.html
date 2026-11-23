@@ -95,8 +95,13 @@
       <input id="hl-model" list="hl-models" autocomplete="off" spellcheck="false"></label>
     <datalist id="hl-models"></datalist>
     <label class="field"><span data-t="hl.port">Port série du poste (CAT)</span>
-      <input id="hl-port" list="hl-ports" autocomplete="off" spellcheck="false"></label>
-    <datalist id="hl-ports"></datalist>
+      <select id="hl-portsel"></select></label>
+    <div class="row"><button type="button" class="btn" id="b-hl-ports" data-t="hl.refresh">Actualiser la liste des ports</button></div>
+    <p class="what" data-t="hl.porthelp">Le port du poste apparaît quand le poste est allumé et son câble USB branché
+      (débranchez-le puis rebranchez-le : le port qui disparaît puis revient est le sien). Sous Windows, il est aussi
+      visible dans le Gestionnaire de périphériques, rubrique « Ports (COM et LPT) ».</p>
+    <label class="field"><span data-t="hl.portman">Ou saisi à la main (ex. COM12, /dev/ttyUSB0)</span>
+      <input id="hl-port" autocomplete="off" spellcheck="false"></label>
     <label class="field"><span data-t="hl.speed">Vitesse</span>
       <select id="hl-speed"><option value="" data-t="hl.speed0">par défaut du modèle (Hamlib)</option>
         <option>4800</option><option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option></select></label>
@@ -246,6 +251,21 @@
     <p id="auth-where"></p>
     <ul id="auth-list"></ul>
     <p data-t="auth.p" class="what">Chaque émission est coupée par la page au plus tard à 10 s. STOP ou Échap à tout moment.</p>
+    <div id="auth-tuner" hidden>
+      <label class="field"><span data-t="auth.tuner">Coupleur d'antenne branché sur le poste (déclaré par vous, la CAT ne donne pas le modèle)</span>
+        <select id="auth-tuner-type">
+          <option value="" data-t="auth.tuner0">— choisir —</option>
+          <option value="aucun" data-t="auth.tunerNone">Aucun coupleur</option>
+          <option value="interne" data-t="auth.tunerInt">Coupleur intégré au poste</option>
+          <option value="AH-4">Icom AH-4</option><option value="AH-740">Icom AH-740</option><option value="AT-180">Icom AT-180</option>
+          <option value="AH-705">Icom AH-705</option>
+          <option value="autre" data-t="auth.tunerOther">Autre (autre marque, modèle ci-dessous)</option>
+        </select></label>
+      <label class="field" id="auth-tuner-free" hidden><span data-t="auth.tunerFree">Marque et modèle du coupleur</span>
+        <input id="auth-tuner-text" maxlength="40" autocomplete="off" spellcheck="false"></label>
+      <p class="what" data-t="auth.tunerWarn">Avec un coupleur, l'essai E7 fait ÉMETTRE le poste pendant l'accord
+        (le poste choisit lui-même le mode et la puissance : CW, environ 10 W avec un AH-4), jusqu'à 15 s.</p>
+    </div>
     <label class="check"><input type="checkbox" id="auth-load"><span data-t="auth.load">Mon poste est sur une <b>charge fictive</b>.</span></label>
     <div class="row"><button data-t="auth.ok" type="button" class="btn primary" id="auth-ok" disabled>J'autorise les émissions d'essai</button>
       <button type="button" class="btn" id="auth-no" data-t="auth.no">Ne pas émettre</button></div>

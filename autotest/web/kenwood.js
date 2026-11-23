@@ -60,7 +60,6 @@
     { code: "RIT", label: "RIT", cmd: "RT", w: 1, values: ["0", "1"] },
     { code: "XIT", label: "XIT", cmd: "XT", w: 1, values: ["0", "1"] },
     { code: "SPLIT", label: "Split", cmd: "TB", w: 1, values: ["0", "1"] },
-    { code: "TUNER", label: "Coupleur d'émission (en / hors service, sans accord)", cmd: "AC", w: 3, tuner: true, values: ["0", "1"] },
   ];
 
   class KenwoodLink {

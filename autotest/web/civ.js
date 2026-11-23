@@ -30,7 +30,7 @@
     // Affichage du spectre (01 = marche, 00 = arrêt) : essai R10, lu puis remis comme il était.
     SCOPE_ON: [0x27, 0x10],
     // Fonctions de réception (essai R9 : lue, changée, relue, remise, relue). JAMAIS le VOX (16 46).
-    ATT: [0x11],                 // atténuateur : 00 ou 20 (dB)
+    ATT: [0x11],                 // atténuateur : 00 ou la valeur en dB du modèle (BCD : 20, 12, 10, 06, 18…)
     PREAMP: [0x16, 0x02],        // P.AMP : 00, 01, 02
     AGC: [0x16, 0x12],           // 01 rapide, 02 moyen, 03 lent
     NB: [0x16, 0x22],
@@ -43,19 +43,25 @@
     COMP_LEVEL: [0x14, 0x0E],
     SPLIT: [0x0F],               // 00 / 01
     RIT_ON: [0x21, 0x01],        // 00 / 01
-    TUNER: [0x1C, 0x01],         // 00 / 01 seulement : 02 = lancer l'accord (émission) JAMAIS
+    // Coupleur : lu au début (R6), écrit SEULEMENT pendant l'essai E7, sous la garde d'émission. Avec un AH-4 / AH-740,
+    // le mettre en service (01) LANCE l'accord (CW, ~10 W : manuel IC-7100 p. 16-5) ; 02 = lancer l'accord : seulement
+    // par tunerStart(), jamais par frame() sans l'autorisation de la garde.
+    TUNER: [0x1C, 0x01],
     VFO_EXCH: [0x07, 0xB0],      // échange VFO A / B
     VFO_FREQ: [0x25],            // lecture : 00 VFO choisi, 01 l'autre (jamais d'écriture)
   };
   const ALLOWED = Object.values(CMD).map(c => c.join(","));
   // Données permises après certaines commandes (le reste : toute donnée). Une donnée hors liste = refus de la page.
+  // Valeurs d'atténuateur connues chez Icom (dB en BCD), essayées dans cet ordre pour un modèle sans valeur dans la
+  // table (IC-7300 / IC-705 : 20 ; IC-7100 : 12 ; IC-9700 : 10 ; IC-7610 / IC-7851 : 6, 12, 18).
+  function ATT_VALUES() { return [0x20, 0x12, 0x10, 0x06, 0x18, 0x30]; }
   const DATA_RULES = {
     [CMD.TUNER.join(",")]: [[], [0x00], [0x01]],
     [CMD.VFO_EXCH.join(",")]: [[]],
     [CMD.VFO_FREQ.join(",")]: [[0x00], [0x01]],
     [CMD.SPLIT.join(",")]: [[], [0x00], [0x01]],
     [CMD.RIT_ON.join(",")]: [[], [0x00], [0x01]],
-    [CMD.ATT.join(",")]: [[], [0x00], [0x20]],
+    [CMD.ATT.join(",")]: [[], [0x00], ...ATT_VALUES().map(v => [v])],
     [CMD.SCOPE_ON.join(",")]: [[], [0x00], [0x01]],
     [CMD.SCOPE_OUT.join(",")]: [[], [0x00], [0x01]],
   };
@@ -66,8 +72,10 @@
                   0x07: "CW-R", 0x08: "RTTY-R", 0x17: "DV" };
   const MODE_CODES = Object.fromEntries(Object.entries(MODES).map(([k, v]) => [v, Number(k)]));
 
-  function frame(addr, cmd, data) {
+  function frame(addr, cmd, data, tuneStart) {
     const body = [...cmd, ...(data || [])], key = cmd.join(",");
+    // Seule exception à la liste : « 1C 01 02 » (lancer l'accord), demandée par tunerStart() sous la garde d'émission.
+    if (tuneStart === true && key === CMD.TUNER.join(",") && (data || []).join(",") === "2") return Uint8Array.from([PREAMBLE, PREAMBLE, addr, CTRL, ...body, END]);
     // La commande doit être EXACTEMENT une de la liste (avant : un préfixe de texte, « 3 » acceptait « 36 »).
     if (!ALLOWED.includes(key)) throw new Error("commande hors de la liste fermée : " + hex(body));
     const rule = DATA_RULES[key];
@@ -229,7 +237,7 @@
     request(cmd, data, opts) {
       const o = Object.assign({ timeout: 400, read: true }, opts || {});
       const run = () => new Promise(resolve => {
-        const fr = frame(this.addr, cmd, data);
+        const fr = frame(this.addr, cmd, data, o.tuneStart === true);
         const started = this.clock();
         const match = f => f.payload[0] === NG || f.payload[0] === OK ||
           cmd.every((c, i) => f.payload[i] === c);
@@ -282,9 +290,24 @@
       if (!r.ok || !r.data || !r.data.length) return null;
       return hex(f.level ? r.data.slice(0, 2) : r.data.slice(0, 1));
     }
-    async fnWrite(f, v) { const r = await this.writeRaw(f.cmd, unhex(v)); return { ok: !!r.ok, ng: !!r.ng }; }
+    async fnWrite(f, v) {
+      // Atténuateur mis en marche : valeur du modèle, sinon les valeurs connues l'une après l'autre (refus = suivante).
+      if (f.att && v !== "00") {
+        const tries = (this.attValues && this.attValues.length ? this.attValues : ATT_VALUES()).map(x => hex([x]));
+        let last = { ok: false, ng: false };
+        for (const t of tries) {
+          const r = await this.writeRaw(f.cmd, unhex(t));
+          if (r.ok) return { ok: true, ng: false, written: t };
+          last = { ok: false, ng: !!r.ng };
+          if (!r.ng) break;                                         // silence : pas la peine d'insister
+        }
+        return last;
+      }
+      const r = await this.writeRaw(f.cmd, unhex(v)); return { ok: !!r.ok, ng: !!r.ng };
+    }
     fnOther(f, v0) {
       const b = unhex(v0);
+      if (f.att) return b[0] ? "00" : hex([(this.attValues && this.attValues[0]) || ATT_VALUES()[0]]);
       if (f.level) { const n = decodeLevel(b); return hex(encodeLevel(n >= 128 ? n - 51 : n + 51)); }
       const other = f.values.find(x => x !== b[0]);
       return hex([other == null ? f.values[0] : other]);
@@ -298,6 +321,21 @@
       return r.ok && r.data.length >= 6 ? decodeFreq(r.data.slice(1, 6)) : null;
     }
     async vfoSwap() { const r = await this.writeRaw(CMD.VFO_EXCH, []); return { ok: !!r.ok, ng: !!r.ng }; }
+
+    // ---- Coupleur d'antenne. Lecture : 0 hors service, 1 en service, 2 accord en cours ; null = pas de coupleur vu.
+    async tunerRead() { const r = await this.readRaw(CMD.TUNER); return r.ok && r.data.length ? r.data[0] : null; }
+    // 00 / 01 seulement. 01 peut LANCER un accord (AH-4) : l'appelant le fait sous la garde (essai E7), jamais ailleurs.
+    async tunerSet(v) {
+      if (v !== 0 && v !== 1) throw new Error("coupleur : valeur refusée");
+      const r = await this.writeRaw(CMD.TUNER, [v]); return { ok: !!r.ok, ng: !!r.ng };
+    }
+    // Lancer l'accord (émission) : seulement quand la garde d'émission a ouvert un accord.
+    async tunerStart(guard) {
+      if (!guard || !guard.tuning || !guard.on) throw new Error("accord refusé : hors de la garde d'émission");
+      const r = await this.request(CMD.TUNER, [0x02], { timeout: 300, tuneStart: true }); return { ok: !!r.ok, ng: !!r.ng };
+    }
+    // Arrêt d'urgence d'un accord : coupleur hors service, en tête de file.
+    async tunerAbortNow() { await this.sendNow(CMD.TUNER, [0x00]); }
 
     // ---- Spectre (essai R10, SANS émission). État : { display, output } (0 / 1, null = illisible).
     async scopeRead() {
@@ -338,9 +376,10 @@
     }
   }
 
-  /* Fonctions essayées en R9, SANS émission : lue, changée, relue, remise, relue. Le VOX n'y est JAMAIS. */
+  /* Fonctions essayées en R9, SANS émission : lue, changée, relue, remise, relue. Le VOX n'y est JAMAIS, le coupleur
+     non plus (le mettre en service peut lancer un accord : essai E7). */
   const FUNCS = [
-    { code: "ATT", label: "Atténuateur", cmd: CMD.ATT, values: [0x00, 0x20] },
+    { code: "ATT", label: "Atténuateur", cmd: CMD.ATT, values: [0x00], att: true },
     { code: "P.AMP", label: "Préampli", cmd: CMD.PREAMP, values: [0x00, 0x01, 0x02] },
     { code: "IP+", label: "IP+", cmd: CMD.IPPLUS, values: [0x00, 0x01] },
     { code: "AGC", label: "AGC", cmd: CMD.AGC, values: [0x01, 0x02, 0x03] },
@@ -353,7 +392,6 @@
     { code: "COMP niv.", label: "Niveau du compresseur", cmd: CMD.COMP_LEVEL, level: true },
     { code: "RIT", label: "RIT", cmd: CMD.RIT_ON, values: [0x00, 0x01] },
     { code: "SPLIT", label: "Split", cmd: CMD.SPLIT, values: [0x00, 0x01] },
-    { code: "TUNER", label: "Coupleur (en / hors service, sans accord)", cmd: CMD.TUNER, values: [0x00, 0x01] },
   ];
   const SCALE = { sText, poPercent, swrValue, alcPercent };
   function unhex(s) { return String(s || "").trim().split(/\s+/).filter(Boolean).map(x => parseInt(x, 16)); }

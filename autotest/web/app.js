@@ -34,13 +34,14 @@
     const box = $("brands"); box.textContent = "";
     if (modeB) {                                                       // mode B en tête : tous les postes de Hamlib
       const c = el("button", "choice", T("Tous les postes (Hamlib)")); c.type = "button";
-      c.appendChild(el("small", null, T("mode B, automatique")));
+      c.appendChild(el("small", null, T("mode B : Hamlib, sur ce PC")));
       c.onclick = () => { S.brand = { id: "hamlib", name: "Hamlib", family: "hamlib" }; openHamlib(); };
       box.appendChild(c);
     }
     for (const b of models.BRANDS) {
       const c = el("button", "choice", b.name); c.type = "button";
-      c.appendChild(el("small", null, b.ready ? T("prêt") : T("bientôt")));
+      // Page servie par le programme : les marques passent par le navigateur (mode A), le dire pour éviter la confusion.
+      c.appendChild(el("small", null, !b.ready ? T("bientôt") : modeB ? T("mode A : navigateur, sans Hamlib") : T("prêt")));
       c.disabled = !b.ready || !hasSerial;
       c.onclick = () => { S.brand = b; buildModels(); show("s-model"); };
       box.appendChild(c);
@@ -120,11 +121,25 @@
       if (!hlModels.length) { status.textContent = T("Lecture de la liste des postes de Hamlib…"); hlModels = await HL.models(); }
       const dl = $("hl-models"); dl.textContent = "";
       for (const m of hlModels) { const o = el("option"); o.value = `${m.n} · ${m.fabricant} ${m.modele}`; dl.appendChild(o); }
-      const pl = $("hl-ports"); pl.textContent = "";
-      for (const p of await HL.ports()) { const o = el("option"); o.value = p.port; o.label = p.description; pl.appendChild(o); }
+      await fillPorts();
       status.textContent = hlModels.length ? T("Hamlib {v} : {n} postes connus.", { v: hlInfo.hamlib || "?", n: hlModels.length }) : T("Hamlib introuvable sur ce PC : installez-le, ou indiquez son dossier au lancement (--hamlib-dir).");
     } catch (e) { status.textContent = T("Le programme openRemoteTRX-Autotest ne répond plus : relancez-le."); }
   }
+  /* Ports série vus par le programme (pyserial) : liste déroulante « COM12 — Silicon Labs CP210x… » ; le choix remplit
+     le champ (gardé pour une saisie à la main). Un seul port USB = choisi d'office. */
+  async function fillPorts() {
+    const sel = $("hl-portsel"); sel.textContent = "";
+    let ports = [];
+    try { ports = await HL.ports(); } catch (e) { ports = []; }
+    const first = el("option", null, ports.length ? T("— {n} port(s) trouvé(s) : choisir —", { n: ports.length }) : T("— aucun port trouvé : poste allumé ? câble branché ? —"));
+    first.value = ""; sel.appendChild(first);
+    for (const p of ports) { const o = el("option", null, p.description ? `${p.port} — ${p.description}` : p.port); o.value = p.port; sel.appendChild(o); }
+    const usb = ports.filter(p => /usb|cp210|silicon|ftdi|ch34|icom|yaesu|kenwood|uart/i.test(p.description || ""));
+    const pick = ports.length === 1 ? ports[0] : usb.length === 1 ? usb[0] : null;
+    if (pick && !$("hl-port").value) { sel.value = pick.port; $("hl-port").value = pick.port; }
+  }
+  $("hl-portsel").onchange = () => { if ($("hl-portsel").value) $("hl-port").value = $("hl-portsel").value; };
+  $("b-hl-ports").onclick = () => fillPorts();
   $("b-back-hl").onclick = () => show("s-brand");
   $("b-hl").onclick = async () => {
     const status = $("hl-status");
@@ -211,11 +226,18 @@
       $("auth-where").textContent = T("Fréquence {f} MHz, puissance réglée à {pct} %{w} avant la première émission.", { f: R.fmtHz(info.hz), pct: info.pct, w });
       const ul = $("auth-list"); ul.textContent = "";
       for (const [c, t, ms] of info.emissions) ul.appendChild(el("li", null, `${c} : ${t}, ${(ms / 1000).toFixed(0)} s`));
-      $("auth-load").checked = false; $("auth-ok").disabled = true;
-      $("auth-load").onchange = () => { $("auth-ok").disabled = !$("auth-load").checked; };
+      // Coupleur vu par la CAT : son modèle est DEMANDÉ (déclaration de l'opérateur, notée comme telle dans le rapport).
+      const tuner = info.tuner != null;
+      $("auth-tuner").hidden = !tuner; $("auth-tuner-type").value = ""; $("auth-tuner-text").value = ""; $("auth-tuner-free").hidden = true;
+      const ready = () => { $("auth-ok").disabled = !$("auth-load").checked || (tuner && !$("auth-tuner-type").value); };
+      $("auth-tuner-type").onchange = () => { $("auth-tuner-free").hidden = $("auth-tuner-type").value !== "autre"; ready(); };
+      $("auth-load").checked = false; ready();
+      $("auth-load").onchange = ready;
       $("o-auth").hidden = false;
       const done = v => { $("o-auth").hidden = true; resolve(v); };
-      $("auth-ok").onclick = () => done($("auth-load").checked); $("auth-no").onclick = () => done(false);
+      $("auth-ok").onclick = () => done(!$("auth-load").checked ? false
+        : { ok: true, tuner: tuner ? { type: $("auth-tuner-type").value, texte: $("auth-tuner-text").value.trim() } : null });
+      $("auth-no").onclick = () => done(false);
     });
   }
   function confirmManualPower(info) {

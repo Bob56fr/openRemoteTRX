@@ -15,15 +15,16 @@
     { id: "other", name: "Autre", family: null, ready: false },
   ];
 
-  // addr : adresse CI-V par défaut ; maxW : puissance maximale ; bauds : vitesses essayées dans cet ordre.
+  // addr : adresse CI-V par défaut ; maxW : puissance maximale ; bauds : vitesses essayées dans cet ordre ; att :
+  // valeurs d'atténuateur du modèle (dB en BCD, manuel CI-V), sinon la page essaie les valeurs connues chez Icom.
   const ICOM = [
-    { id: "ic7300mk2", name: "IC-7300MK2", addr: 0xB6, maxW: 100, verifie: false, hamlib: 3094, piloteIcom: true },
-    { id: "ic7300", name: "IC-7300", addr: 0x94, maxW: 100, verifie: false },
-    { id: "ic705", name: "IC-705", addr: 0xA4, maxW: 10, verifie: false, hamlib: 3085, piloteIcom: true },
+    { id: "ic7300mk2", name: "IC-7300MK2", addr: 0xB6, maxW: 100, verifie: false, hamlib: 3094, piloteIcom: true, att: [0x20] },
+    { id: "ic7300", name: "IC-7300", addr: 0x94, maxW: 100, verifie: false, att: [0x20] },
+    { id: "ic705", name: "IC-705", addr: 0xA4, maxW: 10, verifie: false, hamlib: 3085, piloteIcom: true, att: [0x20] },
     { id: "ic7610", name: "IC-7610", addr: 0x98, maxW: 100, verifie: false },
     { id: "ic9700", name: "IC-9700", addr: 0xA2, maxW: 100, verifie: false },
     { id: "ic905", name: "IC-905", addr: 0xAC, maxW: 10, verifie: false, piloteIcom: true },
-    { id: "ic7100", name: "IC-7100", addr: 0x88, maxW: 100, verifie: false },
+    { id: "ic7100", name: "IC-7100", addr: 0x88, maxW: 100, verifie: false, hamlib: 3070, att: [0x12] },
     { id: "ic7851", name: "IC-7851", addr: 0x8E, maxW: 200, verifie: false },
     { id: "ic7600", name: "IC-7600", addr: 0x7A, maxW: 100, verifie: false },
     { id: "ic7410", name: "IC-7410", addr: 0x80, maxW: 100, verifie: false },

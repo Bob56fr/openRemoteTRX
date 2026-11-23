@@ -191,9 +191,10 @@ test("R9 : chaque fonction lue, changée, relue, remise et relue, SANS émission
   await r._r9();
   const r9 = r.results.find(x => x.code === "R9"), rows = r9.values.fonctions;
   assert.equal(r9.status, "ok", r9.text);
-  assert.equal(rows.length, 15);
+  assert.equal(rows.length, 14);                                        // coupleur : plus jamais écrit en R9
   for (const row of rows) assert.equal(row.statut, "ok", row.code);
-  for (const code of ["ATT", "P.AMP", "IP+", "NB", "NR", "RIT", "SPLIT", "TUNER", "VFO A/B"]) assert.ok(r9.text.includes(code), code);
+  for (const code of ["ATT", "P.AMP", "IP+", "NB", "NR", "RIT", "SPLIT", "VFO A/B"]) assert.ok(r9.text.includes(code), code);
+  assert.ok(!rig.writes.some(w => w.cmd.startsWith("1C 01 ")), "coupleur écrit en R9");
   assert.equal(JSON.stringify(rig.fn), before);
   assert.equal(rig.st.freq, f0); assert.equal(rig.st.otherFreq, o0);
   assert.equal(rig.txLog.length, 0);
@@ -297,12 +298,98 @@ test("R10 : découpeur et assemblage d'un balayage coupé en blocs, liste fermé
   assert.throws(() => civ.frame(0xB6, [0x27, 0x00], []), /hors de la liste/);        // la page n'envoie jamais de données du spectre
 });
 
+// ---- Coupleur d'antenne : lu au début, accord SEULEMENT dans E7, sous la garde (15 s au plus)
+const TUNE_UI = (type, texte) => ({ authorize: async () => ({ ok: true, tuner: { type, texte: texte || "" } }) });
+const tuneWrites = rig => rig.writes.filter(w => w.cmd.startsWith("1C 01 "));
+
+test("E7 : AH-4 en service = mis hors service puis remis (accord lancé par le poste), PTT relu, laissé en service", async () => {
+  const { rig, r } = await setup({ tuner: "ah4", tuner0: 1, tuneMs: 150 }, TUNE_UI("AH-4"));
+  const out = await r.run(); rig.stopScope();
+  const e7 = res(out, "E7");
+  assert.equal(e7.status, "ok", e7.text); assert.ok(/Accord réussi/.test(e7.text));
+  assert.equal(rig.tunerState, 1); assert.equal(rig.tuning, false); assert.equal(rig.st.ptt, false);
+  assert.deepEqual(tuneWrites(rig).map(w => w.cmd), ["1C 01 00", "1C 01 01"]);          // jamais 02 : le poste a accordé seul
+  assert.equal(out.tuner, 1); assert.deepEqual(out.tunerDeclared, { type: "AH-4", texte: "" });
+  for (const c of ["R9", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
+});
+
+test("E7 : coupleur intégré hors service = accord lancé par la page (1C 01 02), remis hors service", async () => {
+  const { rig, r } = await setup({ tuner: "interne", tuner0: 0, tuneMs: 120 }, TUNE_UI("interne"));
+  const out = await r.run(); rig.stopScope();
+  assert.equal(res(out, "E7").status, "ok", res(out, "E7").text);
+  assert.deepEqual(tuneWrites(rig).map(w => w.cmd), ["1C 01 01", "1C 01 02", "1C 01 00"]);
+  assert.equal(rig.tunerState, 0);
+});
+
+test("E7 : AUCUNE écriture du coupleur sans autorisation ni avant elle", async () => {
+  const { rig, r } = await setup({ tuner: "ah4", tuner0: 1 }, { authorize: async () => false });
+  const out = await r.run(); rig.stopScope();
+  assert.equal(tuneWrites(rig).length, 0); assert.equal(rig.tunes.length, 0);
+  assert.equal(res(out, "E7").status, "saute");
+  const g = new TxGuard(new civ.CivLink(rig.transport(115200), 0xB6), { maxTx: 1000 });
+  assert.throws(() => g.startTune("E7", 1000), /autorisation/);
+  await assert.rejects(() => g.link.tunerStart(g), /garde/);                                 // accord hors de la garde : refusé
+});
+
+test("E7 : accord trop long = coupé à la durée maximale (coupleur hors service, réception relue)", async () => {
+  const { rig, r } = await setup({ tuner: "ah4", tuner0: 0, tuneMs: 60000 }, TUNE_UI("AH-4"), { tune: 400 });
+  const out = await r.run(); rig.stopScope();
+  const e7 = res(out, "E7");
+  assert.equal(e7.status, "echec", e7.text); assert.ok(/non terminé/.test(e7.text));
+  assert.equal(rig.tuning, false); assert.ok(rig.maxTune() < 1200, "accord trop long : " + rig.maxTune());
+  assert.equal(rig.st.ptt, false); assert.equal(rig.tunerState, 0);
+});
+
+test("E7 : STOP pendant l'accord = accord interrompu, coupleur hors service, essais arrêtés", async () => {
+  const { rig, r } = await setup({ tuner: "ah4", tuner0: 0, tuneMs: 60000 }, TUNE_UI("AH-4"), { tune: 5000 });
+  r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E7") setTimeout(() => r.stop("stop"), 150); };
+  const out = await r.run(); rig.stopScope();
+  assert.equal(res(out, "E7").status, "saute", res(out, "E7").text);
+  assert.equal(rig.tuning, false); assert.ok(rig.maxTune() < 1000, "accord pas interrompu : " + rig.maxTune());
+  assert.equal(rig.st.ptt, false);
+});
+
+test("E7 : « aucun coupleur » déclaré, accord impossible, poste sans coupleur", async () => {
+  const a = await setup({ tuner: "ah4", tuner0: 1 }, TUNE_UI("aucun"));
+  const oa = await a.r.run(); a.rig.stopScope();
+  assert.equal(res(oa, "E7").status, "avert"); assert.equal(tuneWrites(a.rig).length, 0);
+  const b = await setup({ tuner: "ah4", tuner0: 0, tuneMs: 100, tuneResult: 0 }, TUNE_UI("autre", "LDG IT-100"));
+  const ob = await b.r.run(); b.rig.stopScope();
+  assert.equal(res(ob, "E7").status, "avert"); assert.ok(/dérivation/.test(res(ob, "E7").text));
+  assert.equal(ob.tunerDeclared.texte, "LDG IT-100");
+  const c = await setup({ tuner: "aucun" });
+  const oc = await c.r.run(); c.rig.stopScope();
+  assert.equal(res(oc, "E7").status, "na"); assert.equal(oc.tuner, null);
+});
+
+test("R9 : atténuateur du modèle (IC-7100 : 12 dB), valeurs connues essayées pour un autre modèle", async () => {
+  const ic7100 = models.ICOM.find(m => m.id === "ic7100");
+  const rig = new FakeIcom({ addr: 0x88, att: [0x12] });
+  const d = await detect({ openAt: async b => rig.transport(b), model: ic7100, bauds: [115200], byAddr: models.byAddr });
+  const r = new Runner({ link: d.link, model: ic7100, audio: fakeAudio(rig), ui: ui(), opts: FAST, detected: d });
+  await r._r9();
+  const att = r.results.find(x => x.code === "R9").values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att.statut, "ok"); assert.equal(att.essai, "12");
+  const { rig: rig2, r: r2 } = await setup({ att: [0x06, 0x12, 0x18] });     // modèle inconnu de la table : 20 refusé, 12 pris
+  r2.link.attValues = null;
+  await r2._r9();
+  const att2 = r2.results.find(x => x.code === "R9").values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att2.statut, "ok", JSON.stringify(att2)); assert.equal(att2.essai, "12"); assert.deepEqual(rig2.fn["11"], [0x00]);
+});
+
+test("E4 : ALC déjà haut sur la porteuse sans modulation = valeur non concluante, pas de conseil USB MOD", async () => {
+  const { rig, r } = await setup({ alcRaw: 136 });
+  r.link.meter = (orig => async k => k === "alc" && rig.st.ptt ? 130 : orig(k))(r.link.meter.bind(r.link));
+  const out = await r.run(); rig.stopScope();
+  assert.ok(/non concluante/.test(res(out, "E4").text), res(out, "E4").text);
+});
+
 test("liste fermée : commande exacte, jamais l'accord du coupleur, le VOX ni un préfixe", () => {
   assert.throws(() => civ.frame(0xB6, civ.CMD.TUNER, [0x02]), /hors de la liste/);   // 02 = lancer l'accord (émission)
   assert.throws(() => civ.frame(0xB6, [0x16, 0x46], [0x01]), /hors de la liste/);   // VOX
   assert.throws(() => civ.frame(0xB6, [0x36], []), /hors de la liste/);              // « 3 » n'accepte plus « 36 »
   assert.throws(() => civ.frame(0xB6, civ.CMD.VFO_FREQ, [0x00, 0x00, 0x40, 0x07, 0x14, 0x00]), /hors de la liste/);  // jamais d'écriture
-  assert.throws(() => civ.frame(0xB6, civ.CMD.ATT, [0x12]), /hors de la liste/);
+  assert.throws(() => civ.frame(0xB6, civ.CMD.ATT, [0x99]), /hors de la liste/);
   assert.equal(civ.hex(civ.frame(0xB6, civ.CMD.TUNER, [0x01])), "FE FE B6 E0 1C 01 01 FD");
 });
 

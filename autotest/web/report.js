@@ -6,7 +6,7 @@
 (function (root) {
   "use strict";
 
-  const VERSION = "0.8.0";
+  const VERSION = "0.9.0";
   const SCHEMA = "openremotetrx-autotest/1";
   const STATUS_TEXT = { ok: "réussi", avert: "à vérifier", echec: "échec", na: "non disponible", saute: "sauté" };
 
@@ -49,6 +49,8 @@
       carte_son: audio ? { entree: cleanLabel(audio.inputLabel), sortie: cleanLabel(audio.outputLabel) } : null,
       essais: (run && run.results || []).map(r => ({ code: r.code, statut: r.status, texte: r.text, valeurs: r.values })),
       arret: run && run.stop || null,
+      // Coupleur : état LU par la CAT au début (0 / 1, null = pas vu) et modèle DÉCLARÉ par l'opérateur (jamais vérifié).
+      coupleur: run && (run.tuner != null || run.tunerDeclared) ? { lu: run.tuner == null ? null : run.tuner, declare: run.tunerDeclared || null } : null,
       mesures_emission: (run && run.samples || []).map(s => ({ essai: s.label, po: s.raw.po, swr: s.raw.swr, alc: s.raw.alc })),
       trace: trace || [],
       empreinte_trace: await sha256(traceText),

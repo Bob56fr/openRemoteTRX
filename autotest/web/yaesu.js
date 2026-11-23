@@ -59,7 +59,6 @@
     { code: "COMP", label: "Processeur de parole", read: "PR0", pre: "PR0", w: 1, values: ["1", "2"], slow: true },
     { code: "RIT", label: "Clarifier (RIT)", read: "RT", pre: "RT", w: 1, values: ["0", "1"] },
     { code: "SPLIT", label: "Split", read: "ST", pre: "ST", w: 1, values: ["0", "1"] },
-    { code: "TUNER", label: "Coupleur (en / hors service, sans accord)", read: "AC", pre: "AC00", w: 1, values: ["0", "1"] },
   ];
 
   class YaesuLink {
