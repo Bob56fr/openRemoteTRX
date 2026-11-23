@@ -6,7 +6,7 @@
 (function (root) {
   "use strict";
 
-  const VERSION = "0.10.3";
+  const VERSION = "0.10.4";
   const SCHEMA = "openremotetrx-autotest/1";
   const STATUS_TEXT = { ok: "réussi", avert: "à vérifier", echec: "échec", na: "non disponible", saute: "sauté" };
 

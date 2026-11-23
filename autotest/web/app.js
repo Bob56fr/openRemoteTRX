@@ -36,17 +36,12 @@
   };
 
   function buildBrands() {
+    // Test rapide (mode A) seulement : le test par Hamlib (mode B) a son propre bouton à l'accueil (demande de
+    // l'utilisateur du 2026-11-23 : pas de tuile Hamlib parmi les marques).
     const box = $("brands"); box.textContent = "";
-    if (modeB) {                                                       // mode B en tête : tous les postes de Hamlib
-      const c = el("button", "choice", T("Tous les postes (Hamlib)")); c.type = "button";
-      c.appendChild(el("small", null, T("mode B : Hamlib, sur ce PC")));
-      c.onclick = () => { S.brand = { id: "hamlib", name: "Hamlib", family: "hamlib" }; openHamlib(); };
-      box.appendChild(c);
-    }
     for (const b of models.BRANDS) {
       const c = el("button", "choice", b.name); c.type = "button";
-      // Page servie par le programme : les marques passent par le navigateur (mode A), le dire pour éviter la confusion.
-      c.appendChild(el("small", null, !b.ready ? T("bientôt") : modeB ? T("mode A : navigateur, sans Hamlib") : T("prêt")));
+      c.appendChild(el("small", null, b.ready ? T("prêt") : T("bientôt")));
       c.disabled = !b.ready || !hasSerial;
       c.onclick = () => { S.brand = b; buildModels(); show("s-model"); };
       box.appendChild(c);
@@ -145,7 +140,7 @@
   }
   $("hl-portsel").onchange = () => { if ($("hl-portsel").value) $("hl-port").value = $("hl-portsel").value; };
   $("b-hl-ports").onclick = () => fillPorts();
-  $("b-back-hl").onclick = () => show("s-brand");
+  $("b-back-hl").onclick = () => show("s-home");
   $("b-hl").onclick = async () => {
     const status = $("hl-status");
     const n = parseInt(($("hl-model").value.match(/^\s*(\d+)/) || [])[1], 10);
@@ -397,5 +392,5 @@
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   };
   $("b-print").onclick = () => window.print();
-  $("b-again").onclick = () => { S.runner = null; S.detected = null; S.port = null; show("s-brand"); buildBrands(); };
+  $("b-again").onclick = () => { S.runner = null; S.detected = null; S.port = null; show("s-home"); };
 })();
