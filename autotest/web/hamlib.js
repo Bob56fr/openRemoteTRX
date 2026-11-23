@@ -62,6 +62,7 @@
       let r;
       try { r = await this.api.cmd(line); } catch (e) { r = { erreur: "page" }; }
       this.trace.push({ t: this.clock() - this.t0, d: "tx", h: line, r: r && r.rprt, v: r && r.valeurs, ms: r && r.ms, e: r && r.erreur });
+      this.lastErr = (r && r.erreur) || null;              // « rigctld_tombe » : défaut de Hamlib, pas une fonction absente
       return r || {};
     }
     async get(line) { const r = await this.q(line); return r.rprt === 0 && r.valeurs && r.valeurs.length ? r.valeurs : null; }

@@ -25,7 +25,7 @@
   ];
 
   const FUNCS = civ.FUNCS;                                  // compatibilité (fonctions Icom)
-  const STATUS_FN = { ok: "OK", absent: "absente", refus: "écriture refusée", ecart: "relue fausse", remise: "NON REMISE" };
+  const STATUS_FN = { ok: "OK", absent: "absente", refus: "écriture refusée", ecart: "relue fausse", remise: "NON REMISE", plante: "lecture qui fait tomber rigctld" };
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const fr = (v, d) => v.toFixed(d).replace(".", ",");
@@ -305,8 +305,11 @@
           if (this.aborted) break;
           this.now(T("Fonction {code} : lecture, changement, relecture, remise…", { code: f.code }));
           const row = { code: f.code, label: f.label };
-          const v0 = await L.fnRead(f);
-          if (v0 == null) { row.statut = "absent"; out.push(row); continue; }
+          // Mode B : une lecture peut faire tomber rigctld (IC-7300MK2 + Hamlib 4.7.2, « l ATT », 2026-11-23) : relancé par
+          // le programme, lecture refaite UNE fois ; un second plantage = défaut de Hamlib signalé, jamais « absente ».
+          let v0 = await L.fnRead(f);
+          if (v0 == null && L.lastErr === "rigctld_tombe") v0 = await L.fnRead(f);
+          if (v0 == null) { row.statut = L.lastErr === "rigctld_tombe" ? "plante" : "absent"; out.push(row); continue; }
           row.avant = v0;
           let v1 = L.fnOther(f, v0); row.essai = v1;
           const w = await L.fnWrite(f, v1);
@@ -346,14 +349,15 @@
         }
       }
       const by = s => out.filter(x => x.statut === s).map(x => x.code);
-      const ok = by("ok"), abs = by("absent"), ref = by("refus"), ec = by("ecart"), bad = by("remise");
+      const ok = by("ok"), abs = by("absent"), ref = by("refus"), ec = by("ecart"), bad = by("remise"), crash = by("plante");
       const parts = [];
       if (ok.length) parts.push(T("{n} OK : {list}", { n: ok.length, list: ok.join(", ") }));
       if (ec.length) parts.push(T("relues fausses : {list}", { list: ec.join(", ") }));
       if (ref.length) parts.push(T("écriture refusée : {list}", { list: ref.join(", ") }));
       if (abs.length) parts.push(T("absentes : {list}", { list: abs.join(", ") }));
+      if (crash.length) parts.push(T("lecture qui fait tomber rigctld (défaut de Hamlib, fonction non touchée) : {list}", { list: crash.join(", ") }));
       if (bad.length) parts.push(T("NON REMISES (à remettre à la main) : {list}", { list: bad.join(", ") }));
-      const status = bad.length ? "echec" : (ec.length || ref.length) ? "avert" : ok.length ? "ok" : "na";
+      const status = bad.length ? "echec" : (ec.length || ref.length || crash.length) ? "avert" : ok.length ? "ok" : "na";
       const tn = this.orig.tuner;
       if (tn != null) parts.push(tn ? T("coupleur en service (lu, essayé en émission : E7)") : T("coupleur hors service (lu, essayé en émission : E7)"));
       this.result("R9", status, parts.join(" ; ") + ".", { fonctions: out, coupleur_lu: tn == null ? null : tn });

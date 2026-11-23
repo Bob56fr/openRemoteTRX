@@ -617,6 +617,17 @@ test("Hamlib : pilote « Beta » = R2 réussi ; lecture perdue après la remise 
   assert.equal(att2.statut, "ok", JSON.stringify(att2)); assert.notEqual(res(o2, "R9").status, "echec");
 });
 
+test("Hamlib : première lecture de l'ATT qui fait tomber rigctld = refaite ; deux fois = défaut de Hamlib, jamais « absente »", async () => {
+  const one = setupH({ drop: { read: "l ATT", n: 1 } });
+  const att1 = res(await one.r.run(), "R9").values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att1.statut, "ok", JSON.stringify(att1));
+  const two = setupH({ drop: { read: "l ATT", n: 2 } });
+  const o2 = await two.r.run(), r9 = res(o2, "R9");
+  const att2 = r9.values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att2.statut, "plante"); assert.equal(r9.status, "avert"); assert.ok(/tomber rigctld/.test(r9.text), r9.text);
+  assert.ok(!two.rig.lines.some(l => /^L ATT/.test(l)), "ATT jamais écrit");
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

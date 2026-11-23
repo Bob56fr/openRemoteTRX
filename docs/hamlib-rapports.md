@@ -127,3 +127,16 @@ Expected: `.attenuator = { 12, RIG_DBLIST_END }` for the IC-7100 (like its level
 IC-7100 (openRemoteTRX-Autotest, mode B). Note: the IC-7300MK2 shows the opposite inconsistency (list 20 dB right,
 range 0..12 wrong), see section 1.
 
+## 8. IC-7300MK2 (model 3094, Hamlib 4.7.2, Windows): `l ATT` sometimes crashes rigctld
+
+Seen twice on 2026-11-23 (openRemoteTRX-Autotest, mode B: its own rigctld, USB CI-V port A, 115200 baud, one client).
+
+- Run 1: `l ATT` -> 0, `L ATT 20`, `l ATT` -> 20, `L ATT 0` (all `RPRT 0`), then the next `l ATT` never answers: after
+  ~2.8 s the rigctld **process is gone** (connection reset, port closed). Restarted, `l ATT` reads 0 again.
+- Run 2: the very FIRST `l ATT` of the session kills rigctld the same way (~2.8 s, nothing written before).
+- Other runs read and write `ATT` without trouble: the crash is intermittent. The radio is never affected (receive,
+  attenuator as set).
+
+**Request**: same family as section 5 (`p KEYERTYPE`): a read should never be able to kill rigctld. We can provide a
+`rigctld -vvvvv` trace on request.
+

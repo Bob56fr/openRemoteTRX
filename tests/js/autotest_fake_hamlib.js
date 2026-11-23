@@ -60,6 +60,7 @@ class FakeHamlib {
     // Lecture perdue (rigctld tombé puis relancé, IC-7300MK2 + Hamlib 4.7.2 sur « l ATT ») : n fois après l'écriture donnée.
     if (this.o.dropAfter && this.lastWrite === this.o.dropAfter.write && line === this.o.dropAfter.read && this.o.dropAfter.n > 0) { this.o.dropAfter.n--; return { erreur: "rigctld_tombe", ms: 2830 }; }
     if (/^[LUFMT] /.test(line)) this.lastWrite = line;
+    if (this.o.drop && line === this.o.drop.read && this.o.drop.n > 0) { this.o.drop.n--; return { erreur: "rigctld_tombe", ms: 2764 }; }
     switch (k) {
       case "f": return this.ok([String(this.freq)]);
       case "F": this.freq = Number(a); return this.ok();

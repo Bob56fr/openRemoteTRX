@@ -13,6 +13,7 @@
   "lecture perdue puis refaite (liaison avec le poste reprise)": "reading lost then done again (link with the radio restored)",
   "Rapport Autotest": "Autotest report",
   "Fichier à joindre : {f} (dossier Téléchargements)": "File to attach: {f} (Downloads folder)",
+  "lecture qui fait tomber rigctld (défaut de Hamlib, fonction non touchée) : {list}": "reading that crashes rigctld (Hamlib defect, function not touched): {list}",
   "Tous les postes (Hamlib)": "All radios (Hamlib)",
   "mode B, automatique": "mode B, automatic",
   "Lecture de la liste des postes de Hamlib…": "Reading Hamlib's list of radios…",
