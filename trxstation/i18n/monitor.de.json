@@ -225,6 +225,7 @@
   "sdr.error": "Fehler: {detail}",
   "sdr.suspended": "ausgesetzt: {reason}",
   "sdr.stopped": "gestoppt",
+  "sdr.idle": "im Ruhezustand: niemand sieht oder hört zu",
   "sdr.throttled": "gedrosselt (Stufe {level}): {reason}",
   "sdr.silent": "Modul seit {age} stumm",
   "label.sdr_device": "Empfänger",

@@ -369,6 +369,8 @@
   "sdr.state_suspended": "SDR SUSPENDU par la station : {reason} (reprise automatique au calme)",
   "sdr.load_default": "station chargée",
   "sdr.state_starting": "SDR : démarrage…",
+  "sdr.state_idle": "SDR en veille (personne ne l'utilisait) : réveil en cours, quelques secondes…",
+  "sdr.state_waking": "SDR : sortie de veille, encore quelques secondes…",
   "sdr.state_error": "SDR en panne : {cause}",
   "sdr.cause_unknown": "cause inconnue",
   "sdr.state_other": "SDR : {state}",

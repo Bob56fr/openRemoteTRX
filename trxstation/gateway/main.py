@@ -150,6 +150,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
                 manager.on_sdr_view = bridge.on_sdr_view
                 manager.sdr_audio = await _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks)
                 tasks += _start_sdr_governor(cfg, manager.sdr_audio, pipeline, bridge, stop)
+                from . import sdr_use                   # veille du SDR quand personne ne l'utilise (étape 379)
+                tasks.append(asyncio.create_task(sdr_use.run(
+                    sdr_use.SdrUse(bridge.clients, lambda data: bridge.call("sdr", data)), stop)))
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
             a = cfg.access
             access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,

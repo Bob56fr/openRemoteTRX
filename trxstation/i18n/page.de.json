@@ -369,6 +369,8 @@
   "sdr.state_suspended": "SDR von der Station AUSGESETZT: {reason} (automatische Wiederaufnahme bei Ruhe)",
   "sdr.load_default": "Station ausgelastet",
   "sdr.state_starting": "SDR: Start…",
+  "sdr.state_idle": "SDR im Ruhezustand (niemand hat ihn genutzt): wird geweckt, einige Sekunden…",
+  "sdr.state_waking": "SDR: verlässt den Ruhezustand, noch einige Sekunden…",
   "sdr.state_error": "SDR gestört: {cause}",
   "sdr.cause_unknown": "unbekannte Ursache",
   "sdr.state_other": "SDR: {state}",

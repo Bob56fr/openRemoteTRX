@@ -225,6 +225,7 @@
   "sdr.error": "error: {detail}",
   "sdr.suspended": "suspended: {reason}",
   "sdr.stopped": "stopped",
+  "sdr.idle": "on standby: nobody is viewing or listening",
   "sdr.throttled": "throttled (level {level}): {reason}",
   "sdr.silent": "no news from the module for {age}",
   "label.sdr_device": "Receiver",

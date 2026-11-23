@@ -391,6 +391,8 @@ def _sdr_panel(snap: Snapshot, t: Translator | None = None, now: float | None = 
         text, level = t("sdr.running"), "ok"
     elif state == "starting":
         text, level = t("sdr.starting"), "warn"
+    elif state == "idle":                                       # veille (étape 380) : normal, rien à faire
+        text, level = t("sdr.idle"), "dim"
     elif state == "suspended":
         text, level = t("sdr.suspended", reason=str(sd.get("detail") or "")[:120]), "warn"
     elif state == "error":

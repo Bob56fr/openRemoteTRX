@@ -369,6 +369,8 @@
   "sdr.state_suspended": "SDR SUSPENDED by the station: {reason} (automatic resume when load drops)",
   "sdr.load_default": "station under load",
   "sdr.state_starting": "SDR: starting…",
+  "sdr.state_idle": "SDR on standby (nobody was using it): waking up, a few seconds…",
+  "sdr.state_waking": "SDR: leaving standby, a few more seconds…",
   "sdr.state_error": "SDR failure: {cause}",
   "sdr.cause_unknown": "unknown cause",
   "sdr.state_other": "SDR: {state}",

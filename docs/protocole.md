@@ -346,7 +346,8 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
     pendant l'émission).
 - **État** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_state", "retain": "snapshot", "scope":
   "operators", …}}` : `state` (`starting`, `running`, `error`, `suspended` = sdr-core arrêté par la station,
-  0.144.0+), `driver` (`sdrplay` ou `rtlsdr`, 0.149.0+ ; une clé RTL-SDR n'a ni gain FI ni choix d'antenne), `code`
+  0.144.0+, `idle` = VEILLE : personne n'affiche la rubrique ni n'écoute depuis 60 s, sdr-core arrêté, réveil à
+  l'ouverture de la rubrique, 0.276.0+), `waking` (vrai pendant le `starting` qui suit une veille, 0.276.0+), `driver` (`sdrplay` ou `rtlsdr`, 0.149.0+ ; une clé RTL-SDR n'a ni gain FI ni choix d'antenne), `code`
   et `detail` (cause d'une erreur : `duplicate` = numéro de série en double, 0.149.0+, `absent`,
   `busy`, `service`, `core_missing`, `config`, `exit`, `removed` ; codes ORT-6001 à ORT-6005), `serial`, `fs`
   (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `agc`, `gr_now` (réduction de gain FI réellement

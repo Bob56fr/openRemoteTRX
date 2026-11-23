@@ -272,7 +272,8 @@
     if (st.state === "suspended") {
       return I18N.t("sdr.state_suspended", { reason: st.load_reason || st.detail || I18N.t("sdr.load_default") });
     }
-    if (st.state === "starting") return I18N.t("sdr.state_starting");
+    if (st.state === "idle") return I18N.t("sdr.state_idle");            // veille (station 0.276.0) : réveil demandé
+    if (st.state === "starting") return I18N.t(st.waking ? "sdr.state_waking" : "sdr.state_starting");
     if (st.state === "error" && st.code === "duplicate") return I18N.t("sdr.state_error", { cause: I18N.t("sdr.code_duplicate") });
     if (st.state === "error") return I18N.t("sdr.state_error", { cause: codeTexts()[st.code] || st.detail || st.code || I18N.t("sdr.cause_unknown") });
     return I18N.t("sdr.state_other", { state: String(st.state || I18N.t("sdr.state_stopped")) });

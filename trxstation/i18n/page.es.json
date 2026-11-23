@@ -369,6 +369,8 @@
   "sdr.state_suspended": "SDR SUSPENDIDO por la estación: {reason} (se reanuda solo cuando baje la carga)",
   "sdr.load_default": "estación cargada",
   "sdr.state_starting": "SDR: arrancando…",
+  "sdr.state_idle": "SDR en espera (nadie lo usaba): despertando, unos segundos…",
+  "sdr.state_waking": "SDR: saliendo de la espera, unos segundos más…",
   "sdr.state_error": "SDR averiado: {cause}",
   "sdr.cause_unknown": "causa desconocida",
   "sdr.state_other": "SDR: {state}",

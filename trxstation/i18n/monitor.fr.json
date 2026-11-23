@@ -225,6 +225,7 @@
   "sdr.error": "en erreur : {detail}",
   "sdr.suspended": "suspendu : {reason}",
   "sdr.stopped": "arrêté",
+  "sdr.idle": "en veille : personne ne l'affiche ni ne l'écoute",
   "sdr.throttled": "bridé (niveau {level}) : {reason}",
   "sdr.silent": "module muet depuis {age}",
   "label.sdr_device": "Récepteur",

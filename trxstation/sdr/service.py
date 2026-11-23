@@ -18,6 +18,10 @@ station) et `ant` (A ou B, SDRplay seulement ; vide = station.toml) ; un changem
 part alors en UDP vers 127.0.0.1:[sdr] audio_port (paquets « ORSA », jeton dérivé du secret du module) ; « load »
 (niveau de bridage 0 à 5 décidé par la passerelle, load.py). Le module se bride aussi LUI-MÊME au-delà de
 [sdr] max_cpu_pct / max_mem_mb (niveaux 1 à 4) ; le niveau appliqué est le plus haut des deux (5 = sdr-core arrêté). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
+VEILLE (étape 380) : la passerelle dit « use » (on / off) selon qu'un opérateur affiche la rubrique SDR ou écoute le SDR ;
+sans usage depuis IDLE_S (60 s), sdr-core est arrêté (plus de flux demandé au service du fabricant, qui reste en marche) et
+l'état publié devient « idle » ; « use » on (ou « audio ») le relance aussitôt, l'état « starting » porte alors
+`waking: true` (la page dit que le réveil prend quelques secondes).
 Réglages choisis depuis la page gardés dans state_dir/sdr/last.json (jamais dans station.toml).
 
 À la main (essai, sans bus) :  python -m trxstation.sdr.service --config station.toml --once
@@ -55,6 +59,9 @@ BACKOFF_MIN_S, BACKOFF_MAX_S = 2.0, 60.0
 STABLE_RUN_S = 600.0           # 10 min de marche : le compteur de relances repart de zéro
 LOSS_REPORT_EVERY_S = 600.0
 STOP_GRACE_S = 3.0
+IDLE_S = 60.0                  # personne ne regarde ni n'écoute le SDR depuis ce délai : veille, sdr-core arrêté (étape 380)
+USE_LEASE_S = 30.0             # « use » de la passerelle valable ce délai (redit toutes les 10 s pendant l'usage)
+IDLE_REPUBLISH_S = 5.0         # en veille : état republié (tableau de bord : jamais « module muet »)
 MAX_RATE = 15                  # le bus limite un module à 20 messages par seconde
 SET_LIMITS = {"center_hz": (1_000, 2_000_000_000), "lna": (0, 8), "gr": (20, 59), "rate": (1, MAX_RATE)}
 SET_BOOLS = ("agc",)           # AGC matériel de la FI
@@ -255,6 +262,10 @@ class SdrService:
         self._audio_token = audio_token(audio_secret) if audio_secret else b""
         self._audio_sink = audio_sink          # essais : fonction(paquet) ; sinon UDP vers 127.0.0.1:audio_port
         self._udp = None
+        # veille (étape 380) : dernier usage connu ; la station démarre sans client, 60 s de grâce
+        self._last_use = clock()
+        self._use_until = 0.0                  # « use » on reçu de la passerelle : valable jusqu'à
+        self._waking = False                   # relance après une veille (état « starting » avec waking)
 
     # ------------------------------------------------------------- réglages gardés
     def _load_settings(self) -> Settings:
@@ -287,6 +298,7 @@ class SdrService:
                 "zoom": s.zoom, "zoom_off": zoom_window(fs, s.zoom, s.zoom_off),
                 "dfreq": listened(self.sd, s, fs), "mode": s.mode, "dbw": s.dbw, "sql": s.sql, "audio": self.demodulating,
                 "restarts": self.restarts, "t": int(self.clock()), "fs": fs,
+                "waking": self._waking and self.state.get("state") == "starting",
                 "rate_eff": waterfall_rate(s.rate, self._applied), "load": self._applied,
                 "load_gw": self.gw_level, "load_self": self.ladder.level, "load_reason": self.load_reason(),
                 "max_cpu_pct": self.sd.max_cpu_pct, "max_mem_mb": self.sd.max_mem_mb}
@@ -338,8 +350,13 @@ class SdrService:
             self.gw_level, self.gw_reason = level, str(args.get("reason") or "")[:160]
             await self._apply_load()
             return {"load": self.level}
+        if action == "use":                    # de la PASSERELLE seulement : rubrique affichée ou écoute (veille)
+            self.note_use(bool((data.get("args") or {}).get("on")))
+            return {"idle": self.idle_due()}
         if action == "audio":                  # de la PASSERELLE seulement (un client ne peut pas l'envoyer)
             on = bool((data.get("args") or {}).get("on"))
+            if on:
+                self.note_use(True)
             if on != self.audio_on:
                 self.audio_on = on
                 await self._write_core([f"audio {int(self.demodulating)}"])
@@ -373,6 +390,22 @@ class SdrService:
             await self.publish_state()
             return self.snapshot()
         raise CallRefused("sdr_invalid", "action inconnue (state, set)")
+
+    # ------------------------------------------------------------- veille
+    def note_use(self, on: bool) -> None:
+        now = self.clock()
+        self._last_use = now
+        self._use_until = now + USE_LEASE_S if on else 0.0
+        if on:
+            self._wake.set()
+
+    def idle_due(self) -> bool:
+        """Personne n'affiche ni n'écoute le SDR depuis IDLE_S : sdr-core peut s'arrêter."""
+        now = self.clock()
+        if self.audio_on or now < self._use_until:
+            self._last_use = now
+            return False
+        return now - self._last_use >= IDLE_S
 
     # ------------------------------------------------------------- bridage
     @property
@@ -512,6 +545,7 @@ class SdrService:
                     kind = frame.get("t")
                     if kind == "started":
                         self._set_state("running")
+                        self._waking = False
                         if self.demodulating:
                             await self._write_core(["audio 1"])     # cœur relancé pendant une écoute
                         log.info("SDR %s ouvert (API %s)", frame.get("serial"), frame.get("api"))
@@ -531,6 +565,11 @@ class SdrService:
                         dirty = True
                     elif kind == "error":
                         error = frame
+                if self.idle_due():                       # plus personne : veille (arrêt voulu, pas une panne)
+                    log.info("SDR en veille : personne ne l'affiche ni ne l'écoute depuis %.0f s", IDLE_S)
+                    self._reload = True
+                    await self._stop_core()
+                    break
                 # une surcharge du CAN peut basculer des dizaines de fois par seconde : état publié au plus 1 fois/s
                 now = self.clock()
                 if now - last_state >= STATE_EVERY_S or (dirty and now - last_state >= STATE_MIN_GAP_S):
@@ -668,6 +707,18 @@ class SdrService:
                         except asyncio.TimeoutError:
                             pass
                         self._wake.clear()
+                    continue
+                if self.idle_due():                       # veille : sdr-core arrêté jusqu'au prochain usage
+                    self._set_state("idle")
+                    self._wake.clear()
+                    while self.idle_due() and not self._stopping and self.level < TOP:
+                        await self.publish_state()        # republié : tableau de bord à jour
+                        try:
+                            await asyncio.wait_for(self._wake.wait(), IDLE_REPUBLISH_S)
+                        except asyncio.TimeoutError:
+                            pass
+                        self._wake.clear()
+                    self._waking = not self._stopping
                     continue
                 started = time.monotonic()
                 self._reload = False
