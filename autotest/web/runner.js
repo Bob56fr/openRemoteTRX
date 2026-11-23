@@ -169,8 +169,11 @@
     _r2() {
       const d = this.detected, m = this.model, hexA = a => a.toString(16).toUpperCase().padStart(2, "0") + "h";
       if (d.hamlib) {                                               // mode B : modèle choisi dans la liste de Hamlib
-        const h = d.hamlib, stable = !h.statut || /^stable$/i.test(h.statut);
-        this.result("R2", stable ? "ok" : "avert", stable ? T("Hamlib : {name} (modèle {n}, Hamlib {v}).", { name: h.nom, n: h.n, v: h.version || "?" })
+        // Statut du pilote dans Hamlib : « Beta » est le cas de la plupart des postes récents (IC-7300MK2, validé par
+        // openRemoteTRX) : simple information, les essais suivants disent ce qui marche. Alpha, Untested, Buggy : à vérifier.
+        const h = d.hamlib, stable = !h.statut || /^stable$/i.test(h.statut), beta = /^beta$/i.test(h.statut || "");
+        this.result("R2", stable || beta ? "ok" : "avert", stable ? T("Hamlib : {name} (modèle {n}, Hamlib {v}).", { name: h.nom, n: h.n, v: h.version || "?" })
+          : beta ? T("Hamlib : {name} (modèle {n}, Hamlib {v}), pilote au statut « {s} » (courant dans Hamlib) : les essais suivants disent ce qui marche.", { name: h.nom, n: h.n, v: h.version || "?", s: h.statut })
           : T("Hamlib : {name} (modèle {n}, Hamlib {v}), pilote Hamlib au statut « {s} » : des fonctions peuvent manquer.", { name: h.nom, n: h.n, v: h.version || "?", s: h.statut }), { hamlib_model: h.n });
         return;
       }
@@ -310,11 +313,16 @@
           if (!w.ok) { row.statut = w.ng ? "refus" : "absent"; out.push(row); continue; }
           if (w.written) { v1 = w.written; row.essai = v1; }
           changed.push({ f, v0 });
-          const r1 = await L.fnRead(f); row.relu = r1;
+          // Une lecture perdue (mode B : rigctld tombé puis relancé, IC-7300MK2 + Hamlib 4.7.2 sur « l ATT » le
+          // 2026-11-23) n'est pas un poste mal remis : relue une seconde fois avant de conclure.
+          let relost = false;
+          const reread = async () => { const v = await L.fnRead(f); if (v != null) return v; relost = true; return L.fnRead(f); };
+          const r1 = await reread(); row.relu = r1;
           await L.fnWrite(f, v0);
-          const r2 = await L.fnRead(f); row.remis = r2;
+          const r2 = await reread(); row.remis = r2;
+          if (relost) row.note = T("lecture perdue puis refaite (liaison avec le poste reprise)");
           const near = L.fnNear(f, r1, v1);                    // niveau arrondi au cran du poste (voir civ.js)
-          if (near && !same(r1, v1)) row.note = T("arrondi au cran du poste (écrit {w}, relu {r})", { w: L.fnShow(v1), r: L.fnShow(r1) });
+          if (near && !same(r1, v1)) row.note = (row.note ? row.note + " ; " : "") + T("arrondi au cran du poste (écrit {w}, relu {r})", { w: L.fnShow(v1), r: L.fnShow(r1) });
           const back = same(r2, v0) || L.fnNear(f, r2, v0);
           if (back && !same(r2, v0)) row.note = (row.note ? row.note + " ; " : "") + T("remis au cran du poste (avant {a}, relu {b})", { a: L.fnShow(v0), b: L.fnShow(r2) });
           row.statut = !back ? "remise" : !(same(r1, v1) || near) ? "ecart" : "ok";
@@ -325,7 +333,12 @@
         // Seconde passe : une fonction peut en changer une autre (P.AMP coupe l'ATT…) : tout est relu et remis.
         for (const { f, v0 } of changed) {
           const now = await L.fnRead(f);
-          if (same(now, v0) || L.fnNear(f, now, v0)) continue;
+          if (same(now, v0) || L.fnNear(f, now, v0)) {
+            // Remise qu'on n'avait pas pu relire (lecture perdue deux fois) : le poste est bien revenu.
+            const row = out.find(x => x.code === f.code);
+            if (row && row.statut === "remise") { row.remis = now; row.repasse = true; row.statut = (same(row.relu, row.essai) || L.fnNear(f, row.relu, row.essai)) ? "ok" : "ecart"; }
+            continue;
+          }
           await L.fnWrite(f, v0);
           const back = await L.fnRead(f);
           const row = out.find(x => x.code === f.code);

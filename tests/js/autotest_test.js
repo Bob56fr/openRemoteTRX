@@ -590,7 +590,7 @@ test("Hamlib : poste déjà en émission, fonction refusée, niveau figé, backe
   const busy = setupH({ alreadyTx: true });
   const o1 = await busy.r.run();
   assert.equal(res(o1, "R6").status, "echec"); assert.ok(!busy.rig.lines.some(l => /^[FMLUT] /.test(l)));
-  const odd = setupH({ ng: ["U ANF"], stuck: ["NB"] }, {}, {}, Object.assign({}, PROFILE, { statut_backend: "Beta" }));
+  const odd = setupH({ ng: ["U ANF"], stuck: ["NB"] }, {}, {}, Object.assign({}, PROFILE, { statut_backend: "Alpha" }));
   const o2 = await odd.r.run();
   const rows = res(o2, "R9").values.fonctions, row = c => rows.find(x => x.code === c);
   assert.equal(row("ANF").statut, "refus"); assert.equal(row("NB niv.").statut, "ecart"); assert.equal(row("NR niv.").statut, "ok");
@@ -603,6 +603,18 @@ test("Hamlib : atténuateur déclaré 20 dB mais refusé (IC-7100) = 12 dB essay
   await r._r9();
   const att = res(r._finish(), "R9").values.fonctions.find(x => x.code === "ATT");
   assert.equal(att.statut, "ok", JSON.stringify(att)); assert.equal(att.essai, "12"); assert.equal(rig.levels.ATT, 0);
+});
+
+test("Hamlib : pilote « Beta » = R2 réussi ; lecture perdue après la remise de l'ATT = relue, pas « NON REMISE »", async () => {
+  const one = setupH({ dropAfter: { write: "L ATT 0", read: "l ATT", n: 1 } }, {}, {}, Object.assign({}, PROFILE, { statut_backend: "Beta" }));
+  const o1 = await one.r.run();
+  assert.equal(res(o1, "R2").status, "ok");
+  const att = res(o1, "R9").values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att.statut, "ok", JSON.stringify(att)); assert.ok(/perdue/.test(att.note || ""), JSON.stringify(att));
+  const two = setupH({ dropAfter: { write: "L ATT 0", read: "l ATT", n: 2 } });
+  const o2 = await two.r.run();
+  const att2 = res(o2, "R9").values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att2.statut, "ok", JSON.stringify(att2)); assert.notEqual(res(o2, "R9").status, "echec");
 });
 
 (async () => {

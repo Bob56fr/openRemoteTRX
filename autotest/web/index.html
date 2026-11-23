@@ -39,7 +39,7 @@
           <p data-t="home.b.p">À lancer sur le PC relié au poste : il pilote le poste par Hamlib, donc <b>tous les postes
             connus de Hamlib</b> (plus de 300). Non signé : Windows demande « Informations complémentaires » puis
             « Exécuter quand même ».</p>
-          <div class="row"><a class="btn primary" id="b-get-exe" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.10.6/openRemoteTRX-Autotest-0.10.6.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
+          <div class="row"><a class="btn primary" id="b-get-exe" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.10.7/openRemoteTRX-Autotest-0.10.7.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
         </div>
         <div class="opt" id="home-hl" hidden>
           <h4 data-t="home.hl.h">b) Test par Hamlib (mode B)</h4>
@@ -293,6 +293,32 @@
     <label class="check"><input type="checkbox" id="auth-load"><span data-t="auth.load">Mon poste est sur une <b>charge fictive</b>, ou sur une antenne sous ma seule responsabilité.</span></label>
     <div class="row"><button data-t="auth.ok" type="button" class="btn primary" id="auth-ok" disabled>J'autorise les émissions d'essai</button>
       <button type="button" class="btn" id="auth-no" data-t="auth.no">Ne pas émettre</button></div>
+  </div>
+</div>
+<!-- Après le téléchargement du rapport : invitation à le partager par courriel (rien n'est envoyé par la page). -->
+<div class="overlay" id="o-share" hidden role="dialog" aria-modal="true" aria-labelledby="share-title">
+  <div class="card share">
+    <h2 id="share-title" data-t="share.t">Merci ! Votre rapport peut faire avancer toute la communauté</h2>
+    <p data-t="share.p1">Chaque rapport nous montre comment un poste se comporte <b>vraiment</b> : ce qui marche, ce qui coince, les
+       réglages à conseiller. En nous l'envoyant, vous aidez d'autres opérateurs à piloter le même modèle à distance et vous
+       faites grandir la liste des postes compatibles openRemoteTRX.</p>
+    <p data-t="share.p2">Envoyez simplement le fichier téléchargé en pièce jointe à
+       <a href="mailto:autotest-trx@rf-diy.com?subject=Rapport%20Autotest"><b>autotest-trx@rf-diy.com</b></a></p>
+    <p class="share-file" id="share-file"></p>
+    <ul class="share-list">
+      <li data-t="share.l1"><b>Rien sur vous</b> : ni nom, ni indicatif ou pseudo, ni QRZ, ni QTH, ni adresse IP.</li>
+      <li data-t="share.l2"><b>Rien sur votre station</b> : aucun numéro de série, aucune antenne, aucun réglage du réseau.</li>
+      <li data-t="share.l3">Seulement le modèle du poste, les réglages lus puis remis, les mesures des essais (fréquence d'essai
+         comprise) et le système (Windows, Linux…). Ouvrez-le avant de l'envoyer : c'est un simple texte.</li>
+    </ul>
+    <p data-t="share.p3" class="what">Votre adresse e-mail sert seulement à recevoir le rapport : elle ne sera <b>jamais</b> utilisée
+       pour vous contacter, ni communiquée à qui que ce soit.</p>
+    <p data-t="share.p4" class="what">Envie d'échanger avec nous ? Écrivez à
+       <a href="mailto:support-trx@rf-diy.com">support-trx@rf-diy.com</a> ou rejoignez le <a href="https://discord.gg/xYceQm4E28" target="_blank" rel="noopener noreferrer">Discord openRemoteTRX</a>.</p>
+    <div class="row">
+      <a class="btn primary" id="share-mail" href="mailto:autotest-trx@rf-diy.com?subject=Rapport%20Autotest" data-t="share.mail">Écrire à autotest-trx@rf-diy.com</a>
+      <button type="button" class="btn" id="share-close" data-t="share.close">Plus tard</button>
+    </div>
   </div>
 </div>
 <div class="overlay" id="o-power" hidden>

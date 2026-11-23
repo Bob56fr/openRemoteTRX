@@ -31,6 +31,9 @@ def test_every_file_has_its_licence_header_and_every_script_exists() -> None:
         assert (WEB / ref).is_file(), ref
 
 
+DISCORD = "https://discord.gg/xYceQm4E28"
+
+
 def test_the_page_contacts_no_server_during_the_test() -> None:
     """« Le test est anonyme, rien ne part » (§ 4) : ni requête, ni police ou script venus d'ailleurs ; la CSP l'impose."""
     html = (WEB / "index.html").read_text(encoding="utf-8")
@@ -47,7 +50,10 @@ def test_the_page_contacts_no_server_during_the_test() -> None:
             text = text.replace("fetch(", "")
         for bad in ("fetch(", "XMLHttpRequest", "WebSocket", "sendBeacon", "EventSource", "@import", "googleapis"):
             assert bad not in text, (f.name, bad)
-        urls = re.findall(r"https?://[^\s\"'<>)]+", text)
+        urls = [u.rstrip("\\") for u in re.findall(r"https?://[^\s\"'<>)]+", text)]
+        # Invitation à partager le rapport (étape 379) : lien CLIQUÉ vers le Discord du projet, jamais une requête.
+        if f.name in ("index.html", "en.js"):
+            urls = [u for u in urls if u != DISCORD]
         if f.name == "index.html":
             # Liens cliqués ou non ; téléchargement de l'utilitaire (mode B) : release « autotest-vX.Y.Z » de la MÊME version
             # que la page (étiquette sans « v » en tête : jamais prise pour une version de la station).

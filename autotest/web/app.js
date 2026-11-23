@@ -390,7 +390,14 @@
     const blob = new Blob([JSON.stringify(S.report, null, 2)], { type: "application/json" });
     const a = el("a"); a.href = URL.createObjectURL(blob); a.download = rep.fileName(S.report);
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    // Invitation à partager le rapport (par courriel, à la main : la page ne contacte aucun serveur).
+    const name = rep.fileName(S.report), subject = encodeURIComponent(T("Rapport Autotest") + " " + name);
+    $("share-file").textContent = T("Fichier à joindre : {f} (dossier Téléchargements)", { f: name });
+    $("share-mail").href = "mailto:autotest-trx@rf-diy.com?subject=" + subject;
+    $("o-share").hidden = false;
   };
+  $("share-close").onclick = () => { $("o-share").hidden = true; };
+  $("share-mail").addEventListener("click", () => { setTimeout(() => { $("o-share").hidden = true; }, 300); });
   $("b-print").onclick = () => window.print();
   $("b-again").onclick = () => { S.runner = null; S.detected = null; S.port = null; show("s-home"); };
 })();

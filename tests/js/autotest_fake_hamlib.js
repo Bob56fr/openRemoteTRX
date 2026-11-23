@@ -57,6 +57,9 @@ class FakeHamlib {
     if (!allowed(line)) { this.refused.push(line); return { erreur: "hors_liste" }; }
     const [k, a, b] = line.split(" ");
     if (this.o.ng.includes(k + (a ? " " + a : ""))) return { rprt: -11, valeurs: [], ms: 3 };
+    // Lecture perdue (rigctld tombé puis relancé, IC-7300MK2 + Hamlib 4.7.2 sur « l ATT ») : n fois après l'écriture donnée.
+    if (this.o.dropAfter && this.lastWrite === this.o.dropAfter.write && line === this.o.dropAfter.read && this.o.dropAfter.n > 0) { this.o.dropAfter.n--; return { erreur: "rigctld_tombe", ms: 2830 }; }
+    if (/^[LUFMT] /.test(line)) this.lastWrite = line;
     switch (k) {
       case "f": return this.ok([String(this.freq)]);
       case "F": this.freq = Number(a); return this.ok();

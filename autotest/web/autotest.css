@@ -182,3 +182,8 @@ footer{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding-
 .choice2 .btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
                 box-sizing: border-box; min-height: 44px; line-height: 1.2; }
 .choice2 h4 { margin: 0 0 6px; }
+/* Invitation à partager le rapport (étape 377) */
+#o-share .share{max-width:640px;max-height:calc(100vh - 24px);overflow-y:auto}
+#o-share .share-list{margin:8px 0 12px;padding-left:20px}
+#o-share .share-list li{margin:4px 0}
+#o-share .share-file{font-family:ui-monospace,monospace;font-size:.9em;opacity:.85;word-break:break-all}
