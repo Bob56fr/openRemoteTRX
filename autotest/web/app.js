@@ -20,6 +20,8 @@
   const modeB = !!document.querySelector('meta[name="autotest-mode"][content="hamlib"]');
   const hasSerial = "serial" in navigator;
   if (!hasSerial && !modeB) { $("noserial").hidden = false; $("b-start").disabled = true; }
+  // Page servie par l'utilitaire : rien à télécharger, le bouton lance le choix (mode A ou B).
+  if (modeB) $("home-b").hidden = true;
   $("b-start").onclick = () => { buildBrands(); show("s-brand"); };
   // Conditions d'utilisation : à CHAQUE visite (rien n'est retenu), le bouton n'agit que case cochée.
   $("terms-ok").checked = false; $("terms-go").disabled = true;
@@ -181,16 +183,21 @@
       stream.getTracks().forEach(t => t.stop()); ctx.close();
       return n ? 10 * Math.log10(sum / n || 1e-12) : null;
     },
-    async startTone() {
+    async startTone(dbfs) {
       this.stopTone();
       const ctx = new AudioContext();
       if (this.outId && ctx.setSinkId) await ctx.setSinkId(this.outId);
       const osc = ctx.createOscillator(), g = ctx.createGain();
-      osc.frequency.value = 1000; g.gain.value = 0.25;                            // -12 dBFS
+      osc.frequency.value = 1000; g.gain.value = Math.pow(10, (dbfs == null ? -12 : dbfs) / 20);   // crête, dBFS
       osc.connect(g).connect(ctx.destination); osc.start();
-      this.ctx = ctx; this.osc = osc;
+      this.ctx = ctx; this.osc = osc; this.gain = g;
     },
-    stopTone() { try { if (this.osc) this.osc.stop(); } catch (e) {} try { if (this.ctx) this.ctx.close(); } catch (e) {} this.osc = null; this.ctx = null; },
+    // Palier de la rampe (E4) : montée douce en 20 ms (pas de claquement).
+    setToneLevel(dbfs) {
+      if (!this.gain || !this.ctx) return;
+      this.gain.gain.setTargetAtTime(Math.pow(10, dbfs / 20), this.ctx.currentTime, 0.02);
+    },
+    stopTone() { try { if (this.osc) this.osc.stop(); } catch (e) {} try { if (this.ctx) this.ctx.close(); } catch (e) {} this.osc = null; this.ctx = null; this.gain = null; },
   };
   const GUESS = /USB Audio CODEC|USB Audio Device|IC-?7300|IC-?705|IC-?9700|IC-?7610|C-Media/i;
   function chooseAudio() {

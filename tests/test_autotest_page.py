@@ -49,7 +49,13 @@ def test_the_page_contacts_no_server_during_the_test() -> None:
             assert bad not in text, (f.name, bad)
         urls = re.findall(r"https?://[^\s\"'<>)]+", text)
         if f.name == "index.html":
-            assert set(urls) <= {"https://github.com/Bob56fr/openRemoteTRX", "https://www.rf-diy.com"}, urls  # liens, cliqués ou non
+            # Liens cliqués ou non ; téléchargement de l'utilitaire (mode B) : release « autotest-vX.Y.Z » de la MÊME version
+            # que la page (étiquette sans « v » en tête : jamais prise pour une version de la station).
+            version = re.search(r'const VERSION = "([0-9.]+)"', (WEB / "report.js").read_text(encoding="utf-8")).group(1)
+            download = (f"https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v{version}/"
+                        f"openRemoteTRX-Autotest-{version}.exe")
+            assert set(urls) <= {"https://github.com/Bob56fr/openRemoteTRX", "https://www.rf-diy.com", download}, urls
+            assert download in urls, "lien de téléchargement absent ou d'une autre version que la page"
         else:
             assert urls == [], (f.name, urls)
 

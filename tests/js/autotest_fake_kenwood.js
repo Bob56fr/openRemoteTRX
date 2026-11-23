@@ -93,7 +93,9 @@ function fakeAudio(rig, opts) {
   return {
     hasInput: () => o.input, hasOutput: () => o.output,
     async measureInput() { return o.db; },
-    async startTone() { rig.toneOn = true; },
+    // Rampe (E4) : modulation seulement à partir de -6 dBFS (niveau USB MOD du poste simulé).
+    async startTone(db) { rig.toneDb = db == null ? -12 : db; rig.toneOn = rig.toneDb >= -6; },
+    setToneLevel(db) { rig.toneDb = db; rig.toneOn = db >= -6; },
     stopTone() { rig.toneOn = false; },
   };
 }

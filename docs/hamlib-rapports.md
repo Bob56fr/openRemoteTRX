@@ -112,3 +112,18 @@ range `NB(0.000000..1.000000/...)` for Icom backends (like `NR`), or a conversio
 The same refusal was seen on an IC-705 (model 3085), not traced yet. Workaround in openRemoteTRX 0.211.0: the range is
 corrected to 0..1 for Icom models.
 
+## 7. IC-7100 (model 3070, Hamlib 4.7.2, Windows): attenuator declared 20 dB, the rig only has 12 dB
+
+`rigctl -m 3070 -u` declares `Attenuator: 20dB`, but the level range says `ATT(0..12/0)`, and the IC-7100 CI-V reference
+(full manual, command `11`: `00` = OFF, `12` = 12 dB attenuator) only has 12 dB. Setting the declared value is refused:
+
+```
+l ATT      -> 0
+L ATT 20   -> RPRT -9 (rejected by the rig)
+L ATT 12   -> accepted (openRemoteTRX-Autotest 0.10.0, mode B fallback)
+```
+
+Expected: `.attenuator = { 12, RIG_DBLIST_END }` for the IC-7100 (like its level range). Seen on 2026-11-23 with a real
+IC-7100 (openRemoteTRX-Autotest, mode B). Note: the IC-7300MK2 shows the opposite inconsistency (list 20 dB right,
+range 0..12 wrong), see section 1.
+

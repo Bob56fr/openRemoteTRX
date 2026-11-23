@@ -26,7 +26,9 @@ class FakeIcom {
                              // Coupleur : "interne" (01 = en service sans accord, 02 = accord), "ah4" (01 LANCE l'accord),
                              // "aucun" (1C 01 refusé) ; tuner0 = état de départ ; tuneMs = durée de l'accord ; tuneResult =
                              // état en fin d'accord (1 réussi, 0 dérivation) ; att = valeurs d'atténuateur acceptées.
-                             tuner: "interne", tuner0: 0, tuneMs: 120, tuneResult: 1, att: [0x20] }, opts || {});
+                             tuner: "interne", tuner0: 0, tuneMs: 120, tuneResult: 1, att: [0x20],
+                             // Tonalité : niveau (dBFS) où la puissance réglée est atteinte (réglage USB MOD du poste).
+                             modKnee: -6 }, opts || {});
     this.st = { freq: 14074000, mode: 0x01, filter: 1, data: 0, dataFilter: 0, power: 255, ptt: !!this.o.alreadyTx,
                 otherFreq: 7100000 };
     // Fonctions (essai R9) : clé = commande en hexadécimal, valeur = octets de la donnée.
@@ -145,8 +147,9 @@ class FakeIcom {
       case 0x14: if (p.length > 2) { s.power = civ.decodeLevel(p.slice(2)); return ok; } return [0x14, 0x0A, ...civ.encodeLevel(s.power)];
       case 0x15: {
         const pct = s.power / 2.55;
-        const mod = s.ptt && (CARRIER.has(s.mode) || (s.data && this.toneOn));
-        const v = { 0x02: s.ptt ? 0 : this.o.sRaw + Math.round(Math.random() * 6), 0x11: mod ? invPo(pct) : 0, 0x12: s.ptt ? this.o.swrRaw : 0, 0x13: s.ptt && s.data && this.toneOn ? this.o.alcRaw : 0 }[p[1]];
+        const carrier = s.ptt && CARRIER.has(s.mode), tone = s.ptt && s.data && this.toneOn;
+        const toneDb = this.toneDb == null ? -12 : this.toneDb, drive = Math.min(1, Math.pow(10, (toneDb - this.o.modKnee) / 20));
+        const v = { 0x02: s.ptt ? 0 : this.o.sRaw + Math.round(Math.random() * 6), 0x11: carrier ? invPo(pct) : tone ? invPo(pct * drive) : 0, 0x12: s.ptt ? this.o.swrRaw : 0, 0x13: s.ptt && s.data && this.toneOn ? this.o.alcRaw : 0 }[p[1]];
         return v == null ? [0xFA] : [0x15, p[1], ...civ.encodeLevel(v)];
       }
       case 0x1A: if (p[1] !== 0x06) return [0xFA]; if (p.length > 2) { if (s.ptt) return [0xFA]; s.data = p[2]; s.dataFilter = p[3] || 0; return ok; } return [0x1A, 0x06, s.data, s.dataFilter];
@@ -165,8 +168,10 @@ function fakeAudio(rig, opts) {
   return {
     hasInput: () => o.input, hasOutput: () => o.output,
     async measureInput() { return o.db; },
-    async startTone() { rig.toneOn = true; },
-    stopTone() { rig.toneOn = false; },
+    // Faux Icom : puissance selon le niveau (modKnee) ; autre faux poste (Hamlib) : modulation à partir de -6 dBFS.
+    async startTone(db) { rig.toneStarted = true; rig.toneDb = db == null ? -12 : db; rig.toneOn = rig instanceof FakeIcom || rig.toneDb >= -6; },
+    setToneLevel(db) { if (!rig.toneStarted) return; rig.toneDb = db; rig.toneOn = rig instanceof FakeIcom || db >= -6; },
+    stopTone() { rig.toneOn = false; rig.toneStarted = false; },
   };
 }
 

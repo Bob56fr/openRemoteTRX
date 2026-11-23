@@ -35,7 +35,8 @@ const PROFILE = {
 
 class FakeHamlib {
   constructor(opts) {
-    this.o = Object.assign({ ptt: 0, noSwap: false, alreadyTx: false, quantum: 1 / 255, ng: [], stuck: [] }, opts || {});
+    // att : valeurs d'atténuateur acceptées par le poste (IC-7100 : 12 alors que Hamlib déclare 20).
+    this.o = Object.assign({ ptt: 0, noSwap: false, alreadyTx: false, quantum: 1 / 255, ng: [], stuck: [], att: null }, opts || {});
     this.freq = 7074000; this.other = 7100000; this.mode = "USB"; this.ptt = this.o.alreadyTx ? 1 : 0;
     this.levels = { RFPOWER: 1.0, ATT: 0, PREAMP: 0, NR: 0.4, NB: 0.6, STRENGTH: -42, SWR: 1.1, ALC: 0, RFPOWER_METER: 0 };
     this.funcs = { NB: 0, NR: 0, ANF: 0, COMP: 0, MN: 0, RIT: 0, VOX: 0, TUNER: 0 };
@@ -73,6 +74,7 @@ class FakeHamlib {
         if (!PROFILE.niveaux_ecriture.includes(a)) return { rprt: -11, valeurs: [], ms: 2 };
         if (this.o.stuck.includes(a)) return this.ok();
         const v = Number(b);
+        if (a === "ATT" && v && this.o.att && !this.o.att.includes(v)) return { rprt: -9, valeurs: [], ms: 2 };
         this.levels[a] = ["ATT", "PREAMP"].includes(a) ? v : Math.round(v / this.o.quantum) * this.o.quantum;
         if (a === "PREAMP" && v) this.levels.ATT = 0;                   // comme l'Icom : le préampli coupe l'atténuateur
         return this.ok();

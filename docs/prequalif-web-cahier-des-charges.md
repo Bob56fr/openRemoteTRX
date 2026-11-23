@@ -153,6 +153,11 @@ Un rapport clair, en vert / orange / rouge :
   réglable par la CAT : réglez-la à la main sur 10 % » et attend l'accord de l'opérateur.
 - Puissance d'origine remise à la fin, relue et montrée (aussi après STOP ou une erreur).
 - E2 vérifie que la puissance lue pendant l'émission est cohérente avec ces 10 %.
+- EXCEPTION (décision de l'utilisateur du 2026-11-23, étape 369, Autotest 0.10.0) : la rampe de la tonalité (E4) se fait à
+  **50 %** de la puissance maximale, annoncée dans l'autorisation (watts compris) ; à 10 %, un Icom tient sa puissance
+  réduite par l'ALC (IC-7100 : ALC ~130 / 120 sur une porteuse FM SANS modulation) et la mesure du niveau audio est
+  masquée. Seulement si la CAT règle la puissance ; puissance des essais remise juste après la rampe.
+- Accord du coupleur (E7) : le poste choisit lui-même mode et puissance (AH-4 : CW ~10 W), annoncé dans l'autorisation.
 
 ## 6. Mode A : pilotes par famille de protocoles
 
@@ -212,12 +217,22 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 | E1 | Émission par la CAT puis retour, PTT relu, temps mesurés | oui |
 | E2 | Puissance (Po) lue pendant l'émission, non nulle | oui |
 | E3 | TOS lu (charge fictive : bas) | oui |
-| E4 | Tonalité 1 kHz par la carte son en mode données : Po et ALC montent | oui |
+| E4 | Tonalité 1 kHz par la carte son en mode données, MONTÉE PAR PALIERS de -30 à -1 dBFS (9 paliers, une émission de 10 s au plus, poste à 50 %) : Po et ALC lus par palier ; « coude » = premier palier à 90 % de la Po maximale ; conseil sur le niveau USB MOD du poste : coude entre -10 et -4 dBFS = bien réglé (la voix de la station a ses crêtes à -1 dBFS), avant = trop fort (baisser d'environ -6 - coude dB), après ou puissance jamais atteinte = trop faible (étape 369, Autotest 0.10.0 ; idée de l'utilisateur) | oui |
 | E5 | Émission par RTS ou DTR (si l'opérateur utilise une interface de ce type) | oui |
 | E6 | Retour en réception par STOP de la page, PTT relu | oui |
 | E7 | Accord du coupleur d'antenne (étape 368, Autotest 0.9.0 ; Icom en mode A) : coupleur LU au début (jamais écrit en R9) ; après l'autorisation, sous la garde : en service = mis hors service puis remis en service (un AH-4 accorde alors seul : CW ~10 W, manuel IC-7100 p. 16-5), sinon accord lancé par `1C 01 02` ; 15 s au plus (décision de l'utilisateur du 2026-11-23) ; STOP ou durée dépassée = coupleur hors service puis réception relue ; modèle du coupleur DEMANDÉ à l'opérateur (la CAT ne le donne pas, coupleurs d'autres marques identiques à l'AH-4), noté « déclaré » dans le rapport ; jamais remis EN service hors de la garde | oui |
 
 Un essai que le modèle ne permet pas est « non disponible », jamais un échec.
+
+### 6.6 Accueil : deux façons de faire le test (décision de l'utilisateur du 2026-11-23, étape 369)
+
+- a) **Test rapide dans le navigateur** (mode A) : rien à installer, Chrome ou Edge ; Icom, Yaesu FTDX10, Kenwood TS-890S,
+  spectre des Icom.
+- b) **Utilitaire openRemoteTRX-Autotest pour Windows** (mode B) : à télécharger, tous les postes de Hamlib. Lien direct
+  vers la release GitHub `autotest-vX.Y.Z` (étiquette sans « v » en tête : la mise à jour de la station l'ignore), de la
+  MÊME version que la page (test) ; release publiée par l'utilisateur (`gh release create`), non « Latest ». Non signé :
+  l'avertissement de SmartScreen est expliqué. Page servie par l'utilitaire : le choix b) est caché.
+- Pas de mot « plus approfondi » tant que le mode B fait les mêmes essais (exploration de `dump_caps` : lot PQ5 partie 2).
 
 ## 7. Liste des modèles de Hamlib embarquée
 

@@ -25,6 +25,24 @@
       <p data-t="home.intro">Cette page parle à votre poste par son câble USB, sans rien installer, et vous dit en quelques minutes s'il répond à
          la CAT, si sa carte son est trouvée et s'il sait émettre et revenir en réception sur ordre de l'ordinateur.</p>
     </div>
+    <div class="card" id="home-choice">
+      <h3 data-t="home.choice.h">Deux façons de faire le test</h3>
+      <div class="choice2">
+        <div class="opt">
+          <h4 data-t="home.a.h">a) Test rapide dans le navigateur</h4>
+          <p data-t="home.a.p">Rien à installer : Chrome ou Edge sur Windows, Linux ou macOS. Postes Icom (CI-V), Yaesu FTDX10,
+            Kenwood TS-890S ; spectre (waterfall) des Icom.</p>
+          <div class="row"><button data-t="home.start" type="button" class="btn primary" id="b-start">Commencer le test rapide</button></div>
+        </div>
+        <div class="opt" id="home-b">
+          <h4 data-t="home.b.h">b) Test avec l'utilitaire openRemoteTRX-Autotest (Windows)</h4>
+          <p data-t="home.b.p">À télécharger et à lancer sur le PC relié au poste : il pilote le poste par Hamlib, donc
+            <b>tous les postes connus de Hamlib</b> (plus de 300). Il ouvre cette même page. Pas encore signé : Windows
+            affiche un avertissement (« Informations complémentaires » puis « Exécuter quand même »).</p>
+          <div class="row"><a class="btn" id="b-download" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.10.0/openRemoteTRX-Autotest-0.10.0.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
+        </div>
+      </div>
+    </div>
     <div class="card anon">
       <p data-t="home.anon"><strong>Le test est anonyme.</strong> Rien n'est envoyé pendant le test, ni à rf-diy.com ni ailleurs : la page ne
          contacte aucun serveur. À la fin, vous pourrez télécharger le rapport et, plus tard, l'envoyer au projet si vous
@@ -35,9 +53,10 @@
       <ul data-t="home.what.l">
         <li>Lectures sans émission : fréquence, mode, S-mètre, temps de réponse, PTT, carte son.</li>
         <li>Petit changement de fréquence (+1 kHz) et de mode, puis remise.</li>
-        <li>Après <b>votre autorisation</b> seulement : 4 émissions courtes (18 s en tout, 10 s au plus chacune) à
-            <b>10 % de la puissance maximale</b> du poste : sans modulation, porteuse en FM, tonalité 1 kHz, coupure par la
-            page.</li>
+        <li>Après <b>votre autorisation</b> seulement : émissions courtes (10 s au plus chacune) à <b>10 % de la
+            puissance maximale</b> du poste : sans modulation, porteuse en FM, coupure par la page ; tonalité 1 kHz montée
+            par paliers à <b>50 %</b> pour conseiller le réglage du niveau audio USB du poste ; accord du coupleur
+            d'antenne s'il y en a un (15 s au plus, le poste choisit sa puissance).</li>
         <li>À la fin, la fréquence, le mode et la puissance d'origine sont remis et relus.</li>
       </ul>
       <h3 data-t="home.need.h">Il vous faut</h3>
@@ -49,7 +68,6 @@
       <p data-t="home.stop">Vous restez maître de votre poste : bouton <b>STOP</b> ou touche <b>Échap</b> à tout moment, et votre interrupteur.</p>
       <div data-t="home.noserial" class="badbox" id="noserial" hidden>Ce navigateur ne sait pas parler au port USB du poste. Ouvrez cette page dans
         <b>Chrome</b> ou <b>Edge</b> sur un ordinateur.</div>
-      <div class="row"><button data-t="home.start" type="button" class="btn primary" id="b-start">Commencer</button></div>
     </div>
   </section>
 

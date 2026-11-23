@@ -101,7 +101,23 @@
       if (f.range) { const x = num(v[0]); return x == null ? null : show(x); }
       const x = num(v[0]); return x == null ? v[0] : String(Math.round(x));
     }
-    async fnWrite(f, v) { return this.put((f.kind === "func" ? "U " : "L ") + f.name + " " + v); }
+    async fnWrite(f, v) {
+      const line = x => (f.kind === "func" ? "U " : "L ") + f.name + " " + x;
+      // Atténuateur : Hamlib peut déclarer une valeur que le poste refuse (IC-7100, Hamlib 4.7.2 : « Attenuator: 20dB »
+      // mais plage ATT(0..12) ; le poste n'a que 12 dB) : refus = valeurs connues essayées ensuite.
+      if (f.name === "ATT" && v !== "0") {
+        const tries = Array.from(new Set([v].concat(f.values.slice(1), ["12", "20", "10", "6", "18"])));
+        let last = null;
+        for (const t of tries) {
+          const r = await this.put(line(t));
+          if (r && r.ok) return Object.assign({}, r, { written: t });
+          last = r;
+          if (!(r && r.ng)) break;
+        }
+        return last || { ok: false, ng: false };
+      }
+      return this.put(line(v));
+    }
     fnOther(f, v0) {
       if (f.range) { const [lo, hi] = f.range, x = num(v0) == null ? lo : num(v0), mid = (lo + hi) / 2; const t = Math.abs(x - mid) > (hi - lo) / 8 ? mid : lo + (hi - lo) * 0.25; return show(t); }
       return f.values.find(x => x !== v0) || f.values[0];

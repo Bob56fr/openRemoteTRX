@@ -10,7 +10,11 @@
   const civ = (typeof module !== "undefined" && module.exports) ? require("./civ.js") : root.AtCiv;
   const { T } = (typeof module !== "undefined" && module.exports) ? require("./i18n.js") : root.AtI18n;
 
-  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 3000, tune: 15000 };
+  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 3000, tune: 15000, rampPower: 50 };
+  // E4 : paliers de la tonalité (dBFS crête), de faible à fort. Coude conseillé : -10 à -4 dBFS (la voix de la station
+  // a ses crêtes à -1 dBFS par son limiteur : elle atteint alors la pleine puissance sans trop pousser l'ALC).
+  const RAMP = [-30, -26, -22, -18, -14, -10, -7, -4, -1];
+  const KNEE_LOW = -10, KNEE_HIGH = -4, KNEE_TARGET = -6;
 
   const STEPS = [
     ["R1", "Port et vitesse"], ["R2", "Modèle identifié"], ["R3", "Fréquence et mode lus"], ["R4", "S-mètre"],
@@ -399,7 +403,8 @@
       const maxW = this.model ? this.model.maxW : null;
       const info = { hz: this.orig.freq, mode: this.orig.mode && this.orig.mode.name, pct, watts: maxW ? maxW * pct / 100 : null, maxW,
                      emissions: [["E1", T("émission par la CAT, sans modulation"), this.o.e1], ["E2", T("porteuse en FM : puissance et TOS"), this.o.e2],
-                                 ["E4", T("tonalité 1 kHz en mode données"), this.o.e4], ["E6", T("coupure par la page (STOP)"), this.o.e6]] };
+                                 ["E4", T("tonalité 1 kHz en mode données, montée par paliers de -30 à -1 dBFS, à {r} % de la puissance{w}", { r: this.o.rampPower, w: maxW ? T(" ({w} W)", { w: Math.round(maxW * this.o.rampPower / 100) }) : "" }), this.o.e4],
+                                 ["E6", T("coupure par la page (STOP)"), this.o.e6]] };
       if (this.orig.tuner != null) {
         info.tuner = this.orig.tuner;
         info.emissions.push(["E7", T("accord du coupleur d'antenne (le poste choisit le mode et la puissance : CW, environ 10 W avec un AH-4)"), this.o.tune]);
@@ -411,6 +416,7 @@
       this.tunerDeclared = a && a.tuner ? { type: String(a.tuner.type || "").slice(0, 20), texte: String(a.tuner.texte || "").slice(0, 40) } : null;
       if (!ok || this.aborted) return false;
       // Puissance : 10 % (ou le minimum du poste), relue.
+      this.testPct = pct;
       const raw = this.link.powerRaw(pct);
       const set = this.orig.power != null && await this.link.setPower(raw);
       const back = set ? await this.link.meter("power") : null;
@@ -421,6 +427,58 @@
       }
       this.guard.arm();
       return true;
+    }
+
+    /* E4 : rampe de la tonalité 1 kHz (décision de l'utilisateur du 2026-11-23 : poste à 50 % pendant la rampe), une
+       seule émission (garde de 10 s). Palier par palier : Po et ALC lus une fois le palier établi. Le « coude » = premier
+       palier où la puissance atteint 90 % de son maximum ; il dit si le niveau USB MOD du poste est trop fort ou trop
+       faible pour la voix de la station. Puissance des essais remise juste après. */
+    async _rampE4() {
+      const L = this.link;
+      const rampPct = this.powerSet ? Math.max(this.o.rampPower, this.model && this.model.minPct || 0) : null;
+      const target = rampPct != null ? rampPct : this.testPct;
+      this.now(T("E4 : tonalité 1 kHz montée par paliers ({p} % de la puissance), en {m}…", { p: target, m: L.dataLabel }));
+      if (rampPct != null) await L.setPower(L.powerRaw(rampPct));
+      let toneErr = null, steps = [], rx = true;
+      try { await this.audio.startTone(RAMP[0]); } catch (e) { toneErr = String(e && e.message || e); }
+      try {
+        if (!toneErr && !this.aborted) {
+          this.emit({ type: "tx-info", code: "E4", ms: this.o.e4, info: { hz: await L.readFreq(), what: T("Tonalité 1 kHz montée par paliers"), mode: L.dataLabel } });
+          await this.guard.key("E4");
+          const per = this.o.e4 / RAMP.length;
+          for (const db of RAMP) {
+            if (this.aborted || !this.guard.on) break;
+            try { this.audio.setToneLevel(db); } catch (e) { /* sortie perdue : vu par la puissance */ }
+            const smp = await this._sampleTx(per, "E4");
+            for (const s of smp) s.dbfs = db;
+            const late = smp.slice(Math.floor(smp.length / 2));                 // palier établi
+            const pos = late.map(s => s.po).filter(v => v != null), alcs = late.map(s => s.alc).filter(v => v != null);
+            steps.push({ dbfs: db, po: pos.length ? Math.max(...pos) : null, alc: alcs.length ? Math.max(...alcs) : null });
+          }
+          rx = await this.guard.unkey(this.aborted ? (this.stopReason || "stop") : "fin_essai");
+        }
+      } finally {
+        try { this.audio.stopTone(); } catch (e) { /* rien */ }
+        if (rampPct != null) await L.setPower(L.powerRaw(this.testPct));
+      }
+      if (toneErr) { this.result("E4", "echec", T("Sortie de la carte son impossible à ouvrir : {e}.", { e: toneErr })); return; }
+      if (!rx) { this.result("E4", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; return; }
+      if (this.aborted) { this.result("E4", "saute", T("Essais arrêtés.")); return; }
+      const vals = { puissance_pct: target, rampe: steps };
+      const pos = steps.map(s => s.po).filter(v => v != null);
+      if (!pos.length) { this.result("E4", "na", T("Puissance non lue : modulation impossible à vérifier."), vals); return; }
+      const pmax = Math.max(...pos); vals.po_pct = pmax;
+      if (pmax < 2) { this.result("E4", "echec", T("Tonalité envoyée mais aucune puissance : réglage « DATA MOD » du poste sur USB ? volume de la carte son à 100 dans l'ordinateur ?"), vals); return; }
+      const knee = steps.find(s => s.po != null && s.po >= 0.9 * pmax);
+      vals.coude_dbfs = knee.dbfs; vals.alc_pct = knee.alc;
+      const alc = knee.alc != null ? T(", ALC {a} % au coude", { a: knee.alc.toFixed(0) }) : "";
+      const head = T("Rampe de -30 à -1 dBFS à {t} % : Po maximale {p} %{alc}", { t: target, p: pmax.toFixed(0), alc });
+      let status = "ok", advice;
+      if (pmax < 0.8 * target) { status = "avert"; advice = T("même à -1 dBFS, la puissance réglée n'est pas atteinte : niveau USB MOD du poste trop faible, montez-le (volume de la sortie de l'ordinateur à 100)"); }
+      else if (knee.dbfs < KNEE_LOW) { status = "avert"; advice = T("pleine puissance dès {k} dBFS : niveau USB MOD du poste trop fort, baissez-le d'environ {d} dB", { k: knee.dbfs, d: KNEE_TARGET - knee.dbfs }); }
+      else if (knee.dbfs > KNEE_HIGH) { status = "avert"; advice = T("pleine puissance seulement vers {k} dBFS : niveau USB MOD du poste un peu faible, montez-le d'environ {d} dB", { k: knee.dbfs, d: knee.dbfs - KNEE_TARGET }); }
+      else advice = T("pleine puissance vers {k} dBFS : niveau USB MOD du poste bien réglé", { k: knee.dbfs });
+      this.result("E4", status, head + " ; " + advice + ".", vals);
     }
 
     async _sampleTx(ms, label) {
@@ -507,25 +565,7 @@
         const rd = okData ? await L.readDataMode() : null;
         if (!okData || !rd || !rd.on) this.result("E4", "na", T("Mode données non réglable par la CAT."));
         else {
-          this.now(T("E4 : tonalité 1 kHz par la carte son, en {m}…", { m: L.dataLabel }));
-          let toneErr = null;
-          try { await this.audio.startTone(); } catch (e) { toneErr = String(e && e.message || e); }
-          const e4 = toneErr ? null : await this._emit("E4", this.o.e4, { what: T("Tonalité 1 kHz par la carte son"), mode: L.dataLabel });
-          if (toneErr) this.result("E4", "echec", T("Sortie de la carte son impossible à ouvrir : {e}.", { e: toneErr }));
-          try { this.audio.stopTone(); } catch (e) { /* rien */ }
-          if (!e4 && !toneErr) return;
-          if (e4 && !e4.rx) { this.result("E4", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; return; }
-          const pos = e4 ? e4.samples.map(s => s.po).filter(v => v != null) : [], alcs = e4 ? e4.samples.map(s => s.alc).filter(v => v != null) : [];
-          const po = pos.length ? Math.max(...pos) : null, alc = alcs.length ? Math.max(...alcs) : null;
-          if (toneErr) { /* déjà noté */ }
-          else if (po == null) this.result("E4", "na", T("Puissance non lue : modulation impossible à vérifier."));
-          else if (po < 2) this.result("E4", "echec", T("Tonalité envoyée mais aucune puissance : réglage « DATA MOD » du poste sur USB ? volume de la carte son à 100 dans l'ordinateur ?"), { po_pct: po, alc_pct: alc });
-          else {
-            const ac = this.alcCarrier, byPower = alc != null && alc > 50 && ac != null && ac >= alc - 10;
-            const note = alc == null || alc <= 50 ? "" : byPower ? T(" (déjà {c} % sur la porteuse sans modulation (E2) : le poste tient sa puissance réduite par l'ALC, valeur non concluante pour le niveau audio)", { c: ac.toFixed(0) })
-                                                                 : T(" (hors de la zone ALC : baissez le niveau USB MOD)");
-            this.result("E4", "ok", T("Modulation par la carte son : Po {po} %{alc}.", { po: po.toFixed(0), alc: alc != null ? ", ALC " + alc.toFixed(0) + " %" + note : "" }), { po_pct: po, alc_pct: alc, alc_porteuse_pct: ac });
-          }
+          await this._rampE4();
         }
       }
       if (this.aborted) return;

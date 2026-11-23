@@ -377,11 +377,28 @@ test("R9 : atténuateur du modèle (IC-7100 : 12 dB), valeurs connues essayées 
   assert.equal(att2.statut, "ok", JSON.stringify(att2)); assert.equal(att2.essai, "12"); assert.deepEqual(rig2.fn["11"], [0x00]);
 });
 
-test("E4 : ALC déjà haut sur la porteuse sans modulation = valeur non concluante, pas de conseil USB MOD", async () => {
-  const { rig, r } = await setup({ alcRaw: 136 });
-  r.link.meter = (orig => async k => k === "alc" && rig.st.ptt ? 130 : orig(k))(r.link.meter.bind(r.link));
+test("E4 : rampe à 50 % : coude et conseil sur le niveau USB MOD (trop fort, bien réglé, trop faible), puissance remise", async () => {
+  const run = async knee => { const { rig, r } = await setup({ modKnee: knee }); const out = await r.run(); rig.stopScope(); return { rig, out, e4: res(out, "E4") }; };
+  const strong = await run(-24);
+  assert.equal(strong.e4.status, "avert", strong.e4.text); assert.ok(/trop fort, baissez-le d'environ \d+ dB/.test(strong.e4.text), strong.e4.text);
+  assert.equal(strong.e4.values.puissance_pct, 50); assert.equal(strong.e4.values.rampe.length, 9);
+  const good = await run(-6);
+  assert.equal(good.e4.status, "ok", good.e4.text); assert.ok(/bien réglé/.test(good.e4.text)); assert.equal(good.e4.values.coude_dbfs, -4);
+  const weak = await run(+6);
+  assert.equal(weak.e4.status, "avert"); assert.ok(/trop faible/.test(weak.e4.text), weak.e4.text);
+  // 50 % seulement pendant la rampe : puissance des essais (10 %) remise juste après, puis celle d'origine à la fin.
+  assert.ok(good.rig.writes.some(w => w.cmd === "14 0A 01 28"), "50 % jamais réglé");
+  assert.equal(good.rig.st.power, 255);
+  const rep = await report.build({ brand: models.BRANDS[0], model: MK2, chosenModel: MK2, detected: {}, run: good.out, trace: [] });
+  assert.ok(rep.mesures_emission.some(m => m.essai === "E4" && m.niveau_dbfs === -30));
+});
+
+test("E4 : STOP pendant la rampe = tonalité coupée, essai sauté, puissance des essais remise", async () => {
+  const { rig, r } = await setup({}, null, { e4: 3000 });
+  r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E4") setTimeout(() => r.stop("stop"), 200); };
   const out = await r.run(); rig.stopScope();
-  assert.ok(/non concluante/.test(res(out, "E4").text), res(out, "E4").text);
+  assert.equal(res(out, "E4").status, "saute"); assert.equal(rig.toneOn, false); assert.equal(rig.st.ptt, false);
+  assert.ok(rig.maxTx() < 1500, "rampe pas coupée : " + rig.maxTx());
 });
 
 test("liste fermée : commande exacte, jamais l'accord du coupleur, le VOX ni un préfixe", () => {
@@ -570,6 +587,13 @@ test("Hamlib : poste déjà en émission, fonction refusée, niveau figé, backe
   assert.equal(row("ANF").statut, "refus"); assert.equal(row("NB niv.").statut, "ecart"); assert.equal(row("NR niv.").statut, "ok");
   assert.equal(res(o2, "R9").status, "avert"); assert.equal(res(o2, "R2").status, "avert");
   assert.equal(odd.rig.ptt, 0);
+});
+
+test("Hamlib : atténuateur déclaré 20 dB mais refusé (IC-7100) = 12 dB essayé ensuite, remis", async () => {
+  const { rig, r } = setupH({ att: [12] });
+  await r._r9();
+  const att = res(r._finish(), "R9").values.fonctions.find(x => x.code === "ATT");
+  assert.equal(att.statut, "ok", JSON.stringify(att)); assert.equal(att.essai, "12"); assert.equal(rig.levels.ATT, 0);
 });
 
 (async () => {
