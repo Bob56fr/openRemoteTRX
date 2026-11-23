@@ -34,6 +34,7 @@ encore mises à jour : tout fichier peut manquer.
 | `plantages/*.txt` | 0.153.0 | Traces des outils arrêtés sur une erreur inattendue (code ORT-9312), 10 au plus. |
 | `installation.log` | avant 0.266.0 | Journal de la dernière installation (Debian). |
 | `reseau.txt` | 0.268.0 | Sorties de commandes : `ip -br link`, `iw dev`, `cat /proc/net/wireless` (signal en dBm), puis pour chaque interface Wi-Fi `iw dev <wlan> link` (signal, débit) et `iw dev <wlan> get power_save` (mise en veille du Wi-Fi) ; dernière ligne : `# historique de la sonde réseau : …` (joint, absent avec la raison, ou illisible avec l'erreur). |
+| `chauffe/chauffe.jsonl` | 0.274.0 | Historique de chauffe du superviseur (Linux), dernières 24 h (8 640 lignes au plus), une ligne JSON par relevé toutes les 10 s (voir ci-dessous). Absent hors Linux ou si le superviseur n'a jamais tourné en 0.274.0. |
 | `reseau/donnees.json` | 0.268.0 | Historique ANONYME de la sonde réseau sur 30 jours : le `donnees.json` de l'export de la sonde (`trxstation/netprobe/export.py`, `format` 1 : réglages, statistiques, coupures, heures, dernières 24 h ; appareils renommés `appareil-N`, aucune adresse). Absent si la sonde n'a jamais tourné. |
 
 ## Sorties de commandes
@@ -85,6 +86,24 @@ Une ligne JSON par événement :
 | `gravite`, `titre`, `contexte`, `module`, `connu` | événement codé | Gravité et titre du catalogue, variables de l'événement, module concerné. |
 | `exception` | parfois | Trace Python d'une erreur. |
 
+## Historique de chauffe (`chauffe/chauffe.jsonl`)
+
+Écrit par le superviseur (`trxstation/heatlog.py`) dans `<state_dir>/chauffe.jsonl` (tourné à 4 Mo, deux anciens
+fichiers gardés). Une ligne toutes les 10 s, et une tout de suite quand la température passe le seuil `temp_alert_c` :
+
+| Champ | Toujours | Contenu |
+|---|---|---|
+| `ts` | oui | Heure UTC, ISO 8601 à la seconde. |
+| `temp_c`, `capteur` | oui | Température du processeur (celle de l'alerte ORT-1010) et son capteur ; `null` si illisible. |
+| `charge_1min` | oui | Charge moyenne sur 1 minute (`/proc/loadavg`). |
+| `mhz_max` | oui | Fréquence la plus haute des cœurs en MHz (`null` si inconnue). |
+| `cpu_pct` | oui | Processeur occupé depuis le relevé précédent, en % de la machine entière. |
+| `top` | oui | `[[nom, %, n], …]` : programmes qui ont le plus occupé le processeur depuis le relevé précédent, regroupés par nom ; % d'UN cœur comme `top` (200 = deux cœurs), `n` = nombre de processus. 3 programmes, 8 au-dessus du seuil. Nom seul, jamais la ligne de commande ni le compte : `python:<module ou script>` pour un interpréteur, `noyau (kworker)` pour les fils du noyau. |
+| `chaud` | au-dessus du seuil | `true`. |
+| `capteurs` | au-dessus du seuil | Tous les capteurs hwmon : `{"coretemp Core 5": 84.0, "nvme Composite": 41.9, …}`. |
+| `plus_chaud` | au-dessus du seuil | `[capteur, °C]` le plus chaud du processeur. |
+| `coeurs_pct` | au-dessus du seuil | Occupation de chaque cœur logique en %, dans l'ordre de `/proc/stat`. |
+
 ## Masquage
 
 Le rapport ne contient aucun mot de passe, jeton ni clé (`secrets.toml` n'y est jamais).
@@ -103,8 +122,8 @@ adresses IP **publiques** (IPv4 et IPv6, remplacées par `adresse-publique`) ; l
 
 ## Ce que le rapport ne contient pas (encore)
 
-- Historique de la charge de la machine (processeur, mémoire, température) : la station ne garde que la mesure du
-  moment (diagnostic, tableau de bord), aucun historique.
+- Historique de la mémoire et du disque (la station ne garde que la mesure du moment). Processeur et température :
+  `chauffe/chauffe.jsonl` depuis 0.274.0 (Linux).
 
 Envoyé par le monitoring entre stations, le rapport est en plus masqué par `trxstation/monlink/redact.py` (nom de la
 machine, adresses, comptes).

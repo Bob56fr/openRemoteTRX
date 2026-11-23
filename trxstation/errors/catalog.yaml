@@ -396,7 +396,8 @@ ORT-1010:
   - Ventilation insuffisante ou boîtier fermé
   - Charge élevée (visiteurs, spectre, modules, FreeDV)
   - Pâte thermique ou ventilateur défaillant
-  preconisation: Vérifier la ventilation et la charge des modules.
+  - Programme étranger à la station sur la même machine
+  preconisation: "Vérifier la ventilation et la charge des modules. L'alerte nomme le capteur le plus chaud et les programmes les plus actifs ; l'historique (un relevé toutes les 10 s) est dans chauffe.jsonl, joint au rapport du menu 6.3."
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 3
@@ -411,7 +412,8 @@ ORT-1010:
     - Poor ventilation or closed case
     - High load (listeners, spectrum, modules, FreeDV)
     - Failing thermal paste or fan
-    preconisation: Check ventilation and module load.
+    - A program unrelated to the station on the same machine
+    preconisation: "Check ventilation and module load. The alert names the hottest sensor and the busiest programs; the history (one reading every 10 s) is in chauffe.jsonl, attached to the report of menu 6.3."
   de:
     titre: Prozessortemperatur hoch
     message: Prozessor der Station bei {temp_c} °C (Schwelle {seuil_c} °C).
@@ -419,7 +421,8 @@ ORT-1010:
     - Unzureichende Belüftung oder geschlossenes Gehäuse
     - Hohe Last (Besucher, Spektrum, Module, FreeDV)
     - Wärmeleitpaste oder Lüfter defekt
-    preconisation: Prüfen Sie die Belüftung und die Last der Module.
+    - Ein stationsfremdes Programm auf demselben Rechner
+    preconisation: "Prüfen Sie die Belüftung und die Last der Module. Die Warnung nennt den heißesten Sensor und die aktivsten Programme; der Verlauf (ein Messwert alle 10 s) steht in chauffe.jsonl, das dem Bericht von Menü 6.3 beiliegt."
   es:
     titre: Temperatura del procesador elevada
     message: Procesador de la estación a {temp_c} °C (umbral {seuil_c} °C).
@@ -427,7 +430,8 @@ ORT-1010:
     - Ventilación insuficiente o caja cerrada
     - Carga elevada (visitantes, espectro, módulos, FreeDV)
     - Pasta térmica o ventilador defectuosos
-    preconisation: Comprueba la ventilación y la carga de los módulos.
+    - Un programa ajeno a la estación en la misma máquina
+    preconisation: "Comprueba la ventilación y la carga de los módulos. La alerta indica el sensor más caliente y los programas más activos; el historial (una lectura cada 10 s) está en chauffe.jsonl, adjunto al informe del menú 6.3."
 
 ORT-1011:
   gravite: erreur

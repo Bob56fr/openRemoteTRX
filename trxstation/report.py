@@ -245,6 +245,19 @@ def report_meta(sysm: System, now_utc: datetime.datetime | None = None) -> str:
 
 
 MAX_CRASH_FILES = 10
+HEAT_LINES = 8640            # historique de chauffe joint : 24 h de relevés toutes les 10 s (étape 377)
+
+
+def heat_history(sysm: System, state_dir: Path | None) -> str | None:
+    """Dernières HEAT_LINES lignes de `chauffe.jsonl` (fichier tourné compris), ou None s'il n'existe pas."""
+    if state_dir is None:
+        return None
+    from .heatlog import FILE_NAME
+    parts = [sysm.read_text(state_dir / f"{FILE_NAME}.1"), sysm.read_text(state_dir / FILE_NAME)]
+    if all(p is None for p in parts):
+        return None
+    lines = "".join(p for p in parts if p).splitlines()[-HEAT_LINES:]
+    return "\n".join(lines) + "\n" if lines else ""
 
 
 def crash_files(state_dir: Path | None) -> list[Path]:
@@ -293,6 +306,9 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
             text = sysm.read_text(state_dir / f"journal-{process}.jsonl") if state_dir else None
             if text is not None:
                 archive.writestr(f"journaux/journal-{process}.jsonl", text)
+        heat = heat_history(sysm, state_dir)
+        if heat is not None:
+            archive.writestr("chauffe/chauffe.jsonl", heat)
         for page in page_reports(state_dir)[-MAX_PAGE_REPORTS:]:    # « Signaler un problème » de la page, relus par l'utilisateur
             text = sysm.read_text(page)
             if text is not None:

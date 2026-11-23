@@ -55,6 +55,7 @@ from ..cpu_temp import cpu_celsius
 from ..config import DUMMY_MODEL, Config
 from ..errors import codes
 from ..errors.emit import by_machine, emit_event
+from ..heatlog import HeatLog
 from ..status import GatewayStatus, GatewayWatch
 from .rigctl import RigProbe
 from .state import StateStore
@@ -137,7 +138,7 @@ class Supervisor:
                  clock: Callable[[], float] = time.monotonic, wall: Callable[[], float] = time.time,
                  port_exists: Callable[[str], bool] = os.path.exists,
                  read_temp: Callable[[], float | None] = default_read_temp,
-                 read_host: Callable[[], HostReading] | None = None):
+                 read_host: Callable[[], HostReading] | None = None, heat: HeatLog | None = None):
         self.cfg, self.sup = cfg, cfg.supervisor
         self.read_status, self.probe_rig, self.actions, self.store = read_status, probe_rig, actions, store
         self.clock, self.wall, self.port_exists, self.read_temp = clock, wall, port_exists, read_temp
@@ -145,6 +146,8 @@ class Supervisor:
         self._host: HostReading | None = None
         self._host_at = -1e9
         self._host_since: dict[str, float] = {}
+        self.heat = heat                                           # historique de chauffe (Linux, étape 377)
+        self._heat_failed = False
         self.watch = GatewayWatch(self.sup.stale_after_s)
         self._started = clock()
         self._tx_since: float | None = None
@@ -298,8 +301,12 @@ class Supervisor:
                        [replace(p, level=None) for p in problems if p.name != "usb_missing"]
 
         temperature = self.read_temp()
-        if temperature is not None and temperature >= s.temp_alert_c:
-            problems.append(Problem("cpu_hot", f"{temperature:.0f} °C", None, False))
+        hot = temperature is not None and temperature >= s.temp_alert_c
+        self._heat_tick(now, hot)
+        if hot:
+            detail = f"{temperature:.0f} °C (seuil {s.temp_alert_c:g} °C)"
+            summary = self.heat.summary() if self.heat is not None else ""
+            problems.append(Problem("cpu_hot", detail + (f" — {summary}" if summary else ""), None, False))
         problems += self._host_problems(now)
         status = self.watch.status
         if gateway_fresh and status is not None and status.ptt.get("temp_alert") in ("warn", "hot"):
@@ -310,6 +317,20 @@ class Supervisor:
             problems.append(Problem("rig_hot" if hot else "rig_warm",
                                     f"poste à {shown}" + (" : émission à distance coupée" if hot else ""), None, False))
         return problems
+
+    def _heat_tick(self, now: float, hot: bool) -> None:
+        """Historique de chauffe (toutes les 10 s, tout de suite au passage du seuil) : ne bloque jamais la supervision ;
+        un échec est signalé une fois."""
+        if self.heat is None:
+            return
+        try:
+            self.heat.tick(now, hot)
+            self._heat_failed = False
+        except Exception as exc:
+            if not self._heat_failed:
+                self._heat_failed = True
+                emit_event(codes.ORT_1009, logger=log, trace=not isinstance(exc, OSError),
+                           journal=str(self.heat.path), erreur=str(exc) or repr(exc))
 
     def _host_problems(self, now: float) -> list[Problem]:
         """Mémoire, disque, ralentissement du Pi : ALERTE SEULE (niveau None), après HOST_SUSTAIN_S de suite. Jamais de

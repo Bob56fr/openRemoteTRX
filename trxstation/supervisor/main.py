@@ -15,6 +15,7 @@ from pathlib import Path
 from .. import config as cfgmod
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..heatlog import FILE_NAME as HEAT_FILE, HeatLog
 from ..logsetup import LOG_DIR_ENV, add_json_journal, setup_logging
 from ..paths import default_config_path
 from ..ports import port_present
@@ -140,9 +141,11 @@ def main(argv: list[str] | None = None) -> int:
     probe = RigctlProbe(cfg.network.rigctld_host, cfg.network.rigctld_port)
     backend = choose_backend(cfg, args.config, store)
     host_paths = tuple(dict.fromkeys([cfg.supervisor.state_dir, os.path.abspath(os.sep)]))   # dossier d'état, racine
+    heat = HeatLog(Path(cfg.supervisor.state_dir) / HEAT_FILE)     # historique de chauffe (Linux seulement)
+    heat = heat if heat.available else None
     sup = Supervisor(cfg, read_status=lambda: read_status(status_path), probe_rig=probe.read,
                      actions=SystemActions(cfg, backend), store=store, port_exists=port_present,
-                     read_host=lambda: default_read_host(host_paths))
+                     read_host=lambda: default_read_host(host_paths), heat=heat)
     if unclean is not None:
         sup.actions.notifier.alert(codes.ORT_8030 if unclean.machine else codes.ORT_8031,
                                    dernier_signe=time.strftime("%Y-%m-%d %H:%M", time.localtime(unclean.last_seen)))
