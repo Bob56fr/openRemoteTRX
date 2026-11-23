@@ -74,7 +74,7 @@ DONE_KEYS = frozenset({
 UNCHANGED_KEYS = frozenset({
     "hwtest.5", "qualif.4", "update.17", "install_zip.6", "install_zip.11", "install_zip.13", "edit_config.5",
     "edit_config.8", "choose_profile.2", "save_profile.3", "save_profile.6", "delete_profile.2", "save_config.4",
-    "save_accounts.1", "temperature.6",
+    "save_accounts.1", "temperature.6", "apply_rig_silent.cancel",
     "diffusion.not_started", "diffusion.secrets_unchanged",
 })
 

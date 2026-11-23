@@ -181,7 +181,7 @@ expert = "<p>El bloqueo de seguridad sobrevive a los reinicios y a las correccio
 [menus.update]
 role = "Actualización por Internet: presenta la nueva versión, propone ver la naturaleza de los cambios (notas de CADA versión publicada desde la tuya, la más reciente primero, por páginas: Intro = seguir, q = parar ahí) y luego la instala tras comprobar su firma. Si ya estás al día: propone una nueva búsqueda inmediata en GitHub."
 quand = "Cuando aparece un recuadro « NUEVA VERSIÓN … DISPONIBLE » arriba en la consola (amarillo en un terminal) y el menú 7.1 está marcado « <== NUEVA VERSIÓN ». La búsqueda se hace 2 minutos después del arranque de la estación y luego cada 24 h."
-modifie = "Instala la nueva versión junto a la anterior (conservada para el menú 7.2). <code>station.toml</code> y los certificados se conservan. Se rechaza mientras el transceptor transmite. Hay que escribir el número de versión para confirmar."
+modifie = "Instala la nueva versión junto a la anterior (conservada para el menú 7.2). <code>station.toml</code> y los certificados se conservan. Se rechaza mientras el transceptor transmite. Si el transceptor no responde (cable USB desconectado, transceptor apagado), la consola lo explica y propone continuar: escribiendo SI, la actualización detiene ella misma la estación (nunca si se ha visto una transmisión). Hay que escribir el número de versión para confirmar."
 admin = true
 
 [menus.rollback]

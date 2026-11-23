@@ -109,6 +109,37 @@ def test_update_failures_are_explained(tmp_path, code, expected):
     assert expected in text(out)
 
 
+class SilentRigRunner(Runner):
+    """Premier passage : poste qui ne répond pas ; avec --poste-injoignable : installé."""
+    def __init__(self, first=upd.EXIT_RIG_SILENT):
+        super().__init__()
+        self.first = first
+
+    def run(self, cmd, *, admin=False):
+        self.calls.append((cmd, admin))
+        return upd.EXIT_OK if "--poste-injoignable" in cmd else self.first
+
+
+@pytest.mark.parametrize("first,warning", [(upd.EXIT_RIG_SILENT, "Le poste ne répond pas"),
+                                           (upd.EXIT_RIG_SILENT_GATEWAY, "passerelle est muette")])
+def test_silent_rig_needs_the_typed_word_then_stops_the_station_itself(tmp_path, first, warning):
+    state = chk.UpdateState(installed="0.22.0", ok=True, release=release())
+    for answer, installed in (("", False), ("o", False), ("oui", True)):
+        out: list[str] = []
+        runner = SilentRigRunner(first)
+        answers = iter(["n", "0.23.0", answer])
+        con = Console(tmp_path / "station.toml", runner, ask=lambda _: next(answers, ""), say=out.append,
+                      python="py", update_state=lambda: state, installed="0.22.0")
+        con.update()
+        assert warning in text(out) and "vérifie qu'il n'émet pas" in text(out)
+        if installed:
+            cmd, admin = runner.calls[1]
+            assert admin and cmd[cmd.index("--poste-injoignable") + 1:] == ["install", "--version", "0.23.0"]
+            assert "Version 0.23.0 installée" in text(out)
+        else:
+            assert len(runner.calls) == 1 and "menu 1.2" in text(out) and "Version 0.23.0 installée" not in text(out)
+
+
 def test_up_to_date_and_failed_check(tmp_path):
     con, runner, out = make(tmp_path, state=chk.UpdateState(installed="0.22.0", ok=False, error="GitHub injoignable"))
     con.update()

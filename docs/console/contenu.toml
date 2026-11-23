@@ -315,7 +315,7 @@ expert = "<p>La mise en sécurité survit aux redémarrages et aux corrections :
 [menus.update]
 role = "Mise à jour par Internet : présente la nouvelle version, propose de voir la nature des changements (notes de CHAQUE version publiée depuis la tienne, la plus récente d'abord, par pages : Entrée = suite, q = arrêter là), puis l'installe après vérification de sa signature. À jour : propose une nouvelle recherche immédiate sur GitHub."
 quand = "Quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en haut de la console (jaune dans un terminal) et que le menu 7.1 est marqué « <== NOUVELLE VERSION ». La recherche a lieu 2 minutes après le démarrage de la station puis toutes les 24 h."
-modifie = "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 7.2). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Il faut taper le numéro de version pour confirmer. Sous Windows, le menu ne fait que l'annoncer : la mise à jour se fait en lançant <code>installer.cmd</code> du nouveau paquet."
+modifie = "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 7.2). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Si le poste ne répond pas (câble USB débranché, poste éteint), la console l'explique et propose de continuer : en tapant OUI, la mise à jour arrête elle-même la station (jamais si une émission a été vue). Il faut taper le numéro de version pour confirmer. Sous Windows, le menu ne fait que l'annoncer : la mise à jour se fait en lançant <code>installer.cmd</code> du nouveau paquet."
 admin = true
 
 [menus.rollback]

@@ -51,6 +51,9 @@ LOCAL_NAME = re.compile(r"^trx-remote-debian-(\d{1,3}\.\d{1,3}\.\d{1,3})\.zip$")
 MAX_LOCAL_ZIP_BYTES = 100 * 1024 * 1024
 
 EXIT_OK, EXIT_FAILED, EXIT_TX, EXIT_REFUSED = 0, 1, 3, 4
+# Poste qui ne répond pas (USB débranché, poste éteint) et rien ne dit qu'il émet : refus que l'opérateur peut lever
+# en tapant OUI dans la console (option --poste-injoignable, étape 380). 6 : la passerelle est muette en plus.
+EXIT_RIG_SILENT, EXIT_RIG_SILENT_GATEWAY = 5, 6
 
 
 class UpdateRefused(Exception):
@@ -59,6 +62,25 @@ class UpdateRefused(Exception):
 
 class TransmitRefused(UpdateRefused):
     """Refus parce que le poste émet, ou qu'on ne peut pas prouver qu'il n'émet pas."""
+
+
+class RigUnreachable(TransmitRefused):
+    """Seul doute : le poste ne répond pas. Levé seulement par une confirmation explicite de l'opérateur."""
+
+    def __init__(self, reason: str, *, gateway_silent: bool):
+        super().__init__(reason)
+        self.gateway_silent = gateway_silent
+
+
+@dataclass(frozen=True)
+class Doubt:
+    """Raison d'un refus. `rig_silent` : le seul doute est un poste qui ne répond pas (aucune émission vue)."""
+    reason: str
+    rig_silent: bool = False
+    gateway_silent: bool = False
+
+    def __str__(self) -> str:
+        return self.reason
 
 
 Download = Callable[[str, int], bytes]
@@ -71,20 +93,27 @@ def http_download(url: str, max_bytes: int) -> bytes:
 # ------------------------------------------------------------------ 1. émission en cours ?
 
 def transmit_doubt(*, gateway_active: bool, rigctld_active: bool, first: GatewayStatus | None,
-                   second: GatewayStatus | None, probe: RigProbe) -> str | None:
-    """None si le poste est sûrement en réception ; sinon la raison du refus. En cas de doute : refus."""
+                   second: GatewayStatus | None, probe: RigProbe) -> Doubt | None:
+    """None si le poste est sûrement en réception ; sinon la raison du refus. En cas de doute : refus.
+    Une émission vue (passerelle ou poste) n'est JAMAIS un doute levable ; un poste qui ne répond pas l'est
+    (`rig_silent`), sur confirmation de l'opérateur seulement."""
     for status in (first, second):
         if status is not None and status.ptt.get("state") != "RX":
-            return "émission en cours (passerelle) : coupe l'émission puis recommence"
-    fresh = (second is not None and first is not None and (first.pid, first.seq) != (second.pid, second.seq))
-    if gateway_active and not fresh:
-        return "passerelle muette : état d'émission inconnu. Arrête la station (menu « Arrêter ») puis recommence"
+            return Doubt("émission en cours (passerelle) : coupe l'émission puis recommence")
     if probe.ok and probe.ptt is True:
-        return "le poste est en émission : coupe l'émission puis recommence"
-    if rigctld_active and not probe.ok:
-        return "poste non relisible (rigctld ne répond pas). Arrête la station puis recommence"
+        return Doubt("le poste est en émission : coupe l'émission puis recommence")
+    fresh = (second is not None and first is not None and (first.pid, first.seq) != (second.pid, second.seq))
+    silent = rigctld_active and not probe.ok
+    if gateway_active and not fresh:
+        if silent:
+            return Doubt("passerelle muette et poste qui ne répond pas (débranché ou éteint ?) : état d'émission "
+                         "inconnu", rig_silent=True, gateway_silent=True)
+        return Doubt("passerelle muette : état d'émission inconnu. Arrête la station (menu 1.2) puis recommence")
+    if silent:
+        return Doubt("le poste ne répond pas (câble USB débranché ou poste éteint ?) : rigctld ne peut pas le relire",
+                     rig_silent=True)
     if probe.ok and probe.ptt is None and not (gateway_active and fresh):
-        return "état d'émission du poste illisible. Arrête la station puis recommence"
+        return Doubt("état d'émission du poste illisible. Arrête la station (menu 1.2) puis recommence")
     return None
 
 
@@ -200,9 +229,10 @@ def real_system(cfg) -> System:
 class Updater:
     def __init__(self, cfg, system: System, *, say: Callable[[str], None] = print, fetch: chk.Fetch = chk.http_get,
                  download: Download = http_download, installed: str = __version__, app_dir: Path = APP_DIR,
-                 work_root: Path = WORK_ROOT):
+                 work_root: Path = WORK_ROOT, accept_silent_rig: bool = False):
         self.cfg, self.sys, self.say, self.fetch, self.download = cfg, system, say, fetch, download
         self.installed, self.app_dir, self.work_root = installed, app_dir, work_root
+        self.accept_silent_rig = accept_silent_rig        # OUI tapé par l'opérateur dans la console
 
     def ensure_receive(self) -> None:
         s = self.cfg.supervisor
@@ -210,10 +240,16 @@ class Updater:
         first = self.sys.read_status()
         self.sys.sleep(FRESH_WAIT_S)
         second = self.sys.read_status()
-        reason = transmit_doubt(gateway_active=gateway_active, rigctld_active=rigctld_active,
-                                first=first, second=second, probe=self.sys.probe())
-        if reason:
-            raise TransmitRefused(reason)
+        doubt = transmit_doubt(gateway_active=gateway_active, rigctld_active=rigctld_active,
+                               first=first, second=second, probe=self.sys.probe())
+        if doubt is None:
+            return
+        if not doubt.rig_silent:
+            raise TransmitRefused(doubt.reason)
+        if not self.accept_silent_rig:
+            raise RigUnreachable(doubt.reason, gateway_silent=doubt.gateway_silent)
+        self.say(f"Poste qui ne répond pas ({doubt.reason}) : mise à jour poursuivie sur la confirmation de "
+                 "l'opérateur ; la station remettra le poste en réception dès qu'il répondra.")
 
     def stop_station(self) -> None:
         self.ensure_receive()
@@ -334,6 +370,8 @@ def main(argv: list[str] | None = None, *, system: System | None = None, fetch: 
 
     ap = argparse.ArgumentParser(prog="trx-update", description="Installe une mise à jour signée ou revient en arrière")
     ap.add_argument("--config", type=Path, default=default_config_path())
+    ap.add_argument("--poste-injoignable", action="store_true",
+                    help="poursuit si le seul doute est un poste qui ne répond pas (confirmé par l'opérateur)")
     sub = ap.add_subparsers(dest="action", required=True)
     inst = sub.add_parser("install", help="installe la version annoncée")
     inst.add_argument("--version", required=True)
@@ -352,7 +390,7 @@ def main(argv: list[str] | None = None, *, system: System | None = None, fetch: 
         print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return 2
     updater = Updater(cfg, system or real_system(cfg), fetch=fetch, download=download, app_dir=app_dir,
-                      work_root=work_root)
+                      work_root=work_root, accept_silent_rig=args.poste_injoignable)
     try:
         if args.action == "install":
             return updater.install(args.version)
@@ -361,6 +399,8 @@ def main(argv: list[str] | None = None, *, system: System | None = None, fetch: 
         return updater.rollback()
     except UpdateRefused as exc:
         print(f"Refusé : {exc}\nRien n'a été installé.", file=sys.stderr)
+        if isinstance(exc, RigUnreachable):
+            return EXIT_RIG_SILENT_GATEWAY if exc.gateway_silent else EXIT_RIG_SILENT
         return EXIT_TX if isinstance(exc, TransmitRefused) else EXIT_REFUSED
     except (OSError, zipfile.BadZipFile) as exc:
         print(f"Mise à jour interrompue : {exc}\nRien n'a été installé.", file=sys.stderr)

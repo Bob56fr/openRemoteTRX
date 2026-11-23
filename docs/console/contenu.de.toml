@@ -181,7 +181,7 @@ expert = "<p>Die Sicherheitsabschaltung überdauert Neustarts und Korrekturen: d
 [menus.update]
 role = "Update über das Internet: stellt die neue Version vor, bietet an, die Art der Änderungen anzusehen (Hinweise zu JEDER seit deiner veröffentlichten Version, die neueste zuerst, seitenweise: Eingabetaste = weiter, q = hier aufhören), und installiert sie nach Prüfung ihrer Signatur. Bereits aktuell: bietet eine sofortige neue Suche auf GitHub an."
 quand = "Wenn oben in der Konsole ein Rahmen „NEUE VERSION … VERFÜGBAR“ erscheint (gelb in einem Terminal) und Menü 7.1 mit „<== NEUE VERSION“ markiert ist. Die Suche erfolgt 2 Minuten nach dem Start der Station und dann alle 24 h."
-modifie = "Installiert die neue Version neben der alten (die für Menü 7.2 behalten wird). <code>station.toml</code> und die Zertifikate bleiben erhalten. Abgelehnt, solange der Transceiver sendet. Zur Bestätigung musst du die Versionsnummer tippen."
+modifie = "Installiert die neue Version neben der alten (die für Menü 7.2 behalten wird). <code>station.toml</code> und die Zertifikate bleiben erhalten. Abgelehnt, solange der Transceiver sendet. Antwortet der Transceiver nicht (USB-Kabel abgezogen, Transceiver ausgeschaltet), erklärt die Konsole das und bietet an fortzufahren: mit JA stoppt das Update die Station selbst (nie, wenn ein Senden gesehen wurde). Zur Bestätigung musst du die Versionsnummer tippen."
 admin = true
 
 [menus.rollback]

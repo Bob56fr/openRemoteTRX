@@ -160,6 +160,23 @@ def test_transmit_doubt(kwargs, refused):
     assert (transmit_doubt(**kwargs) is not None) == refused
 
 
+SILENT = RigProbe(False, error="injoignable")
+
+
+@pytest.mark.parametrize("kwargs,rig_silent,gateway_silent", [
+    ({"gateway_active": True, "rigctld_active": True, "first": status(1), "second": status(2)}, True, False),
+    ({"gateway_active": False, "rigctld_active": True, "first": None, "second": None}, True, False),
+    ({"gateway_active": True, "rigctld_active": True, "first": status(1), "second": status(1)}, True, True),
+    ({"gateway_active": True, "rigctld_active": True, "first": status(1), "second": status(2, "TX")}, False, False),
+    ({"gateway_active": True, "rigctld_active": True, "first": status(1, "UNKEYING"), "second": status(1, "UNKEYING")},
+     False, False),                                            # émission vue, même passerelle gelée : jamais levable
+])
+def test_only_a_silent_rig_without_any_transmission_seen_can_be_confirmed(kwargs, rig_silent, gateway_silent):
+    doubt = transmit_doubt(probe=SILENT, **kwargs)
+    assert doubt is not None and (doubt.rig_silent, doubt.gateway_silent) == (rig_silent, gateway_silent)
+    assert not transmit_doubt(probe=RigProbe(True, True), **kwargs).rig_silent   # le poste dit émettre : jamais
+
+
 # ------------------------------------------------------------------ installation
 
 def test_verified_package_is_installed_after_stopping_the_station(world):
@@ -189,6 +206,34 @@ def test_frozen_gateway_is_refused(world):
     fake = FakeSystem(frozen=True)
     with pytest.raises(TransmitRefused, match="muette"):
         updater(world, fake).install(V)
+
+
+def test_silent_rig_is_refused_unless_the_operator_confirmed(world):
+    fake = FakeSystem(probe=SILENT)
+    with pytest.raises(ap.RigUnreachable) as refused:
+        updater(world, fake).install(V)
+    assert not refused.value.gateway_silent and world["fetched"] == [] and "stop" not in fake.calls
+    fake, messages = FakeSystem(probe=SILENT), []
+    up = updater(world, fake, messages)
+    up.accept_silent_rig = True
+    assert up.install(V) == ap.EXIT_OK
+    assert fake.calls[-2:] == ["stop", "run:bash install.sh"]          # la mise à jour arrête la station elle-même
+    assert any("confirmation de l'opérateur" in m for m in messages)
+
+
+def test_confirmation_of_a_silent_rig_never_covers_a_transmission(world):
+    for fake in (FakeSystem(probe=SILENT, states=("TX",)), FakeSystem(probe=RigProbe(True, True))):
+        up = updater(world, fake)
+        up.accept_silent_rig = True
+        with pytest.raises(TransmitRefused) as refused:
+            up.install(V)
+        assert not isinstance(refused.value, ap.RigUnreachable) and "stop" not in fake.calls
+    fake = FakeSystem(probe=SILENT, states=("RX", "RX", "TX"))         # émission à la seconde vérification
+    up = updater(world, fake)
+    up.accept_silent_rig = True
+    with pytest.raises(TransmitRefused):
+        up.install(V)
+    assert "stop" not in fake.calls and not any(c.startswith("run:") for c in fake.calls)
 
 
 def test_transmission_started_during_download_is_refused_before_stopping(world):
@@ -387,6 +432,15 @@ def test_main_exit_codes(world, tmp_path, capsys):
     assert "Rien n'a été installé" in capsys.readouterr().err
     world["files"][DL + ZIP_NAME + ".sig"] = b"faux"
     assert _main(world, FakeSystem(), "install", "--version", V, tmp_path=tmp_path) == ap.EXIT_REFUSED
+
+
+def test_main_silent_rig_codes_and_confirmation_flag(world, tmp_path):
+    assert _main(world, FakeSystem(probe=SILENT), "install", "--version", V, tmp_path=tmp_path) == ap.EXIT_RIG_SILENT
+    assert _main(world, FakeSystem(probe=SILENT, frozen=True), "install", "--version", V,
+                 tmp_path=tmp_path) == ap.EXIT_RIG_SILENT_GATEWAY
+    fake = FakeSystem(probe=SILENT)
+    assert _main(world, fake, "--poste-injoignable", "install", "--version", V, tmp_path=tmp_path) == ap.EXIT_OK
+    assert "stop" in fake.calls
 
 
 # ------------------------------------------------------------------ paquet déposé sur la machine (menu 7.3)

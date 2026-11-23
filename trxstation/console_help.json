@@ -292,7 +292,7 @@
     "update": {
      "admin": true,
      "expert": "",
-     "modifie": "Installiert die neue Version neben der alten (die für Menü 7.2 behalten\nwird). station.toml und die Zertifikate bleiben erhalten. Abgelehnt, solange\nder Transceiver sendet. Zur Bestätigung musst du die Versionsnummer tippen.",
+     "modifie": "Installiert die neue Version neben der alten (die für Menü 7.2 behalten\nwird). station.toml und die Zertifikate bleiben erhalten. Abgelehnt, solange\nder Transceiver sendet. Antwortet der Transceiver nicht (USB-Kabel\nabgezogen, Transceiver ausgeschaltet), erklärt die Konsole das und bietet an\nfortzufahren: mit JA stoppt das Update die Station selbst (nie, wenn ein\nSenden gesehen wurde). Zur Bestätigung musst du die Versionsnummer tippen.",
      "quand": "Wenn oben in der Konsole ein Rahmen „NEUE VERSION … VERFÜGBAR“ erscheint\n(gelb in einem Terminal) und Menü 7.1 mit „<== NEUE VERSION“ markiert ist.\nDie Suche erfolgt 2 Minuten nach dem Start der Station und dann alle 24 h.",
      "role": "Update über das Internet: stellt die neue Version vor, bietet an, die Art\nder Änderungen anzusehen (Hinweise zu JEDER seit deiner veröffentlichten\nVersion, die neueste zuerst, seitenweise: Eingabetaste = weiter, q = hier\naufhören), und installiert sie nach Prüfung ihrer Signatur. Bereits aktuell:\nbietet eine sofortige neue Suche auf GitHub an."
     },
@@ -597,7 +597,7 @@
     "update": {
      "admin": true,
      "expert": "",
-     "modifie": "Installs the new version next to the old one (kept for menu 7.2).\nstation.toml and the certificates are kept. Refused while the transceiver is\ntransmitting. You must type the version number to confirm.",
+     "modifie": "Installs the new version next to the old one (kept for menu 7.2).\nstation.toml and the certificates are kept. Refused while the transceiver is\ntransmitting. If the transceiver does not answer (USB cable unplugged,\ntransceiver switched off), the console explains it and offers to continue:\nby typing YES, the update stops the station itself (never if a transmission\nwas seen). You must type the version number to confirm.",
      "quand": "When a \"NEW VERSION … AVAILABLE\" box appears at the top of the console\n(yellow in a terminal) and menu 7.1 is marked \"<== NEW VERSION\". The check\nruns 2 minutes after the station starts, then every 24 h.",
      "role": "Update over the Internet: shows the new version, offers to see what changed\n(notes of EVERY version published since yours, newest first, page by page:\nEnter = next, q = stop there), then installs it after checking its\nsignature. Up to date: offers an immediate new check on GitHub."
     },
@@ -902,7 +902,7 @@
     "update": {
      "admin": true,
      "expert": "",
-     "modifie": "Instala la nueva versión junto a la anterior (conservada para el menú 7.2).\nstation.toml y los certificados se conservan. Se rechaza mientras el\ntransceptor transmite. Hay que escribir el número de versión para confirmar.",
+     "modifie": "Instala la nueva versión junto a la anterior (conservada para el menú 7.2).\nstation.toml y los certificados se conservan. Se rechaza mientras el\ntransceptor transmite. Si el transceptor no responde (cable USB\ndesconectado, transceptor apagado), la consola lo explica y propone\ncontinuar: escribiendo SI, la actualización detiene ella misma la estación\n(nunca si se ha visto una transmisión). Hay que escribir el número de\nversión para confirmar.",
      "quand": "Cuando aparece un recuadro « NUEVA VERSIÓN … DISPONIBLE » arriba en la\nconsola (amarillo en un terminal) y el menú 7.1 está marcado « <== NUEVA\nVERSIÓN ». La búsqueda se hace 2 minutos después del arranque de la estación\ny luego cada 24 h.",
      "role": "Actualización por Internet: presenta la nueva versión, propone ver la\nnaturaleza de los cambios (notas de CADA versión publicada desde la tuya, la\nmás reciente primero, por páginas: Intro = seguir, q = parar ahí) y luego la\ninstala tras comprobar su firma. Si ya estás al día: propone una nueva\nbúsqueda inmediata en GitHub."
     },
@@ -1207,7 +1207,7 @@
     "update": {
      "admin": true,
      "expert": "",
-     "modifie": "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 7.2).\nstation.toml et les certificats sont conservés. Refusé tant que le poste\német. Il faut taper le numéro de version pour confirmer. Sous Windows, le\nmenu ne fait que l'annoncer : la mise à jour se fait en lançant\ninstaller.cmd du nouveau paquet.",
+     "modifie": "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 7.2).\nstation.toml et les certificats sont conservés. Refusé tant que le poste\német. Si le poste ne répond pas (câble USB débranché, poste éteint), la\nconsole l'explique et propose de continuer : en tapant OUI, la mise à jour\narrête elle-même la station (jamais si une émission a été vue). Il faut\ntaper le numéro de version pour confirmer. Sous Windows, le menu ne fait que\nl'annoncer : la mise à jour se fait en lançant installer.cmd du nouveau\npaquet.",
      "quand": "Quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en haut de la\nconsole (jaune dans un terminal) et que le menu 7.1 est marqué « <==\nNOUVELLE VERSION ». La recherche a lieu 2 minutes après le démarrage de la\nstation puis toutes les 24 h.",
      "role": "Mise à jour par Internet : présente la nouvelle version, propose de voir la\nnature des changements (notes de CHAQUE version publiée depuis la tienne, la\nplus récente d'abord, par pages : Entrée = suite, q = arrêter là), puis\nl'installe après vérification de sa signature. À jour : propose une nouvelle\nrecherche immédiate sur GitHub."
     },

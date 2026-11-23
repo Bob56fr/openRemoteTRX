@@ -181,7 +181,7 @@ expert = "<p>The safety lockout survives restarts and fixes: the station must be
 [menus.update]
 role = "Update over the Internet: shows the new version, offers to see what changed (notes of EVERY version published since yours, newest first, page by page: Enter = next, q = stop there), then installs it after checking its signature. Up to date: offers an immediate new check on GitHub."
 quand = "When a \"NEW VERSION … AVAILABLE\" box appears at the top of the console (yellow in a terminal) and menu 7.1 is marked \"<== NEW VERSION\". The check runs 2 minutes after the station starts, then every 24 h."
-modifie = "Installs the new version next to the old one (kept for menu 7.2). <code>station.toml</code> and the certificates are kept. Refused while the transceiver is transmitting. You must type the version number to confirm."
+modifie = "Installs the new version next to the old one (kept for menu 7.2). <code>station.toml</code> and the certificates are kept. Refused while the transceiver is transmitting. If the transceiver does not answer (USB cable unplugged, transceiver switched off), the console explains it and offers to continue: by typing YES, the update stops the station itself (never if a transmission was seen). You must type the version number to confirm."
 admin = true
 
 [menus.rollback]

@@ -1200,10 +1200,8 @@ class Console:
         if entered != release.version:
             self.say(self.t("update.17", update_menu=UPDATE_MENU))
             return
-        code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "install",
-                                           "--version", release.version), admin=True)
         done = self.t(self.reopen_key("update.18"), version=release.version)       # page : jamais « Quitte (q) »
-        self.say(self._apply_result(code, done))
+        self._apply(["install", "--version", release.version], done)
 
     def search_now(self) -> UpdateState | None:
         """Recherche immédiate par le service de la station (compte trx, jamais root) ; rien n'est installé."""
@@ -1250,10 +1248,8 @@ class Console:
         self.say(self.t("rollback.2", installed=self.installed, previous=previous))
         if not self.yes(self.t("rollback.3", previous=previous), False):
             return
-        code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "rollback"),
-                               admin=True)
         done = self.t(self.reopen_key("rollback.4"), previous=previous)       # page : jamais « Quitte (q) »
-        self.say(self._apply_result(code, done))
+        self._apply(["rollback"], done)
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
@@ -1291,10 +1287,8 @@ class Console:
         if entered != version:
             self.say(self.t("install_zip.13"))
             return
-        code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "local",
-                                           "--zip", str(path), *extra), admin=True)
         done = self.t(self.reopen_key("install_zip.14"), version=version)       # page : jamais « Quitte (q) »
-        self.say(self._apply_result(code, done))
+        self._apply(["local", "--zip", str(path), *extra], done)
 
     def edit_config(self) -> None:
         """station.toml modifiée sur une COPIE (nano), validée, différences montrées, puis enregistrée par sudo
@@ -3279,6 +3273,32 @@ class Console:
         trx-console --web)."""
         page = os.environ.get("TRX_CONSOLE_PAGE")
         return f"{key}.{'page' if page == 'network' else 'local'}" if page else key
+
+    def _run_apply(self, action: list[str]) -> int:
+        """Installation (sudo). Poste qui ne répond pas (USB débranché, poste éteint) et aucune émission vue : la
+        station ne peut pas prouver qu'il est en réception ; l'opérateur peut poursuivre en tapant OUI (étape 380),
+        la mise à jour arrête alors la station elle-même. Une émission vue n'est jamais levée ainsi."""
+        def run(*extra: str) -> int:
+            return self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), *extra,
+                                               *action), admin=True)
+        code = run()
+        if code not in (upd.EXIT_RIG_SILENT, upd.EXIT_RIG_SILENT_GATEWAY):
+            return code
+        warning = "apply_rig_silent.gateway" if code == upd.EXIT_RIG_SILENT_GATEWAY else "apply_rig_silent.rig"
+        self.say(self.t(warning))
+        self.say(self.t("apply_rig_silent.explain"))
+        self.hint = {"kind": "word", "word": self.t("word.yes")}
+        if not self.typed_word(self.ask(self.t("apply_rig_silent.type_word", word=self.t("word.yes"))),
+                               "word.yes", "OUI"):
+            stop_menu = menu_number("stop")
+            self.say(self.t("apply_rig_silent.cancel", stop_menu=stop_menu))
+            return -1
+        return run("--poste-injoignable")
+
+    def _apply(self, action: list[str], success: str) -> None:
+        code = self._run_apply(action)
+        if code != -1:                                     # -1 : OUI non tapé, abandon déjà dit
+            self.say(self._apply_result(code, success))
 
     def _apply_result(self, code: int, success: str) -> str:
         if code == upd.EXIT_OK:
