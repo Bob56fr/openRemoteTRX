@@ -20,7 +20,7 @@ Proposer une application aux téléphones sous **Android 8.0, 8.1 et 9** (API 26
    `upstream/`**, figé sur un commit. Jamais copiés : une correction de sécurité arrive d'un seul geste (mise à jour du
    sous-module). `:core` et `:app` sont **propres à Lite** (copie de départ : application 0.90.0, historique Git gardé
    par `git subtree split`).
-3. **Identifiant** `com.rfdiy.openremotetrx.lite` (jamais changé ensuite) : les deux applications cohabitent sur un
+3. **Identifiant** `com.rf_diy.openremotetrx_lite` (changé le 2026-11-24 à la demande de l'utilisateur avant le premier envoi à Google Play ; jamais changé ensuite) : les deux applications cohabitent sur un
    téléphone ; sur Google Play, seconde fiche.
 4. **Toute fonction non supportée par Android 8 / 9 est SUPPRIMÉE** du code de Lite (pas masquée, pas simulée).
 5. **Plancher Android 8.0** (API 26) : canaux de notification et service au premier plan tels qu'utilisés.
