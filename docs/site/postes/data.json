@@ -530,11 +530,11 @@
         ]
       },
       "id": "icom-ic705",
-      "note": {
-        "stars": 4.5,
-        "provisional": true,
-        "counted": 35,
-        "valid": 29
+      "verdict": "go_reserve",
+      "niveau": {
+        "level": 4,
+        "valid": 17,
+        "counted": 22
       }
     },
     {
@@ -811,11 +811,11 @@
         ]
       },
       "id": "icom-ic7300mk2",
-      "note": {
-        "stars": 5.0,
-        "provisional": false,
-        "counted": 37,
-        "valid": 37
+      "verdict": "go",
+      "niveau": {
+        "level": 5,
+        "valid": 24,
+        "counted": 24
       }
     },
     {
@@ -1074,11 +1074,11 @@
         ]
       },
       "id": "yaesu-ftdx10",
-      "note": {
-        "stars": 4.5,
-        "provisional": true,
-        "counted": 36,
-        "valid": 29
+      "verdict": "go",
+      "niveau": {
+        "level": 4,
+        "valid": 17,
+        "counted": 23
       }
     }
   ],

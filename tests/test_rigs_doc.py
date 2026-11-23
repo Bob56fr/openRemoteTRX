@@ -129,52 +129,100 @@ def test_every_partial_or_failed_feature_has_a_numbered_clickable_note() -> None
     assert len(set(marks.values())) == len(marks)                         # numéros uniques
 
 
-def test_rating_counts_what_trx_remote_uses_and_the_rig_offers() -> None:
-    """Note sur 5 (validée par l'utilisateur, 2026-11-19) : absences dues au POSTE hors du calcul, limites de Hamlib / TRX
-    distant comptées ½, sécurité d'émission d'abord, défauts aléatoires = 3 étoiles au plus, provisoire si non testé."""
+def test_verdict_is_computed_on_the_closed_list_of_vital_features() -> None:
+    """Décision de l'utilisateur du 2026-11-23 (étape 376) : GO / GO avec réserve / NO-GO / pas encore évalué, sur la
+    sécurité d'émission, la fréquence, un mode modulable par l'USB et le son dans les deux sens."""
+    assert set(doc.VITAL) >= {f[0] for f in doc.FEATURES if f[1] == "securite"}
+    assert set(doc.VITAL) - {f[0] for f in doc.FEATURES if f[1] == "securite"} == {"frequence", "audio_rx", "audio_tx"}
     rig = _rig()
-    r = doc.rating(rig)
-    assert r["stars"] == 5.0 and not r["provisional"] and len(r["absent"]) == 2 and r["valid"] == r["counted"]
-    rig["fonctions"]["agc"] = {"etat": "non_declare", "cause": "poste"}           # absent du poste : rien ne change
-    assert doc.rating(rig)["stars"] == 5.0
-    rig["fonctions"]["agc"] = {"etat": "non_declare", "cause": "hamlib"}          # limite de Hamlib : ½
-    rig["fonctions"]["nr"] = {"etat": "echec", "note": "x", "note_en": "x"}
-    r = doc.rating(rig)
-    assert r["stars"] == round((r["counted"] - 1.5) / r["counted"] * 10) / 2 and r["limits"]
-    rig["fonctions"]["nb"] = {"etat": "non_teste"}
-    assert doc.rating(rig)["provisional"]
-    rig["poste"]["stabilite"] = "defauts"
-    assert doc.rating(rig)["stars"] == 3.0
-    rig["poste"]["stabilite"] = "ok"
-    rig["fonctions"]["tot"] = {"etat": "non_teste"}                                # sécurité incomplète : pas de note
-    assert doc.rating(rig)["stars"] is None
-    del rig["poste"]["stabilite"]
-    rig["fonctions"]["tot"] = {"etat": "valide"}
-    assert doc.rating(rig)["stars"] is None                                       # stabilité pas évaluée
+    assert doc.verdict(rig)["verdict"] == "go"
+    rig["fonctions"]["modes_base"] = {"etat": "non_teste"}               # l'autre mode suffit
+    assert doc.verdict(rig)["verdict"] == "go"
+    rig["fonctions"]["audio_rx"] = {"etat": "partiel", "note": "son faible", "note_en": "low audio"}
+    v = doc.verdict(rig)
+    assert v["verdict"] == "go_reserve" and "son faible" in v["reasons"][0][0]
+    rig["fonctions"]["tot"] = {"etat": "non_teste"}
+    v = doc.verdict(rig)
+    assert v["verdict"] == "en_cours" and v["missing"] == [("Coupure au bout du TOT", "Cut at the TOT")]
+    rig["fonctions"]["audio_tx"] = {"etat": "echec", "note": "aucune puissance", "note_en": "no power"}
+    v = doc.verdict(rig)
+    assert v["verdict"] == "no_go" and "aucune puissance" in v["reasons"][0][0]
+    rig = _rig()
+    rig["fonctions"]["audio_tx"] = {"etat": "non_declare", "cause": "poste"}   # absent du poste : vital quand même
+    assert doc.verdict(rig)["verdict"] == "no_go"
+    rig = _rig()
+    rig["poste"]["statut"] = "refuse"
+    assert doc.verdict(rig)["verdict"] == "no_go"
+    rig = _rig()
+    rig["poste"].update(stabilite="defauts", stabilite_note="gel", stabilite_note_en="freeze")
+    assert doc.verdict(rig)["verdict"] == "go_reserve"
 
 
-def test_stars_are_shown_and_stability_is_checked() -> None:
+def test_level_counts_only_additional_features_and_needs_a_go() -> None:
     rig = _rig()
-    page = doc.render([rig])
-    assert "★★★★★" in page and "5/5" in page and "Absent du poste" in page
+    lv = doc.level(rig)
+    assert lv["level"] == 5 and lv["valid"] == lv["counted"] and len(lv["absent"]) == 2
+    assert lv["counted"] + len(lv["absent"]) + len(lv["untested"]) == len(doc.FEATURES) - len(doc.VITAL) - 2
+    rig["fonctions"]["agc"] = {"etat": "non_teste"}                        # pas encore essayée : ne baisse pas
+    assert doc.level(rig)["level"] == 5 and doc.level(rig)["untested"]
+    for fid in ("nr", "nb", "anf", "rit"):                                 # 4 échecs sur ~23 : niveau 4
+        rig["fonctions"][fid] = {"etat": "echec", "note": "x", "note_en": "x"}
+    assert doc.level(rig)["level"] == 4
+    rig["poste"].update(stabilite="defauts", stabilite_note="gel", stabilite_note_en="freeze")
+    assert doc.level(rig)["level"] <= doc.LEVEL_IF_FAULTS
+    rig["fonctions"]["tot"] = {"etat": "non_teste"}                        # sécurité pas prouvée : aucune barre
+    assert doc.level(rig)["level"] is None
+
+
+def test_page_shows_a_star_only_before_a_go_and_a_green_bar_never_red_or_stars() -> None:
+    rig = _rig()
+    other = _rig()
+    other["id"], other["poste"]["modele"] = "x-encours", "EN-COURS-1"
+    other["fonctions"]["tot"] = {"etat": "non_teste"}
+    page = doc.render([rig, other], reports=[])
+    assert page.count("★") == page.count('class="verdict v-go">★ ') + 2  # + la légende du résumé (FR et EN)
+    assert "☆" not in page and "/5" not in page and "note attendue" not in page
+    bar = page.split(".barre i.on", 1)[1].split("\n.niveau", 1)[0]
+    assert "#ff" not in bar.lower() and "#f2" not in bar.lower()          # verts seulement
+    assert 'class="barre" aria-hidden="true"' in page and "complet" in page
     rig["poste"]["stabilite"] = "defauts"
     with pytest.raises(doc.DocError, match="stabilite_note"):
         doc.check([rig])
     rig["poste"]["stabilite"] = "peut-etre"
     with pytest.raises(doc.DocError, match="stabilite"):
         doc.check([rig])
-    assert doc._stars(4.5) == "★★★★½" and doc._stars(3.0) == "★★★☆☆"
 
 
+def test_summary_has_two_columns_with_no_go_shown_and_prequalifications_on_the_right() -> None:
+    rig = _rig()
+    nogo = _rig()
+    nogo["id"], nogo["poste"]["modele"] = "x-nogo", "NOGO-1"
+    nogo["fonctions"]["audio_tx"] = {"etat": "echec", "note": "aucune puissance", "note_en": "no power"}
+    page = doc.render([rig, nogo], reports=_reports())
+    summary = page.split('<div class="resume">', 1)[1].split("</div>\n</div>", 1)[0]
+    left, right = summary.split("En cours d’évaluation", 1)
+    assert "IC-7300MK2" in left and "NOGO-1" not in left
+    assert "NOGO-1" in right and "NO-GO" in right and "aucune puissance" in right
+    assert "IC-7100" in right and "préqualification" in right
+    assert page.index('<div class="resume">') < page.index("Comparaison des postes")
 
-def test_comparison_names_link_to_their_sheet_and_show_the_rating() -> None:
+
+def test_sheets_and_lists_are_folded_and_links_open_them() -> None:
+    page = doc.render(doc.load_rigs(), reports=_reports())
+    assert '<details class="poste" id="icom-ic7300mk2">' in page and '<details class="bloc" id="usb">' in page
+    assert '<details class="poste" id="at-icom-ic-7100-20261123-1507">' in page
+    assert not re.search(r"<details[^>]*open", page)                   # tout replié au chargement
+    assert "beforeprint" in page and "p.open = true" in page
+
+
+def test_comparison_names_link_to_their_sheet_and_show_the_verdict() -> None:
     rig = _rig()
     other = _rig()
     other["id"], other["poste"]["modele"] = "x-sans-note", "SANS-NOTE"
     other["fonctions"]["tot"] = {"etat": "non_teste"}
     comparison = doc.render([rig, other]).split("Comparaison des postes", 1)[1].split("Fiche de chaque poste", 1)[0]
-    assert '<a href="#icom-ic7300mk2">Icom IC-7300MK2</a><br><span class="etoiles">★★★★★</span> 5/5' in comparison
-    assert '<a href="#x-sans-note">' in comparison and "note attendue" in comparison
+    assert '<a href="#icom-ic7300mk2">Icom IC-7300MK2</a><br><span class="verdict v-go">★ ' in comparison
+    assert '<a href="#x-sans-note">' in comparison and "pas encore évalué" in comparison
 
 
 def test_usb_list_is_consistent_and_lists_every_tried_rig() -> None:
@@ -214,7 +262,7 @@ def _reports() -> list[dict]:
     return copy.deepcopy(doc.load_autotest())
 
 
-def test_prequalifications_are_consistent_and_never_change_a_sheet_or_a_rating() -> None:
+def test_prequalifications_are_consistent_and_never_change_a_sheet_or_a_verdict() -> None:
     reports = _reports()
     assert reports and all(r["rapport"]["empreinte_trace"] for r in reports)
     doc.check_autotest(reports)

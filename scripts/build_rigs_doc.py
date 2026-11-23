@@ -119,7 +119,6 @@ COMPARED = ("valide", "restreint", "validation_en_cours")
 STABILITES = {"ok": ("aucun défaut aléatoire pendant les essais", "no random fault during the tests"),
               "defauts": ("défauts constatés", "faults found")}
 WEIGHTS = {"valide": 1.0, "partiel": 0.5, "echec": 0.0}
-STARS_IF_FAULTS = 3.0                 # défauts aléatoires constatés : 3 étoiles au plus
 NEEDS_NOTE = ("partiel", "echec")
 
 # Préqualifications par l'openRemoteTRX-Autotest (décision de l'utilisateur du 2026-11-23, étape 374) : montrées À
@@ -166,12 +165,28 @@ th,td{border:1px solid var(--ligne);padding:.3rem .5rem;text-align:left;vertical
 th{background:var(--carte)}td.e{white-space:nowrap;font-weight:600}
 tr.t th{background:transparent;color:var(--accent);font-size:1rem;padding-top:.8rem;border-left:0;border-right:0}
 .e-valide{color:#7ed99a}.e-partiel{color:#f2d06b}.e-echec{color:#ff8a8a}.e-non_teste{color:#9cc8f2}.e-non_declare{opacity:.6}
-.etoiles{color:#f2c94c;letter-spacing:.08em}.note-etoiles{font-size:1.05rem;margin:.2rem 0}
+.note-verdict{font-size:1.05rem;margin:.2rem 0}
+.verdict{display:inline-block;border-radius:1rem;padding:0 .6rem;font-size:.85rem;font-weight:700;white-space:nowrap}
+.v-go{background:#183d26;color:#7ed99a}.v-nogo{background:#3d1818;color:#ff8a8a}.v-encours{background:#1c2c40;color:#9cc8f2}
+.v-pre{background:#262a33;color:var(--doux);font-weight:600}
+.barre{display:inline-flex;align-items:flex-end;gap:2px;height:1em;vertical-align:-.1em}
+.barre i{display:block;width:.42em;border-radius:1px;background:#2f3a4b}
+.barre i:nth-child(1){height:28%}.barre i:nth-child(2){height:46%}.barre i:nth-child(3){height:64%}
+.barre i:nth-child(4){height:82%}.barre i:nth-child(5){height:100%}
+.barre i.on:nth-child(1){background:#2f7a4a}.barre i.on:nth-child(2){background:#3a9a5c}
+.barre i.on:nth-child(3){background:#47b86d}.barre i.on:nth-child(4){background:#5cd683}.barre i.on:nth-child(5){background:#7ef0a0}
+.niveau{white-space:nowrap;font-size:.92rem}
+.resume{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.6rem 0}
+.resume>div{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.2rem 1rem .6rem}
+.resume h2{font-size:1.1rem;margin:.5rem 0}.resume ul{list-style:none;padding:0;margin:0}.resume li{margin:.45rem 0}
+@media (max-width:700px){.resume{grid-template-columns:1fr}}
+details.poste>summary,details.bloc>summary{cursor:pointer}details.poste>summary h3,details.bloc>summary h2{display:inline}
+details.poste>summary .note-verdict{margin:.3rem 0 .1rem}
 .note-detail{margin:.2rem 0 .6rem;font-size:.9rem}
 .statut{display:inline-block;border-radius:1rem;padding:0 .6rem;font-size:.8rem;background:#3d3418;color:#f2d06b}
 .statut.s-valide{background:#183d26;color:#7ed99a}.statut.s-refuse{background:#3d1818;color:#ff8a8a}
 .wrap{overflow-x:auto}details{margin:.4rem 0 1rem}
-section.poste{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
+section.poste,details.poste{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 """
 PAGE_JS = """
 (function () {
@@ -189,6 +204,26 @@ PAGE_JS = """
   }
   document.querySelectorAll(".themes button").forEach(function (b) { b.addEventListener("click", function () { theme(b.dataset.t); }); });
   theme("tous");
+  // Fiches repliées (étape 376) : un lien interne ouvre le bloc qui contient sa cible ; tout s'ouvre à l'impression.
+  function reveal(id) {
+    var el = id && document.getElementById(id);
+    if (!el) return false;
+    for (var p = el; p; p = p.parentElement) if (p.tagName === "DETAILS") p.open = true;
+    el.scrollIntoView();
+    if (window.parent !== window)
+      window.parent.postMessage({ type: "trx-doc-scroll", top: Math.round(el.getBoundingClientRect().top + window.scrollY) }, "*");
+    return true;
+  }
+  function fromHash() { reveal(decodeURIComponent(location.hash.slice(1))); }
+  window.addEventListener("load", fromHash);
+  window.addEventListener("hashchange", fromHash);
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var id = decodeURIComponent(a.getAttribute("href").slice(1));
+    if (reveal(id)) { e.preventDefault(); try { history.replaceState(null, "", "#" + id); } catch (x) {} }
+  });
+  window.addEventListener("beforeprint", function () { document.querySelectorAll("details").forEach(function (d) { d.open = true; }); });
 })();
 """
 
@@ -316,10 +351,10 @@ def _autotest_section(reports: list[dict]) -> list[str]:
         if r.get("arret"):
             info.append(_bi(*AUTOTEST_ARRETS[r["arret"]]))
         hamlib_n = f' · {_bi("Modèle Hamlib", "Hamlib model")} {r["hamlib_model"]}' if r.get("hamlib_model") else ""
-        out += [f'<section class="poste" id="at-{html.escape(rep["id"])}">',
-                f'<h3>{html.escape(r["fabricant"])} {html.escape(r["modele"])} '
-                f'<span class="statut s-validation_en_cours">{_bi("préqualification", "prequalification")}</span></h3>',
-                f'<p>{_bi(r["resume"], r["resume_en"])}{hamlib_n}</p>', "<p>" + " · ".join(info) + "</p>",
+        out += [f'<details class="poste" id="at-{html.escape(rep["id"])}">',
+                f'<summary><h3>{html.escape(r["fabricant"])} {html.escape(r["modele"])}</h3> '
+                f'<span class="verdict v-pre">{_bi("préqualification", "prequalification")}</span>'
+                f'<p>{_bi(r["resume"], r["resume_en"])}{hamlib_n}</p></summary>', "<p>" + " · ".join(info) + "</p>",
                 '<div class="wrap"><table>',
                 f'<tr><th>{_bi("Essai", "Test")}</th><th>{_bi("Résultat", "Result")}</th>'
                 f'<th>{_bi("Détail", "Detail")}</th></tr>']
@@ -334,7 +369,7 @@ def _autotest_section(reports: list[dict]) -> list[str]:
                        f'<td>{detail}</td></tr>')
         out += ["</table></div>",
                 f'<p><small>{_bi("Empreinte de la trace", "Trace fingerprint")} : '
-                f'<code>{html.escape(r["empreinte_trace"][:16])}…</code></small></p>', "</section>"]
+                f'<code>{html.escape(r["empreinte_trace"][:16])}…</code></small></p>', "</details>"]
     return out
 
 
@@ -385,14 +420,79 @@ def check(rigs: list[dict]) -> None:
         raise DocError("\n".join(problems))
 
 
-def rating(rig: dict) -> dict:
-    """Note « fonctionne avec openRemoteTRX » : `stars` (0 à 5 par demi-étoile, None tant que la sécurité d'émission n'est
-    pas entièrement validée ou que la stabilité n'est pas déclarée), `provisional` (fonctions pas encore testées),
-    `counted` / `valid` (fonctions comptées / validées), `absent` (absentes du POSTE, non comptées), `limits` (limites de
-    Hamlib ou d'openRemoteTRX, comptées ½), `untested`."""
+# VERDICT ET NIVEAU (décisions de l'utilisateur du 2026-11-23, étape 376) : la note sur 5 étoiles faisait lire un 4,5
+# comme « insuffisant » alors que l'essentiel marchait. Deux notations :
+#   a) verdict « Utilisable à distance » calculé sur une liste FERMÉE de fonctions vitales (sécurité d'émission, fréquence,
+#      un mode de phonie modulable par l'USB, son reçu et modulation par l'USB) : GO, GO avec réserve, NO-GO, pas encore
+#      évalué ; une étoile devant le GO, rien d'autre ;
+#   b) niveau des fonctions COMPLÉMENTAIRES (toutes les autres), 1 à 5, en bargraph de S-mètre tout en verts, montré
+#      seulement avec un GO.
+VITAL = [fid for fid, theme, *_ in FEATURES if theme == "securite"] + ["frequence", "audio_rx", "audio_tx"]
+VITAL_MODES = ("modes_base", "modes_donnees")      # le meilleur des deux compte (Icom : phonie USB en mode données)
+VITAL_MODES_LABEL = ("Mode de phonie modulable par l'USB", "Voice mode modulated over USB")
+BEST_ORDER = ("valide", "partiel", "non_teste", "echec", "non_declare")
+VERDICTS = {   # verdict : (classe, français, anglais)
+    "go": ("go", "GO", "GO"),
+    "go_reserve": ("go", "GO avec réserve", "GO with reservation"),
+    "no_go": ("nogo", "NO-GO", "NO-GO"),
+    "en_cours": ("encours", "pas encore évalué", "not assessed yet"),
+}
+USABLE = ("go", "go_reserve")
+LEVEL_STEPS = ((0.95, 5), (0.80, 4), (0.65, 3), (0.50, 2), (0.0, 1))
+LEVEL_NAMES = {1: ("essentiel", "essential"), 2: ("base", "basic"), 3: ("bon", "good"), 4: ("très bon", "very good"),
+               5: ("complet", "complete")}
+LEVEL_IF_FAULTS = 3                    # défauts aléatoires constatés : niveau 3 au plus
+
+
+def vital_entries(rig: dict) -> list[tuple[str, str, str, dict]]:
+    """(id, français, anglais, état) des fonctions vitales ; les modes comptent pour une, la meilleure des deux."""
+    funcs, names = rig["fonctions"], {f[0]: (f[2], f[3]) for f in FEATURES}
+    out = [(fid, *names[fid], funcs[fid]) for fid in VITAL]
+    modes = sorted((funcs[m] for m in VITAL_MODES), key=lambda e: BEST_ORDER.index(e["etat"]))
+    out.insert(len(VITAL) - 2, ("modes", *VITAL_MODES_LABEL, modes[0]))
+    return out
+
+
+def _why(fr: str, en: str, entry: dict) -> tuple[str, str]:
+    if entry.get("note"):
+        return f"{fr} : {entry['note']}", f"{en}: {entry.get('note_en', entry['note'])}"
+    sym, efr, een = ETATS[entry["etat"]]
+    return f"{fr} : {efr}", f"{en}: {een}"
+
+
+def verdict(rig: dict) -> dict:
+    """{verdict, reasons [(fr, en)], missing [(fr, en)]} : `reasons` = réserves ou causes du NO-GO, `missing` = fonctions
+    vitales pas encore essayées."""
+    poste = rig["poste"]
+    entries = vital_entries(rig)
+    if poste.get("statut") == "refuse":
+        return {"verdict": "no_go", "reasons": [(poste["resume"], poste["resume_en"])], "missing": []}
+    bad = [_why(fr, en, e) for _, fr, en, e in entries if e["etat"] in ("echec", "non_declare")]
+    if bad:
+        return {"verdict": "no_go", "reasons": bad, "missing": []}
+    missing = [(fr, en) for _, fr, en, e in entries if e["etat"] == "non_teste"]
+    if missing:
+        return {"verdict": "en_cours", "reasons": [], "missing": missing}
+    reasons = [_why(fr, en, e) for _, fr, en, e in entries if e["etat"] == "partiel"]
+    labels = [(fr, en) for _, fr, en, e in entries if e["etat"] == "partiel"]     # noms seuls, pour le résumé
+    if poste.get("statut") == "restreint":
+        reasons.insert(0, (poste["resume"], poste["resume_en"]))
+        labels.insert(0, ("validé avec restrictions", "validated with restrictions"))
+    if poste.get("stabilite") == "defauts":
+        reasons.append((f"Stabilité : {poste['stabilite_note']}", f"Stability: {poste['stabilite_note_en']}"))
+        labels.append(("défauts de stabilité", "stability faults"))
+    return {"verdict": "go_reserve" if reasons else "go", "reasons": reasons, "missing": [], "labels": labels}
+
+
+def level(rig: dict) -> dict:
+    """Fonctions complémentaires : `level` (1 à 5, None sans GO), `valid` / `counted` (validées / essayées et comptées),
+    `untested`, `absent` (absentes du POSTE, non comptées), `limits` (limites de Hamlib ou d'openRemoteTRX, ½)."""
     funcs = rig["fonctions"]
+    skip = set(VITAL) | set(VITAL_MODES)
     absent, limits, untested, points, counted, valid = [], [], [], 0.0, 0, 0
     for fid, theme, fr, en in FEATURES:
+        if fid in skip:
+            continue
         entry = funcs[fid]
         etat = entry["etat"]
         if etat == "non_declare" and entry.get("cause") == "poste":
@@ -408,48 +508,117 @@ def rating(rig: dict) -> dict:
         else:
             points += WEIGHTS[etat]
             valid += etat == "valide"
-    safe = all(funcs[f]["etat"] == "valide" for f, theme, *_ in FEATURES if theme == "securite")
+    value = None
+    if verdict(rig)["verdict"] in USABLE and counted:
+        ratio = points / counted
+        value = next(n for threshold, n in LEVEL_STEPS if ratio >= threshold - 1e-9)
+        if rig["poste"].get("stabilite") == "defauts":
+            value = min(value, LEVEL_IF_FAULTS)
+    return {"level": value, "valid": valid, "counted": counted, "untested": untested, "absent": absent,
+            "limits": limits}
+
+
+def _badge(v: str) -> str:
+    cls, fr, en = VERDICTS[v]
+    star = "★ " if v in USABLE else ""
+    return f'<span class="verdict v-{cls}">{star}{_bi(fr, en)}</span>'
+
+
+def _bar(n: int) -> str:
+    """Bargraph de S-mètre : 5 segments de plus en plus hauts, allumés en verts de plus en plus vifs (aucun jaune ni
+    rouge : rien d'inquiétant). Le sens est porté par le texte qui suit (segments cachés aux lecteurs d'écran)."""
+    return ('<span class="barre" aria-hidden="true">'
+            + "".join(f'<i class="{"on" if i <= n else ""}"></i>' for i in range(1, 6)) + "</span>")
+
+
+def _level_text(lv: dict, short: bool = False) -> str:
+    fr, en = LEVEL_NAMES[lv["level"]]
+    text = f'{_bar(lv["level"])} {_bi(fr, en)} · {lv["valid"]}/{lv["counted"]}'
+    if lv["untested"] and not short:
+        text += " " + _bi(f"({len(lv['untested'])} pas encore essayée(s))", f"({len(lv['untested'])} not tried yet)")
+    return text
+
+
+def _verdict_html(rig: dict) -> list[str]:
+    v, lv = verdict(rig), level(rig)
+    head = _badge(v["verdict"])
+    if lv["level"] is not None:
+        head += f' <span class="niveau">{_bi("Fonctions complémentaires :", "Additional features:")} {_level_text(lv)}</span>'
+    out = [f'<p class="note-verdict">{head}</p>', '<ul class="note-detail">']
+    if v["verdict"] == "go":
+        out.append("<li>" + _bi("Toutes les fonctions vitales sont validées (sécurité d’émission, fréquence, mode, son "
+                                "reçu et modulation par l’USB).",
+                                "All vital features are validated (transmit safety, frequency, mode, receive audio and "
+                                "modulation over USB).") + "</li>")
+    for fr, en in v["reasons"]:
+        title = (_bi("Réserve", "Reservation") if v["verdict"] == "go_reserve" else _bi("Bloquant", "Blocking"))
+        out.append(f"<li>{title} : {_bi(fr, en)}</li>")
+    if v["missing"]:
+        out.append("<li>" + _bi("Fonctions vitales pas encore essayées : " + ", ".join(fr for fr, _ in v["missing"]) + ".",
+                                "Vital features not tried yet: " + ", ".join(en for _, en in v["missing"]) + ".") + "</li>")
+    if lv["level"] is not None:
+        out.append("<li>" + _bi(f"Fonctions complémentaires : {lv['valid']} validées sur {lv['counted']} essayées.",
+                                f"Additional features: {lv['valid']} validated out of {lv['counted']} tried.") + "</li>")
+        if lv["absent"]:
+            out.append("<li>" + _bi("Absent du poste (choix du constructeur, non compté) : " + ", ".join(fr for fr, _ in lv["absent"]) + ".",
+                                    "Missing from the rig (manufacturer's choice, not counted): " + ", ".join(en for _, en in lv["absent"]) + ".") + "</li>")
+        if lv["limits"]:
+            out.append("<li>" + _bi("Limites de Hamlib ou d'openRemoteTRX (comptées ½) : " + ", ".join(fr for fr, _ in lv["limits"]) + ".",
+                                    "Hamlib or openRemoteTRX limits (counted ½): " + ", ".join(en for _, en in lv["limits"]) + ".") + "</li>")
     stability = rig["poste"].get("stabilite")
-    stars = None
-    if safe and stability in STABILITES and counted:
-        stars = round(points / counted * 5 * 2) / 2
-        if stability == "defauts":
-            stars = min(stars, STARS_IF_FAULTS)
-    return {"stars": stars, "provisional": bool(untested), "counted": counted, "valid": valid, "absent": absent,
-            "limits": limits, "untested": untested, "safe": safe, "stability": stability}
-
-
-def _stars(value: float) -> str:
-    full = int(value)
-    half = value - full >= 0.5
-    return "★" * full + ("½" if half else "") + "☆" * (5 - full - half)
-
-
-def _rating_html(rig: dict) -> list[str]:
-    r = rating(rig)
-    if r["stars"] is None:
-        why = (_bi("note attendue : sécurité d'émission pas encore entièrement validée",
-                   "rating pending: transmit safety not fully validated yet") if not r["safe"] else
-               _bi("note attendue : stabilité pas encore évaluée", "rating pending: stability not assessed yet"))
-        return [f'<p class="note-etoiles">{why}</p>']
-    head = f'<span class="etoiles" title="{r["stars"]:g}/5">{_stars(r["stars"])}</span> {r["stars"]:g}/5'
-    if r["provisional"]:
-        head += " " + _bi(f"(provisoire : {len(r['untested'])} fonction(s) pas encore testée(s))",
-                          f"(provisional: {len(r['untested'])} feature(s) not tested yet)")
-    out = [f'<p class="note-etoiles">{head}</p>', "<ul class=\"note-detail\">",
-           f'<li>{_bi(f"Fonctions utilisées par openRemoteTRX : {r["valid"]} sur {r["counted"]} validées.", f"Features used by openRemoteTRX: {r["valid"]} of {r["counted"]} validated.")}</li>']
-    if r["absent"]:
-        out.append("<li>" + _bi("Absent du poste (choix du constructeur, non compté) : " + ", ".join(fr for fr, _ in r["absent"]) + ".",
-                                "Missing from the rig (manufacturer's choice, not counted): " + ", ".join(en for _, en in r["absent"]) + ".") + "</li>")
-    if r["limits"]:
-        out.append("<li>" + _bi("Limites de Hamlib ou d'openRemoteTRX (comptées ½) : " + ", ".join(fr for fr, _ in r["limits"]) + ".",
-                                "Hamlib or openRemoteTRX limits (counted ½): " + ", ".join(en for _, en in r["limits"]) + ".") + "</li>")
-    sfr, sen = STABILITES[r["stability"]]
-    note = rig["poste"].get("stabilite_note", "")
-    out.append("<li>" + _bi(f"Stabilité : {sfr}" + (f" ({note})" if note else "") + ".",
-                            f"Stability: {sen}" + (f" ({rig['poste'].get('stabilite_note_en', note)})" if note else "") + ".") + "</li>")
+    if stability in STABILITES:
+        sfr, sen = STABILITES[stability]
+        note = rig["poste"].get("stabilite_note", "")
+        out.append("<li>" + _bi(f"Stabilité : {sfr}" + (f" ({note})" if note else "") + ".",
+                                f"Stability: {sen}" + (f" ({rig['poste'].get('stabilite_note_en', note)})" if note else "") + ".") + "</li>")
     out.append("</ul>")
     return out
+
+
+def _summary(rigs: list[dict], reports: list[dict]) -> list[str]:
+    """Résumé en tête : « Utilisable à distance » | « En cours d'évaluation » (NO-GO compris, avec sa raison)."""
+    left, right = [], []
+    def order(rig: dict) -> tuple:            # GO d'abord, puis le niveau le plus haut
+        v, lv = verdict(rig)["verdict"], level(rig)["level"] or 0
+        return (list(VERDICTS).index(v), -lv, rig["poste"]["fabricant"], rig["poste"]["modele"])
+    for rig in sorted(rigs, key=order):
+        p, v, lv = rig["poste"], verdict(rig), level(rig)
+        name = f'<a href="#{html.escape(rig["id"])}">{html.escape(p["fabricant"])} {html.escape(p["modele"])}</a>'
+        line = f"{name} {_badge(v['verdict'])}"
+        if lv["level"] is not None:
+            line += f' <span class="niveau">{_level_text(lv, short=True)}</span>'
+        if v["verdict"] == "no_go" and v["reasons"]:
+            line += f'<br><small>{_bi(*v["reasons"][0])}</small>'
+        elif v["verdict"] == "go_reserve" and v.get("labels"):
+            line += "<br><small>" + _bi("réserve : " + ", ".join(fr for fr, _ in v["labels"]),
+                                        "reservation: " + ", ".join(en for _, en in v["labels"])) + "</small>"
+        elif v["verdict"] == "en_cours":
+            line += "<br><small>" + _bi(f"qualification en cours : {len(v['missing'])} fonction(s) vitale(s) à essayer",
+                                        f"qualification in progress: {len(v['missing'])} vital feature(s) to try") + "</small>"
+        (left if v["verdict"] in USABLE else right).append(f"<li>{line}</li>")
+    for rep in reports:
+        r = rep["rapport"]
+        ok = sum(1 for e in rep["essais"] if e["statut"] == "ok")
+        right.append(f'<li><a href="#at-{html.escape(rep["id"])}">{html.escape(r["fabricant"])} {html.escape(r["modele"])}</a> '
+                     f'<span class="verdict v-pre">{_bi("préqualification", "prequalification")}</span><br><small>'
+                     + _bi(f"Autotest : {ok} essais réussis sur {len(AUTOTEST_STEPS)}, sécurité à distance pas essayée",
+                           f"Autotest: {ok} tests passed out of {len(AUTOTEST_STEPS)}, remote safety not tried")
+                     + "</small></li>")
+    none = f'<li><small>{_bi("aucun pour l’instant", "none yet")}</small></li>'
+    return ['<div class="resume">',
+            f'<div><h2>{_bi("Utilisables à distance", "Usable remotely")}</h2><ul>{"".join(left) or none}</ul></div>',
+            f'<div><h2>{_bi("En cours d’évaluation", "Being assessed")}</h2><ul>{"".join(right) or none}</ul></div>',
+            "</div>",
+            "<p><small>" + _bi("★ GO : toutes les fonctions vitales (sécurité d’émission, fréquence, mode, son reçu et "
+                               "modulation par l’USB) sont validées sur charge fictive ; on peut commencer à piloter son "
+                               "poste à distance. La barre dit ce qui marche parmi les autres fonctions (filtres, NR, NB, "
+                               "coupleur, spectre…), de 1 « essentiel » à 5 « complet » : une fonction pas encore "
+                               "essayée ne la fait pas baisser.",
+                               "★ GO: every vital feature (transmit safety, frequency, mode, receive audio and modulation "
+                               "over USB) is validated on a dummy load; you can start operating your rig remotely. The bar "
+                               "shows what works among the other features (filters, NR, NB, tuner, spectrum…), from 1 "
+                               "“essential” to 5 “complete”: a feature not tried yet does not lower it.")
+            + "</small></p>"]
 
 
 def _bi(fr: str, en: str) -> str:
@@ -501,16 +670,16 @@ def _footnotes(anchor: bool) -> str:
 
 def _rig_title(rig: dict) -> str:
     p = rig["poste"]
-    fr, en = STATUTS[p["statut"]]
-    return (f'{html.escape(p["fabricant"])} {html.escape(p["modele"])} '
-            f'<span class="statut s-{p["statut"]}">{_bi(fr, en)}</span>')
+    return f'{html.escape(p["fabricant"])} {html.escape(p["modele"])}'
 
 
 def _table1(rig: dict, marks: dict | None = None) -> list[str]:
     funcs = rig["fonctions"]
     marks = marks if marks is not None else number_partials([rig])
     partials: list[tuple[int, str, str, str, str]] = []
-    out = [f'<section class="poste" id="{html.escape(rig["id"])}">', f"<h3>{_rig_title(rig)}</h3>", *_rating_html(rig),
+    verdict_lines = _verdict_html(rig)
+    out = [f'<details class="poste" id="{html.escape(rig["id"])}">', f"<summary><h3>{_rig_title(rig)}</h3>",
+           verdict_lines[0], "</summary>", *verdict_lines[1:],
            f'<p>{_bi(rig["poste"]["resume"], rig["poste"]["resume_en"])} '
            f'{_bi("Modèle Hamlib", "Hamlib model")} {rig["poste"]["hamlib_model"]}.</p>',
            "<p>" + "<br>".join(
@@ -554,7 +723,7 @@ def _table1(rig: dict, marks: dict | None = None) -> list[str]:
         out += [f'<p><strong>{_bi("Constats sur Hamlib", "Hamlib findings")}</strong></p>', "<ul>"]
         out += [f"<li>{_bi(fr, e)}</li>" for fr, e in zip(hamlib["constats"], en)]
         out.append("</ul>")
-    out.append("</section>")
+    out.append("</details>")
     return out
 
 
@@ -563,11 +732,9 @@ def _table2(rigs: list[dict], marks: dict | None = None) -> list[str]:
     if not shown:
         return [f'<p>{_bi("Aucun poste à comparer pour l’instant.", "No rig to compare yet.")}</p>']
     def stars_of(r):
-        note = rating(r)
-        if note["stars"] is None:
-            return f'<br><small>{_bi("note attendue", "rating pending")}</small>'
-        extra = f' <small>{_bi("provisoire", "provisional")}</small>' if note["provisional"] else ""
-        return f'<br><span class="etoiles">{_stars(note["stars"])}</span> {note["stars"]:g}/5{extra}'
+        lv = level(r)
+        bar = f'<br><span class="niveau">{_level_text(lv, short=True)}</span>' if lv["level"] is not None else ""
+        return f'<br>{_badge(verdict(r)["verdict"])}{bar}'
     head = "".join(f'<th><a href="#{html.escape(r["id"])}">{html.escape(r["poste"]["fabricant"])} '
                    f'{html.escape(r["poste"]["modele"])}</a>{stars_of(r)}</th>' for r in shown)
     out = ['<div class="wrap"><table>', f'<tr><th>{_bi("Fonction", "Feature")}</th>{head}</tr>']
@@ -622,7 +789,7 @@ def _usb_tables(usb: dict, rigs: list[dict], reports: list[dict] | None = None) 
     head = (f'<tr><th>{_bi("Marque", "Brand")}</th><th>{_bi("Modèle", "Model")}</th>'
             f'<th>{_bi("N° Hamlib", "Hamlib #")}</th>'
             f'<th>{_bi("Pilote Hamlib", "Hamlib driver")} {html.escape(usb["hamlib_version"])}</th>')
-    out = [f'<h2 id="usb">{_bi("Postes à USB intégré (CAT et son)", "Rigs with built-in USB (CAT and audio)")}</h2>',
+    out = [f'<details class="bloc" id="usb"><summary><h2>{_bi("Postes à USB intégré (CAT et son)", "Rigs with built-in USB (CAT and audio)")}</h2></summary>',
            "<p>" + _bi("Un seul câble USB entre le poste et la station : port série pour la CAT et carte son du poste. "
                        "Liste établie d’après la documentation des fabricants, PAS d’après des essais : un poste "
                        "« non essayé » est potentiellement compatible, rien de plus (sécurité d’émission, PTT par la CAT "
@@ -644,6 +811,7 @@ def _usb_tables(usb: dict, rigs: list[dict], reports: list[dict] | None = None) 
     out.append("<p>" + _bi("Tout autre poste reconnu par Hamlib peut fonctionner avec une interface CAT et une "
                            "interface son externes.",
                            "Any other rig supported by Hamlib can work with external CAT and audio interfaces.") + "</p>")
+    out.append("</details>")
     return out
 
 
@@ -668,6 +836,7 @@ def render(rigs: list[dict], usb: dict | None = None, reports: list[dict] | None
            + f'<a href="#usb">{_bi("postes à USB intégré", "rigs with built-in USB")}</a> ; '
            + _bi("postes en cours d’essai : ", "rigs being tried: ")
            + f'<a href="#autotest">{_bi("préqualifications (Autotest)", "prequalifications (Autotest)")}</a>.</p>',
+           *_summary(rigs, reports),
            f"<p>{legend}</p>",
            f'<p class="themes"><button type="button" data-t="tous">{_bi("Tous les thèmes", "All topics")}</button>{themes}</p>',
            f'<h2>{_bi("Comparaison des postes", "Rig comparison")}</h2>',
@@ -678,6 +847,7 @@ def render(rigs: list[dict], usb: dict | None = None, reports: list[dict] | None
     marks = number_partials(rigs)
     out += _table2(rigs, marks)
     out.append(f'<h2>{_bi("Fiche de chaque poste : Hamlib et openRemoteTRX", "Each rig: Hamlib and openRemoteTRX")}</h2>')
+    out.append("<p>" + _bi("Toucher un poste pour ouvrir sa fiche.", "Tap a rig to open its sheet.") + "</p>")
     for rig in rigs:
         out += _table1(rig, marks)
     out.append(_footnotes(anchor=False))
@@ -699,8 +869,9 @@ def data_json(rigs: list[dict], usb: dict | None = None, reports: list[dict] | N
            "themes": [{"id": t, "fr": fr, "en": en} for t, fr, en in THEMES],
            "fonctions": [{"id": f, "theme": t, "fr": fr, "en": en} for f, t, fr, en in FEATURES],
            "etats": {k: {"fr": v[1], "en": v[2]} for k, v in ETATS.items()},
-           "postes": [{**{k: v for k, v in r.items()}, "note": {k: v for k, v in rating(r).items()
-                                                                  if k in ("stars", "provisional", "counted", "valid")}}
+           "postes": [{**{k: v for k, v in r.items()},
+                       "verdict": verdict(r)["verdict"],
+                       "niveau": {k: v for k, v in level(r).items() if k in ("level", "valid", "counted")}}
                       for r in rigs],
            "usb_integre": usb,
            "prequalifications": reports}
