@@ -19,11 +19,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  # Deux tâches, comme le modèle de GitHub : la page est envoyée par « build », déployée par « deploy » quand l'envoi
+  # est terminé. Dans une seule tâche, deploy-pages ne trouvait parfois pas l'envoi qui venait de réussir (« No
+  # artifacts named github-pages », trois fois le 2026-11-23) et la page restait à l'ancienne version.
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
@@ -40,5 +40,12 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
