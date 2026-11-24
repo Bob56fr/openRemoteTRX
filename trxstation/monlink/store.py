@@ -40,6 +40,21 @@ class Store:
         self.data = base
         self._db: sqlite3.Connection | None = None
 
+    def follow_relay(self, url: str) -> None:
+        """Le pointeur de la boîte de réception (`inbox_after`) ne vaut que pour UN relais : un relais neuf numérote
+        ses messages à partir de 1, et un pointeur venu de l'ancien les cachait tous (demandes d'appairage jamais
+        lues après la bascule vers le VPS, 2026-11-24). Adresse changée ou jamais notée : pointeur remis à 0 (sans
+        risque, le relais efface ce qui a reçu un accusé et la fenêtre anti-rejeu écarte un doublon) ; adresse
+        changée : nouvelle inscription aussi."""
+        known = self.data.get("relay")
+        if known == url:
+            return
+        if known is not None:
+            self.data["registered"] = False
+        self.data["relay"] = url
+        self.data["inbox_after"] = 0
+        self.save()
+
     @property
     def links(self) -> dict[str, dict]:
         return self.data["links"]

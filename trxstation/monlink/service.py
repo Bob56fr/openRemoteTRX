@@ -85,6 +85,7 @@ class MonlinkService:
     def setup(self) -> Engine:
         identity = load_or_create_identity(cfgmod.monlink_key_path(self.cfg, self.config_path))
         self.store = Store(self.folder)
+        self.store.follow_relay(self.cfg.monitor_link.relay_url)
         relay = (self.relay_factory(identity) if self.relay_factory is not None
                  else HttpRelay(self.cfg.monitor_link.relay_url, identity, version=__version__))
         if self.monitor is None:

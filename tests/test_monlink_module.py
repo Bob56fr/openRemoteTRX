@@ -409,6 +409,45 @@ def test_operator_action_on_a_relay_that_forgot_the_station_registers_and_replay
     assert [r for _, r in relay.calls].count("register") >= 2
 
 
+def test_inbox_pointer_of_the_old_relay_no_longer_hides_the_pairing_request(world, tmp_path):
+    """Cas réel du 2026-11-24 (bascule vers relay.rf-diy.com) : la station qui aide gardait le pointeur de l'ANCIEN
+    relais (« messages après le n° 500 ») ; le relais neuf numérote à partir de 1 : demande d'appairage jamais lue."""
+    clock, relay, make = world
+    helper, aided = make("helper", "Dev 56"), make("aided", "F4XYZ")
+    helper.store.data["inbox_after"] = 500                                 # pointeur hérité, adresse jamais notée
+    helper.store.follow_relay("https://relay.rf-diy.com")
+    assert helper.store.data["inbox_after"] == 0 and helper.store.data["registered"] is False
+    run(aided.join(run(helper.invite())["code"]))
+    cycle(clock, helper, aided)
+    assert helper.view()["links"][0]["state"] == "confirm"                 # la demande est arrivée
+    helper.store.follow_relay("https://relay.rf-diy.com")                  # même adresse : rien ne bouge
+    assert helper.store.data["inbox_after"] > 0 and helper.store.data["registered"] is True
+    helper.store.follow_relay("https://autre-relais.example")              # adresse changée
+    assert helper.store.data["inbox_after"] == 0 and helper.store.data["registered"] is False
+
+
+def test_new_relay_that_forgot_the_station_also_resets_the_inbox_pointer(world):
+    clock, relay, make = world
+    eng = make("helper", "Dev 56")
+    cycle(clock, eng)
+    eng.store.data["inbox_after"] = 500
+    relay.stations.clear()                                                 # base neuve
+    cycle(clock, eng)
+    assert eng.problem == "unknown_station" and eng.store.data["inbox_after"] == 0
+
+
+def test_service_notes_the_relay_address_at_start(tmp_path):
+    state = tmp_path / "state"
+    state.mkdir()
+    cfg, _ = cfgmod.build({"rig": {"model": 1}, "supervisor": {"state_dir": str(state),
+                                                              "status_path": str(state / "gw.json")}})
+    relay = FakeMonRelay(clock=Clock())
+    service = MonlinkService(cfg, tmp_path / "station.toml", relay_factory=relay.transport, clock=Clock(),
+                             monitor=FakeMonitor())
+    service.setup()
+    assert service.engine.store.data["relay"] == cfg.monitor_link.relay_url
+
+
 def test_monlink_package_never_touches_the_ptt_nor_the_cat():
     """Rappel du lot R1, étendu aux nouveaux fichiers (service, moteur, collecte)."""
     import ast

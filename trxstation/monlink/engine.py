@@ -194,6 +194,7 @@ class Engine:
         if exc.reason != "unknown_station" or not self.store.data["registered"]:
             return False
         self.store.data["registered"] = False
+        self.store.data["inbox_after"] = 0                     # relais neuf : ses messages repartent de 1
         self.store.save()
         log.info("station inconnue du relais du monitoring : nouvelle inscription")
         return True
