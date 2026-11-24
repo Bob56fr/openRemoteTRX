@@ -851,11 +851,11 @@ bornes = "1024 à 65535, différent du port de la page de pilotage, de rigctld e
 depuis = "0.280.0"
 
 [reglages."dashboard.listen"]
-role = "Adresses écoutées. <code>127.0.0.1</code> = l'écran de la station seulement ; ajouter l'adresse de la station sur le réseau local ou le VPN pour l'ouvrir depuis un téléphone (en HTTPS avec le certificat de <code>[network]</code>)."
-niveau = "courant"
-bornes = "Adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige <code>[network] tls_cert</code> et <code>tls_key</code>, ou <code>allow_insecure_http = true</code> dans un VPN."
-securite = "Pas de mot de passe : toute personne qui joint cette adresse voit l'état de la station (aucune commande possible). Jamais une adresse publique."
-exemple = "<code>listen = [\"127.0.0.1\", \"&lt;adresse de la station&gt;\"]</code>"
+role = "Adresses écoutées. VIDE (défaut depuis 0.281.0) : automatique, comme la page de pilotage : <code>127.0.0.1</code> (écran de la station), plus l'adresse de la page (<code>[network] gateway_bind</code>) ou, si elle écoute partout, les adresses privées de la station (réseau local, VPN), en HTTPS avec le certificat de <code>[network]</code> ; une adresse apparue après le démarrage (VPN, DHCP) est prise dans la minute. Rempli : seulement ces adresses (par exemple <code>[\"127.0.0.1\"]</code> pour l'écran de la station seul)."
+niveau = "expert"
+bornes = "Liste vide, ou adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige <code>[network] tls_cert</code> et <code>tls_key</code>, ou <code>allow_insecure_http = true</code> dans un VPN (en automatique, sans eux : 127.0.0.1 seulement)."
+securite = "Pas de mot de passe : toute personne qui joint ces adresses voit l'état de la station (aucune commande possible). Jamais une adresse d'Internet, même en automatique."
+exemple = "<code>listen = []</code> (automatique) ou <code>listen = [\"127.0.0.1\"]</code>"
 depuis = "0.280.0"
 
 [reglages."dashboard.rig_name"]

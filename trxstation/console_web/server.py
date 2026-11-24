@@ -340,8 +340,7 @@ class WebConsole:
         n, db = cfg.network, cfg.dashboard
         # tableau de bord des signes vitaux (étape 385) : ses adresses exactes (il vérifie l'en-tête Host, et n'écoute
         # jamais sur toutes les adresses) ; None s'il est hors service
-        listen = db.listen if isinstance(db.listen, list) else []
-        dash_hosts = [a for a in listen if isinstance(a, str) and a not in ("127.0.0.1", "localhost", "::1")]
+        dash_hosts = [a for a in _dashboard_listen(cfg) if a not in ("127.0.0.1", "localhost", "::1")]
         dashboard = {"scheme": "https" if n.tls_cert and dash_hosts else "http", "port": db.port,
                      "hosts": dash_hosts} if db.enabled is True else None
         return {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
@@ -729,6 +728,26 @@ LOGIN_KEYS = ("web.login.title", "web.login.id", "web.login.password", "web.logi
 
 
 _DUMMY: list[str] = []
+
+
+_DASH_CACHE: dict = {"t": -1e9, "key": None, "listen": []}
+DASH_CACHE_S = 60.0
+
+
+def _dashboard_listen(cfg) -> list[str]:
+    """Adresses du tableau de bord (étape 386 : automatiques si [dashboard] listen est vide), relues au plus une fois
+    par minute : la page interroge l'état toutes les secondes, et la recherche des adresses lance « hostname -I »."""
+    from ..dashboard.settings import listen_addresses
+    key = (tuple(cfg.dashboard.listen) if isinstance(cfg.dashboard.listen, list) else None,
+           cfg.network.gateway_bind, bool(cfg.network.tls_cert), cfg.network.allow_insecure_http)
+    now = time.monotonic()
+    if _DASH_CACHE["key"] != key or now - _DASH_CACHE["t"] > DASH_CACHE_S:
+        try:
+            listen = listen_addresses(cfg)
+        except Exception:                                  # une adresse introuvable ne gêne pas la console
+            listen = []
+        _DASH_CACHE.update(t=now, key=key, listen=listen)
+    return list(_DASH_CACHE["listen"])
 
 
 def _dummy_hash() -> str:

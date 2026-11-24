@@ -262,7 +262,9 @@ class Dashboard:
     (jamais une liste écrite à la main)."""
     enabled: bool = True              # false : service arrêté
     port: int = 8450
-    listen: list[str] = field(default_factory=lambda: ["127.0.0.1"])   # adresses écoutées ; jamais 0.0.0.0
+    # adresses écoutées ; VIDE (défaut, étape 386) = automatique comme la page de pilotage (dashboard/settings.py,
+    # listen_addresses) ; rempli = pris tel quel ; jamais 0.0.0.0
+    listen: list[str] = field(default_factory=list)
     rig_name: str = ""                # nom du poste affiché (la station ne connaît que le numéro Hamlib)
 
 
@@ -1127,7 +1129,7 @@ def _dashboard_problems(cfg: Config) -> list[str]:
         p.append(_t("dashboard.port_range", port=db.port))
     elif db.port in (cfg.network.gateway_port, cfg.network.rigctld_port, cfg.remote_console.port):
         p.append(_t("dashboard.port_taken", port=db.port))
-    if not isinstance(db.listen, list) or not db.listen or not all(isinstance(a, str) for a in db.listen):
+    if not isinstance(db.listen, list) or not all(isinstance(a, str) for a in db.listen):   # [] = automatique
         p.append(_t("dashboard.listen", address=db.listen))
     else:
         for addr in db.listen:
@@ -1572,7 +1574,7 @@ def render_toml(cfg: Config) -> str:
         "[dashboard]   # tableau de bord des signes vitaux, lecture seule (mini écran de la station, téléphone par le VPN)",
         f"enabled = {str(cfg.dashboard.enabled).lower()}",
         f"port = {cfg.dashboard.port}",
-        f"listen = {_list(cfg.dashboard.listen)}   # 127.0.0.1 = écran de la station ; + adresse réseau (VPN) : HTTPS",
+        f"listen = {_list(cfg.dashboard.listen)}   # vide = automatique (comme la page de pilotage) ; sinon adresses exactes",
         f"rig_name = {_s(cfg.dashboard.rig_name)}   # nom du poste affiché",
         "",
         "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",

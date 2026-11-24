@@ -3375,9 +3375,10 @@ class Console:
             found = []
         status = self._gateway_status()
         rc = cfg.remote_console
+        from .dashboard.settings import listen_addresses
         db = cfg.dashboard
-        dash = dashboard_line(db.enabled is True, list(db.listen) if isinstance(db.listen, list) else [], db.port,
-                              bool(n.tls_cert), self.t)
+        dash = dashboard_line(db.enabled is True, listen_addresses(cfg, lambda: found), db.port, bool(n.tls_cert),
+                              self.t)
         return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found, self.t),
                 *([dash] if dash else []),
                 console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t),

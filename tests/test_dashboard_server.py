@@ -102,6 +102,49 @@ def test_settings_from_station(tmp_path):
         settings.check(settings.from_station(c, tmp_path / "station.toml"))
 
 
+def test_automatic_addresses_follow_the_control_page():
+    """Étape 386 : [dashboard] listen vide = automatique, comme la page de pilotage ; jamais une adresse d'Internet."""
+    c = config.Config()
+    found = lambda: ["192.168.1.19", "100.64.0.7", "8.8.8.8", "169.254.3.4"]
+    assert c.dashboard.listen == [] and settings.is_auto(c)
+    assert settings.listen_addresses(c, found) == ["127.0.0.1"]                 # page sur la machine seule
+    c.network.gateway_bind = "0.0.0.0"
+    assert settings.listen_addresses(c, found) == ["127.0.0.1"]                 # sans HTTPS : rien sur le réseau
+    c.network.tls_cert, c.network.tls_key = "cert.pem", "key.pem"
+    assert settings.listen_addresses(c, found) == ["127.0.0.1", "192.168.1.19", "100.64.0.7"]
+    c.network.gateway_bind = "100.64.0.7"                                      # page sur l'adresse du VPN seulement
+    assert settings.listen_addresses(c, found) == ["127.0.0.1", "100.64.0.7"]
+    c.network.gateway_bind = "0.0.0.0"
+    assert settings.listen_addresses(c, lambda: 1 / 0) == ["127.0.0.1"]         # adresses introuvables
+    c.dashboard.listen = ["127.0.0.1"]                                          # rempli : pris tel quel
+    assert settings.listen_addresses(c, found) == ["127.0.0.1"] and not settings.is_auto(c)
+
+
+def test_automatic_settings_reresolve_and_the_service_restarts_on_change(tmp_path):
+    from trxstation.dashboard import app as dapp
+    c = config.Config()
+    c.supervisor.state_dir = str(tmp_path)
+    c.network.gateway_bind, c.network.tls_cert, c.network.tls_key = "0.0.0.0", "cert.pem", "key.pem"
+    addrs = ["192.168.1.19"]
+    s = settings.from_station(c, tmp_path / "station.toml", lambda: list(addrs))
+    assert s.listen == ["127.0.0.1", "192.168.1.19"] and s.reresolve and s.hosts   # nom de la machine accepté
+    c.dashboard.listen = ["127.0.0.1"]
+    assert settings.from_station(c, tmp_path / "station.toml").reresolve is None  # liste écrite : jamais relue
+    d = dapp.Dashboard.__new__(dapp.Dashboard)
+    d.cfg, d.save = s, lambda: None
+    addrs.append("100.64.0.7")                                                  # le VPN monte après le démarrage
+
+    async def go():
+        dapp.ADDRESSES_EVERY_S, old = 0.0, dapp.ADDRESSES_EVERY_S
+        try:
+            await d.loop_addresses()
+        finally:
+            dapp.ADDRESSES_EVERY_S = old
+    c.dashboard.listen = []
+    with pytest.raises(dapp.AddressesChanged):
+        asyncio.run(go())
+
+
 def test_console_header_line():
     """Ligne « Tableau de bord Web » de l'en-tête d'openRemoteTRX Console (sous « Application Web »)."""
     from trxstation.console import dashboard_line

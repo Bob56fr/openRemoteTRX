@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-openRemoteTRX version 0.280.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+openRemoteTRX version 0.281.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant d'openRemoteTRX Console et se modifie ensuite par openRemoteTRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -267,7 +267,7 @@ Se modifie : Menu 8.1. Adresse affichée dans l'en-tête d'openRemoteTRX Console
 |---|---|---|---|
 | `enabled` | courant | `true` | true : la station sert le tableau de bord des signes vitaux (service `trx-dashboard`). false : service arrêté. (depuis 0.280.0) |
 | `port` | expert | `8450` | Port du tableau de bord. Valeurs : 1024 à 65535, différent du port de la page de pilotage, de rigctld et d'openRemoteTRX Console. (depuis 0.280.0) |
-| `listen` | courant | `["127.0.0.1"]` | Adresses écoutées. `127.0.0.1` = l'écran de la station seulement ; ajouter l'adresse de la station sur le réseau local ou le VPN pour l'ouvrir depuis un téléphone (en HTTPS avec le certificat de `[network]`). Valeurs : Adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige `[network] tls_cert` et `tls_key`, ou `allow_insecure_http = true` dans un VPN. **Sécurité** : Pas de mot de passe : toute personne qui joint cette adresse voit l'état de la station (aucune commande possible). Jamais une adresse publique. Exemple : `listen = ["127.0.0.1", "<adresse de la station>"]` (depuis 0.280.0) |
+| `listen` | expert | `[]` | Adresses écoutées. VIDE (défaut depuis 0.281.0) : automatique, comme la page de pilotage : `127.0.0.1` (écran de la station), plus l'adresse de la page (`[network] gateway_bind`) ou, si elle écoute partout, les adresses privées de la station (réseau local, VPN), en HTTPS avec le certificat de `[network]` ; une adresse apparue après le démarrage (VPN, DHCP) est prise dans la minute. Rempli : seulement ces adresses (par exemple `["127.0.0.1"]` pour l'écran de la station seul). Valeurs : Liste vide, ou adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige `[network] tls_cert` et `tls_key`, ou `allow_insecure_http = true` dans un VPN (en automatique, sans eux : 127.0.0.1 seulement). **Sécurité** : Pas de mot de passe : toute personne qui joint ces adresses voit l'état de la station (aucune commande possible). Jamais une adresse d'Internet, même en automatique. Exemple : `listen = []` (automatique) ou `listen = ["127.0.0.1"]` (depuis 0.280.0) |
 | `rig_name` | courant | `""` | Nom du poste affiché dans le tableau de bord (la station ne connaît que son numéro Hamlib). Vide : aucun nom affiché. Valeurs : 40 caractères au plus. Exemple : `rig_name = "IC-7300MK2"` (depuis 0.280.0) |
 
 ## FreeDV en réception [freedv]

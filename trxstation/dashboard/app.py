@@ -26,6 +26,11 @@ SAMPLE_EVERY_S = 60.0
 SERVICES_EVERY_S = 10.0
 JOURNAL_EVERY_S = 5.0
 SAVE_EVERY_S = 300.0
+ADDRESSES_EVERY_S = 60.0
+
+
+class AddressesChanged(Exception):
+    """Adresses automatiques changées (étape 386) : le service quitte pour être relancé par systemd au bon endroit."""
 
 
 class Dashboard:
@@ -124,6 +129,20 @@ class Dashboard:
                 for a in self.journal.new():
                     self.history.add_alert(a["key"], a["level"], a["text"], a["t"])
 
+    async def loop_addresses(self) -> None:
+        """Adresses automatiques : une adresse arrivée après le démarrage ou changée = sortie pour relance."""
+        while True:
+            await asyncio.sleep(ADDRESSES_EVERY_S)
+            try:
+                now = self.cfg.reresolve()
+            except Exception:
+                continue
+            if sorted(now) != sorted(self.cfg.listen):
+                log.info("adresses du tableau de bord changées (%s -> %s) : relance du service",
+                         ", ".join(self.cfg.listen), ", ".join(now))
+                self.save()
+                raise AddressesChanged(", ".join(now))
+
     async def loop_save(self) -> None:
         while True:
             await asyncio.sleep(SAVE_EVERY_S)
@@ -154,7 +173,8 @@ class Dashboard:
                      f"[{addr}]" if ":" in addr else addr, self.cfg.port)
         tasks = [asyncio.create_task(c) for c in (self.loop_read(), self.loop_sample(), self.loop_services(),
                                                    self.loop_journal(), self.loop_save(),
-                                                   *(() if self.demo else (self.internet.run(),)))]
+                                                   *(() if self.demo else (self.internet.run(),)),
+                                                   *((self.loop_addresses(),) if self.cfg.reresolve else ()))]
         try:
             await asyncio.gather(*tasks)
         finally:

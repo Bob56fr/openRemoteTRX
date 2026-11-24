@@ -6,7 +6,8 @@
   --demo        : fausse station, pour essayer la page sans station (127.0.0.1 seulement).
 Pas de commande trx-dashboard dans le PATH : sans clé d'accès, il n'y a rien à afficher à l'opérateur ; les adresses sont
 dans l'en-tête d'openRemoteTRX Console.
-Codes de sortie : 0 = arrêt normal ou [dashboard] enabled = false ; 2 = configuration refusée (relancer n'y changerait rien).
+Codes de sortie : 0 = arrêt normal ou [dashboard] enabled = false ; 2 = configuration refusée (relancer n'y changerait rien) ;
+1 = port pris ou certificat illisible ; 3 = adresses automatiques changées (relance par systemd).
 """
 from __future__ import annotations
 
@@ -19,7 +20,7 @@ from pathlib import Path
 from .. import config as station_config
 from ..paths import default_config_path
 from . import __version__
-from .app import Dashboard
+from .app import AddressesChanged, Dashboard
 from .settings import Settings, SettingsError, check, from_station
 
 
@@ -57,6 +58,9 @@ def main(argv: list[str] | None = None) -> int:
         asyncio.run(Dashboard(settings, demo_mode=args.demo).run())
     except KeyboardInterrupt:
         pass
+    except AddressesChanged as exc:              # adresses automatiques changées : systemd relance (Restart=on-failure)
+        print(f"tableau de bord : adresses changées ({exc}), relance", file=sys.stderr)
+        return 3
     except OSError as exc:                       # port déjà pris, certificat illisible…
         print(f"tableau de bord : {exc}", file=sys.stderr)
         return 1
