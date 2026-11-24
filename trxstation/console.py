@@ -47,6 +47,8 @@ from .update.apply import previous_version
 from .update.check import Change, UpdateState, clean_text, parse_version, read_state, state_path
 
 TARGET = "trx-remote.target"
+DASHBOARD_UNIT = "trx-dashboard.service"     # hors TARGET (étape 385) : relancé à part par _start_station
+DASHBOARD_UNIT_FILE = Path("/etc/systemd/system") / DASHBOARD_UNIT
 IS_WINDOWS = sys.platform == "win32"
 WINDOWS_TASK = "TRX distant"        # tâche planifiée posée par windows/installer.ps1 ($TaskName)
 JOURNAL_LINES = 80
@@ -539,7 +541,12 @@ class Console:
                     return 1
                 return self.runner.run(packaging.app_launch_command("Supervisor"))
             return self.runner.run(["schtasks", "/Run", "/TN", WINDOWS_TASK])
-        return self.runner.run(["systemctl", verb, TARGET], admin=True)
+        code = self.runner.run(["systemctl", verb, TARGET], admin=True)
+        if DASHBOARD_UNIT_FILE.exists():
+            # tableau de bord des signes vitaux (étape 385) : hors trx-remote.target (écran allumé station tombée),
+            # donc relancé à part pour relire [dashboard] ; un échec ne change pas le résultat du démarrage
+            self.runner.run(["systemctl", "restart", DASHBOARD_UNIT], admin=True)
+        return code
 
     def _stop_station(self) -> int:
         """Debian : systemd. Windows : demande d'arrêt au superviseur (passerelle d'abord : retour en réception)."""

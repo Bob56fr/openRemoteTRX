@@ -127,6 +127,24 @@ def test_leaving_safe_mode_requires_an_explicit_yes(tmp_path):
     assert fake.calls[1][0] == ["systemctl", "restart", TARGET]
 
 
+def test_station_restart_also_restarts_the_dashboard_outside_the_target(tmp_path, monkeypatch):
+    """Étape 385 : trx-dashboard est hors trx-remote.target ; sans relance à part, un [dashboard] listen changé au menu
+    8.1 n'était jamais relu (essai réel du 2026-11-24 : page refusée sur l'adresse du réseau)."""
+    import trxstation.console as cmod
+    write_config(tmp_path)
+    unit = tmp_path / "trx-dashboard.service"
+    monkeypatch.setattr(cmod, "IS_WINDOWS", False)
+    monkeypatch.setattr(cmod, "DASHBOARD_UNIT_FILE", unit)
+    con, fake, _ = console(tmp_path)
+    con._start_station()
+    assert [c for c, _ in fake.calls] == [["systemctl", "restart", TARGET]]   # service absent : rien de plus
+    unit.write_text("", encoding="utf-8")
+    con, fake, _ = console(tmp_path)
+    assert con._start_station() == 0
+    assert fake.calls == [(["systemctl", "restart", TARGET], True),
+                          (["systemctl", "restart", "trx-dashboard.service"], True)]
+
+
 def test_first_launch_offers_the_assistant_then_menu_quits(tmp_path):
     con, fake, out = console(tmp_path, answers=["n", "z", "", "q"])
     assert con.loop() == 0
