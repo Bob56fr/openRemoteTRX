@@ -2,6 +2,10 @@
 
 La red local es el Wi-Fi o el cable de casa: el teléfono y la estación están detrás del mismo router.
 
+Tres páginas de la estación se abren en el navegador, cada una por separado, en su propio puerto de la misma dirección:
+
+![Tres páginas de la estación en el navegador](images/applis.svg)
+
 ## 4.1 Una dirección fija para la estación
 
 En tu router, **reserva una dirección IP** para el PC de la estación (reserva DHCP). El certificado creado por el asistente

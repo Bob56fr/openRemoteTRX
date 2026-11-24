@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """Schémas de la partie 0 du guide de l'opérateur, en thème clair, dans les quatre langues :
-User-Guide/<langue>/images/reseau.svg (appareils, 4G / 5G, box et VPN, réseau local, station, poste) et briques.svg
-(l'intérieur du PC de la station, sur fond ambre). Un seul dessin, les textes de chaque langue dans T : un changement
+User-Guide/<langue>/images/reseau.svg (appareils, 4G / 5G, box et VPN, réseau local, station, poste), briques.svg
+(l'intérieur du PC de la station, sur fond ambre) et, pour la partie 4, applis.svg (les trois pages ouvertes dans le
+navigateur, chacune sur son port). Un seul dessin, les textes de chaque langue dans T : un changement
 de dessin ou de texte se fait ici, puis
 
     python scripts/build_guide_schemas.py
@@ -303,15 +304,242 @@ T = {
         al1="en tu teléfono: corte,", al2="avería, bloqueo de seguridad"),
 }
 
+APPLIS = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 672" width="760" height="672" role="img" aria-labelledby="a-titre a-desc" font-family="{font}">
+  <title id="a-titre">{a_title}</title>
+  <desc id="a-desc">{a_desc}</desc>
+  <defs>
+    <marker id="a-m8443" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2f74c0"/></marker><marker id="a-m8444" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b8f84"/></marker><marker id="a-m8450" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b07a12"/></marker>
+    <clipPath id="a-c1"><rect x="20" y="78" width="330" height="200" rx="8"/></clipPath>
+    <clipPath id="a-c2"><rect x="20" y="338" width="330" height="200" rx="8"/></clipPath>
+    <clipPath id="a-c3"><rect x="20" y="598" width="330" height="200" rx="8"/></clipPath>
+  </defs>
+  <rect width="760" height="672" rx="14" fill="#ffffff"/>
+  <text x="20" y="34" fill="#2c5d8f" font-size="14" font-weight="700" letter-spacing=".6">{a_head}</text>
+  <text x="20" y="56" fill="#55657a" font-size="13">{a_sub}</text>
+  <g transform="translate(20,80) scale(0.84) translate(-20,-78)">
+  <g clip-path="url(#a-c1)">
+    <rect x="20" y="78" width="330" height="200" fill="#04070b"/>
+    <rect x="20" y="78" width="330" height="26" fill="#dfe5ec"/>
+    <circle cx="34" cy="91" r="4" fill="#e0524a"/><circle cx="46" cy="91" r="4" fill="#f5b83d"/><circle cx="58" cy="91" r="4" fill="#3fae72"/>
+    <rect x="72" y="84" width="268" height="14" rx="7" fill="#fff"/>
+    <text x="80" y="95" fill="#1d2733" font-size="10">https://&lt;station&gt;:8443</text>
+    <rect x="20" y="104" width="330" height="20" fill="#0a1119"/>
+    <text x="30" y="118" fill="#7f90a5" font-size="9">openRemoteTRX</text>
+    <rect x="290" y="109" width="50" height="11" rx="5" fill="#3fae72"/>
+    <text x="315" y="118" fill="#fff" font-size="8" text-anchor="middle">RX</text>
+    <text x="30" y="148" fill="#e9f1fb" font-size="22" font-weight="700" font-family="ui-monospace,Consolas,monospace">14.074.000</text>
+    <rect x="186" y="134" width="34" height="15" rx="7" fill="#2f86e0"/>
+    <text x="203" y="145" fill="#fff" font-size="9" text-anchor="middle">USB</text>
+    <text x="30" y="166" fill="#7f90a5" font-size="8">S</text>
+    <rect x="40" y="160" width="180" height="7" rx="3" fill="#0f151d"/>
+    <rect x="40" y="160" width="112" height="7" rx="3" fill="#7cc0ff"/>
+    <!-- spectre -->
+    <rect x="30" y="176" width="310" height="54" fill="#0b1118"/>
+    <polyline points="30,222 50,220 70,218 90,214 100,200 106,190 112,206 130,216 160,212 175,196 180,182 186,200 200,214 230,216 250,210 258,198 264,210 290,218 320,219 340,221" fill="none" stroke="#7cc0ff" stroke-width="1.5"/>
+    <rect x="30" y="230" width="310" height="10" fill="#10324f"/>
+    <rect x="100" y="230" width="8" height="10" fill="#f5b83d"/><rect x="176" y="230" width="8" height="10" fill="#e0524a"/>
+    <!-- PTT et STOP -->
+    <rect x="30" y="248" width="196" height="24" rx="12" fill="#0f151d" stroke="#2f86e0"/>
+    <text x="128" y="264" fill="#e9f1fb" font-size="11" font-weight="700" text-anchor="middle">PTT</text>
+    <rect x="236" y="248" width="104" height="24" rx="12" fill="#c8402f"/>
+    <text x="288" y="264" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">STOP</text>
+  </g>
+  <rect x="20" y="78" width="330" height="200" rx="8" fill="none" stroke="#2f74c0" stroke-width="2"/>
+  </g>
+  <text x="312" y="99" fill="#1d2733" font-size="18" font-weight="700">{a_web}</text>
+  <text x="312" y="118" fill="#2f74c0" font-size="14" font-weight="600">https://&lt;station&gt;:8443</text>
+  <text x="312" y="142" fill="#1d2733" font-size="14">{a_web1}</text>
+  <text x="312" y="157" fill="#1d2733" font-size="14">{a_web2}</text>
+  <text x="312" y="181" fill="#55657a" font-size="13">{a_web3}</text>
+  <text x="312" y="197" fill="#55657a" font-size="13">{a_web4}</text>
+  <text x="312" y="221" fill="#c8402f" font-size="13" font-weight="600">{a_web5}</text>
+  <g transform="translate(20,280) scale(0.84) translate(-20,-338)">
+  <g clip-path="url(#a-c2)">
+    <rect x="20" y="338" width="330" height="200" fill="#eef2f4"/>
+    <rect x="20" y="338" width="330" height="26" fill="#dfe5ec"/>
+    <circle cx="34" cy="351" r="4" fill="#e0524a"/><circle cx="46" cy="351" r="4" fill="#f5b83d"/><circle cx="58" cy="351" r="4" fill="#3fae72"/>
+    <rect x="72" y="344" width="268" height="14" rx="7" fill="#fff"/>
+    <text x="80" y="355" fill="#1d2733" font-size="10">https://&lt;station&gt;:8444</text>
+    <rect x="20" y="364" width="330" height="22" fill="#ffffff" stroke="#d5dee4"/>
+    <circle cx="32" cy="375" r="4" fill="#0b8f84"/>
+    <text x="40" y="379" fill="#14202a" font-size="9" font-weight="600">{a_running}</text>
+    <rect x="210" y="369" width="36" height="12" rx="6" fill="#0b8f84"/><text x="228" y="378" fill="#fff" font-size="7" text-anchor="middle">Basic</text>
+    <rect x="249" y="369" width="40" height="12" rx="6" fill="#fff" stroke="#d5dee4"/><text x="269" y="378" fill="#5a6b78" font-size="7" text-anchor="middle">Normal</text>
+    <rect x="292" y="369" width="40" height="12" rx="6" fill="#fff" stroke="#d5dee4"/><text x="312" y="378" fill="#5a6b78" font-size="7" text-anchor="middle">Expert</text>
+    <rect x="30" y="392" width="310" height="14" rx="7" fill="#fff" stroke="#d5dee4"/>
+    <text x="40" y="402" fill="#5a6b78" font-size="8">{a_search}</text>
+    <!-- tuiles des thèmes -->
+    <g font-size="9" fill="#14202a">
+      <rect x="30" y="412" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="38" y="426" font-weight="700">{a_t1}</text><text x="38" y="439" fill="#5a6b78" font-size="7">{a_t1d}</text>
+      <rect x="136" y="412" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="144" y="426" font-weight="700">{a_t2}</text><text x="144" y="439" fill="#5a6b78" font-size="7">{a_t2d}</text>
+      <rect x="242" y="412" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="250" y="426" font-weight="700">{a_t3}</text><text x="250" y="439" fill="#5a6b78" font-size="7">{a_t3d}</text>
+      <rect x="30" y="452" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="38" y="466" font-weight="700">{a_t4}</text><text x="38" y="479" fill="#5a6b78" font-size="7">{a_t4d}</text>
+      <rect x="136" y="452" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="144" y="466" font-weight="700">{a_t6}</text><text x="144" y="479" fill="#5a6b78" font-size="7">{a_t6d}</text>
+      <rect x="242" y="452" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="250" y="466" font-weight="700">{a_t7}</text><text x="250" y="479" fill="#5a6b78" font-size="7">{a_t7d}</text>
+    </g>
+    <!-- terminal -->
+    <rect x="30" y="494" width="310" height="38" rx="5" fill="#0b1115"/>
+    <text x="38" y="508" fill="#53f3d8" font-size="8" font-family="ui-monospace,Consolas,monospace">{a_ok}</text>
+    <text x="38" y="521" fill="#c47a00" font-size="8" font-family="ui-monospace,Consolas,monospace">{a_warn}</text>
+  </g>
+  <rect x="20" y="338" width="330" height="200" rx="8" fill="none" stroke="#0b8f84" stroke-width="2"/>
+  </g>
+  <text x="312" y="299" fill="#1d2733" font-size="18" font-weight="700">openRemoteTRX Console</text>
+  <text x="312" y="318" fill="#0b8f84" font-size="14" font-weight="600">https://&lt;station&gt;:8444</text>
+  <text x="312" y="342" fill="#1d2733" font-size="14">{a_con1}</text>
+  <text x="312" y="357" fill="#1d2733" font-size="14">{a_con2}</text>
+  <text x="312" y="381" fill="#55657a" font-size="13">{a_con3}</text>
+  <text x="312" y="397" fill="#55657a" font-size="13">{a_con4}</text>
+  <text x="312" y="421" fill="#55657a" font-size="13">{a_con5}</text>
+  <g transform="translate(20,480) scale(0.84) translate(-20,-598)">
+  <g clip-path="url(#a-c3)">
+    <rect x="20" y="598" width="330" height="200" fill="#0B0F14"/>
+    <rect x="20" y="598" width="330" height="26" fill="#dfe5ec"/>
+    <circle cx="34" cy="611" r="4" fill="#e0524a"/><circle cx="46" cy="611" r="4" fill="#f5b83d"/><circle cx="58" cy="611" r="4" fill="#3fae72"/>
+    <rect x="72" y="604" width="268" height="14" rx="7" fill="#fff"/>
+    <text x="80" y="615" fill="#1d2733" font-size="10">https://&lt;station&gt;:8450</text>
+    <text x="30" y="642" fill="#E6EDF3" font-size="10" font-weight="700">IC-7300MK2</text>
+    <text x="340" y="642" fill="#8B9BAD" font-size="10" text-anchor="end" font-family="ui-monospace,Consolas,monospace">18:42</text>
+    <!-- carte poste -->
+    <rect x="30" y="650" width="150" height="62" rx="6" fill="#131A22" stroke="#233040"/>
+    <text x="40" y="666" fill="#8B9BAD" font-size="8">{a_rig}</text>
+    <text x="40" y="686" fill="#4FC3F7" font-size="15" font-weight="700" font-family="ui-monospace,Consolas,monospace">RX</text>
+    <text x="70" y="686" fill="#E6EDF3" font-size="10">14.074 USB</text>
+    <text x="40" y="703" fill="#8B9BAD" font-size="8">{a_tot}</text>
+    <!-- carte machine -->
+    <rect x="190" y="650" width="150" height="62" rx="6" fill="#131A22" stroke="#233040"/>
+    <text x="200" y="666" fill="#8B9BAD" font-size="8">{a_machine}</text>
+    <text x="200" y="684" fill="#E6EDF3" font-size="10">54 °C · 18 %</text>
+    <polyline points="200,704 215,700 230,702 245,696 260,699 275,690 290,694 305,698 330,695" fill="none" stroke="#4ADE80" stroke-width="1.5"/>
+    <!-- pastilles des comptes -->
+    <rect x="30" y="720" width="310" height="34" rx="6" fill="#131A22" stroke="#233040"/>
+    <text x="40" y="734" fill="#8B9BAD" font-size="8">{a_conn}</text>
+    <circle cx="44" cy="745" r="4" fill="#4ADE80"/><text x="52" y="748" fill="#E6EDF3" font-size="8">PC</text>
+    <circle cx="80" cy="745" r="4" fill="#4ADE80"/><text x="88" y="748" fill="#E6EDF3" font-size="8">S25</text>
+    <circle cx="120" cy="745" r="4" fill="#5E6B79"/><text x="128" y="748" fill="#8B9BAD" font-size="8">{a_tablet}</text>
+    <!-- alertes -->
+    <rect x="30" y="760" width="310" height="30" rx="6" fill="#131A22" stroke="#233040"/>
+    <circle cx="44" cy="775" r="4" fill="#4ADE80"/><text x="52" y="778" fill="#E6EDF3" font-size="8">{a_inet}</text>
+    <circle cx="130" cy="775" r="4" fill="#F5B83D"/><text x="138" y="778" fill="#E6EDF3" font-size="8">{a_alert}</text>
+  </g>
+  <rect x="20" y="598" width="330" height="200" rx="8" fill="none" stroke="#d99a2b" stroke-width="2"/>
+  </g>
+  <text x="312" y="499" fill="#1d2733" font-size="18" font-weight="700">{a_dash}</text>
+  <text x="312" y="516" fill="#1d2733" font-size="15" font-weight="700">{a_dash2}</text>
+  <text x="312" y="535" fill="#8a5a0a" font-size="14" font-weight="600">https://&lt;station&gt;:8450</text>
+  <text x="312" y="559" fill="#1d2733" font-size="14">{a_das1}</text>
+  <text x="312" y="575" fill="#1d2733" font-size="14">{a_das2}</text>
+  <text x="312" y="599" fill="#55657a" font-size="13">{a_das3}</text>
+  <text x="312" y="614" fill="#55657a" font-size="13">{a_das4}</text>
+  <text x="312" y="630" fill="#55657a" font-size="13">{a_das5}</text>
+  <rect x="596" y="20" width="148" height="632" rx="14" fill="#fff1d6" stroke="#d99a2b" stroke-width="2.5"/>
+  <text x="670" y="50" fill="#1d2733" font-size="16" font-weight="700" text-anchor="middle">{station_pc}</text>
+  <text x="670" y="70" fill="#55657a" font-size="12" text-anchor="middle">{a_one}</text>
+  <line x1="500" y1="113" x2="606" y2="113" stroke="#2f74c0" stroke-width="2.5" marker-end="url(#a-m8443)"/>
+  <rect x="610" y="96" width="120" height="34" rx="8" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="670" y="118" fill="#2f74c0" font-size="15" font-weight="700" text-anchor="middle">port 8443</text>
+  <line x1="500" y1="313" x2="606" y2="313" stroke="#0b8f84" stroke-width="2.5" marker-end="url(#a-m8444)"/>
+  <rect x="610" y="296" width="120" height="34" rx="8" fill="#fff" stroke="#0b8f84" stroke-width="2"/>
+  <text x="670" y="318" fill="#0b8f84" font-size="15" font-weight="700" text-anchor="middle">port 8444</text>
+  <line x1="500" y1="530" x2="606" y2="530" stroke="#b07a12" stroke-width="2.5" marker-end="url(#a-m8450)"/>
+  <rect x="610" y="513" width="120" height="34" rx="8" fill="#fff" stroke="#b07a12" stroke-width="2"/>
+  <text x="670" y="535" fill="#b07a12" font-size="15" font-weight="700" text-anchor="middle">port 8450</text>
+  <text x="670" y="612" fill="#55657a" font-size="12" text-anchor="middle">{a_three1}</text>
+  <text x="670" y="630" fill="#55657a" font-size="12" text-anchor="middle">{a_three2}</text>
+</svg>
+"""
+
+# Schéma des trois pages ouvertes dans le navigateur (partie 4), textes propres à ce schéma.
+TA = {
+    "fr": dict(
+        a_title="Trois pages de la station dans le navigateur",
+        a_desc="Trois pages séparées, chacune reliée directement à son propre port du PC de la station, à la même adresse : l'application Web (https://<station>:8443) pour piloter le poste, la seule qui peut émettre ; openRemoteTRX Console (https://<station>:8444) pour configurer et dépanner, comptes administrateurs seulement ; le tableau de bord des signes vitaux (https://<station>:8450), en lecture seule, sur Debian et Raspberry Pi.",
+        a_head="DANS TON NAVIGATEUR : PC, TABLETTE, TÉLÉPHONE",
+        a_sub="trois pages séparées : chacune s'ouvre seule, sur son propre port de la station",
+        a_web="Application Web", a_web1="piloter le poste : fréquence,", a_web2="mode, son reçu, émission",
+        a_web3="comptes opérateurs et visiteurs", a_web4="(ou l'application Android)", a_web5="la seule qui peut émettre",
+        a_con1="configurer, démarrer, essayer,", a_con2="mettre à jour, dépanner",
+        a_con3="comptes administrateurs seulement", a_con4="(à ouvrir au menu 4.6)", a_con5="jamais depuis Internet",
+        a_dash="Tableau de bord", a_dash2="des signes vitaux", a_das1="surveiller d'un coup d'œil :",
+        a_das2="poste, machine, connexions", a_das3="lecture seule, sans mot de passe", a_das4="petit écran près du poste",
+        a_das5="Debian et Raspberry Pi", a_one="une seule adresse", a_three1="trois pages", a_three2="indépendantes",
+        a_running="Station en marche", a_search="Rechercher un menu…",
+        a_t1="1 Station", a_t1d="démarrer, arrêter", a_t2="2 Poste", a_t2d="assistant, essai",
+        a_t3="3 Sécurité", a_t3d="bandes, TOT", a_t4="4 Accès", a_t4d="comptes, appairage",
+        a_t6="6 Dépannage", a_t6d="diagnostic, rapport", a_t7="7 Mises à jour", a_t7d="nouvelle version",
+        a_ok="[OK] rigctld répond", a_warn="[ATTENTION] mise à jour disponible",
+        a_rig="POSTE", a_machine="MACHINE", a_conn="CONNEXIONS", a_tablet="tablette", a_inet="Internet OK",
+        a_alert="1 alerte depuis 24 h", a_tot="TOT 90 s · bandes OK"),
+    "en": dict(
+        a_title="Three station pages in the browser",
+        a_desc="Three separate pages, each connected directly to its own port of the station PC, at the same address: the Web app (https://<station>:8443) to control the transceiver, the only one that can transmit; openRemoteTRX Console (https://<station>:8444) to configure and troubleshoot, administrator accounts only; the vital signs dashboard (https://<station>:8450), read-only, on Debian and Raspberry Pi.",
+        a_head="IN YOUR BROWSER: PC, TABLET, PHONE",
+        a_sub="three separate pages: each opens on its own, on its own port of the station",
+        a_web="Web app", a_web1="control the transceiver: frequency,", a_web2="mode, received audio, transmit",
+        a_web3="operator and visitor accounts", a_web4="(or the Android app)", a_web5="the only one that can transmit",
+        a_con1="configure, start, test,", a_con2="update, troubleshoot",
+        a_con3="administrator accounts only", a_con4="(enable in menu 4.6)", a_con5="never from the Internet",
+        a_dash="Vital signs", a_dash2="dashboard", a_das1="monitor at a glance:",
+        a_das2="transceiver, computer, connections", a_das3="read-only, no password", a_das4="small screen next to the rig",
+        a_das5="Debian and Raspberry Pi", a_one="one single address", a_three1="three independent", a_three2="pages",
+        a_running="Station running", a_search="Search a menu…",
+        a_t1="1 Station", a_t1d="start, stop", a_t2="2 Transceiver", a_t2d="wizard, test",
+        a_t3="3 Safety", a_t3d="bands, TOT", a_t4="4 Access", a_t4d="accounts, pairing",
+        a_t6="6 Troubleshooting", a_t6d="diagnostics, report", a_t7="7 Updates", a_t7d="new version",
+        a_ok="[OK] rigctld answers", a_warn="[WARNING] update available",
+        a_rig="TRANSCEIVER", a_machine="COMPUTER", a_conn="CONNECTIONS", a_tablet="tablet", a_inet="Internet OK",
+        a_alert="1 alert in the last 24 h", a_tot="TOT 90 s · bands OK"),
+    "de": dict(
+        a_title="Drei Seiten der Station im Browser",
+        a_desc="Drei getrennte Seiten, jede direkt mit ihrem eigenen Port des Stations-PCs verbunden, unter derselben Adresse: die Web-App (https://<station>:8443) zum Steuern des Transceivers, die einzige, die senden kann; openRemoteTRX Console (https://<station>:8444) zum Einrichten und zur Fehlersuche, nur für Administratorkonten; das Dashboard der Vitalwerte (https://<station>:8450), nur lesend, unter Debian und Raspberry Pi.",
+        a_head="IN IHREM BROWSER: PC, TABLET, TELEFON",
+        a_sub="drei getrennte Seiten: jede öffnet sich allein, auf ihrem eigenen Port der Station",
+        a_web="Web-App", a_web1="Transceiver steuern: Frequenz,", a_web2="Betriebsart, Empfang, Senden",
+        a_web3="Operator- und Besucherkonten", a_web4="(oder die Android-App)", a_web5="die einzige, die senden kann",
+        a_con1="einrichten, starten, testen,", a_con2="aktualisieren, Fehler suchen",
+        a_con3="nur Administratorkonten", a_con4="(in Menü 4.6 freigeben)", a_con5="nie aus dem Internet",
+        a_dash="Dashboard", a_dash2="der Vitalwerte", a_das1="auf einen Blick überwachen:",
+        a_das2="Transceiver, Rechner, Verbindungen", a_das3="nur lesend, ohne Passwort", a_das4="kleiner Bildschirm am Gerät",
+        a_das5="Debian und Raspberry Pi", a_one="eine einzige Adresse", a_three1="drei getrennte", a_three2="Seiten",
+        a_running="Station läuft", a_search="Menü suchen…",
+        a_t1="1 Station", a_t1d="starten, stoppen", a_t2="2 Transceiver", a_t2d="Assistent, Test",
+        a_t3="3 Sicherheit", a_t3d="Bänder, TOT", a_t4="4 Zugang", a_t4d="Konten, Kopplung",
+        a_t6="6 Fehlersuche", a_t6d="Diagnose, Bericht", a_t7="7 Updates", a_t7d="neue Version",
+        a_ok="[OK] rigctld antwortet", a_warn="[ACHTUNG] Update verfügbar",
+        a_rig="TRANSCEIVER", a_machine="RECHNER", a_conn="VERBINDUNGEN", a_tablet="Tablet", a_inet="Internet OK",
+        a_alert="1 Alarm in 24 h", a_tot="TOT 90 s · Bänder OK"),
+    "es": dict(
+        a_title="Tres páginas de la estación en el navegador",
+        a_desc="Tres páginas separadas, cada una conectada directamente a su propio puerto del PC de la estación, en la misma dirección: la aplicación Web (https://<station>:8443) para manejar el transceptor, la única que puede transmitir; openRemoteTRX Console (https://<station>:8444) para configurar y diagnosticar, solo cuentas de administrador; el panel de constantes vitales (https://<station>:8450), solo lectura, en Debian y Raspberry Pi.",
+        a_head="EN TU NAVEGADOR: PC, TABLETA, TELÉFONO",
+        a_sub="tres páginas separadas: cada una se abre sola, en su propio puerto de la estación",
+        a_web="Aplicación Web", a_web1="manejar el transceptor: frecuencia,", a_web2="modo, audio recibido, emisión",
+        a_web3="cuentas de operador y visitante", a_web4="(o la aplicación Android)", a_web5="la única que puede transmitir",
+        a_con1="configurar, arrancar, probar,", a_con2="actualizar, diagnosticar",
+        a_con3="solo cuentas de administrador", a_con4="(activar en el menú 4.6)", a_con5="nunca desde Internet",
+        a_dash="Panel de", a_dash2="constantes vitales", a_das1="vigilar de un vistazo:",
+        a_das2="transceptor, equipo, conexiones", a_das3="solo lectura, sin contraseña", a_das4="pantalla pequeña junto al equipo",
+        a_das5="Debian y Raspberry Pi", a_one="una sola dirección", a_three1="tres páginas", a_three2="independientes",
+        a_running="Estación en marcha", a_search="Buscar un menú…",
+        a_t1="1 Estación", a_t1d="arrancar, parar", a_t2="2 Transceptor", a_t2d="asistente, prueba",
+        a_t3="3 Seguridad", a_t3d="bandas, TOT", a_t4="4 Acceso", a_t4d="cuentas, emparejar",
+        a_t6="6 Diagnóstico", a_t6d="diagnóstico, informe", a_t7="7 Actualizar", a_t7d="nueva versión",
+        a_ok="[OK] rigctld responde", a_warn="[ATENCIÓN] actualización disponible",
+        a_rig="TRANSCEPTOR", a_machine="EQUIPO", a_conn="CONEXIONES", a_tablet="tableta", a_inet="Internet OK",
+        a_alert="1 alerta en 24 h", a_tot="TOT 90 s · bandas OK"),
+}
+
+
 def build() -> dict[Path, bytes]:
     """{fichier: contenu} des schémas de chaque langue."""
     out: dict[Path, bytes] = {}
     for lang, words in T.items():
-        values = {k: escape(v, quote=False) for k, v in words.items()}
+        values = {k: escape(v, quote=False) for k, v in {**words, **TA[lang]}.items()}
         values["font"] = FONT
         folder = ROOT / lang / "images"
         out[folder / "reseau.svg"] = RESEAU.format(**values).encode("utf-8")
         out[folder / "briques.svg"] = BRIQUES.format(**values).encode("utf-8")
+        out[folder / "applis.svg"] = APPLIS.format(**values).encode("utf-8")
     return out
 
 

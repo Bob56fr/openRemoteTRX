@@ -2,6 +2,10 @@
 
 The local network is your home Wi-Fi or cable: the phone and the station sit behind the same internet box.
 
+Three station pages open in the browser, each one separately, on its own port of the same address:
+
+![Three station pages in the browser](images/applis.svg)
+
 ## 4.1 A fixed address for the station
 
 In your box, **reserve an IP address** for the station PC (DHCP reservation). The certificate created by the wizard

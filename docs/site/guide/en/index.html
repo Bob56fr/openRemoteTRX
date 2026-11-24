@@ -578,6 +578,150 @@ unzip -q trx-remote-debian-X.Y.Z.zip &amp;&amp; cd trx-remote-debian-X.Y.Z &amp;
 <p>If your transceiver is not yet validated (list: <a href="https://bob56fr.github.io/openRemoteTRX/postes/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/postes/</a>), your result counts: open a “Report a bug” issue (even if everything is fine, title “&lt;your transceiver&gt;: commissioning tests”) with the summary of the guided test, the result of the 9 safety tests and, if it has a sheet, the points it says to check.</p><p class="haut"><a href="#top">Back to top</a></p></section>
 <section id="s-p-04"><h2 id="p-04" class="partie">4. Using the station on the local network</h2>
 <p>The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span> is your home Wi-Fi or cable: the phone and the station sit behind the same internet box.</p>
+<p>Three station pages open in the browser, each one separately, on its own port of the same address:</p>
+<figure class="schema"><svg class="schema-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 672" width="760" height="672" role="img" aria-labelledby="a-titre a-desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <title id="a-titre">Three station pages in the browser</title>
+  <desc id="a-desc">Three separate pages, each connected directly to its own port of the station PC, at the same address: the Web app (https://&lt;station&gt;:8443) to control the transceiver, the only one that can transmit; openRemoteTRX Console (https://&lt;station&gt;:8444) to configure and troubleshoot, administrator accounts only; the vital signs dashboard (https://&lt;station&gt;:8450), read-only, on Debian and Raspberry Pi.</desc>
+  <defs>
+    <marker id="a-m8443" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2f74c0"/></marker><marker id="a-m8444" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b8f84"/></marker><marker id="a-m8450" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b07a12"/></marker>
+    <clipPath id="a-c1"><rect x="20" y="78" width="330" height="200" rx="8"/></clipPath>
+    <clipPath id="a-c2"><rect x="20" y="338" width="330" height="200" rx="8"/></clipPath>
+    <clipPath id="a-c3"><rect x="20" y="598" width="330" height="200" rx="8"/></clipPath>
+  </defs>
+  <rect width="760" height="672" rx="14" fill="#ffffff"/>
+  <text x="20" y="34" fill="#2c5d8f" font-size="14" font-weight="700" letter-spacing=".6">IN YOUR BROWSER: PC, TABLET, PHONE</text>
+  <text x="20" y="56" fill="#55657a" font-size="13">three separate pages: each opens on its own, on its own port of the station</text>
+  <g transform="translate(20,80) scale(0.84) translate(-20,-78)">
+  <g clip-path="url(#a-c1)">
+    <rect x="20" y="78" width="330" height="200" fill="#04070b"/>
+    <rect x="20" y="78" width="330" height="26" fill="#dfe5ec"/>
+    <circle cx="34" cy="91" r="4" fill="#e0524a"/><circle cx="46" cy="91" r="4" fill="#f5b83d"/><circle cx="58" cy="91" r="4" fill="#3fae72"/>
+    <rect x="72" y="84" width="268" height="14" rx="7" fill="#fff"/>
+    <text x="80" y="95" fill="#1d2733" font-size="10">https://&lt;station&gt;:8443</text>
+    <rect x="20" y="104" width="330" height="20" fill="#0a1119"/>
+    <text x="30" y="118" fill="#7f90a5" font-size="9">openRemoteTRX</text>
+    <rect x="290" y="109" width="50" height="11" rx="5" fill="#3fae72"/>
+    <text x="315" y="118" fill="#fff" font-size="8" text-anchor="middle">RX</text>
+    <text x="30" y="148" fill="#e9f1fb" font-size="22" font-weight="700" font-family="ui-monospace,Consolas,monospace">14.074.000</text>
+    <rect x="186" y="134" width="34" height="15" rx="7" fill="#2f86e0"/>
+    <text x="203" y="145" fill="#fff" font-size="9" text-anchor="middle">USB</text>
+    <text x="30" y="166" fill="#7f90a5" font-size="8">S</text>
+    <rect x="40" y="160" width="180" height="7" rx="3" fill="#0f151d"/>
+    <rect x="40" y="160" width="112" height="7" rx="3" fill="#7cc0ff"/>
+    <!-- spectre -->
+    <rect x="30" y="176" width="310" height="54" fill="#0b1118"/>
+    <polyline points="30,222 50,220 70,218 90,214 100,200 106,190 112,206 130,216 160,212 175,196 180,182 186,200 200,214 230,216 250,210 258,198 264,210 290,218 320,219 340,221" fill="none" stroke="#7cc0ff" stroke-width="1.5"/>
+    <rect x="30" y="230" width="310" height="10" fill="#10324f"/>
+    <rect x="100" y="230" width="8" height="10" fill="#f5b83d"/><rect x="176" y="230" width="8" height="10" fill="#e0524a"/>
+    <!-- PTT et STOP -->
+    <rect x="30" y="248" width="196" height="24" rx="12" fill="#0f151d" stroke="#2f86e0"/>
+    <text x="128" y="264" fill="#e9f1fb" font-size="11" font-weight="700" text-anchor="middle">PTT</text>
+    <rect x="236" y="248" width="104" height="24" rx="12" fill="#c8402f"/>
+    <text x="288" y="264" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">STOP</text>
+  </g>
+  <rect x="20" y="78" width="330" height="200" rx="8" fill="none" stroke="#2f74c0" stroke-width="2"/>
+  </g>
+  <text x="312" y="99" fill="#1d2733" font-size="18" font-weight="700">Web app</text>
+  <text x="312" y="118" fill="#2f74c0" font-size="14" font-weight="600">https://&lt;station&gt;:8443</text>
+  <text x="312" y="142" fill="#1d2733" font-size="14">control the transceiver: frequency,</text>
+  <text x="312" y="157" fill="#1d2733" font-size="14">mode, received audio, transmit</text>
+  <text x="312" y="181" fill="#55657a" font-size="13">operator and visitor accounts</text>
+  <text x="312" y="197" fill="#55657a" font-size="13">(or the Android app)</text>
+  <text x="312" y="221" fill="#c8402f" font-size="13" font-weight="600">the only one that can transmit</text>
+  <g transform="translate(20,280) scale(0.84) translate(-20,-338)">
+  <g clip-path="url(#a-c2)">
+    <rect x="20" y="338" width="330" height="200" fill="#eef2f4"/>
+    <rect x="20" y="338" width="330" height="26" fill="#dfe5ec"/>
+    <circle cx="34" cy="351" r="4" fill="#e0524a"/><circle cx="46" cy="351" r="4" fill="#f5b83d"/><circle cx="58" cy="351" r="4" fill="#3fae72"/>
+    <rect x="72" y="344" width="268" height="14" rx="7" fill="#fff"/>
+    <text x="80" y="355" fill="#1d2733" font-size="10">https://&lt;station&gt;:8444</text>
+    <rect x="20" y="364" width="330" height="22" fill="#ffffff" stroke="#d5dee4"/>
+    <circle cx="32" cy="375" r="4" fill="#0b8f84"/>
+    <text x="40" y="379" fill="#14202a" font-size="9" font-weight="600">Station running</text>
+    <rect x="210" y="369" width="36" height="12" rx="6" fill="#0b8f84"/><text x="228" y="378" fill="#fff" font-size="7" text-anchor="middle">Basic</text>
+    <rect x="249" y="369" width="40" height="12" rx="6" fill="#fff" stroke="#d5dee4"/><text x="269" y="378" fill="#5a6b78" font-size="7" text-anchor="middle">Normal</text>
+    <rect x="292" y="369" width="40" height="12" rx="6" fill="#fff" stroke="#d5dee4"/><text x="312" y="378" fill="#5a6b78" font-size="7" text-anchor="middle">Expert</text>
+    <rect x="30" y="392" width="310" height="14" rx="7" fill="#fff" stroke="#d5dee4"/>
+    <text x="40" y="402" fill="#5a6b78" font-size="8">Search a menu…</text>
+    <!-- tuiles des thèmes -->
+    <g font-size="9" fill="#14202a">
+      <rect x="30" y="412" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="38" y="426" font-weight="700">1 Station</text><text x="38" y="439" fill="#5a6b78" font-size="7">start, stop</text>
+      <rect x="136" y="412" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="144" y="426" font-weight="700">2 Transceiver</text><text x="144" y="439" fill="#5a6b78" font-size="7">wizard, test</text>
+      <rect x="242" y="412" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="250" y="426" font-weight="700">3 Safety</text><text x="250" y="439" fill="#5a6b78" font-size="7">bands, TOT</text>
+      <rect x="30" y="452" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="38" y="466" font-weight="700">4 Access</text><text x="38" y="479" fill="#5a6b78" font-size="7">accounts, pairing</text>
+      <rect x="136" y="452" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="144" y="466" font-weight="700">6 Troubleshooting</text><text x="144" y="479" fill="#5a6b78" font-size="7">diagnostics, report</text>
+      <rect x="242" y="452" width="98" height="34" rx="6" fill="#fff" stroke="#d5dee4"/><text x="250" y="466" font-weight="700">7 Updates</text><text x="250" y="479" fill="#5a6b78" font-size="7">new version</text>
+    </g>
+    <!-- terminal -->
+    <rect x="30" y="494" width="310" height="38" rx="5" fill="#0b1115"/>
+    <text x="38" y="508" fill="#53f3d8" font-size="8" font-family="ui-monospace,Consolas,monospace">[OK] rigctld answers</text>
+    <text x="38" y="521" fill="#c47a00" font-size="8" font-family="ui-monospace,Consolas,monospace">[WARNING] update available</text>
+  </g>
+  <rect x="20" y="338" width="330" height="200" rx="8" fill="none" stroke="#0b8f84" stroke-width="2"/>
+  </g>
+  <text x="312" y="299" fill="#1d2733" font-size="18" font-weight="700">openRemoteTRX Console</text>
+  <text x="312" y="318" fill="#0b8f84" font-size="14" font-weight="600">https://&lt;station&gt;:8444</text>
+  <text x="312" y="342" fill="#1d2733" font-size="14">configure, start, test,</text>
+  <text x="312" y="357" fill="#1d2733" font-size="14">update, troubleshoot</text>
+  <text x="312" y="381" fill="#55657a" font-size="13">administrator accounts only</text>
+  <text x="312" y="397" fill="#55657a" font-size="13">(enable in menu 4.6)</text>
+  <text x="312" y="421" fill="#55657a" font-size="13">never from the Internet</text>
+  <g transform="translate(20,480) scale(0.84) translate(-20,-598)">
+  <g clip-path="url(#a-c3)">
+    <rect x="20" y="598" width="330" height="200" fill="#0B0F14"/>
+    <rect x="20" y="598" width="330" height="26" fill="#dfe5ec"/>
+    <circle cx="34" cy="611" r="4" fill="#e0524a"/><circle cx="46" cy="611" r="4" fill="#f5b83d"/><circle cx="58" cy="611" r="4" fill="#3fae72"/>
+    <rect x="72" y="604" width="268" height="14" rx="7" fill="#fff"/>
+    <text x="80" y="615" fill="#1d2733" font-size="10">https://&lt;station&gt;:8450</text>
+    <text x="30" y="642" fill="#E6EDF3" font-size="10" font-weight="700">IC-7300MK2</text>
+    <text x="340" y="642" fill="#8B9BAD" font-size="10" text-anchor="end" font-family="ui-monospace,Consolas,monospace">18:42</text>
+    <!-- carte poste -->
+    <rect x="30" y="650" width="150" height="62" rx="6" fill="#131A22" stroke="#233040"/>
+    <text x="40" y="666" fill="#8B9BAD" font-size="8">TRANSCEIVER</text>
+    <text x="40" y="686" fill="#4FC3F7" font-size="15" font-weight="700" font-family="ui-monospace,Consolas,monospace">RX</text>
+    <text x="70" y="686" fill="#E6EDF3" font-size="10">14.074 USB</text>
+    <text x="40" y="703" fill="#8B9BAD" font-size="8">TOT 90 s · bands OK</text>
+    <!-- carte machine -->
+    <rect x="190" y="650" width="150" height="62" rx="6" fill="#131A22" stroke="#233040"/>
+    <text x="200" y="666" fill="#8B9BAD" font-size="8">COMPUTER</text>
+    <text x="200" y="684" fill="#E6EDF3" font-size="10">54 °C · 18 %</text>
+    <polyline points="200,704 215,700 230,702 245,696 260,699 275,690 290,694 305,698 330,695" fill="none" stroke="#4ADE80" stroke-width="1.5"/>
+    <!-- pastilles des comptes -->
+    <rect x="30" y="720" width="310" height="34" rx="6" fill="#131A22" stroke="#233040"/>
+    <text x="40" y="734" fill="#8B9BAD" font-size="8">CONNECTIONS</text>
+    <circle cx="44" cy="745" r="4" fill="#4ADE80"/><text x="52" y="748" fill="#E6EDF3" font-size="8">PC</text>
+    <circle cx="80" cy="745" r="4" fill="#4ADE80"/><text x="88" y="748" fill="#E6EDF3" font-size="8">S25</text>
+    <circle cx="120" cy="745" r="4" fill="#5E6B79"/><text x="128" y="748" fill="#8B9BAD" font-size="8">tablet</text>
+    <!-- alertes -->
+    <rect x="30" y="760" width="310" height="30" rx="6" fill="#131A22" stroke="#233040"/>
+    <circle cx="44" cy="775" r="4" fill="#4ADE80"/><text x="52" y="778" fill="#E6EDF3" font-size="8">Internet OK</text>
+    <circle cx="130" cy="775" r="4" fill="#F5B83D"/><text x="138" y="778" fill="#E6EDF3" font-size="8">1 alert in the last 24 h</text>
+  </g>
+  <rect x="20" y="598" width="330" height="200" rx="8" fill="none" stroke="#d99a2b" stroke-width="2"/>
+  </g>
+  <text x="312" y="499" fill="#1d2733" font-size="18" font-weight="700">Vital signs</text>
+  <text x="312" y="516" fill="#1d2733" font-size="15" font-weight="700">dashboard</text>
+  <text x="312" y="535" fill="#8a5a0a" font-size="14" font-weight="600">https://&lt;station&gt;:8450</text>
+  <text x="312" y="559" fill="#1d2733" font-size="14">monitor at a glance:</text>
+  <text x="312" y="575" fill="#1d2733" font-size="14">transceiver, computer, connections</text>
+  <text x="312" y="599" fill="#55657a" font-size="13">read-only, no password</text>
+  <text x="312" y="614" fill="#55657a" font-size="13">small screen next to the rig</text>
+  <text x="312" y="630" fill="#55657a" font-size="13">Debian and Raspberry Pi</text>
+  <rect x="596" y="20" width="148" height="632" rx="14" fill="#fff1d6" stroke="#d99a2b" stroke-width="2.5"/>
+  <text x="670" y="50" fill="#1d2733" font-size="16" font-weight="700" text-anchor="middle">Station PC</text>
+  <text x="670" y="70" fill="#55657a" font-size="12" text-anchor="middle">one single address</text>
+  <line x1="500" y1="113" x2="606" y2="113" stroke="#2f74c0" stroke-width="2.5" marker-end="url(#a-m8443)"/>
+  <rect x="610" y="96" width="120" height="34" rx="8" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="670" y="118" fill="#2f74c0" font-size="15" font-weight="700" text-anchor="middle">port 8443</text>
+  <line x1="500" y1="313" x2="606" y2="313" stroke="#0b8f84" stroke-width="2.5" marker-end="url(#a-m8444)"/>
+  <rect x="610" y="296" width="120" height="34" rx="8" fill="#fff" stroke="#0b8f84" stroke-width="2"/>
+  <text x="670" y="318" fill="#0b8f84" font-size="15" font-weight="700" text-anchor="middle">port 8444</text>
+  <line x1="500" y1="530" x2="606" y2="530" stroke="#b07a12" stroke-width="2.5" marker-end="url(#a-m8450)"/>
+  <rect x="610" y="513" width="120" height="34" rx="8" fill="#fff" stroke="#b07a12" stroke-width="2"/>
+  <text x="670" y="535" fill="#b07a12" font-size="15" font-weight="700" text-anchor="middle">port 8450</text>
+  <text x="670" y="612" fill="#55657a" font-size="12" text-anchor="middle">three independent</text>
+  <text x="670" y="630" fill="#55657a" font-size="12" text-anchor="middle">pages</text>
+</svg><figcaption>Three station pages in the browser · <a href="images/applis.svg" target="_blank" rel="noopener">open the diagram full size</a></figcaption></figure>
 <h3 id="p-04-41-a-fixed-address-for-the-station">4.1 A fixed address for the station</h3>
 <p>In your box, <strong>reserve an IP address</strong> for the station PC (DHCP reservation). The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> created by the wizard carries the PC&#x27;s address: if it changes, the browser and the app will no longer recognise it. After an address change, run the wizard again (menu 2.1) to recreate the certificate.</p>
 <p>The address to use is shown at the top of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> and by the diagnostic.</p>

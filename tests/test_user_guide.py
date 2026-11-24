@@ -266,3 +266,5 @@ def test_diagrams_of_every_language_come_from_the_shared_drawing() -> None:
     for lang in langs:
         page = (GUIDE / lang / "00-avant-de-commencer.md").read_text(encoding="utf-8")
         assert page.index("(images/reseau.svg)") < page.index("(images/briques.svg)"), f"{lang} : réseau, puis briques"
+        part4 = next((GUIDE / lang).glob("04-*.md")).read_text(encoding="utf-8")
+        assert part4.index("(images/applis.svg)") < part4.index("## 4.1"), f"{lang} : trois pages en tête de la partie 4"

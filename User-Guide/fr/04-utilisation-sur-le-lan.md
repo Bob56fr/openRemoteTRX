@@ -2,6 +2,10 @@
 
 Le réseau local, c'est le Wi-Fi ou le câble de la maison : le téléphone et la station sont derrière la même box.
 
+Trois pages de la station s'ouvrent dans le navigateur, chacune à part, sur son propre port de la même adresse :
+
+![Trois pages de la station dans le navigateur](images/applis.svg)
+
 ## 4.1 Une adresse fixe pour la station
 
 Dans ta box, **réserve une adresse IP** au PC de la station (réservation DHCP). Le certificat créé par l'assistant

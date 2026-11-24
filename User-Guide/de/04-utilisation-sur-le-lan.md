@@ -2,6 +2,10 @@
 
 Das LAN ist das WLAN oder das Kabelnetz zu Hause: Telefon und Station stehen hinter demselben Router.
 
+Drei Seiten der Station öffnen sich im Browser, jede für sich, auf ihrem eigenen Port derselben Adresse:
+
+![Drei Seiten der Station im Browser](images/applis.svg)
+
 ## 4.1 Eine feste Adresse für die Station
 
 **Reservieren Sie** in Ihrem Router **eine IP-Adresse** für den Stations-PC (DHCP-Reservierung). Das vom Assistenten
