@@ -30,20 +30,24 @@ Chaque mot est expliqué dans le [glossaire](glossaire.md).
 |---|---|
 | Le poste | un poste connu de Hamlib, son alimentation, une antenne. Les postes déjà essayés ont leur fiche : [Icom IC-7300MK2](postes/ic7300mk2.md) (validé), [Yaesu FTDX10](postes/ftdx10.md) (en cours de validation) |
 | La liaison PC - poste | sur la plupart des postes récents, **un câble USB** qui transporte à la fois la commande (CAT) et le son ; sinon une interface externe (Digirig, SignaLink…) |
-| Le PC de la station | PC sous **Debian 12 ou 13** avec bureau (recommandé), ou **Windows 10/11** 64 bits. Il reste allumé en permanence près du poste |
+| Le PC de la station | PC sous **Debian 12 ou 13** avec bureau (recommandé), **Raspberry Pi 4 ou 5** sous Raspberry Pi OS 64 bits, ou PC **Windows 10/11** 64 bits. Il reste allumé en permanence près du poste |
 | Le réseau | le PC relié à la box, de préférence **par câble** |
 | Pour les essais | une **charge fictive** (50 Ω) qui supporte la puissance d'essai : **obligatoire** pour toute la partie 3 |
 | Côté utilisateur | un téléphone Android 10 ou plus récent, ou n'importe quel navigateur récent |
 
-Le Raspberry Pi 4 est prévu mais n'a **jamais été essayé** : ne le choisis pas pour une première station.
+## Debian, Raspberry Pi ou Windows ?
 
-## Debian ou Windows ?
+| | Debian (recommandé) | Raspberry Pi | Windows |
+|---|---|---|---|
+| Matériel | un PC, même ancien (2 cœurs, 4 Go) | Pi 4 (**4 Go** conseillés) ou Pi 5, alimentation officielle, refroidissement, de préférence un SSD | un PC 64 bits |
+| Système | Debian 12 ou 13 | Raspberry Pi OS 64 bits (Debian 12 ou 13), avec ou sans bureau | Windows 10 ou 11 |
+| Paquet | `trx-remote-debian-X.Y.Z.zip` | le **même** que Debian | `trx-remote-windows-X.Y.Z.zip` |
+| Démarrage | au démarrage du PC, sans ouvrir de session | au démarrage du Pi, sans ouvrir de session | à l'**ouverture de ta session** (le PC doit rester avec ta session ouverte, verrouillée si tu veux) |
+| Mises à jour | par Internet depuis openRemoteTRX Console, signature vérifiée | comme Debian | à la main, en relançant l'installateur d'une nouvelle version |
+| Outils | openRemoteTRX Console (menus 1 à 8) | la même, sur le bureau du Pi ou par SSH depuis un autre PC | openRemoteTRX Console aussi, par l'unique raccourci menu Démarrer > openRemoteTRX (sauf les mises à jour, menus 7.x) |
+| État | validé (IC-7300MK2) | en service chez un bêta-testeur ; charge (SDR, FreeDV, plusieurs visiteurs) pas encore mesurée | validé (IC-7300MK2) |
 
-| | Debian (recommandé) | Windows |
-|---|---|---|
-| Démarrage | au démarrage du PC, sans ouvrir de session | à l'**ouverture de ta session** (le PC doit rester avec ta session ouverte, verrouillée si tu veux) |
-| Mises à jour | par Internet depuis openRemoteTRX Console, signature vérifiée | à la main, en relançant l'installateur d'une nouvelle version |
-| Outils | openRemoteTRX Console (menus 1 à 8) | openRemoteTRX Console aussi, par l'unique raccourci menu Démarrer > openRemoteTRX (sauf les mises à jour, menus 7.x) |
+Le Raspberry Pi 3 et les modèles plus anciens sont trop lents pour le son en direct : l'installation le signale.
 
 ## Réglementation
 
@@ -58,7 +62,7 @@ Le Raspberry Pi 4 est prévu mais n'a **jamais été essayé** : ne le choisis p
 Les paquets d'installation sont sur la page des versions du projet :
 https://github.com/Bob56fr/openRemoteTRX/releases
 
-- Debian : `trx-remote-debian-X.Y.Z.zip` (et son fichier de signature `.sig`).
+- Debian et Raspberry Pi : `trx-remote-debian-X.Y.Z.zip` (et son fichier de signature `.sig`).
 - Windows : `trx-remote-windows-X.Y.Z.zip`.
 
 L'application Android est en **test sur invitation** (Google Play) : demande l'accès en ouvrant un ticket (partie 8).

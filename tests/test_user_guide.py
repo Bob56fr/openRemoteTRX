@@ -193,3 +193,61 @@ def test_published_guide_has_bubbles_but_not_in_the_glossary() -> None:
         assert "<span" not in svg, "bulle posée dans un schéma SVG (le dessin s'arrête là)"
     for ident in set(re.findall(r'data-def="([^"]+)"', page)):
         assert f'<div id="{ident}" data-terme=' in page, f"définition absente : {ident}"
+
+
+def test_every_language_has_the_same_files_tabs_and_safety_notes_as_the_french_reference() -> None:
+    builder = _builder()
+    reference = [p.relative_to(GUIDE / "fr").as_posix() for p in builder.guide_files("fr")]
+    french = builder.render_page("fr")
+    for lang in builder.LANGS:
+        names = [p.relative_to(GUIDE / lang).as_posix() for p in builder.guide_files(lang)]
+        assert names == reference, f"{lang} : fichiers différents du guide français"
+        page = builder.render_page(lang)
+        ids = re.findall(r'\sid="([^"]+)"', page)
+        assert len(ids) == len(set(ids)), f"{lang} : identifiants en double"
+        missing = [t for t in re.findall(r'href="#([^"]+)"', page) if t not in ids]
+        assert not missing, f"{lang} : ancres absentes {missing[:3]}"
+        for marker in ('class="onglets"', "<details>", 'class="note danger"', 'type="checkbox"'):
+            assert page.count(marker) == french.count(marker), f"{lang} : nombre de {marker} différent du français"
+
+
+def test_tabs_are_named_after_the_systems_and_shared_by_every_language() -> None:
+    for md in GUIDE.rglob("*.md"):
+        text = md.read_text(encoding="utf-8")
+        for block in re.findall(r"<!-- onglets -->(.*?)<!-- /onglets -->", text, flags=re.S):
+            names = re.findall(r"^#### (.+)$", block, flags=re.M)
+            assert names and set(names) <= {"Debian", "Raspberry Pi", "Windows"}, \
+                f"{md.relative_to(ROOT)} : onglets {names} (noms de système, jamais traduits)"
+
+
+def test_tabs_and_accordion_render_and_refuse_broken_blocks() -> None:
+    builder = _builder()
+    page = GUIDE / "fr" / "02-installer-la-station.md"
+    renderer = builder.Renderer("fr", page, {page.resolve(): "p-02"})
+    html = renderer.render(["<!-- onglets -->", "#### Debian", "", "texte D", "", "#### Windows", "", "texte W",
+                            "<!-- /onglets -->", "", "<details>", "<summary>Plus</summary>", "", "caché", "</details>"])
+    assert '<div class="onglets"><div class="onglets-barre" role="tablist"' in html and " hidden>" in html
+    assert 'data-os="debian"' in html and 'data-os="windows"' in html
+    assert 'id="p-02-o1-debian" aria-labelledby="p-02-o1-debian-b"' in html
+    assert "<details><summary>Plus</summary><p>caché</p></details>" in html
+    for broken in (["<!-- onglets -->", "#### Debian", "x"],                         # jamais fermé
+                   ["<!-- onglets -->", "texte", "#### Debian", "<!-- /onglets -->"],   # texte avant le 1er onglet
+                   ["<!-- onglets -->", "#### Debian", "x", "<!-- /onglets -->"],       # un seul onglet
+                   ["<details>", "sans titre", "</details>"]):
+        try:
+            builder.Renderer("fr", page, {page.resolve(): "p-02"}).render(broken)
+        except builder.GuideError:
+            continue
+        raise AssertionError(f"bloc accepté à tort : {broken}")
+
+
+def test_language_bar_links_every_published_language() -> None:
+    builder = _builder()
+    french = builder.render_page("fr")
+    assert '<strong aria-current="page" lang="fr">Français</strong>' in french
+    assert '<a href="en/" lang="en"' in french and '<a href="es/" lang="es"' in french
+    german = builder.render_page("de")
+    assert '<a href="../" lang="fr"' in german and '<a href="../en/" lang="en"' in german
+    pages = builder.build()
+    for lang in builder.LANGS:
+        assert (builder.SITE if lang == "fr" else builder.SITE / lang) / "index.html" in pages

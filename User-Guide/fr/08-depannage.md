@@ -11,14 +11,15 @@
 
 | Symptôme | Cause probable | À faire |
 |---|---|---|
-| Le diagnostic ne trouve pas le poste | poste éteint, port **Standard** choisi, CAT RATE différent de 38400, pilote absent (Windows) | allumer ; reprendre l'assistant avec le port **Enhanced** ; régler CAT RATE (fiche du poste) |
-| Pas de son reçu | carte son du poste prise par le bureau ; micro interdit aux applications (Windows) ; niveau trop bas (réglage du poste, gain du menu 2.9) | partie 1.4 ; partie 2.2 ; fiche du poste |
-| L'émission part mais rien n'est modulé | MOD SOURCE = MIC ou REAR SELECT = DATA dans ce mode | fiche du poste, « Voix par l'USB » |
-| Seuls les modes DATA peuvent émettre | l'assistant a noté que la voix ne passe pas par l'USB | régler MOD SOURCE, puis relancer l'assistant et répondre « oui » |
-| ALC au maximum, son saturé | RPORT GAIN trop haut | partie 3.4 |
-| Le poste passe en émission au démarrage du PC | RPTT SELECT sur RTS ou DTR, ou PC KEYING actif | **débrancher l'USB**, régler RPTT SELECT = DAKY et PC KEYING = OFF |
+| Le diagnostic ne trouve pas le poste | poste éteint ; mauvais port (le second port du poste, ou « Standard » chez Yaesu) ; débit du poste différent de celui de l'assistant ; pilote absent (Windows) | allumer ; reprendre le menu 2.5 avec le port de commande ; régler le débit (fiche du poste) |
+| Pas de son reçu | carte son du poste prise par le bureau ; micro interdit aux applications (Windows) ; niveau trop bas (réglage du poste, gain du menu 2.9) | partie 1.4 ; partie 2, onglet Windows ; fiche du poste |
+| L'émission part mais rien n'est modulé | le poste prend la voix de son micro, pas de l'USB, dans ce mode (Icom : DATA MOD ; Yaesu : MOD SOURCE et REAR SELECT) | fiche du poste, « Voix par l'USB » |
+| Seuls les modes DATA peuvent émettre | l'assistant a noté que la voix ne passe pas par l'USB | régler le poste, puis relancer l'assistant et répondre « oui » |
+| ALC au maximum, son saturé | niveau d'entrée USB du poste trop haut (Icom : USB MOD Level ; Yaesu : RPORT GAIN) | partie 3.4 |
+| Le poste passe en émission au démarrage du PC | une ligne RTS ou DTR du port USB commande l'émission (Icom : USB SEND / USB Keying ; Yaesu : RPTT SELECT, PC KEYING) | **débrancher l'USB**, mettre ces réglages sur OFF (fiche du poste) |
+| Raspberry Pi lent, son haché, USB du poste qui décroche | alimentation trop faible ou surchauffe (`vcgencmd get_throttled` différent de `throttled=0x0`) | alimentation officielle, ventilateur (partie 2, onglet Raspberry Pi) |
 | « Micro indisponible » dans la page | page ouverte en HTTP | ouvrir l'adresse en **https://** |
-| Page injoignable depuis le téléphone | station arrêtée ; adresse changée ; réseau en profil Public (Windows) | menu 1.1 ; partie 4.1 ; partie 2.2 |
+| Page injoignable depuis le téléphone | station arrêtée ; adresse changée ; réseau en profil Public (Windows) | menu 1.1 ; partie 4.1 ; partie 2, onglet Windows |
 | Connecté mais pas de son à distance | l'UDP ne passe pas (port ouvert sur la box) | VPN (partie 5) |
 | Coupures toutes les 15 à 30 s | deux appareils sur le même profil VPN | un profil par appareil |
 | Émission coupée toute seule | durée maximale atteinte, téléphone qui ne répond plus, fréquence hors bandes, opérateur sur place | normal : la raison est affichée dans la page et le journal |
@@ -28,7 +29,7 @@
 
 ## 8.3 Demander de l'aide
 
-1. Menu **6.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe** (Windows comme Debian). Depuis la console web, le bouton
+1. Menu **6.3** : crée un rapport de dépannage (zip sur le Bureau, ou dans le dossier du compte sur un Pi sans bureau) **sans aucun mot de passe** (Windows comme Debian). Depuis la console web, le bouton
    **« Télécharger le rapport »** le récupère directement sur ton PC ou ton téléphone. Les traces des outils arrêtés sur une erreur
    (code ORT-9312) sont dans le dossier `plantages` du dossier d'état de la station, et le rapport les joint.
    Pour le lire toi-même : menu **6.6**, qui donne le lien de l'**analyseur** ; tu y déposes le zip et l'analyse se

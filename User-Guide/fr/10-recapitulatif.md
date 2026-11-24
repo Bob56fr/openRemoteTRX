@@ -7,30 +7,31 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 
 - [ ] Conditions du trafic à distance vérifiées pour ma licence
 - [ ] Charge fictive disponible pour les essais
-- [ ] Système choisi (Debian recommandé, ou Windows) et paquet téléchargé
+- [ ] Système choisi (Debian recommandé, Raspberry Pi ou Windows) et paquet téléchargé
 
 ## 1. Préparer le poste
 
-- [ ] Pilote CP210x installé avant de brancher le câble (Windows)
-- [ ] Port « Enhanced COM Port » repéré
-- [ ] CAT RATE 38400, CAT TIME OUT TIMER 1000 msec, CAT RTS ENABLE
-- [ ] MOD SOURCE = REAR et REAR SELECT = USB dans chaque mode utilisé
-- [ ] RPTT SELECT = DAKY dans chaque mode, PC KEYING = OFF
-- [ ] VOX éteint, TX TIME OUT TIMER 3 min, HF MAX POWER réglé
+- [ ] Pilote USB du fabricant installé avant de brancher le câble (Windows)
+- [ ] Port de commande du poste repéré (fiche du poste)
+- [ ] Débit CAT du poste noté, menus de la fiche du poste réglés
+- [ ] Voix par l'USB réglée dans chaque mode utilisé
+- [ ] Aucune ligne RTS / DTR du port USB ne commande l'émission
+- [ ] VOX éteint, minuterie d'émission du poste à 3 min, puissance maximale réglée
 - [ ] Carte son du poste retirée du son par défaut du PC
 
 ## 2. Installer la station
 
 - [ ] Logiciel installé (install.sh ou installer.cmd)
-- [ ] Session rouverte (Debian) ; profil réseau Privé et veille désactivée (Windows)
+- [ ] Session rouverte (Debian, Raspberry Pi) ; profil réseau Privé et veille désactivée (Windows)
+- [ ] Raspberry Pi : alimentation officielle, ventilateur, `throttled=0x0`
 
 ## 3. Intégrer le TRX et l'essayer
 
-- [ ] Assistant terminé (modèle 1042, port Enhanced, PTT par CAT, bandes de ma licence)
+- [ ] Assistant terminé (modèle de mon poste, port de commande, PTT par CAT, bandes de ma licence)
 - [ ] Diagnostic sans échec
 - [ ] Essai guidé en réception seule réussi
 - [ ] Essai guidé avec émission réussi sur charge fictive
-- [ ] Station démarrée, page ouverte, modulation réglée avec l'ALC (RPORT GAIN)
+- [ ] Station démarrée, page ouverte, modulation réglée avec l'ALC (niveau d'entrée USB du poste)
 - [ ] Essai 1 : STOP coupe l'émission
 - [ ] Essai 2 : coupure au bout de 90 s, avertissement 10 s avant
 - [ ] Essai 3 : liaison coupée pendant l'émission, retour en réception
@@ -39,7 +40,7 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 - [ ] Essai 6 : émission au micro du poste, PTT à distance bloqué
 - [ ] Essai 7 : STOP TX du tableau de bord
 - [ ] Essai 8 : arrêt de la station pendant l'émission
-- [ ] Essai 9 : aucun passage en émission au démarrage du PC
+- [ ] Essai 9 : aucun passage en émission au démarrage du PC (ou du Pi)
 - [ ] Résultat des essais rapporté, si mon poste n'est pas encore validé (ticket « <mon poste> : essais de mise en service »)
 
 ## 4. Utiliser sur le réseau local
@@ -59,7 +60,7 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 ## 6. Station sans surveillance
 
 - [ ] Alertes ntfy reçues (sujet long et secret), message « Station en service » vu
-- [ ] PC réglé pour se rallumer après une coupure de courant
+- [ ] PC réglé pour se rallumer après une coupure de courant (un Pi le fait seul)
 - [ ] Onduleur, parafoudre, ventilation du poste
 - [ ] Je sais réactiver la station mise en sécurité (menu 1.4) après avoir trouvé la cause
 

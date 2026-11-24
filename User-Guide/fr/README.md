@@ -18,9 +18,9 @@ essais de la partie 3, qui servent de validation : fais-les tous, sur charge fic
 | Partie | Ce que tu fais | Durée indicative |
 |---|---|---|
 | [Démarrage rapide](demarrage-rapide.md) | l'essentiel pour les impatients, essais de sécurité compris | 15 min |
-| [0. Avant de commencer](00-avant-de-commencer.md) | matériel, réglementation, choix Debian ou Windows | 15 min de lecture |
+| [0. Avant de commencer](00-avant-de-commencer.md) | matériel, réglementation, choix Debian, Raspberry Pi ou Windows | 15 min de lecture |
 | [1. Préparer le poste](01-preparer-le-poste.md) | câblage, pilote USB, menus du poste | 30 min |
-| [2. Installer la station](02-installer-la-station.md) | logiciel sur le PC | 20 min |
+| [2. Installer la station](02-installer-la-station.md) | logiciel sur le PC ou le Raspberry Pi | 20 min (Pi : 1 h avec la carte SD) |
 | [3. Intégrer le TRX et l'essayer](03-integrer-et-essayer-le-trx.md) | assistant, essais en réception puis en émission, essais de sécurité | 1 h 30 |
 | [4. Utiliser sur le réseau local](04-utilisation-sur-le-lan.md) | page web, téléphone, application Android | 30 min |
 | [5. Utiliser à distance](05-utilisation-a-distance.md) | VPN ou port exposé, essai en 4G | 1 h |
@@ -41,5 +41,7 @@ la station : partie 0, « Comment c'est organisé ».
   thèmes à gauche avec leur pictogramme (flèches et Entrée), aide du menu choisi à droite ; on peut aussi taper le
   numéro dans la console texte (`trx-console --texte`).
 - Une case **« Sécurité »** signale un point qui touche à l'émission : ne la saute pas.
+- Ce qui change selon le système est rangé dans des **onglets** Debian / Raspberry Pi / Windows : choisis le tien
+  une fois, il est retenu pour toute la page. Sur GitHub, les onglets se lisent l'un sous l'autre.
 - Ce guide existe aussi en page web, avec un récapitulatif que l'on coche en ligne, et en **PDF** à imprimer
   (lien « Télécharger en PDF » en haut de la page) : https://bob56fr.github.io/openRemoteTRX/guide/

@@ -9,11 +9,20 @@ partie) a des cases à cocher cliquables, gardées dans le navigateur quand c'es
 
 Le Markdown reconnu est volontairement réduit : titres (#, ##, ###), paragraphes, listes à puces ou numérotées
 (imbriquées par indentation, blocs de code compris), cases `- [ ]`, tableaux, citations `>` (encadré ; un encadré
-qui commence par « **Sécurité » est rouge), blocs de code ```, `code`, **gras**, *italique*, liens [texte](cible) et
-adresses https:// nues. Un lien vers un autre fichier .md du guide devient une ancre de la page.
+qui commence par « **Sécurité » (ou son équivalent dans la langue, UI["danger"]) est rouge), blocs de code ```,
+`code`, **gras**, *italique*, liens [texte](cible) et adresses https:// nues. Un lien vers un autre fichier .md du
+guide devient une ancre de la page.
 
-Résultat : `docs/site/guide/index.html` (français) et `docs/site/guide/<langue>/index.html` (autres langues, quand
-elles existeront). Pas de copie par version : le guide décrit la dernière version.
+Deux blocs pour les textes propres à un système (Debian, Raspberry Pi, Windows), lisibles aussi sur GitHub :
+- ONGLETS : `<!-- onglets -->`, puis un titre `#### Nom` par onglet, puis `<!-- /onglets -->`. Le même nom d'onglet
+  (« Debian », « Raspberry Pi », « Windows », jamais traduit) se choisit partout dans la page d'un seul clic, et le
+  choix est gardé dans le navigateur. À l'impression et dans le PDF, tous les onglets s'impriment l'un sous l'autre.
+- ACCORDÉON : `<details>`, `<summary>Titre</summary>`, le contenu, `</details>` (balises seules sur leur ligne) ; fermé
+  à l'écran, ouvert à l'impression.
+
+Résultat : `docs/site/guide/index.html` (français) et `docs/site/guide/<langue>/index.html` (en, de, es), avec un
+choix de langue en tête de chaque page. Mêmes noms de fichiers dans chaque langue (User-Guide/<langue>/) : les ancres
+de la page en dépendent. Pas de copie par version : le guide décrit la dernière version.
 Usage : python scripts/build_user_guide.py   (les tests vérifient que la page publiée est à jour).
 """
 from __future__ import annotations
@@ -26,7 +35,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GUIDE = ROOT / "User-Guide"
 SITE = ROOT / "docs" / "site" / "guide"
-LANGS = ("fr",)                      # langues publiées ; « fr » = référence (page à la racine de guide/)
+LANGS = ("fr", "en", "de", "es")     # langues publiées ; « fr » = référence (page à la racine de guide/)
+LANG_NAMES = {"fr": "Français", "en": "English", "de": "Deutsch", "es": "Español"}
+TABS_OPEN, TABS_CLOSE = "<!-- onglets -->", "<!-- /onglets -->"
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 PART = re.compile(r"^(\d\d)-[a-z0-9-]+\.md$")
 ANNEXES = ("glossaire.md",)          # fichiers hors parties numérotées, placés avant le récapitulatif
@@ -48,7 +59,45 @@ UI = {
            "bubbles_title": "Les mots soulignés en pointillé",
            "bubbles_note": "ont une définition : survole-les à la souris ou touche-les (Tab puis Entrée au clavier) "
                            "pour la voir sans quitter la page. Toutes les définitions sont dans le",
-           "bubbles_link": "glossaire du guide de l'opérateur"},
+           "bubbles_link": "glossaire du guide de l'opérateur",
+           "danger": "**Sécurité", "lang_label": "Langue", "tabs_label": "Choisir le système"},
+    "en": {"progress": "{n} / {m} steps ticked", "reset": "Untick all", "print": "Print",
+           "saved": "Ticked boxes are kept in this browser.",
+           "unsaved": "This browser does not keep the boxes: print the page to keep a record.",
+           "source": "Source of this guide on GitHub", "footer": "Free software (AGPL-3.0-or-later)",
+           "top": "Back to top", "enlarge": "open the diagram full size",
+           "pdf": "Download as PDF", "pdf_hint": "A4, one part per page, to print",
+           "glossary_more": "See the glossary",
+           "bubbles_title": "Words with a dotted underline",
+           "bubbles_note": "have a definition: hover or tap them (Tab then Enter with a keyboard) to read it without "
+                           "leaving the page. All definitions are in the",
+           "bubbles_link": "glossary of the operator guide",
+           "danger": "**Safety", "lang_label": "Language", "tabs_label": "Choose the system"},
+    "de": {"progress": "{n} / {m} Schritte abgehakt", "reset": "Alle Haken entfernen", "print": "Drucken",
+           "saved": "Die Haken werden in diesem Browser gespeichert.",
+           "unsaved": "Dieser Browser speichert die Haken nicht: Drucken Sie die Seite, um sie festzuhalten.",
+           "source": "Quelle dieser Anleitung auf GitHub", "footer": "Freie Software (AGPL-3.0-or-later)",
+           "top": "Nach oben", "enlarge": "Schema in voller Größe öffnen",
+           "pdf": "Als PDF herunterladen", "pdf_hint": "A4, ein Teil pro Seite, zum Drucken",
+           "glossary_more": "Zum Glossar",
+           "bubbles_title": "Gepunktet unterstrichene Wörter",
+           "bubbles_note": "haben eine Erklärung: Fahren Sie mit der Maus darüber oder tippen Sie sie an (Tab, dann "
+                           "Enter mit der Tastatur), um sie zu lesen, ohne die Seite zu verlassen. Alle Erklärungen "
+                           "stehen im",
+           "bubbles_link": "Glossar der Bedieneranleitung",
+           "danger": "**Sicherheit", "lang_label": "Sprache", "tabs_label": "System wählen"},
+    "es": {"progress": "{n} / {m} pasos marcados", "reset": "Desmarcar todo", "print": "Imprimir",
+           "saved": "Las casillas marcadas se guardan en este navegador.",
+           "unsaved": "Este navegador no guarda las casillas: imprime la página para conservar un registro.",
+           "source": "Fuente de esta guía en GitHub", "footer": "Software libre (AGPL-3.0-or-later)",
+           "top": "Volver arriba", "enlarge": "abrir el esquema en grande",
+           "pdf": "Descargar en PDF", "pdf_hint": "A4, una parte por página, para imprimir",
+           "glossary_more": "Ver el glosario",
+           "bubbles_title": "Las palabras subrayadas con puntos",
+           "bubbles_note": "tienen una definición: pasa el ratón por encima o tócalas (Tab y luego Intro con el "
+                           "teclado) para leerla sin salir de la página. Todas las definiciones están en el",
+           "bubbles_link": "glosario de la guía del operador",
+           "danger": "**Seguridad", "lang_label": "Idioma", "tabs_label": "Elegir el sistema"},
 }
 
 # Infobulles : termes du glossaire (premier nom en gras d'une ligne, ou un autre nom en gras de la même ligne)
@@ -61,7 +110,23 @@ BUBBLES = {
            "Assistant de configuration", "Tableau de bord", "station.toml", "Profil de poste", "PTT", "TOT",
            "TOT absolu", "Battement", "Bandes autorisées", "Opérateur sur place", "Mise en sécurité", "HTTPS", "certificat",
            "Empreinte du certificat", "VPN", "Profil VPN", "Port ouvert", "CGNAT", "ntfy", "Code ORT", "Appairage",
-           "Visiteur", "Compte opérateur", "WebRTC", "Réseau local", "Porte audio d'émission"),
+           "Visiteur", "Compte opérateur", "WebRTC", "Réseau local", "Porte audio d'émission", "SSH"),
+    "en": ("CAT", "Dummy load", "ALC", "SWR", "Hamlib", "rigctld", "Gateway", "Supervisor", "openRemoteTRX Console",
+           "Configuration wizard", "Dashboard", "station.toml", "Transceiver profile", "PTT", "TOT", "Absolute TOT",
+           "Heartbeat", "Allowed bands", "Local operator", "Safety lockout", "HTTPS", "certificate",
+           "Certificate fingerprint", "VPN", "VPN profile", "Open port", "CGNAT", "ntfy", "ORT code", "Pairing",
+           "Visitor", "Operator account", "WebRTC", "Local network", "Transmit audio gate", "SSH"),
+    "de": ("CAT", "Dummy-Load", "ALC", "SWR", "Hamlib", "rigctld", "Gateway", "Supervisor", "openRemoteTRX Console",
+           "Konfigurationsassistent", "Dashboard", "station.toml", "Transceiver-Profil", "PTT", "TOT", "Absoluter TOT",
+           "Heartbeat", "Erlaubte Bänder", "Operator vor Ort", "Sicherheitsabschaltung", "HTTPS", "Zertifikat",
+           "Fingerabdruck des Zertifikats", "VPN", "VPN-Profil", "Portfreigabe", "CGNAT", "ntfy", "ORT-Code", "Kopplung",
+           "Besucher", "Operator-Konto", "WebRTC", "LAN", "Sende-Audiotor", "SSH"),
+    "es": ("CAT", "Carga ficticia", "ALC", "ROE", "Hamlib", "rigctld", "Pasarela", "Supervisor", "openRemoteTRX Console",
+           "Asistente de configuración", "Panel", "station.toml", "Perfil de transceptor", "PTT", "TOT",
+           "TOT absoluto", "Latido", "Bandas permitidas", "Operador local", "Bloqueo de seguridad", "HTTPS",
+           "certificado", "Huella del certificado", "VPN", "Perfil VPN", "Puerto abierto", "CGNAT", "ntfy",
+           "Código ORT", "Emparejamiento", "Visitante", "Cuenta de operador", "WebRTC", "Red local",
+           "Puerta de audio de transmisión", "SSH"),
 }
 NO_BUBBLE_TAGS = ("code", "pre", "a", "h1", "h2", "h3", "h4", "th", "figcaption", "button", "summary", "svg")   # svg : schéma intégré
 
@@ -133,9 +198,27 @@ figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
   text-decoration:none}
 .telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+.langues{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:flex-end;margin:0 0 .4rem;font-size:.9rem}
+.langues a,.langues strong{border:1px solid var(--ligne);border-radius:2rem;padding:.1rem .7rem;text-decoration:none}
+.langues strong{background:var(--carte);border-color:var(--accent);font-weight:600}
+.onglets{margin:.8rem 0 1.2rem;border:1px solid var(--ligne);border-radius:.6rem;background:var(--carte)}
+.onglets-barre{display:flex;flex-wrap:wrap;gap:.3rem;padding:.45rem .5rem 0;border-bottom:1px solid var(--ligne)}
+.onglets-barre button{border-radius:.5rem .5rem 0 0;border-bottom:0;margin-bottom:-1px;padding:.35rem 1rem;
+  background:var(--fond);color:var(--doux)}
+.onglets-barre button[aria-selected="true"]{background:var(--carte);color:var(--texte);border-color:var(--accent);
+  border-bottom:1px solid var(--carte);font-weight:600}
+.onglet{padding:.2rem 1rem .6rem}
+.onglets.actifs .onglet>.onglet-titre{display:none}
+.onglet-titre{color:var(--accent)}
+details{background:var(--carte);border:1px solid var(--ligne);border-radius:.5rem;padding:.3rem .9rem;margin:.6rem 0}
+details>summary{cursor:pointer;font-weight:600;padding:.2rem 0}
+details[open]>summary{margin-bottom:.3rem}
+@media (max-width:30rem){.onglets-barre button{flex:1 1 auto;padding:.35rem .5rem}.onglet{padding:.2rem .6rem .6rem}}
 @media print{
   :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
-  .outils button,.haut,.telecharger,footer{display:none}
+  .outils button,.haut,.telecharger,footer,.langues,.onglets-barre{display:none}
+  .onglet[hidden]{display:block!important}
+  .onglets.actifs .onglet>.onglet-titre{display:block}
   a{color:#000}
   .partie{break-before:page}
 }
@@ -179,12 +262,67 @@ SCRIPT = """
   if (window.parent === window) return;
   var last = 0;
   function send() {
-    var h = Math.ceil(document.documentElement.scrollHeight);
+    // hauteur du contenu, pas celle de la fenêtre : l'iframe rapetisse aussi quand un onglet plus court s'affiche
+    var h = Math.ceil(document.body.getBoundingClientRect().height);
     if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
   }
   window.addEventListener("load", send);
   if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
   else window.addEventListener("resize", send);
+})();
+"""
+
+
+# Onglets par système : un clic choisit ce système dans TOUS les groupes d'onglets de la page (même nom) et le garde
+# dans le navigateur (essai protégé, comme les cases). Sans script, tous les onglets restent affichés l'un sous
+# l'autre avec leur titre. Avant l'impression, tous les accordéons s'ouvrent (les onglets cachés, par la feuille de
+# style d'impression).
+TABS_JS = """
+(function () {
+  var KEY = "trx-guide-systeme";
+  var groups = Array.prototype.slice.call(document.querySelectorAll(".onglets"));
+  var details = Array.prototype.slice.call(document.querySelectorAll("details"));
+  window.addEventListener("beforeprint", function () { details.forEach(function (d) { d.open = true; }); });
+  if (!groups.length) return;
+  var saved = null;
+  try { saved = window.localStorage.getItem(KEY); } catch (e) { saved = null; }
+  function show(group, key) {
+    var buttons = group.querySelectorAll(".onglets-barre button");
+    var found = false;
+    Array.prototype.forEach.call(buttons, function (b) { if (b.getAttribute("data-os") === key) found = true; });
+    if (!found) key = buttons[0].getAttribute("data-os");
+    Array.prototype.forEach.call(buttons, function (b) {
+      var on = b.getAttribute("data-os") === key;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+      document.getElementById(b.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  function choose(key) {
+    groups.forEach(function (g) { show(g, key); });
+    try { window.localStorage.setItem(KEY, key); } catch (e) { /* stockage refusé */ }
+  }
+  groups.forEach(function (group) {
+    group.classList.add("actifs");
+    var bar = group.querySelector(".onglets-barre");
+    bar.hidden = false;
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button"));
+    buttons.forEach(function (b, i) {
+      b.addEventListener("click", function () {
+        var top = b.getBoundingClientRect().top;
+        choose(b.getAttribute("data-os"));
+        window.scrollBy(0, b.getBoundingClientRect().top - top);   // l'onglet touché reste sous le doigt
+      });
+      b.addEventListener("keydown", function (e) {
+        var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!step) return;
+        var next = buttons[(i + step + buttons.length) % buttons.length];
+        next.click();
+        next.focus();
+      });
+    });
+    show(group, saved || "");
+  });
 })();
 """
 
@@ -341,6 +479,7 @@ class Renderer:
         self.section = 0
         self.heading_ids: set[str] = set()
         self.images: list[Path] = []
+        self.tab_groups = 0
 
     # ------------------------------------------------------------------ texte en ligne
     def link(self, target: str) -> tuple[str, bool]:
@@ -451,6 +590,55 @@ class Renderer:
             out.append("<tr>" + "".join(f"<td>{self.inline(c)}</td>" for c in cells(row)) + "</tr>")
         return "".join(out) + "</tbody></table></div>"
 
+    def block_end(self, lines: list[str], i: int, closing: str, what: str) -> int:
+        """Fin du bloc ouvert à la ligne i ; un bloc du même genre ne s'imbrique pas (un accordéon dans un onglet,
+        oui)."""
+        j = i + 1
+        while j < len(lines) and lines[j].strip() != closing:
+            if lines[j].strip() == lines[i].strip():
+                raise GuideError(f"{self.path.name} : {what} dans un autre {what} (non permis)")
+            j += 1
+        if j >= len(lines):
+            raise GuideError(f"{self.path.name} : {what} non fermé ({closing} manquant)")
+        return j
+
+    def tabs(self, lines: list[str]) -> str:
+        """Onglets par système : un `#### Nom` ouvre chaque onglet ; rien avant le premier."""
+        first = next((k for k, l in enumerate(lines) if l.strip()), None)
+        if first is None or not lines[first].startswith("#### "):
+            raise GuideError(f"{self.path.name} : un bloc d'onglets commence par « #### Nom de l'onglet »")
+        panels: list[tuple[str, list[str]]] = []
+        for line in lines[first:]:
+            if line.startswith("#### "):
+                panels.append((line[5:].strip(), [line]))
+            else:
+                panels[-1][1].append(line)
+        if len(panels) < 2:
+            raise GuideError(f"{self.path.name} : un bloc d'onglets en a au moins deux")
+        keys = [slug(name) for name, _ in panels]
+        if len(set(keys)) != len(keys):
+            raise GuideError(f"{self.path.name} : deux onglets du même nom dans un bloc")
+        self.tab_groups += 1
+        base = f"{self.file_anchor}-o{self.tab_groups}"
+        bar = [f'<div class="onglets-barre" role="tablist" aria-label="{esc(UI[self.lang]["tabs_label"])}" hidden>']
+        body = []
+        for (name, content), key in zip(panels, keys):
+            ident = f"{base}-{key}"
+            bar.append(f'<button type="button" role="tab" id="{ident}-b" aria-controls="{ident}" '
+                       f'aria-selected="false" data-os="{esc(key)}">{esc(name)}</button>')
+            inner = self.render(content).replace("<h4 ", '<h4 class="onglet-titre" ', 1)
+            body.append(f'<div class="onglet" role="tabpanel" id="{ident}" aria-labelledby="{ident}-b">{inner}</div>')
+        return f'<div class="onglets">{"".join(bar)}</div>{"".join(body)}</div>'
+
+    def details(self, lines: list[str]) -> str:
+        """Accordéon : `<summary>Titre</summary>` d'abord, puis le contenu."""
+        first = next((k for k, l in enumerate(lines) if l.strip()), None)
+        match = re.match(r"^<summary>(.+)</summary>$", lines[first].strip()) if first is not None else None
+        if not match:
+            raise GuideError(f"{self.path.name} : <details> commence par <summary>Titre</summary>")
+        return (f"<details><summary>{self.inline(match.group(1).strip())}</summary>"
+                f"{self.render(lines[first + 1:])}</details>")
+
     def render(self, lines: list[str]) -> str:
         out: list[str] = []
         i = 0
@@ -460,6 +648,18 @@ class Renderer:
             if not stripped:
                 i += 1
                 continue
+            if stripped == TABS_OPEN:
+                j = self.block_end(lines, i, TABS_CLOSE, "bloc d'onglets")
+                out.append(self.tabs(lines[i + 1:j]))
+                i = j + 1
+                continue
+            if stripped == "<details>":
+                j = self.block_end(lines, i, "</details>", "accordéon")
+                out.append(self.details(lines[i + 1:j]))
+                i = j + 1
+                continue
+            if stripped in (TABS_CLOSE, "</details>") or stripped.startswith("<summary>"):
+                raise GuideError(f"{self.path.name} : {stripped} sans son ouverture")
             if stripped.startswith("```"):
                 j = i + 1
                 while j < len(lines) and not lines[j].strip().startswith("```"):
@@ -495,7 +695,7 @@ class Renderer:
                 while j < len(lines) and lines[j].strip().startswith(">"):
                     quoted.append(re.sub(r"^\s*>\s?", "", lines[j]))
                     j += 1
-                danger = " danger" if quoted and quoted[0].startswith("**Sécurité") else ""
+                danger = " danger" if quoted and quoted[0].startswith(UI[self.lang]["danger"]) else ""
                 out.append(f'<div class="note{danger}">' + self.render(quoted) + "</div>")
                 i = j
                 continue
@@ -504,8 +704,8 @@ class Renderer:
                 continue
             j = i
             para = []
-            while j < len(lines) and lines[j].strip() and not re.match(r"^(#{1,4}\s|```|\||>|-\s|\d+\.\s)",
-                                                                        lines[j].strip()):
+            while j < len(lines) and lines[j].strip() and not re.match(
+                    r"^(#{1,4}\s|```|\||>|-\s|\d+\.\s|<!--|</?details>|<summary>)", lines[j].strip()):
                 para.append(lines[j].strip())
                 j += 1
             if not para:
@@ -648,6 +848,19 @@ class Bubbles:
         return f'<div id="defs" hidden{more}>{items}</div>'
 
 
+def language_bar(lang: str, ui: dict[str, str]) -> str:
+    """Choix de la langue : liens relatifs entre guide/ (français) et guide/<langue>/ (les autres)."""
+    items = []
+    for other in LANGS:
+        name = esc(LANG_NAMES[other])
+        if other == lang:
+            items.append(f'<strong aria-current="page" lang="{other}">{name}</strong>')
+            continue
+        href = ("" if lang == "fr" else "../") + ("" if other == "fr" else f"{other}/")
+        items.append(f'<a href="{href or "./"}" lang="{other}" hreflang="{other}">{name}</a>')
+    return f'<nav class="langues" aria-label="{esc(ui["lang_label"])}">{"".join(items)}</nav>'
+
+
 def render_page(lang: str, images: list[Path] | None = None) -> str:
     """Page complète ; `images` reçoit les schémas SVG utilisés (à publier à côté de la page)."""
     files = guide_files(lang)
@@ -665,6 +878,7 @@ def render_page(lang: str, images: list[Path] | None = None) -> str:
         renderer = Renderer(lang, path, anchors)
         if anchors[path.resolve()] == "top":
             title = lines[0][2:].strip()
+            body.append(language_bar(lang, ui))
             body.append(f'<h1 id="top">{esc(title)}</h1>')
             # Nouvel onglet : l'iframe du site (sandbox sans allow-downloads) ne peut pas télécharger elle-même.
             body.append(f'<p class="telecharger"><a href="{esc(PDF_NAME.format(lang=lang))}" target="_blank" '
@@ -706,7 +920,7 @@ def render_page(lang: str, images: list[Path] | None = None) -> str:
            f'{esc(ui["source"])}</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">'
            "rf-diy.com</a></footer>",
            "</main>", bubbles.footer(ui), f"<script>{(SCRIPT % {'lang': lang}).strip()}</script>",
-           f"<script>{BUBBLES_JS.strip()}</script>", "</body>", "</html>", ""]
+           f"<script>{BUBBLES_JS.strip()}</script>", f"<script>{TABS_JS.strip()}</script>", "</body>", "</html>", ""]
     return "\n".join(out)
 
 

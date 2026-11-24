@@ -11,7 +11,7 @@ abandonnes en cours de route. Les valeurs propres à ton poste sont dans sa fich
 | Question | Réponse |
 |---|---|
 | Modèle du poste | tape son nom (`ic-7300`, `ftdx10`…) et choisis dans la liste (numéro Hamlib dans la fiche : IC-7300MK2 = 3094, FTDX10 = 1042). Pour certains postes, l'assistant rappelle les menus à vérifier (partie 1) |
-| Port série du CAT | le port de **commande** (Debian : proposé d'office ; Windows : le COM noté à la partie 1) |
+| Port série du CAT | le port de **commande** (Debian et Raspberry Pi : proposé d'office ; Windows : le COM noté à la partie 1) |
 | Débit | **identique** au débit CAT réglé dans le poste |
 | Méthode de PTT | **CAT** (proposée) |
 | La voix part-elle par l'USB ? | **oui**, si le poste module par l'USB en phonie (partie 1) ; sinon l'émission sera limitée aux modes données |
@@ -32,8 +32,9 @@ certificat** (utile pour l'application Android, partie 4).
 Il passe tout en revue sans rien modifier : chaque ligne est **OK**, à **surveiller** ou en **échec**, avec la
 marche à suivre. Corrige chaque échec avant d'aller plus loin (menu 8.1 pour un réglage, ou relance l'assistant).
 
-Échecs fréquents à ce stade : mauvais port (Standard au lieu d'Enhanced), CAT RATE du poste différent de 38400,
-carte son du poste prise par le bureau (partie 1.4).
+Échecs fréquents à ce stade : mauvais port (le second port du poste au lieu de celui de la commande ; Yaesu :
+Standard au lieu d'Enhanced), débit du poste différent de celui de l'assistant, carte son du poste prise par le
+bureau (partie 1.4) ; sur un Raspberry Pi, une alimentation trop faible (« sous-tension », partie 2).
 
 ## 3.3 L'essai guidé du poste (menu 2.2)
 
@@ -52,10 +53,12 @@ Copie le **résumé final** affiché à l'écran : il sert au rapport de validat
    (menu 6.1) quelques secondes plus tard.
 2. Ouvre la page `https://<adresse-de-la-station>:8443` depuis un téléphone ou un PC du réseau (détails et
    avertissement du certificat : partie 4), connecte-toi.
-3. Bande autorisée, mode USB ou LSB, charge fictive : appuie sur le **PTT** (bascule : un appui pour émettre, un
-   appui pour revenir en réception), parle normalement quelques secondes, appuie de nouveau.
-4. Regarde l'**ALC** dans la page : il doit bouger sur les pointes de voix sans rester au maximum. Ajuste
-   **RPORT GAIN** sur le poste (menu du mode utilisé) jusqu'à obtenir ce résultat.
+3. Bande autorisée, charge fictive, mode de phonie que ton poste module par l'USB (USB ou LSB ; sur un Icom, USB-D
+   ou LSB-D, partie 1) : appuie sur le **PTT** (bascule : un appui pour émettre, un appui pour revenir en
+   réception), parle normalement quelques secondes, appuie de nouveau.
+4. Regarde l'**ALC** dans la page : il doit bouger sur les pointes de voix sans rester au maximum. Ajuste le niveau
+   d'entrée USB du poste jusqu'à obtenir ce résultat (Icom : **USB MOD Level** ; Yaesu : **RPORT GAIN** dans le menu
+   du mode utilisé ; le nom exact est dans la fiche du poste).
 
 ## 3.5 Les essais de sécurité
 
@@ -72,7 +75,7 @@ poste en réception (vérifie sur l'écran du poste, pas seulement dans la page)
 | 6 | Émettre **au micro du poste** (sans la station) | la page affiche l'opérateur sur place et bloque le PTT à distance pendant l'émission puis 2 minutes |
 | 7 | Pendant une émission, touche **STOP TX** du tableau de bord (menu 1.3) | retour en réception |
 | 8 | Pendant une émission, arrêter la station (menu 1.2) | retour en réception |
-| 9 | Redémarrer le PC, poste allumé | le poste ne passe **jamais** en émission pendant le démarrage |
+| 9 | Redémarrer le PC (ou le Pi), poste allumé | le poste ne passe **jamais** en émission pendant le démarrage |
 
 Un essai qui ne donne pas le résultat attendu : **n'utilise pas la station en émission**, arrête-la (menu 1.2) et
 demande de l'aide (partie 8) avec le rapport du menu 6.3.

@@ -7,11 +7,46 @@ l'utiliser sur le réseau local et à distance. (La documentation technique et l
 | Langue | Guide | Page web |
 |---|---|---|
 | Français | [fr/README.md](fr/README.md) | https://bob56fr.github.io/openRemoteTRX/guide/ |
-| English | to come | |
-| Deutsch | folgt | |
-| Español | próximamente | |
+| English | [en/README.md](en/README.md) | https://bob56fr.github.io/openRemoteTRX/guide/en/ |
+| Deutsch | [de/README.md](de/README.md) | https://bob56fr.github.io/openRemoteTRX/guide/de/ |
+| Español | [es/README.md](es/README.md) | https://bob56fr.github.io/openRemoteTRX/guide/es/ |
 
-Le guide français est la référence ; les traductions suivront.
+Le guide français est la **référence** : toute modification s'y fait d'abord, puis dans les trois traductions (mêmes
+noms de fichiers dans chaque dossier, mêmes blocs d'onglets, d'accordéons et d'encadrés « Sécurité » : les tests le
+vérifient). Traductions allemande et espagnole à faire relire par quelqu'un dont c'est la langue.
+
+## Onglets par système et accordéons
+
+Ce qui diffère selon le système se range dans des onglets ; sur GitHub, ils se lisent l'un sous l'autre :
+
+```
+<!-- onglets -->
+#### Debian
+
+texte pour Debian
+
+#### Raspberry Pi
+
+texte pour le Raspberry Pi
+
+#### Windows
+
+texte pour Windows
+<!-- /onglets -->
+```
+
+Les noms d'onglets sont toujours « Debian », « Raspberry Pi », « Windows », dans toutes les langues : un choix fait
+dans un bloc vaut pour toute la page. Un détail facultatif se replie dans un accordéon (fermé à l'écran, ouvert à
+l'impression) :
+
+```
+<details>
+<summary>Titre</summary>
+
+contenu
+
+</details>
+```
 
 ## Captures d'écran
 

@@ -21,8 +21,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docs" / "site" / "guide"
 PDF_NAME = "guide-openRemoteTRX-{lang}.pdf"      # même nom dans le lien de la page (build_user_guide.py)
-LANGS = ("fr",)
-FOOTER = {"fr": "openRemoteTRX — Guide de l'opérateur"}
+LANGS = ("fr", "en", "de", "es")
+FOOTER = {"fr": "openRemoteTRX — Guide de l'opérateur", "en": "openRemoteTRX — Operator guide",
+          "de": "openRemoteTRX — Bedieneranleitung", "es": "openRemoteTRX — Guía del operador"}
 
 # Ajouté à la page pour l'impression : police de 9,5 pt (environ 20 pages A4), marges serrées, une partie par page,
 # liens de navigation et boutons masqués.
@@ -68,6 +69,7 @@ def build_pdf(lang: str) -> int:
             page = browser.new_page()
             page.goto(page_file.as_uri())
             page.add_style_tag(content=PRINT_CSS)
+            page.evaluate("document.querySelectorAll('details').forEach(function (d) { d.open = true; })")
             page.emulate_media(media="print")
             page.pdf(path=str(out), format="A4", print_background=False, display_header_footer=True,
                      header_template="<span></span>", footer_template=footer,

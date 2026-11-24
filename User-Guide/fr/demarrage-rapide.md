@@ -7,7 +7,8 @@ détail ; reviens-y au premier problème.
 
 - un poste connu de Hamlib, relié au PC : un câble USB pour la plupart des postes récents (commande et son), sinon une
   interface type Digirig ou SignaLink ;
-- un PC sous **Debian 12 ou 13** ou **Windows 10 / 11** 64 bits, allumé en permanence près du poste, relié à la box ;
+- un PC sous **Debian 12 ou 13** ou **Windows 10 / 11** 64 bits, ou un **Raspberry Pi 4 ou 5** (Raspberry Pi OS
+  64 bits, alimentation officielle), allumé en permanence près du poste, relié à la box ;
 - une **charge fictive** pour la première émission ;
 - un téléphone ou un PC avec un navigateur récent.
 
@@ -42,14 +43,17 @@ Ce qui change d'un poste à l'autre, en une ligne ; le détail est dans la fiche
 | État | **validé** (IC-7300MK2) | **en cours** (FTDX10) | pas encore essayé | pas encore essayé |
 | Fiche | [IC-7300MK2](postes/ic7300mk2.md) | [FTDX10](postes/ftdx10.md) | — | — |
 
-Sous Linux, aucun pilote à installer. Pour un poste pas encore essayé : installe le pilote USB depuis le site de son
+Sous Linux (Debian, Raspberry Pi), aucun pilote à installer. Pour un poste pas encore essayé : installe le pilote USB depuis le site de son
 fabricant, et fais les trois essais de l'étape 5 avec un soin particulier.
 
 ## 1. Installer (5 min)
 
 Télécharge le paquet de la dernière version : https://github.com/Bob56fr/openRemoteTRX/releases
 
-**Debian** : extrais `trx-remote-debian-X.Y.Z.zip`, ouvre un terminal dans le dossier obtenu, puis
+<!-- onglets -->
+#### Debian
+
+Extrais `trx-remote-debian-X.Y.Z.zip`, ouvre un terminal dans le dossier obtenu, puis
 
 ```
 sudo bash install.sh
@@ -57,16 +61,33 @@ sudo bash install.sh
 
 Déconnecte-toi puis reconnecte-toi à la fin.
 
-**Windows** :
+#### Raspberry Pi
 
-1. Installe d'abord **Hamlib 64 bits** (`hamlib-w64-X.Y.Z.exe`) : https://github.com/Hamlib/Hamlib/releases
+Carte préparée avec Raspberry Pi Imager (Raspberry Pi OS 64 bits, SSH activé) et système à jour : partie 2, onglet
+Raspberry Pi. Puis le **même paquet que Debian** : avec bureau, exactement comme sous Debian ; sans bureau, depuis
+ton PC :
+
+```
+scp -o User=<compte> trx-remote-debian-X.Y.Z.zip <adresse-du-pi>:
+ssh -t -l <compte> <adresse-du-pi>
+```
+
+et sur le Pi : `unzip -q trx-remote-debian-X.Y.Z.zip && cd trx-remote-debian-X.Y.Z && sudo bash install.sh`.
+Reconnecte-toi à la fin.
+
+#### Windows
+
+1. Installe d'abord **Hamlib 64 bits** 4.7 ou plus récent (`hamlib-w64-X.Y.Z.exe`) :
+   https://github.com/Hamlib/Hamlib/releases
 2. Clic droit sur `trx-remote-windows-X.Y.Z.zip` > Propriétés > **Débloquer**, puis Extraire tout et double-clic sur
    **`installer.cmd`**.
 3. Réseau de la maison en profil **Privé**, **veille désactivée**.
+<!-- /onglets -->
 
 ## 2. Configurer (5 min)
 
-Ouvre **openRemoteTRX Console** (Debian : menu des applications ou `trx-console` ; Windows : menu Démarrer > **openRemoteTRX**),
+Ouvre **openRemoteTRX Console** (Debian : menu des applications ou `trx-console` ; Raspberry Pi sans bureau :
+`ssh -t -l <compte> <adresse-du-pi> trx-console` ; Windows : menu Démarrer > **openRemoteTRX**),
 puis le **menu 2.1** (l'assistant). Le poste n'est que lu : aucune émission. Ce qui compte :
 
 | Question | Réponse |

@@ -11,7 +11,7 @@ Sous Windows, le pilote USB du poste (celui de son fabricant : « Icom USB Drive
 Yaesu…) s'installe **avant** de brancher le câble USB ; sinon Windows peut installer un mauvais pilote. Le nom, la
 version minimale et la marche à suivre sont dans la fiche du poste, « Pilote USB », sinon sur le site du fabricant.
 
-Sous Debian, rien à installer : le noyau reconnaît le poste tout seul.
+Sous Debian et sur un Raspberry Pi, rien à installer : le noyau reconnaît le poste tout seul.
 
 ## 1.2 Brancher
 
@@ -23,8 +23,21 @@ Le PC voit alors un ou deux **ports série** et une **carte son**. La fiche du p
 (IC-7300MK2 : le premier, le second sert au spectre HF ; FTDX10 : l'« Enhanced COM Port », le « Standard » ne sert
 pas).
 
-Sous Windows : Gestionnaire de périphériques > Ports (COM et LPT), note le numéro COM du port de commande. Sous
-Debian, l'assistant reconnaît lui-même le bon port.
+<!-- onglets -->
+#### Debian
+
+Rien à noter : l'assistant reconnaît lui-même le bon port. Pour le voir : `ls -l /dev/serial/by-id/` dans un
+terminal (un nom stable par port, qui ne change pas d'une prise USB à l'autre).
+
+#### Raspberry Pi
+
+Comme sous Debian. Branche le câble du poste **directement** sur un port USB du Pi (les ports bleus USB 3 vont aussi) ;
+un hub, seulement s'il a sa propre alimentation : le Pi ne fournit pas assez de courant à plusieurs appareils.
+
+#### Windows
+
+Gestionnaire de périphériques > Ports (COM et LPT) : note le numéro COM du port de commande.
+<!-- /onglets -->
 
 ## 1.3 Régler les menus du poste
 
@@ -57,7 +70,20 @@ indispensables :
 La carte son du poste ne doit **jamais** être le son par défaut du PC, sinon les sons du bureau partent vers le
 poste (et le bureau occupe la carte) :
 
-- Debian : *Paramètres > Son* : en sortie les haut-parleurs du PC, en entrée son micro.
-- Windows : *Paramètres > Système > Son* : idem ; dans « Plus de paramètres de son », la carte du poste n'est ni
-  « Périphérique par défaut » ni « Périphérique de communication par défaut » ; schéma de sons « Aucun son ». Le
-  détail est dans la notice Windows jointe au paquet.
+<!-- onglets -->
+#### Debian
+
+*Paramètres > Son* : en sortie les haut-parleurs du PC, en entrée son micro.
+
+#### Raspberry Pi
+
+Sans bureau (Raspberry Pi OS Lite) : rien à faire, aucun programme ne prend la carte du poste. Avec bureau : comme
+sous Debian, dans les réglages du son de la barre du haut. La carte son du Pi lui-même (« Headphones », « HDMI ») ne
+sert pas à la station.
+
+#### Windows
+
+*Paramètres > Système > Son* : en sortie les haut-parleurs du PC, en entrée son micro ; dans « Plus de paramètres de
+son », la carte du poste n'est ni « Périphérique par défaut » ni « Périphérique de communication par défaut » ;
+schéma de sons « Aucun son ». Le détail est dans la notice Windows jointe au paquet.
+<!-- /onglets -->

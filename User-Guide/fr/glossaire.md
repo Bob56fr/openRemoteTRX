@@ -8,11 +8,13 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | Terme | Ce que c'est |
 |---|---|
 | **Poste**, **TRX** | ton émetteur-récepteur radio |
-| **PC de la station** | l'ordinateur posé à côté du poste, allumé en permanence, qui fait tourner la station |
+| **PC de la station** | l'ordinateur posé à côté du poste, allumé en permanence, qui fait tourner la station : un PC sous Debian ou Windows, ou un Raspberry Pi |
+| **Raspberry Pi** | petit ordinateur sur une carte, peu gourmand ; le Pi 4 (4 Go) ou le Pi 5 sous Raspberry Pi OS 64 bits peut servir de PC de la station |
+| **Chien de garde matériel** (watchdog) | une puce du Raspberry Pi qui le redémarre si le système se fige plus de 15 s ; mise en marche par l'installation |
 | **Station** | l'ensemble poste + PC + logiciel openRemoteTRX ; « démarrer la station » = démarrer ses services |
 | **CAT** | *Computer Aided Transceiver* : la commande du poste par l'ordinateur (fréquence, mode, émission…) |
 | **Enhanced COM Port** / **Standard COM Port** | les deux ports série que certains Yaesu (FTDX10…) créent sur le PC par son câble USB : le premier sert au CAT, le second (lignes RTS/DTR) n'est pas utilisé par la station |
-| **USB Audio CODEC** | la carte son intégrée au poste, vue par le PC : son reçu vers le PC, voix vers le poste |
+| **Carte son du poste** | la carte son intégrée au poste, vue par le PC par le câble USB (« USB Audio CODEC » chez Yaesu, « USB Audio Device » sur l'IC-7300MK2) : son reçu vers le PC, voix vers le poste |
 | **Charge fictive** | résistance de 50 Ω qui remplace l'antenne : le poste émet sans rayonner. Obligatoire pour tous les essais |
 | **ALC** | indicateur du poste qui montre si la modulation est trop forte ; sert à régler le niveau de la voix |
 | **TOS** (SWR) | taux d'ondes stationnaires : adaptation de l'antenne. La station sait le mesurer sur une bande |
@@ -31,6 +33,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **openRemoteTRX Console** (`trx-console`) | le tableau de commande de la station dans un terminal : installer, configurer, démarrer, essayer, mettre à jour, dépanner (menus numérotés « 2.1 », « 2.2 »…) |
 | **Assistant de configuration** (`trx-setup`) | les questions qui créent la configuration (menu 2.1) ; il n'interroge le poste qu'en lecture |
 | **Tableau de bord** (`trx-monitor`) | l'état en direct dans un terminal (menu 1.3) ; une seule action : STOP TX |
+| **Tableau de bord des signes vitaux** | page en lecture seule (port 8450, Debian et Raspberry Pi) pour un petit écran près du poste ou un téléphone |
 | **Indicateur** | le voyant de la station dans la barre du haut (Debian) ou près de l'horloge (Windows) ; lecture seule |
 | **Essai guidé** (`trx-hwtest`) | l'essai pas à pas du vrai poste (menu 2.2) |
 | **Qualification** (`trx-qualif`) | l'exploration complète de ce que Hamlib déclare pour un poste (menu 8.3), pour experts |
@@ -79,6 +82,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **VPN** | un tunnel chiffré qui met le téléphone « dans » le réseau de la maison, de n'importe où (WireGuard, Tailscale…) |
 | **Profil VPN** | les clés d'un appareil dans le VPN : un profil par appareil, jamais partagé |
 | **Port ouvert** | la box qui laisse entrer depuis Internet vers la station ; demande un vrai certificat et un mot de passe fort |
+| **SSH** | la connexion chiffrée qui ouvre un terminal d'une autre machine depuis ton PC : `ssh -l <compte> <adresse>` ; sert à piloter un Raspberry Pi sans écran |
 | **CGNAT** | adresse partagée par l'opérateur entre plusieurs clients : aucun port ne peut être ouvert, il faut un VPN |
 | **ntfy** | le service de notifications qui porte les alertes de la station sur ton téléphone |
 | **Code ORT** | le numéro d'un message de la station (« ORT-5031 ») ; chaque code a sa page d'explication |

@@ -1,0 +1,926 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fabriqué par scripts/build_user_guide.py à partir de User-Guide/ : ne pas modifier à la main. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commissioning an openRemoteTRX station: operator guide</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .6rem}
+h2{font-size:1.35rem;margin:2.6rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.1rem;margin:1.6rem 0 .4rem}
+h4{font-size:1rem;margin:1.2rem 0 .3rem;color:var(--doux)}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent);overflow-wrap:anywhere}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;
+  overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+pre code{background:none;border:0;padding:0}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.25rem 0}
+li>p{margin:.2rem 0}
+.table{overflow-x:auto;margin:.6rem 0 1rem}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{border-bottom:1px solid var(--ligne);padding:.45rem .4rem;text-align:left;vertical-align:top}
+th{color:var(--doux);font-weight:600}
+.note{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
+  padding:.5rem 1rem;margin:1rem 0}
+.note.danger{border-left-color:var(--emission)}
+.partie{scroll-margin-top:1rem}
+.haut{font-size:.85rem;color:var(--doux)}
+.cases{list-style:none;margin:.3rem 0 1rem;padding:0}
+.cases li{margin:.15rem 0}
+.cases label{display:flex;gap:.6rem;align-items:flex-start;background:var(--carte);border:1px solid var(--ligne);
+  border-radius:.5rem;padding:.45rem .7rem;cursor:pointer}
+.cases input{width:1.15rem;height:1.15rem;margin:.2rem 0 0;flex:none;accent-color:var(--ok)}
+.cases input:checked+span{color:var(--doux);text-decoration:line-through}
+.outils{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;background:var(--carte);border:1px solid var(--ligne);
+  border-radius:.6rem;padding:.6rem .9rem;margin:1rem 0}
+.outils strong{margin-right:auto}
+.barre{flex-basis:100%;height:.5rem;background:var(--code);border-radius:.3rem;overflow:hidden}
+.barre span{display:block;height:100%;width:0;background:var(--ok)}
+.memo{flex-basis:100%;color:var(--doux);font-size:.85rem;margin:0}
+button{font:inherit;color:var(--texte);background:var(--fond);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.2rem .9rem;cursor:pointer}
+button:hover{border-color:var(--accent)}
+.schema{margin:1rem 0 1.2rem;text-align:center}
+.schema-svg{display:block;width:100%;max-width:40rem;height:auto;margin:0 auto}
+.capture{margin:1rem 0 1.2rem;text-align:center}
+.capture img{display:block;max-width:100%;height:auto;margin:0 auto;border:1px solid var(--ligne);border-radius:.4rem}
+.capture.portrait img{max-width:min(100%,20rem)}
+figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
+.telecharger{margin:.2rem 0 1rem;font-size:.95rem}
+.telecharger a{display:inline-block;border:1px solid var(--ligne);border-radius:2rem;padding:.2rem .9rem;
+  text-decoration:none}
+.telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
+footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+.langues{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:flex-end;margin:0 0 .4rem;font-size:.9rem}
+.langues a,.langues strong{border:1px solid var(--ligne);border-radius:2rem;padding:.1rem .7rem;text-decoration:none}
+.langues strong{background:var(--carte);border-color:var(--accent);font-weight:600}
+.onglets{margin:.8rem 0 1.2rem;border:1px solid var(--ligne);border-radius:.6rem;background:var(--carte)}
+.onglets-barre{display:flex;flex-wrap:wrap;gap:.3rem;padding:.45rem .5rem 0;border-bottom:1px solid var(--ligne)}
+.onglets-barre button{border-radius:.5rem .5rem 0 0;border-bottom:0;margin-bottom:-1px;padding:.35rem 1rem;
+  background:var(--fond);color:var(--doux)}
+.onglets-barre button[aria-selected="true"]{background:var(--carte);color:var(--texte);border-color:var(--accent);
+  border-bottom:1px solid var(--carte);font-weight:600}
+.onglet{padding:.2rem 1rem .6rem}
+.onglets.actifs .onglet>.onglet-titre{display:none}
+.onglet-titre{color:var(--accent)}
+details{background:var(--carte);border:1px solid var(--ligne);border-radius:.5rem;padding:.3rem .9rem;margin:.6rem 0}
+details>summary{cursor:pointer;font-weight:600;padding:.2rem 0}
+details[open]>summary{margin-bottom:.3rem}
+@media (max-width:30rem){.onglets-barre button{flex:1 1 auto;padding:.35rem .5rem}.onglet{padding:.2rem .6rem .6rem}}
+@media print{
+  :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
+  .outils button,.haut,.telecharger,footer,.langues,.onglets-barre{display:none}
+  .onglet[hidden]{display:block!important}
+  .onglets.actifs .onglet>.onglet-titre{display:block}
+  a{color:#000}
+  .partie{break-before:page}
+}
+
+.terme{border-bottom:1px dotted var(--accent);cursor:help}
+.terme:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.bulle{position:absolute;z-index:10;max-width:min(22rem,calc(100vw - 16px));background:var(--carte);
+  border:1px solid var(--accent);border-radius:.5rem;padding:.5rem .75rem;font-size:.9rem;line-height:1.45;
+  box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.bulle>strong{display:block;margin-bottom:.15rem}
+.bulle .plus{display:inline-block;margin-top:.35rem;font-size:.85rem}
+@media print{.terme{border:0}.bulle{display:none}}</style>
+</head>
+<body>
+<main>
+<nav class="langues" aria-label="Language"><a href="../" lang="fr" hreflang="fr">Français</a><strong aria-current="page" lang="en">English</strong><a href="../de/" lang="de" hreflang="de">Deutsch</a><a href="../es/" lang="es" hreflang="es">Español</a></nav>
+<h1 id="top">Commissioning an openRemoteTRX station: operator guide</h1>
+<p class="telecharger"><a href="guide-openRemoteTRX-en.pdf" target="_blank" rel="noopener">Download as PDF</a><span>A4, one part per page, to print</span></p>
+<p>This guide takes you, step by step, from unpacking to the first link from outside. It applies to any transceiver known to <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span>; what is specific to one model (USB driver, menus, ports) is in its <strong>transceiver sheet</strong>:</p>
+<ul>
+<li><a href="#poste-ic7300mk2">Icom IC-7300MK2</a>: <strong>validated</strong> on a real transceiver;</li>
+<li><a href="#poste-ftdx10">Yaesu FTDX10</a>: prepared, <strong>validation in progress</strong>.</li>
+</ul>
+<p>For another transceiver: its manual, the “Depending on your brand” table of the <a href="#demarrage-rapide">quick start</a>, and the tests of part 3, which serve as validation: do them all, on a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span>, and report the result (part 8, “Asking for help”). Status of each transceiver tested: <a href="https://bob56fr.github.io/openRemoteTRX/postes/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/postes/</a></p>
+<div class="note"><p><strong>In a hurry?</strong> The <a href="#demarrage-rapide">quick start</a> takes you from the connected transceiver to the web page in a quarter of an hour, transceiver <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span> included. Come back to the parts below at the first problem.</p></div>
+<h3 id="top-the-path">The path</h3>
+<div class="table"><table><thead><tr><th>Part</th><th>What you do</th><th>Approximate time</th></tr></thead><tbody><tr><td><a href="#demarrage-rapide">Quick start</a></td><td>the essentials for the impatient, safety tests included</td><td>15 min</td></tr><tr><td><a href="#p-00">0. Before you start</a></td><td>hardware, regulations, choosing Debian, Raspberry Pi or Windows</td><td>15 min of reading</td></tr><tr><td><a href="#p-01">1. Prepare the transceiver</a></td><td>cabling, USB driver, transceiver menus</td><td>30 min</td></tr><tr><td><a href="#p-02">2. Install the station</a></td><td>software on the PC or the Raspberry Pi</td><td>20 min (Pi: 1 h with the SD card)</td></tr><tr><td><a href="#p-03">3. Integrate the TRX and test it</a></td><td>wizard, receive then transmit tests, safety tests</td><td>1 h 30</td></tr><tr><td><a href="#p-04">4. Use on the local network</a></td><td>web page, phone, Android app</td><td>30 min</td></tr><tr><td><a href="#p-05">5. Use remotely</a></td><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> or exposed port, test over 4G</td><td>1 h</td></tr><tr><td><a href="#p-06">6. Unattended station</a></td><td>alerts, restart after a power cut, protections</td><td>30 min</td></tr><tr><td><a href="#p-07">7. Day-to-day operation</a></td><td>start, monitor, update, back up</td><td>to read</td></tr><tr><td><a href="#p-08">8. Troubleshooting</a></td><td>error codes, common problems, asking for help</td><td>when needed</td></tr><tr><td><a href="#p-09">9. Optional features</a></td><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-visitor">visitors</span>, DX Cluster, FreeDV, SELCALL, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-swr">SWR</span>…</td><td>as you wish</td></tr><tr><td><a href="#glossaire">Glossary</a></td><td>the project&#x27;s words: who is what</td><td>when needed</td></tr><tr><td><a href="#p-10">10. Checklist</a></td><td>know where you stand</td><td></td></tr></tbody></table></div>
+<p>Transceiver sheets: <a href="#poste-ic7300mk2">Icom IC-7300MK2</a>, <a href="#poste-ftdx10">Yaesu FTDX10</a>. Diagram of the station&#x27;s building blocks: part 0, “How it is organised”.</p>
+<h3 id="top-how-to-read-this-guide">How to read this guide</h3>
+<ul>
+<li>The <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> menus</strong> are given by their number: “menu 2.1” = theme 2 (Transceiver and hardware), menu 1. On Windows, the shortcut Start menu &gt; <strong>openRemoteTRX</strong> opens the same console (part 2). The console opens in <strong>full screen</strong>: themes on the left with their icon (arrows and Enter), help for the selected menu on the right; you can also type the number in the text console (<code>trx-console --texte</code>).</li>
+<li>A <strong>“Safety”</strong> box marks a point that concerns transmission: do not skip it.</li>
+<li>What changes with the system is arranged in <strong>tabs</strong> Debian / Raspberry Pi / Windows: choose yours once, it is remembered for the whole page. On GitHub, the tabs are shown one below the other.</li>
+<li>This guide also exists as a web page, with a checklist you tick online, and as a <strong>PDF</strong> to print (link “Download as PDF” at the top of the page): <a href="https://bob56fr.github.io/openRemoteTRX/guide/en/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/guide/en/</a></li>
+</ul>
+<section id="s-demarrage-rapide"><h2 id="demarrage-rapide" class="partie">Quick start</h2>
+<p>For the impatient: your transceiver in the browser in a quarter of an hour. The rest of the guide explains each step in detail; come back to it at the first problem.</p>
+<h3 id="demarrage-rapide-you-need">You need</h3>
+<ul>
+<li>a transceiver known to <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span>, connected to the PC: a USB cable for most recent transceivers (control and audio), otherwise an interface such as Digirig or SignaLink;</li>
+<li>a PC running <strong>Debian 12 or 13</strong> or <strong>Windows 10 / 11</strong> 64-bit, or a <strong>Raspberry Pi 4 or 5</strong> (Raspberry Pi OS 64-bit, official power supply), always on near the transceiver, connected to the internet box;</li>
+<li>a <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span></strong> for the first transmission;</li>
+<li>a phone or a PC with a recent browser.</li>
+</ul>
+<h3 id="demarrage-rapide-0-first-the-transceiver-tot-2-min">0. First, the transceiver TOT (2 min)</h3>
+<div class="note danger"><p><strong>Safety.</strong> The <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span></strong> (<em>Time Out Timer</em>) is the timer that cuts the transmission after a maximum time. Set the transceiver&#x27;s one <strong>before anything else</strong>.</p></div>
+<p><strong>Why?</strong> Remotely, you cannot see your transceiver. If the station PC freezes, if the USB cable comes loose or if a program crashes during a transmission, nobody can put the transceiver back to receive any more: it would keep transmitting a carrier, block the frequency, heat up, and you would remain responsible.</p>
+<p><strong>What it is for.</strong> The station has its own TOT (90 s by default) and a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span> that watches it. The transceiver TOT is the <strong>last barrier</strong>: it is inside the transceiver itself, it cuts even when the PC, the cable or the station has failed.</p>
+<p><strong>How.</strong> In the transceiver menu, look for “Time-Out Timer” (“Time-Out Timer (CI-V)” on Icom) or “TX TIME OUT TIMER” and choose <strong>3 minutes</strong>: longer than the station TOT, it never cuts a normal transmission.</p>
+<p>The menu path for your brand is in the table below. On the IC-7300MK2, the station reads this setting back at each connection and warns you if it is OFF.</p>
+<h3 id="demarrage-rapide-depending-on-your-brand">Depending on your brand</h3>
+<p>What changes from one transceiver to another, in one line; the details are in the transceiver sheet when there is one.</p>
+<div class="table"><table><thead><tr><th></th><th>Icom</th><th>Yaesu</th><th>Kenwood</th><th>Xiegu</th></tr></thead><tbody><tr><td>USB driver (Windows)</td><td>“Icom USB Driver”, version <strong>1.80 or later</strong></td><td>Silicon Labs <strong>CP210x</strong>; “Enhanced” port for control</td><td>manufacturer&#x27;s driver</td><td>manufacturer&#x27;s driver</td></tr><tr><td>Transceiver <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span></td><td>MENU &gt; SET &gt; Function &gt; Time-Out Timer (CI-V)</td><td>OPERATION SETTING &gt; GENERAL &gt; TX TIME OUT TIMER</td><td>transceiver manual</td><td>transceiver manual</td></tr><tr><td>Voice over USB</td><td>MENU &gt; SET &gt; Connectors &gt; DATA MOD = <strong>USB</strong> (transmit in USB-D / LSB-D)</td><td>MOD SOURCE = <strong>REAR</strong> and REAR SELECT = <strong>USB</strong>, in each mode</td><td>transceiver manual</td><td>transceiver manual</td></tr><tr><td>Status</td><td><strong>validated</strong> (IC-7300MK2)</td><td><strong>in progress</strong> (FTDX10)</td><td>not tested yet</td><td>not tested yet</td></tr><tr><td>Sheet</td><td><a href="#poste-ic7300mk2">IC-7300MK2</a></td><td><a href="#poste-ftdx10">FTDX10</a></td><td>—</td><td>—</td></tr></tbody></table></div>
+<p>On Linux (Debian, Raspberry Pi), no driver to install. For a transceiver not tested yet: install the USB driver from its manufacturer&#x27;s website, and do the three tests of step 5 with particular care.</p>
+<h3 id="demarrage-rapide-1-install-5-min">1. Install (5 min)</h3>
+<p>Download the package of the latest version: <a href="https://github.com/Bob56fr/openRemoteTRX/releases" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/releases</a></p>
+<div class="onglets"><div class="onglets-barre" role="tablist" aria-label="Choose the system" hidden><button type="button" role="tab" id="demarrage-rapide-o1-debian-b" aria-controls="demarrage-rapide-o1-debian" aria-selected="false" data-os="debian">Debian</button><button type="button" role="tab" id="demarrage-rapide-o1-raspberry-pi-b" aria-controls="demarrage-rapide-o1-raspberry-pi" aria-selected="false" data-os="raspberry-pi">Raspberry Pi</button><button type="button" role="tab" id="demarrage-rapide-o1-windows-b" aria-controls="demarrage-rapide-o1-windows" aria-selected="false" data-os="windows">Windows</button></div><div class="onglet" role="tabpanel" id="demarrage-rapide-o1-debian" aria-labelledby="demarrage-rapide-o1-debian-b"><h4 class="onglet-titre" id="demarrage-rapide-debian">Debian</h4>
+<p>Extract <code>trx-remote-debian-X.Y.Z.zip</code>, open a terminal in the folder obtained, then</p>
+<pre><code>sudo bash install.sh</code></pre>
+<p>Log out and log back in at the end.</p></div><div class="onglet" role="tabpanel" id="demarrage-rapide-o1-raspberry-pi" aria-labelledby="demarrage-rapide-o1-raspberry-pi-b"><h4 class="onglet-titre" id="demarrage-rapide-raspberry-pi">Raspberry Pi</h4>
+<p>Card prepared with Raspberry Pi Imager (Raspberry Pi OS 64-bit, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ssh">SSH</span> enabled) and system up to date: part 2, Raspberry Pi tab. Then the <strong>same package as Debian</strong>: with a desktop, exactly as on Debian; without a desktop, from your PC:</p>
+<pre><code>scp -o User=&lt;account&gt; trx-remote-debian-X.Y.Z.zip &lt;pi-address&gt;:
+ssh -t -l &lt;account&gt; &lt;pi-address&gt;</code></pre>
+<p>and on the Pi: <code>unzip -q trx-remote-debian-X.Y.Z.zip &amp;&amp; cd trx-remote-debian-X.Y.Z &amp;&amp; sudo bash install.sh</code>. Log back in at the end.</p></div><div class="onglet" role="tabpanel" id="demarrage-rapide-o1-windows" aria-labelledby="demarrage-rapide-o1-windows-b"><h4 class="onglet-titre" id="demarrage-rapide-windows">Windows</h4>
+<ol>
+<li>First install <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> 64-bit</strong> 4.7 or later (<code>hamlib-w64-X.Y.Z.exe</code>): <a href="https://github.com/Hamlib/Hamlib/releases" target="_blank" rel="noopener noreferrer">https://github.com/Hamlib/Hamlib/releases</a></li>
+<li>Right-click <code>trx-remote-windows-X.Y.Z.zip</code> &gt; Properties &gt; <strong>Unblock</strong>, then Extract All and double-click <strong><code>installer.cmd</code></strong>.</li>
+<li>Home network set to the <strong>Private</strong> profile, <strong>sleep disabled</strong>.</li>
+</ol></div></div>
+<h3 id="demarrage-rapide-2-configure-5-min">2. Configure (5 min)</h3>
+<p>Open <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span></strong> (Debian: applications menu or <code>trx-console</code>; Raspberry Pi without a desktop: <code>ssh -t -l &lt;account&gt; &lt;pi-address&gt; trx-console</code>; Windows: Start menu &gt; <strong>openRemoteTRX</strong>), then <strong>menu 2.1</strong> (the wizard). The transceiver is only read: no transmission. What matters:</p>
+<div class="table"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>Model</td><td>type the transceiver name (e.g. <code>ic-7300</code>, <code>ftdx10</code>), choose from the list</td></tr><tr><td>Port and speed</td><td>the transceiver port; the speed set in the transceiver&#x27;s <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> menu</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span></td><td><strong>CAT</strong> if the wizard offers it</td></tr><tr><td>Sound cards</td><td>the transceiver&#x27;s one, for receive and for transmit</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-allowed-bands">Allowed bands</span></td><td>the bands of <strong>your licence</strong>, nothing else. Empty list = receive only</td></tr><tr><td>Maximum duration of a transmission (station <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span>)</td><td><strong>90</strong> seconds (offered, 120 at most)</td></tr><tr><td>Network access</td><td>“<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">Local network</span> or <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span>, over <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">HTTPS</span>” (offered)</td></tr><tr><td>Account</td><td>a username; Enter on the password generates a strong one: <strong>write it down</strong></td></tr></tbody></table></div>
+<p>For everything else, Enter keeps the offered value.</p>
+<h3 id="demarrage-rapide-3-start-and-check-2-min">3. Start and check (2 min)</h3>
+<ol>
+<li><strong>Menu 1.1</strong>: the station starts, transceiver in receive.</li>
+<li><strong>Menu 6.1</strong> (diagnostic): fix each line in <strong>failure</strong> before going further; the line says what to do.</li>
+</ol>
+<h3 id="demarrage-rapide-4-connect-1-min">4. Connect (1 min)</h3>
+<ol>
+<li>On the phone or a PC at home: <code>https://&lt;station-address&gt;:8443</code> (address shown at the top of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>).</li>
+<li><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">Certificate</span> warning: “Advanced” then “Proceed”. This is normal (certificate made by your station); to stop seeing it: menu 4.4.</li>
+<li>Log in with the wizard&#x27;s account. No sound: tap the sound button, the browser had blocked it.</li>
+</ol>
+<p>Reserve the PC&#x27;s address in your internet box (DHCP reservation): if it changes, the certificate is no longer valid.</p>
+<h3 id="demarrage-rapide-5-before-the-first-transmission-three-tests-3-min">5. Before the first transmission: three tests (3 min)</h3>
+<div class="note danger"><p><strong>Safety.</strong> <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">Dummy load</span> connected, reduced power, a band of your licence. The <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> is a toggle</strong>: one press to transmit, one press to go back to receive. After each test, look at the <strong>transceiver&#x27;s display</strong>, not only the page.</p></div>
+<div class="table"><table><thead><tr><th>Test</th><th>Expected</th></tr></thead><tbody><tr><td>During a transmission, <strong>STOP</strong> button</td><td>immediate receive</td></tr><tr><td>During a transmission, close the tab (or turn off the phone&#x27;s Wi-Fi)</td><td>receive in about 2 s</td></tr><tr><td>Frequency outside your bands, then PTT</td><td>transmission <strong>refused</strong>, message in the page</td></tr></tbody></table></div>
+<p>A single failed test: <strong>do not transmit</strong>, stop the station (menu 1.2) and read part 8. The nine complete tests are in part 3.5: do them before transmitting on an antenna.</p>
+<h3 id="demarrage-rapide-next">Next</h3>
+<ul>
+<li><strong>Android app</strong>: menu 4.1, QR code to scan (app in invitation-only testing, part 0).</li>
+<li><strong>From outside</strong> (4G, another network): <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> or <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-open-port">open port</span>, part 5.</li>
+<li><strong>Alerts on the phone</strong>: menu 3.5, with a test alert.</li>
+<li><strong>A problem</strong>: menu 6.1, then the report from menu 6.3 to attach to a request for help (part 8).</li>
+<li><strong>All the console menus</strong>: <a href="https://bob56fr.github.io/openRemoteTRX/console/en/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/console/en/</a></li>
+</ul><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-00"><h2 id="p-00" class="partie">0. Before you start</h2>
+<h3 id="p-00-what-you-will-get">What you will get</h3>
+<ul>
+<li>Your transceiver controlled from a <strong>browser</strong> (PC, tablet, phone) or the <strong>Android app</strong>: frequency, mode, filters, S-meter, received audio, and <strong>voice transmission</strong> with the phone&#x27;s or the PC&#x27;s microphone.</li>
+<li>A station that <strong>protects itself</strong>: it always starts in receive, cuts the transmission after a maximum duration (90 s by default), if the phone stops answering or if the link drops, and refuses to transmit outside the bands you have declared.</li>
+<li>An independent <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span></strong> that watches the station and can send you alerts on your phone.</li>
+</ul>
+<h3 id="p-00-how-it-is-organised">How it is organised</h3>
+<figure class="schema"><svg class="schema-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 990" width="640" height="990" role="img" aria-labelledby="titre desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <title id="titre">Les briques d'une station openRemoteTRX</title>
+  <desc id="desc">De haut en bas : l'utilisateur (navigateur ou application Android) joint par le réseau la passerelle du PC de la station ; la passerelle commande le poste par rigctld (Hamlib) et échange le son avec sa carte son ; le superviseur surveille le tout, ne peut que couper l'émission et envoie les alertes ntfy ; openRemoteTRX Console, trx-monitor et l'indicateur lisent l'état ; station.toml porte la configuration ; le poste est relié par un seul câble USB.</desc>
+  <defs>
+    <marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9aa8bb"/>
+    </marker>
+    <marker id="flecheR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e0524a"/>
+    </marker>
+  </defs>
+  <rect width="640" height="990" rx="14" fill="#0f141c"/>
+
+  <!-- Côté utilisateur -->
+  <text x="20" y="34" fill="#9aa8bb" font-size="15" font-weight="600" letter-spacing=".5">CÔTÉ UTILISATEUR</text>
+  <rect x="20" y="48" width="285" height="96" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2"/>
+  <text x="162" y="84" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">Navigateur</text>
+  <text x="162" y="108" fill="#9aa8bb" font-size="15" text-anchor="middle">la page web de la station</text>
+  <text x="162" y="128" fill="#9aa8bb" font-size="15" text-anchor="middle">(PC, tablette, téléphone)</text>
+  <rect x="335" y="48" width="285" height="96" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2"/>
+  <text x="477" y="84" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">Application Android</text>
+  <text x="477" y="108" fill="#9aa8bb" font-size="15" text-anchor="middle">openRemoteTRX</text>
+  <text x="477" y="128" fill="#9aa8bb" font-size="15" text-anchor="middle">+ Android Auto en voiture</text>
+
+  <!-- Réseau -->
+  <line x1="162" y1="146" x2="162" y2="268" stroke="#9aa8bb" stroke-width="2" marker-start="url(#fleche)" marker-end="url(#fleche)"/>
+  <line x1="477" y1="146" x2="477" y2="268" stroke="#9aa8bb" stroke-width="2" marker-start="url(#fleche)" marker-end="url(#fleche)"/>
+  <rect x="80" y="172" width="480" height="66" rx="33" fill="#0b1017" stroke="#2a3445" stroke-width="1.5"/>
+  <text x="320" y="200" fill="#dbe3ee" font-size="16" font-weight="600" text-anchor="middle">Réseau local, VPN ou Internet</text>
+  <text x="320" y="223" fill="#9aa8bb" font-size="14" text-anchor="middle">HTTPS port 8443 (commandes) + WebRTC (son)</text>
+
+  <!-- PC de la station -->
+  <rect x="10" y="252" width="620" height="540" rx="12" fill="none" stroke="#2a3445" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="360" y="742" fill="#9aa8bb" font-size="15" font-weight="600" letter-spacing=".5">PC DE LA STATION</text>
+  <text x="360" y="764" fill="#9aa8bb" font-size="14">(Debian ou Windows)</text>
+
+  <rect x="30" y="272" width="580" height="110" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2.5"/>
+  <text x="320" y="306" fill="#dbe3ee" font-size="20" font-weight="700" text-anchor="middle">Passerelle  ·  trx-gateway</text>
+  <text x="320" y="331" fill="#9aa8bb" font-size="15" text-anchor="middle">sert la page, vérifie les comptes, transporte le son,</text>
+  <text x="320" y="352" fill="#9aa8bb" font-size="15" text-anchor="middle">décide de l'émission : PTT en bascule, TOT, bandes,</text>
+  <text x="320" y="373" fill="#9aa8bb" font-size="15" text-anchor="middle">retour en réception si le téléphone ne répond plus</text>
+
+  <rect x="30" y="432" width="270" height="96" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2"/>
+  <text x="165" y="466" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">rigctld (Hamlib)</text>
+  <text x="165" y="490" fill="#9aa8bb" font-size="15" text-anchor="middle">parle au poste ; écoute sur</text>
+  <text x="165" y="510" fill="#9aa8bb" font-size="15" text-anchor="middle">cette machine seulement</text>
+
+  <rect x="340" y="432" width="270" height="96" rx="10" fill="#171e29" stroke="#e0524a" stroke-width="2"/>
+  <text x="475" y="466" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">Superviseur</text>
+  <text x="475" y="490" fill="#9aa8bb" font-size="15" text-anchor="middle">trx-supervisor : surveille,</text>
+  <text x="475" y="510" fill="#9aa8bb" font-size="15" text-anchor="middle">ne peut que COUPER l'émission</text>
+
+  <rect x="90" y="580" width="210" height="80" rx="10" fill="#171e29" stroke="#3fae72" stroke-width="2"/>
+  <text x="195" y="613" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">station.toml</text>
+  <text x="195" y="638" fill="#9aa8bb" font-size="15" text-anchor="middle">la configuration</text>
+
+  <rect x="340" y="580" width="270" height="110" rx="10" fill="#171e29" stroke="#3fae72" stroke-width="2"/>
+  <text x="475" y="612" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">Outils de la station</text>
+  <text x="475" y="636" fill="#9aa8bb" font-size="15" text-anchor="middle">openRemoteTRX Console, trx-monitor,</text>
+  <text x="475" y="656" fill="#9aa8bb" font-size="15" text-anchor="middle">indicateur : lisent l'état ;</text>
+  <text x="475" y="676" fill="#9aa8bb" font-size="15" text-anchor="middle">seule action : STOP TX</text>
+
+  <!-- Flux internes -->
+  <line x1="165" y1="384" x2="165" y2="430" stroke="#9aa8bb" stroke-width="2" marker-end="url(#fleche)"/>
+  <text x="173" y="412" fill="#9aa8bb" font-size="13">commandes</text>
+  <line x1="475" y1="430" x2="475" y2="386" stroke="#e0524a" stroke-width="2" marker-end="url(#flecheR)"/>
+  <text x="483" y="412" fill="#e0524a" font-size="13">surveille, relance</text>
+  <line x1="338" y1="470" x2="302" y2="470" stroke="#e0524a" stroke-width="2" marker-end="url(#flecheR)"/>
+
+  <!-- Vers le poste et les alertes -->
+  <line x1="55" y1="530" x2="55" y2="838" stroke="#9aa8bb" stroke-width="2" marker-end="url(#fleche)"/>
+  <text x="62" y="740" fill="#9aa8bb" font-size="14">CAT</text>
+  <line x1="320" y1="384" x2="320" y2="838" stroke="#9aa8bb" stroke-width="2" marker-start="url(#fleche)" marker-end="url(#fleche)"/>
+  <text x="328" y="560" fill="#9aa8bb" font-size="14">son</text>
+  <polyline points="612,480 622,480 622,836" fill="none" stroke="#e0524a" stroke-width="2" marker-end="url(#flecheR)"/>
+
+  <!-- Poste et alertes -->
+  <rect x="30" y="840" width="380" height="130" rx="10" fill="#171e29" stroke="#dbe3ee" stroke-width="2"/>
+  <text x="220" y="874" fill="#dbe3ee" font-size="20" font-weight="700" text-anchor="middle">Poste (TRX) : Yaesu FTDX10</text>
+  <text x="220" y="900" fill="#9aa8bb" font-size="15" text-anchor="middle">un seul câble USB :</text>
+  <text x="220" y="922" fill="#9aa8bb" font-size="15" text-anchor="middle">CAT par l'« Enhanced COM Port »</text>
+  <text x="220" y="944" fill="#9aa8bb" font-size="15" text-anchor="middle">son par l'« USB Audio CODEC »</text>
+
+  <rect x="430" y="840" width="195" height="130" rx="10" fill="#171e29" stroke="#e0524a" stroke-width="2"/>
+  <text x="527" y="878" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">Alertes ntfy</text>
+  <text x="527" y="904" fill="#9aa8bb" font-size="15" text-anchor="middle">sur ton téléphone :</text>
+  <text x="527" y="926" fill="#9aa8bb" font-size="15" text-anchor="middle">coupure, panne,</text>
+  <text x="527" y="948" fill="#9aa8bb" font-size="15" text-anchor="middle">mise en sécurité</text>
+
+  <!-- Étiquette posée par-dessus la ligne du son (croisement) -->
+  <rect x="263" y="441" width="114" height="17" rx="3" fill="#0f141c"/>
+  <text x="320" y="454" fill="#e0524a" font-size="13" font-weight="700" text-anchor="middle">retour RX (T 0)</text>
+</svg><figcaption>The building blocks of an openRemoteTRX station · <a href="images/briques.svg" target="_blank" rel="noopener">open the diagram full size</a></figcaption></figure>
+<ul>
+<li>You use a <strong>browser</strong> or the <strong>Android app</strong>. They talk to the <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-gateway">gateway</span></strong>, the heart of the station, which runs on the <strong>station PC</strong> next to the transceiver.</li>
+<li>The gateway controls the transceiver through <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-rigctld">rigctld</span></strong> (the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> program) and exchanges audio with the <strong>transceiver&#x27;s sound card</strong>. It is the gateway that decides on transmission and applies the safety rules.</li>
+<li>The <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span></strong> watches everything independently: it can only cut a transmission, restart a service, and send you <strong>alerts</strong>.</li>
+<li><strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span></strong>, the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span> and the indicator are your tools on the PC: they read the station&#x27;s status.</li>
+<li>The configuration fits in a single file, <strong><code>station.toml</code></strong>.</li>
+</ul>
+<p>Each word is explained in the <a href="#glossaire">glossary</a>.</p>
+<h3 id="p-00-the-hardware">The hardware</h3>
+<div class="table"><table><thead><tr><th>Item</th><th>What you need</th></tr></thead><tbody><tr><td>The transceiver</td><td>a transceiver known to <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span>, its power supply, an antenna. Transceivers already tested have their sheet: <a href="#poste-ic7300mk2">Icom IC-7300MK2</a> (validated), <a href="#poste-ftdx10">Yaesu FTDX10</a> (validation in progress)</td></tr><tr><td>The PC - transceiver link</td><td>on most recent transceivers, <strong>one USB cable</strong> that carries both control (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span>) and audio; otherwise an external interface (Digirig, SignaLink…)</td></tr><tr><td>The station PC</td><td>PC running <strong>Debian 12 or 13</strong> with a desktop (recommended), <strong>Raspberry Pi 4 or 5</strong> running Raspberry Pi OS 64-bit, or a <strong>Windows 10/11</strong> 64-bit PC. It stays on all the time near the transceiver</td></tr><tr><td>The network</td><td>the PC connected to the internet box, preferably <strong>by cable</strong></td></tr><tr><td>For the tests</td><td>a <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span></strong> (50 Ω) that handles the test power: <strong>mandatory</strong> for the whole of part 3</td></tr><tr><td>User side</td><td>an Android 10 or later phone, or any recent browser</td></tr></tbody></table></div>
+<h3 id="p-00-debian-raspberry-pi-or-windows">Debian, Raspberry Pi or Windows?</h3>
+<div class="table"><table><thead><tr><th></th><th>Debian (recommended)</th><th>Raspberry Pi</th><th>Windows</th></tr></thead><tbody><tr><td>Hardware</td><td>a PC, even an old one (2 cores, 4 GB)</td><td>Pi 4 (<strong>4 GB</strong> advised) or Pi 5, official power supply, cooling, preferably an SSD</td><td>a 64-bit PC</td></tr><tr><td>System</td><td>Debian 12 or 13</td><td>Raspberry Pi OS 64-bit (Debian 12 or 13), with or without a desktop</td><td>Windows 10 or 11</td></tr><tr><td>Package</td><td><code>trx-remote-debian-X.Y.Z.zip</code></td><td>the <strong>same</strong> as Debian</td><td><code>trx-remote-windows-X.Y.Z.zip</code></td></tr><tr><td>Start</td><td>when the PC boots, without logging in</td><td>when the Pi boots, without logging in</td><td>when <strong>you log in</strong> (the PC must stay with your session open, locked if you wish)</td></tr><tr><td>Updates</td><td>over the Internet from <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>, signature checked</td><td>as Debian</td><td>by hand, by running the installer of a new version</td></tr><tr><td>Tools</td><td>openRemoteTRX Console (menus 1 to 8)</td><td>the same, on the Pi&#x27;s desktop or over <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ssh">SSH</span> from another PC</td><td>openRemoteTRX Console too, through the single shortcut Start menu &gt; openRemoteTRX (except updates, menus 7.x)</td></tr><tr><td>Status</td><td>validated (IC-7300MK2)</td><td>in service with a beta tester; load (SDR, FreeDV, several <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-visitor">visitors</span>) not measured yet</td><td>validated (IC-7300MK2)</td></tr></tbody></table></div>
+<p>The Raspberry Pi 3 and older models are too slow for live audio: the installation reports it.</p>
+<h3 id="p-00-regulations">Regulations</h3>
+<div class="note danger"><p><strong>Safety and responsibility.</strong> You remain responsible for every transmission of your station, <strong>including remotely</strong>: compliance with your licence, the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-allowed-bands">allowed bands</span> and powers, identification. The conditions for remote operation depend on the country: check with your administration (in France: the ANFR) before using it. Some band buttons of the page (85, 45, 11 m) are for <strong>listening</strong> only: they are not amateur radio bands.</p></div>
+<h3 id="p-00-where-to-find-the-software">Where to find the software</h3>
+<p>The installation packages are on the project&#x27;s releases page: <a href="https://github.com/Bob56fr/openRemoteTRX/releases" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/releases</a></p>
+<ul>
+<li>Debian and Raspberry Pi: <code>trx-remote-debian-X.Y.Z.zip</code> (and its signature file <code>.sig</code>).</li>
+<li>Windows: <code>trx-remote-windows-X.Y.Z.zip</code>.</li>
+</ul>
+<p>The Android app is in <strong>invitation-only testing</strong> (Google Play): ask for access by opening a ticket (part 8). Without it, the web page does everything from the phone&#x27;s browser.</p><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-01"><h2 id="p-01" class="partie">1. Prepare the transceiver</h2>
+<p>Station <strong>switched off</strong>, nothing connected: now is the time to set up the transceiver. The details of your transceiver&#x27;s menus are in its sheet (<a href="#poste-ic7300mk2">Icom IC-7300MK2</a>, <a href="#poste-ftdx10">Yaesu FTDX10</a>); for another transceiver, see its manual and the “Depending on your brand” table of the <a href="#demarrage-rapide">quick start</a>. This part tells you in which order to do things.</p>
+<h3 id="p-01-11-install-the-usb-driver-windows-only">1.1 Install the USB driver (Windows only)</h3>
+<p>On Windows, the transceiver&#x27;s USB driver (the one from its manufacturer: “Icom USB Driver”, Silicon Labs CP210x for Yaesu…) is installed <strong>before</strong> you plug in the USB cable; otherwise Windows may install the wrong driver. The name, the minimum version and the procedure are in the transceiver sheet, “USB driver”, or else on the manufacturer&#x27;s website.</p>
+<p>On Debian and on a Raspberry Pi, there is nothing to install: the kernel recognises the transceiver by itself.</p>
+<h3 id="p-01-12-connect">1.2 Connect</h3>
+<ol>
+<li>Antenna disconnected, <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span></strong> on the antenna socket in use.</li>
+<li>USB cable between the transceiver and the PC.</li>
+<li>Switch the transceiver on (long press on ON/OFF).</li>
+</ol>
+<p>The PC now sees one or two <strong>serial ports</strong> and a <strong>sound card</strong>. The transceiver sheet tells you which one is used for control (IC-7300MK2: the first one, the second one is used for the HF spectrum; FTDX10: the “Enhanced COM Port”, the “Standard” one is not used).</p>
+<div class="onglets"><div class="onglets-barre" role="tablist" aria-label="Choose the system" hidden><button type="button" role="tab" id="p-01-o1-debian-b" aria-controls="p-01-o1-debian" aria-selected="false" data-os="debian">Debian</button><button type="button" role="tab" id="p-01-o1-raspberry-pi-b" aria-controls="p-01-o1-raspberry-pi" aria-selected="false" data-os="raspberry-pi">Raspberry Pi</button><button type="button" role="tab" id="p-01-o1-windows-b" aria-controls="p-01-o1-windows" aria-selected="false" data-os="windows">Windows</button></div><div class="onglet" role="tabpanel" id="p-01-o1-debian" aria-labelledby="p-01-o1-debian-b"><h4 class="onglet-titre" id="p-01-debian">Debian</h4>
+<p>Nothing to note: the wizard finds the right port by itself. To see it: <code>ls -l /dev/serial/by-id/</code> in a terminal (one stable name per port, which does not change from one USB socket to another).</p></div><div class="onglet" role="tabpanel" id="p-01-o1-raspberry-pi" aria-labelledby="p-01-o1-raspberry-pi-b"><h4 class="onglet-titre" id="p-01-raspberry-pi">Raspberry Pi</h4>
+<p>As on Debian. Plug the transceiver cable <strong>directly</strong> into a USB port of the Pi (the blue USB 3 ports work too); use a hub only if it has its own power supply: the Pi does not supply enough current to several devices.</p></div><div class="onglet" role="tabpanel" id="p-01-o1-windows" aria-labelledby="p-01-o1-windows-b"><h4 class="onglet-titre" id="p-01-windows">Windows</h4>
+<p>Device Manager &gt; Ports (COM &amp; LPT): note the COM number of the control port.</p></div></div>
+<h3 id="p-01-13-set-the-transceiver-menus">1.3 Set the transceiver menus</h3>
+<p>Set the menus listed in your transceiver&#x27;s sheet, section “Menus to set” (otherwise, its manual). They are essential:</p>
+<ul>
+<li><strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> speed</strong> identical to the station&#x27;s (chosen in the wizard);</li>
+<li><strong>voice over USB</strong>: otherwise the transceiver modulates with its own microphone, that is, the noise of the room. On an Icom (IC-7300MK2): MENU &gt; SET &gt; Connectors &gt; MOD Input &gt; <strong>DATA MOD = USB</strong> (the station only transmits in data mode); the transceiver accepts the USB input only in DATA MOD <strong>or</strong> DATA OFF MOD. With the second port set up, the station checks it at each connection and warns you if it is not on USB;</li>
+<li><strong>no RTS/DTR line</strong> for <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> or CW: otherwise the transceiver may go into transmit when the PC starts;</li>
+<li><strong>VOX off</strong>: a VOX that is on makes the transceiver transmit on a noise in the room, without any command. The station checks it each time an operator connects and <strong>turns it off</strong> if it is on (message in the page log, code ORT-5034). On some transceivers it stays on in one mode while it is off in another (seen on the IC-7300MK2: off in data mode, still on in voice);</li>
+<li><strong>built-in antenna tuner</strong> (if the antenna goes through it): tuning must start by itself when transmission is keyed on a new frequency. On the IC-7300MK2: MENU &gt; SET &gt; Function &gt; Tuner, <strong>[TUNER] Switch = Auto</strong> (tuner state stored per band) and <strong>PTT Start = ON</strong>. Answer “yes” to the wizard&#x27;s tuner question: the station will check these settings at each connection and warn you if they are wrong (it never changes them). Outside the amateur bands, the transceiver does not guarantee tuning on PTT. During a transmission, if the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-swr">SWR</span> exceeds 2 for more than one second, the page shows a red banner and beeps (it does not cut);</li>
+<li><strong>transceiver transmit timer</strong> (TX TIME OUT TIMER): a second safety, independent of the station. Set it (3 min recommended): if the station, the network or the PC fails during a transmission, this is what cuts. For a transceiver whose reading is qualified (IC-7300MK2), the station reads it at each connection and warns you if it is OFF; for the others, it cannot check it.</li>
+</ul>
+<div class="note danger"><p><strong>Safety.</strong> An extra safety costs nothing: also set a reasonable <strong>maximum power</strong> in the transceiver (HF MAX POWER). The station cannot exceed it, whatever happens.</p></div>
+<h3 id="p-01-14-pc-sound">1.4 PC sound</h3>
+<p>The transceiver&#x27;s sound card must <strong>never</strong> be the PC&#x27;s default sound device, otherwise desktop sounds go to the transceiver (and the desktop occupies the card):</p>
+<div class="onglets"><div class="onglets-barre" role="tablist" aria-label="Choose the system" hidden><button type="button" role="tab" id="p-01-o2-debian-b" aria-controls="p-01-o2-debian" aria-selected="false" data-os="debian">Debian</button><button type="button" role="tab" id="p-01-o2-raspberry-pi-b" aria-controls="p-01-o2-raspberry-pi" aria-selected="false" data-os="raspberry-pi">Raspberry Pi</button><button type="button" role="tab" id="p-01-o2-windows-b" aria-controls="p-01-o2-windows" aria-selected="false" data-os="windows">Windows</button></div><div class="onglet" role="tabpanel" id="p-01-o2-debian" aria-labelledby="p-01-o2-debian-b"><h4 class="onglet-titre" id="p-01-debian-">Debian</h4>
+<p><em>Settings &gt; Sound</em>: the PC speakers as output, its microphone as input.</p></div><div class="onglet" role="tabpanel" id="p-01-o2-raspberry-pi" aria-labelledby="p-01-o2-raspberry-pi-b"><h4 class="onglet-titre" id="p-01-raspberry-pi-">Raspberry Pi</h4>
+<p>Without a desktop (Raspberry Pi OS Lite): nothing to do, no program takes the transceiver&#x27;s card. With a desktop: as on Debian, in the sound settings of the top bar. The Pi&#x27;s own sound card (“Headphones”, “HDMI”) is not used by the station.</p></div><div class="onglet" role="tabpanel" id="p-01-o2-windows" aria-labelledby="p-01-o2-windows-b"><h4 class="onglet-titre" id="p-01-windows-">Windows</h4>
+<p><em>Settings &gt; System &gt; Sound</em>: the PC speakers as output, its microphone as input; in “More sound settings”, the transceiver&#x27;s card is neither “Default Device” nor “Default Communication Device”; sound scheme “No Sounds”. The details are in the Windows notice included in the package.</p></div></div><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-poste-ftdx10"><h2 id="poste-ftdx10" class="partie">Transceiver sheet: Yaesu FTDX10</h2>
+<div class="note"><p><strong>Prepared, not yet validated on a real transceiver.</strong> Settings taken from the FTDX10 <em><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> Operation Reference Manual</em> (Yaesu, edition 2308-F), from the USB driver instructions (2205-E) and from <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span>&#x27;s capabilities. The first operator who runs the tests of <a href="#p-03">part 3</a> validates this sheet: thank you for reporting the result.</p></div>
+<h3 id="poste-ftdx10-identity-for-the-station">Identity for the station</h3>
+<div class="table"><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> number</td><td><strong>1042</strong> (“FTDX10”)</td></tr><tr><td>Link</td><td>USB, “<strong>Enhanced COM Port</strong>”, <strong>38400</strong> baud</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span></td><td>by <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span></strong> (the station sends the transmit command through the USB port)</td></tr><tr><td>Sound card</td><td>“USB Audio CODEC” (receive and transmit)</td></tr><tr><td>Read by the station</td><td>frequency, mode, filters, S-meter, power, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span>, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-swr">SWR</span>, voltage, VFO A / B, split, clarifier</td></tr><tr><td>Not available</td><td>transceiver HF spectrum (Yaesu does not send the screen data over CAT: only the audio spectrum is shown); transceiver temperature (the station&#x27;s temperature threshold has no effect)</td></tr></tbody></table></div>
+<h3 id="poste-ftdx10-usb-driver-windows">USB driver (Windows)</h3>
+<ol>
+<li><strong>USB cable unplugged.</strong> Download the “CP210x Universal Windows Driver” (link on the Yaesu website, or directly from Silicon Labs) and unzip it.</li>
+<li>Right-click the <strong><code>silabser.inf</code></strong> file &gt; (Windows 11: “Show more options”) &gt; <strong>Install</strong>.</li>
+<li>Plug in the USB cable, switch on the transceiver: Windows finishes the installation (sometimes asks for a restart). The sound card driver is the Windows one, nothing to do.</li>
+<li>Device Manager &gt; Ports (COM &amp; LPT): two lines “Silicon Labs Dual CP210x USB to UART Bridge”: <strong>Enhanced COM Port (COMx)</strong> for the station, Standard COM Port (COMy) unused. A “!” or a cross on a line: uninstall then reinstall the driver.</li>
+</ol>
+<p>On Debian: no driver. The stable port names are in <code>/dev/serial/by-id/</code> (<code>…CP2105…-if00-port0</code> = Enhanced, <code>…-if01-port0</code> = Standard); the wizard offers the right one by default.</p>
+<h3 id="poste-ftdx10-menus-to-set">Menus to set</h3>
+<p>Paths as they appear in the transceiver&#x27;s settings menu (see the FTDX10 operating manual to open it). The “MODE” settings are made <strong>for each mode</strong> you want to use in phone.</p>
+<h4 id="poste-ftdx10-cat-link-operation-setting-general">CAT link: OPERATION SETTING &gt; GENERAL</h4>
+<div class="table"><table><thead><tr><th>Menu</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> RATE</td><td><strong>38400 bps</strong></td><td>same speed as in the station (offered by the wizard)</td></tr><tr><td>CAT TIME OUT TIMER</td><td><strong>1000 msec</strong></td><td>value offered by the wizard</td></tr><tr><td>CAT RTS</td><td><strong>ENABLE</strong></td><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> uses RTS/CTS flow control on this transceiver</td></tr><tr><td>TX TIME OUT TIMER</td><td><strong>3</strong> (minutes)</td><td>second safety of the transceiver itself, beyond the station&#x27;s maximum time (90 s)</td></tr></tbody></table></div>
+<p>(<code>232C RATE</code> and <code>232C TIME OUT TIMER</code> concern the RS-232C socket: no effect over USB.)</p>
+<h4 id="poste-ftdx10-voice-through-usb-radio-setting-mode-ssb-mode-am-mode-fm-mode-pskdata">Voice through USB: RADIO SETTING &gt; MODE SSB, MODE AM, MODE FM, MODE PSK/DATA</h4>
+<div class="table"><table><thead><tr><th>Menu (in each mode)</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td>SSB / AM / FM / DATA <strong>MOD SOURCE</strong></td><td><strong>REAR</strong></td><td>the modulation comes from the rear of the transceiver, not from the front microphone</td></tr><tr><td><strong>REAR SELECT</strong></td><td><strong>USB</strong></td><td>the rear = USB (and not the DATA socket)</td></tr><tr><td><strong>RPTT SELECT</strong></td><td><strong>DAKY</strong></td><td>the “rear” <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> stays on the DATA socket, where nothing is plugged in; <strong>never RTS or DTR</strong></td></tr><tr><td>RPORT GAIN</td><td>to adjust (part 3)</td><td>level of the voice arriving through USB: to set with the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span></td></tr><tr><td>SSB / AM / FM / DATA OUT LEVEL</td><td>factory value</td><td>level of the rear RTTY/DATA socket only: <strong>no effect on the USB audio</strong> (test of 2026-11-19). Received audio too low: gain of menu <strong>2.9</strong> of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span></td></tr></tbody></table></div>
+<p>Without “MOD SOURCE = REAR” in SSB, the wizard limits transmission to data modes (DATA-U, DATA-L): the page will not be able to transmit in USB / LSB.</p>
+<div class="note danger"><p><strong>Safety: RPTT SELECT and PC KEYING.</strong> Yaesu warns that, when the PTT goes through the USB port lines, <em>“the transceiver may go into transmission when the computer starts”</em>. The station does not use these lines: leave <strong>RPTT SELECT = DAKY</strong> in each mode and <strong>CW SETTING &gt; MODE CW &gt; PC KEYING = OFF</strong>.</p></div>
+<h4 id="poste-ftdx10-other-recommended-settings">Other recommended settings</h4>
+<div class="table"><table><thead><tr><th>Menu</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td>Front panel <strong>VOX</strong> key</td><td><strong>off</strong></td><td>with the voice through USB, a stray sound from the PC could make the transceiver transmit</td></tr><tr><td>OPERATION SETTING &gt; TX GENERAL &gt; HF MAX POWER (and 50M, 70M, AM)</td><td>the power you allow yourself</td><td>ceiling of the transceiver itself, which the station cannot exceed</td></tr><tr><td>OPERATION SETTING &gt; TX GENERAL &gt; EMERGENCY FREQ TX</td><td><strong>DISABLE</strong></td><td>no transmission on the emergency frequency</td></tr></tbody></table></div>
+<h3 id="poste-ftdx10-mode-mapping">Mode mapping</h3>
+<div class="table"><table><thead><tr><th>Web page / Hamlib</th><th>FTDX10 screen</th></tr></thead><tbody><tr><td>USB / LSB</td><td>USB / LSB</td></tr><tr><td>PKTUSB / PKTLSB</td><td>DATA-U / DATA-L</td></tr><tr><td>FM / PKTFM</td><td>FM / DATA-FM</td></tr><tr><td>AM</td><td>AM</td></tr><tr><td>CW / CWR</td><td>CW-U / CW-L</td></tr></tbody></table></div>
+<h3 id="poste-ftdx10-points-to-check-during-the-tests-validation-of-this-sheet">Points to check during the tests (validation of this sheet)</h3>
+<p>To note in the report of <a href="#p-03">part 3</a>:</p>
+<ol>
+<li>The diagnostic (menu 6.1) finds the transceiver; frequency and mode follow when you turn the VFO.</li>
+<li><strong>VFO A / VFO B</strong> indicator in the page when you press A/B on the transceiver.</li>
+<li>Transmission on a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span>: the page sees power, <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span></strong> and <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-swr">SWR</span>; the ALC level at full voice (the ALC alert threshold has not yet been measured on a Yaesu).</li>
+<li>Split enabled on the transceiver: the page shows it, the transmission goes out on the right frequency.</li>
+<li>Transmission with the transceiver microphone: the page shows “<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-operator">local operator</span>” and blocks the remote <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span>.</li>
+<li>No transmission when the PC starts or when the cable is plugged in.</li>
+</ol><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-poste-ic7300mk2"><h2 id="poste-ic7300mk2" class="partie">Transceiver sheet: Icom IC-7300MK2</h2>
+<div class="note"><p><strong>Validated on a real transceiver</strong> (public status “validated”, ★ GO and level 5 “complete” on the transceivers page, 2026-11-19): control, transmission, audio, web page, HF spectrum through the second port and failure tests, on Windows and on Debian 13. What remains to be tested is listed at the end of the sheet. The IC-7300 (first model) is close, but has not been tested.</p></div>
+<h3 id="poste-ic7300mk2-identity-for-the-station">Identity for the station</h3>
+<div class="table"><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> number</td><td><strong>3094</strong> (“IC-7300MK2”); requires Hamlib <strong>4.7 or newer</strong> (Debian 13: installed by <code>install.sh</code>)</td></tr><tr><td>Link</td><td><strong>a single USB cable</strong>: control (CI-V), audio and second port</td></tr><tr><td>Serial ports</td><td>two ports: the <strong>first</strong> for control (Debian: <code>…-if00</code> in <code>/dev/serial/by-id/</code>; Windows: one COM), the <strong>second</strong> for the HF spectrum (Debian: <code>…-if02</code>; Windows: another COM)</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span></td><td>by <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span></strong> (CI-V)</td></tr><tr><td>Sound card</td><td>“<strong>USB Audio Device</strong>” (the transceiver&#x27;s C-Media chip; on Windows its name starts with a digit that changes with the USB socket)</td></tr><tr><td>Read by the station</td><td>frequency, mode, filters, S-meter, power, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span>, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-swr">SWR</span>, voltage, split, RIT / ΔTX, VOX, tuner settings, <strong>transceiver <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span></strong></td></tr><tr><td>Not available</td><td>active VFO (A, B, memory); transceiver temperature (the station&#x27;s temperature threshold has no effect)</td></tr></tbody></table></div>
+<h3 id="poste-ic7300mk2-usb-driver-windows">USB driver (Windows)</h3>
+<p>Install the <strong>“Icom USB Driver” version 1.80 or newer</strong> from the Icom website, cable unplugged, then plug in the transceiver. Version 1.70 freezes Chrome and Edge when a page reads the serial port (Autotest). On Debian: no driver.</p>
+<h3 id="poste-ic7300mk2-menus-to-set">Menus to set</h3>
+<h4 id="poste-ic7300mk2-link-menu-set-connectors">Link: MENU &gt; SET &gt; Connectors</h4>
+<div class="table"><table><thead><tr><th>Menu</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td>CI-V &gt; CI-V Baud Rate</td><td>the <strong>same speed</strong> as in the wizard</td><td>otherwise the transceiver does not respond</td></tr><tr><td>MOD Input &gt; <strong>DATA MOD</strong></td><td><strong>USB</strong></td><td>the voice arrives through USB; the station transmits only in <strong>data mode</strong> (USB-D / LSB-D)</td></tr><tr><td>USB SEND, USB Keying (CW), USB Keying (RTTY)</td><td><strong>OFF</strong></td><td>no line of the USB port must be able to put the transceiver into transmission</td></tr><tr><td>USB MOD Level</td><td>to adjust (part 3)</td><td>level of the voice arriving through USB: to set with the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span></td></tr></tbody></table></div>
+<p>The transceiver accepts USB only in DATA MOD <strong>or</strong> DATA OFF MOD. With the second port set (menu 2.7), the station checks DATA MOD at each connection and warns you if it is not on USB.</p>
+<h4 id="poste-ic7300mk2-safety-menu-set-function">Safety: MENU &gt; SET &gt; Function</h4>
+<div class="table"><table><thead><tr><th>Menu</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td><strong>Time-Out Timer (CI-V)</strong></td><td><strong>3 min</strong></td><td>last barrier, in the transceiver itself; the station reads it again at each operator connection and warns you if it is OFF</td></tr><tr><td>Tuner &gt; [TUNER] Switch</td><td><strong>Auto</strong></td><td>built-in tuner: state stored per band</td></tr><tr><td>Tuner &gt; <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> Start</td><td><strong>ON</strong></td><td>tuning started by itself at the first transmission on a new frequency</td></tr></tbody></table></div>
+<p>The station checks the tuner settings at each connection (if you answered “yes” to its question in the wizard), without ever changing them.</p>
+<h4 id="poste-ic7300mk2-other-recommended-settings">Other recommended settings</h4>
+<div class="table"><table><thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td><strong>VOX</strong> key</td><td>off</td><td>the station switches it off at each operator connection; on this transceiver, the VOX state depends on the mode (off in data mode, still on in phone)</td></tr><tr><td>Power (RF POWER, MULTI knob)</td><td>the power you allow yourself</td><td>ceiling of the transceiver itself</td></tr><tr><td>Split</td><td>with the transceiver&#x27;s <strong>SPLIT key</strong></td><td>the station never writes it: it reads it and refuses to transmit if the transmit frequency leaves your bands</td></tr></tbody></table></div>
+<h3 id="poste-ic7300mk2-audio-on-windows">Audio on Windows</h3>
+<p>Settings &gt; Sound: the transceiver&#x27;s “USB Audio Device” output <strong>at 100 %</strong>, enhancements disabled; the transmit level is set with <strong>USB MOD Level</strong> in the transceiver. An output at reduced volume gives a transmission without power. The transceiver&#x27;s card must never be the PC&#x27;s default sound (part 1).</p>
+<h3 id="poste-ic7300mk2-hf-spectrum-through-the-second-port">HF spectrum through the second port</h3>
+<p>Menu <strong>2.7</strong> of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>: choose the transceiver&#x27;s <strong>second</strong> port. The station reads the transceiver&#x27;s screen there (HF spectrum of the page and of the application) and the FIL1/2/3 filter presets. The spectrum <strong>freezes during transmission</strong>: the transceiver stops sending it, it is not a fault.</p>
+<h3 id="poste-ic7300mk2-mode-mapping">Mode mapping</h3>
+<div class="table"><table><thead><tr><th>Web page / Hamlib</th><th>IC-7300MK2 screen</th></tr></thead><tbody><tr><td>USB / LSB</td><td>USB / LSB (receive; transmission refused: the voice goes through the data modes)</td></tr><tr><td>PKTUSB / PKTLSB</td><td>USB-D / LSB-D</td></tr><tr><td>FM / PKTFM</td><td>FM / FM-D</td></tr><tr><td>AM / CW / RTTY</td><td>AM / CW / RTTY</td></tr></tbody></table></div>
+<h3 id="poste-ic7300mk2-points-still-to-test">Points still to test</h3>
+<ul>
+<li>Remote power on and off (menu 2.8): a switched-off IC-7300MK2 refuses the reading of its power state; to test on your transceiver before relying on it.</li>
+<li>Transmission with the transceiver microphone while the station is running (test 6 of part 3.5).</li>
+</ul><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-02"><h2 id="p-02" class="partie">2. Install the station</h2>
+<p>Installation never controls the transceiver: it can stay on and connected. Choose your system in the tabs below; the choice applies to the whole page. At the end, <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span></strong> opens and offers the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-configuration-wizard">configuration wizard</span>: that is part 3.</p>
+<div class="onglets"><div class="onglets-barre" role="tablist" aria-label="Choose the system" hidden><button type="button" role="tab" id="p-02-o1-debian-b" aria-controls="p-02-o1-debian" aria-selected="false" data-os="debian">Debian</button><button type="button" role="tab" id="p-02-o1-raspberry-pi-b" aria-controls="p-02-o1-raspberry-pi" aria-selected="false" data-os="raspberry-pi">Raspberry Pi</button><button type="button" role="tab" id="p-02-o1-windows-b" aria-controls="p-02-o1-windows" aria-selected="false" data-os="windows">Windows</button></div><div class="onglet" role="tabpanel" id="p-02-o1-debian" aria-labelledby="p-02-o1-debian-b"><h4 class="onglet-titre" id="p-02-debian">Debian</h4>
+<p><strong>Debian 12 or 13, with a desktop.</strong></p>
+<ol>
+<li>Download <code>trx-remote-debian-X.Y.Z.zip</code> (part 0) into <strong>Downloads</strong>, right-click &gt; “Extract Here”.</li>
+<li><p>In the resulting folder: right-click in an empty area &gt; “Open in Terminal”, then:</p>
+<pre><code>sudo bash install.sh</code></pre>
+<p>Your session password is requested (nothing is displayed while you type: this is normal). The script installs <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span>, Python, the modules, the service account and the station services.</p></li>
+<li>At the end, <strong>log out and log back in</strong> (your account&#x27;s permissions change).</li>
+<li>Open <strong>openRemoteTRX Console</strong> from the applications menu (or type <code>trx-console</code> in a terminal).</li>
+</ol>
+<p><strong>Hamlib and recent transceivers.</strong> Debian 13 ships Hamlib 4.6, which does not know recent transceivers (IC-7300MK2…): <code>install.sh</code> installs version 4.7 from Debian&#x27;s <strong>official backports</strong> by itself. On Debian 12, if your transceiver is missing from <code>rigctl -l</code>, the installation tells you: then run <code>sudo bash compiler-hamlib.sh</code> in the same folder (compiles the latest Hamlib, 10 to 30 minutes).</p>
+<p><strong>Without a desktop (server)</strong>, everything is done over <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ssh">SSH</span>: copy the zip, then</p>
+<pre><code>unzip -q trx-remote-debian-*.zip &amp;&amp; cd trx-remote-debian-*/ &amp;&amp; sudo bash install.sh</code></pre>
+<p>close the SSH connection, reconnect and type <code>trx-console</code>.</p></div><div class="onglet" role="tabpanel" id="p-02-o1-raspberry-pi" aria-labelledby="p-02-o1-raspberry-pi-b"><h4 class="onglet-titre" id="p-02-raspberry-pi">Raspberry Pi</h4>
+<p><strong>Raspberry Pi 4 or 5, Raspberry Pi OS 64-bit.</strong> The Pi uses the <strong>same package</strong> as Debian.</p>
+<div class="note"><p><strong>The Pi as a station.</strong> Already in service with a beta tester, but its load has not yet been measured with everything running (SDR receiver, FreeDV, several <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-visitor">visitors</span>): start with the basic functions. A Pi 3 or older is too slow for live audio.</p></div>
+<p><strong>The hardware.</strong></p>
+<div class="table"><table><thead><tr><th>Item</th><th>Advice</th></tr></thead><tbody><tr><td>The Pi</td><td>Pi 4 with <strong>4 GB</strong> (2 GB minimum), or Pi 5</td></tr><tr><td>Power supply</td><td>the <strong>official</strong> unit (Pi 4: USB-C 5.1 V 3 A; Pi 5: 5 V 5 A). A phone charger causes undervoltage: the Pi slows down and the transceiver&#x27;s USB drops out</td></tr><tr><td>Cooling</td><td>heatsink with fan, or ventilated case: without it, the Pi slows down around 80 °C</td></tr><tr><td>Storage</td><td>32 GB “High Endurance” class A2 SD card, or better an <strong>SSD over USB 3</strong> (the Pi boots from it, and it lasts longer than a card that writes day and night)</td></tr><tr><td>Network</td><td>Ethernet cable recommended; Wi-Fi works, with more audio dropouts</td></tr></tbody></table></div>
+<p><strong>1. Prepare the card</strong>, on your PC, with <strong>Raspberry Pi Imager</strong> (raspberrypi.com/software):</p>
+<ol>
+<li>Device: your Pi model. Operating system: <strong>Raspberry Pi OS (64-bit)</strong> if a screen will stay connected; otherwise <em>Raspberry Pi OS (other)</em> &gt; <strong>Raspberry Pi OS Lite (64-bit)</strong>, without a desktop, everything will be done from your PC.</li>
+<li>Customisation, <strong>before</strong> writing the card: a name (for example <code>trx-pi</code>), an account and its <strong>password</strong> (required for installing), the time zone and keyboard, Wi-Fi only if there is no cable, and <strong>SSH enabled</strong> (preferably with a public key).</li>
+<li>Write the card, put it in the Pi, connect the network, the transceiver, then the power supply. The first boot takes 2 to 3 minutes (the Pi restarts once by itself).</li>
+<li>Find the Pi&#x27;s address in your router&#x27;s list of devices, and <strong>reserve it</strong> (DHCP reservation, part 4.1).</li>
+</ol>
+<p><strong>2. Update the system</strong>, in a terminal on the Pi (with a desktop) or from your PC (without a desktop: <code>ssh -l &lt;account&gt; &lt;pi-address&gt;</code>):</p>
+<pre><code>sudo apt update &amp;&amp; sudo apt full-upgrade -y &amp;&amp; sudo reboot</code></pre>
+<p><strong>3. Install the station.</strong></p>
+<ul>
+<li><strong>With a desktop</strong>: exactly as on Debian (Debian tab): zip downloaded and extracted, <code>sudo bash install.sh</code> in a terminal opened in the folder, then log out and log back in.</li>
+<li><p><strong>Without a desktop</strong>, from your PC (PowerShell on Windows, terminal on Linux or macOS), in the folder of the downloaded zip:</p>
+<pre><code>scp -o User=&lt;account&gt; trx-remote-debian-X.Y.Z.zip &lt;pi-address&gt;:
+ssh -t -l &lt;account&gt; &lt;pi-address&gt;</code></pre>
+<p>then, on the Pi:</p>
+<pre><code>sudo apt install -y unzip
+unzip -q trx-remote-debian-X.Y.Z.zip &amp;&amp; cd trx-remote-debian-X.Y.Z &amp;&amp; sudo bash install.sh</code></pre>
+<p>At the end, type <code>exit</code> and reconnect (<code>ssh -t -l &lt;account&gt; &lt;pi-address&gt;</code>): your account&#x27;s permissions have changed. Then <code>trx-console</code>.</p></li>
+</ul>
+<p><strong>What the installation does in addition on a Pi.</strong></p>
+<ul>
+<li>It shows the model and reports a Pi that is too old, too little memory or <strong>undervoltage</strong> (power supply too weak): fix it before going further.</li>
+<li>Raspberry Pi OS 13 ships Hamlib 4.6: it installs 4.7 from Debian&#x27;s official backports (recent transceivers such as the IC-7300MK2). On Raspberry Pi OS 12, if your transceiver is missing from <code>rigctl -l</code>: <code>sudo bash compiler-hamlib.sh</code> (10 to 30 minutes on a Pi).</li>
+<li>It enables the Pi&#x27;s <strong>hardware watchdog</strong>: if the system freezes for more than 15 seconds, the Pi restarts by itself, and the station comes back in receive.</li>
+<li>With a desktop, it adds the font for openRemoteTRX Console&#x27;s icons.</li>
+</ul>
+<p><strong>4. Check the power supply and the temperature</strong>, after a few minutes of running:</p>
+<pre><code>vcgencmd get_throttled; vcgencmd measure_temp</code></pre>
+<p>Expected: <code>throttled=0x0</code> and less than 70 °C. Any other value of <code>throttled</code> = power supply too weak or overheating: change the power supply or add a fan. Once the station is running, its <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span> will send you an alert (part 6) if the Pi is slowed down, or if the memory or the disk fill up.</p>
+<details><summary>Working without a screen day to day</summary><ul>
+<li><strong>openRemoteTRX Console over SSH</strong>: <code>ssh -t -l &lt;account&gt; &lt;pi-address&gt; trx-console</code> (the <code>-t</code> is essential: the console asks questions). Windows Terminal displays the frames, colours and the QR code of menu 4.1 correctly.</li>
+<li><strong>More comfortable: the console in the browser.</strong> Once, menu <strong>4.6</strong> (part 7.5); then <code>https://&lt;pi-address&gt;:8444/</code> from the PC, the tablet or the phone, without SSH.</li>
+<li><strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">Dashboard</span></strong>: <code>ssh -t -l &lt;account&gt; &lt;pi-address&gt; trx-monitor</code>, or the vital signs dashboard in the browser (part 7.1).</li>
+<li><strong>Shut down the Pi</strong>: <code>sudo poweroff</code>, then wait until the green LED stops blinking before cutting the power (a sudden power cut can damage the SD card).</li>
+</ul></details></div><div class="onglet" role="tabpanel" id="p-02-o1-windows" aria-labelledby="p-02-o1-windows-b"><h4 class="onglet-titre" id="p-02-windows">Windows</h4>
+<p><strong>Windows 10 or 11, 64-bit.</strong></p>
+<ol>
+<li>Install <strong>Hamlib 64-bit</strong> (<code>hamlib-w64-X.Y.Z.exe</code>, version <strong>4.7</strong> or later: recent transceivers such as the IC-7300MK2 do not exist before) from <a href="https://github.com/Hamlib/Hamlib/releases" target="_blank" rel="noopener noreferrer">https://github.com/Hamlib/Hamlib/releases</a>, in the suggested folder.</li>
+<li>Copy <code>trx-remote-windows-X.Y.Z.zip</code> to the PC. Right-click &gt; Properties &gt; tick <strong>Unblock</strong> &gt; OK.</li>
+<li>Right-click &gt; Extract All, then double-click <strong><code>installer.cmd</code></strong>. If Windows shows “Windows protected your PC”: More info &gt; Run anyway.</li>
+<li>Accept the administrator request and answer the questions (Python is installed if it is missing, with your consent).</li>
+<li><p>Essential Windows settings:</p>
+<ul>
+<li>home network set to the <strong>Private</strong> profile (the firewall only opens the station on private networks);</li>
+<li><strong>sleep and hibernation disabled</strong> (Settings &gt; System &gt; Power);</li>
+<li><em>Settings &gt; Privacy &gt; Microphone</em>: access allowed for desktop apps (otherwise the audio received from the transceiver is silence);</li>
+<li>transceiver sound card (<em>Settings &gt; System &gt; Sound</em>, the transceiver&#x27;s “Speakers” output): <strong>volume at 100</strong>, <strong>audio enhancements disabled</strong>, format 16 bit 48000 Hz; the transmit level is set on the transceiver (Icom: USB MOD Level). A reduced volume (38 seen on one PC) gives a transmission with no power. Its name (“2- USB Audio Device”…) changes if the transceiver cable moves to another USB socket: then redo menu 2.6.</li>
+</ul></li>
+</ol>
+<p>The full notice (<code>notice-windows.html</code>) is in the package.</p>
+<p><strong>openRemoteTRX Console on Windows.</strong> The installation creates <strong>a single shortcut</strong>: Start menu &gt; <strong>openRemoteTRX</strong>. It opens openRemoteTRX Console, with the same numbered menus as on Debian: this guide applies as is (1.1 start, 2.1 configuration, 6.1 diagnostic…). Differences:</p>
+<ul>
+<li><strong>Updates</strong> (menus 7.1 to 7.3): on Windows, extract the new zip and run its <code>installer.cmd</code>; the configuration is kept. Going back: run <code>installer.cmd</code> of the old version again.</li>
+<li><strong>Indicator next to the clock</strong>: menu 8.4 (start it, or start it at each session login).</li>
+<li><strong>Uninstall</strong>: Settings &gt; Apps &gt; <strong>openRemoteTRX</strong> &gt; Uninstall (the configuration is kept unless you ask to erase it).</li>
+<li>The configuration is in <code>C:\ProgramData\trx-remote\station.toml</code>; the commands (<code>trx-console</code>, <code>trx-setup</code>, <code>trx-monitor</code>…) can also be run in a terminal opened <strong>after</strong> the installation.</li>
+</ul></div></div><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-03"><h2 id="p-03" class="partie">3. Integrate the TRX and test it</h2>
+<div class="note danger"><p><strong>Safety.</strong> Throughout this part: <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span></strong> on the antenna socket, <strong>reduced power</strong> (10 W for example), nobody near the disconnected antenna.</p></div>
+<h3 id="p-03-31-the-configuration-wizard-menu-21">3.1 The configuration wizard (menu 2.1)</h3>
+<p>The transceiver is only queried <strong>read-only</strong>: no transmission during the wizard. Nothing is saved if you give up halfway. The values specific to your transceiver are in its sheet:</p>
+<div class="table"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>Transceiver model</td><td>type its name (<code>ic-7300</code>, <code>ftdx10</code>…) and choose from the list (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> number in the sheet: IC-7300MK2 = 3094, FTDX10 = 1042). For some transceivers, the wizard reminds you of the menus to check (part 1)</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> serial port</td><td>the <strong>control</strong> port (Debian and Raspberry Pi: offered automatically; Windows: the COM noted in part 1)</td></tr><tr><td>Speed</td><td><strong>identical</strong> to the CAT speed set in the transceiver</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> method</td><td><strong>CAT</strong> (offered)</td></tr><tr><td>Does the voice go over USB?</td><td><strong>yes</strong>, if the transceiver modulates over USB in voice (part 1); otherwise transmission will be limited to data modes</td></tr><tr><td>Sound cards (receive, transmit)</td><td>the <strong>transceiver&#x27;s</strong> for both (its name is in the sheet)</td></tr><tr><td>HF spectrum through a second port</td><td>the transceiver&#x27;s <strong>second port</strong> if it has one (Icom IC-7300MK2…); otherwise <strong>none</strong></td></tr><tr><td>Bands allowed for transmission</td><td>the bands of <strong>your licence</strong>, only. Empty list = receive only</td></tr><tr><td>Network access</td><td>“<strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">Local network</span> or <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span>, over <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">HTTPS</span> with a certificate generated here</strong>” (recommended)</td></tr><tr><td>Accounts</td><td>a username (letters, digits, <code>_</code>, <code>-</code>) and a <strong>long password</strong> (Enter = a strong password is generated: write it down); Enter on an empty username to finish</td></tr><tr><td>Maximum transceiver power</td><td>your transceiver&#x27;s (often <strong>100</strong> watts)</td></tr><tr><td>Maximum duration of a transmission (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span>)</td><td><strong>90</strong> seconds (default value, ceiling 120)</td></tr><tr><td>Replay of recordings</td><td><strong>no</strong> (default answer)</td></tr></tbody></table></div>
+<p>At the end, the wizard shows the address to open (<code>https://&lt;station-address&gt;:8443</code>) and the <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-certificate-fingerprint">certificate fingerprint</span></strong> (useful for the Android app, part 4).</p>
+<h3 id="p-03-32-the-diagnostic-menu-61">3.2 The diagnostic (menu 6.1)</h3>
+<p>It reviews everything without changing anything: each line is <strong>OK</strong>, to <strong>watch</strong> or <strong>failed</strong>, with what to do. Fix each failure before going further (menu 8.1 for a setting, or run the wizard again).</p>
+<p>Common failures at this stage: wrong port (the transceiver&#x27;s second port instead of the control one; Yaesu: Standard instead of Enhanced), transceiver speed different from the one in the wizard, transceiver sound card taken by the desktop (part 1.4); on a Raspberry Pi, a power supply that is too weak (“undervoltage”, part 2).</p>
+<h3 id="p-03-33-the-guided-transceiver-test-menu-22">3.3 The guided transceiver test (menu 2.2)</h3>
+<p>The station is stopped during the test.</p>
+<ol>
+<li><strong>Choice 1, receive only</strong>: <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> link, received audio, frequency and mode change, filter widths. Check that the received audio is clean and at a correct level (otherwise: transceiver setting given by its sheet, then receive audio gain in menu 2.9).</li>
+<li><strong>Choice 2, receive then transmit</strong>: <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span>, reduced power. Each switch to transmit asks you to type <code>TRANSMIT</code> (or <code>EMETTRE</code>).</li>
+</ol>
+<p>Copy the <strong>final summary</strong> shown on screen: it is used for the validation report.</p>
+<h3 id="p-03-34-start-the-station-and-set-the-modulation">3.4 Start the station and set the modulation</h3>
+<ol>
+<li>Menu <strong>1.1</strong>: the station starts (the transceiver is always put back in receive at startup). Run a diagnostic again (menu 6.1) a few seconds later.</li>
+<li>Open the page <code>https://&lt;station-address&gt;:8443</code> from a phone or a PC on the network (details and <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> warning: part 4), and log in.</li>
+<li>Allowed band, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span>, voice mode that your transceiver modulates over USB (USB or LSB; on an Icom, USB-D or LSB-D, part 1): press <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span></strong> (toggle: one press to transmit, one press to go back to receive), speak normally for a few seconds, press again.</li>
+<li>Watch the <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span></strong> in the page: it must move on voice peaks without staying at maximum. Adjust the transceiver&#x27;s USB input level until you get this result (Icom: <strong>USB MOD Level</strong>; Yaesu: <strong>RPORT GAIN</strong> in the menu of the mode in use; the exact name is in the transceiver sheet).</li>
+</ol>
+<h3 id="p-03-35-the-safety-tests">3.5 The safety tests</h3>
+<p>Do <strong>all</strong> of them, on a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span>, before any transmission on an antenna. Each one must end with the transceiver back in receive (check on the transceiver&#x27;s screen, not only in the page).</p>
+<div class="table"><table><thead><tr><th>#</th><th>Test</th><th>Expected result</th></tr></thead><tbody><tr><td>1</td><td>During a transmission, the page&#x27;s <strong>STOP</strong> button</td><td>immediate return to receive</td></tr><tr><td>2</td><td>Transmit without touching anything</td><td>countdown and beep 10 s before the end, return to receive after <strong>90 s</strong></td></tr><tr><td>3</td><td>During a transmission, turn off the phone&#x27;s Wi-Fi (or close the tab)</td><td>return to receive in about <strong>2 s</strong></td></tr><tr><td>4</td><td>During a transmission from the phone, lock the screen</td><td>return to receive</td></tr><tr><td>5</td><td>Set a frequency outside your <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-allowed-bands">allowed bands</span>, press <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span></td><td>transmission <strong>refused</strong>, message in the page</td></tr><tr><td>6</td><td>Transmit <strong>with the transceiver&#x27;s microphone</strong> (without the station)</td><td>the page shows the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-operator">local operator</span> and blocks remote PTT during the transmission and for 2 minutes after</td></tr><tr><td>7</td><td>During a transmission, the <strong>STOP TX</strong> key of the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span> (menu 1.3)</td><td>return to receive</td></tr><tr><td>8</td><td>During a transmission, stop the station (menu 1.2)</td><td>return to receive</td></tr><tr><td>9</td><td>Restart the PC (or the Pi), transceiver on</td><td>the transceiver <strong>never</strong> goes into transmit during startup</td></tr></tbody></table></div>
+<p>A test that does not give the expected result: <strong>do not use the station to transmit</strong>, stop it (menu 1.2) and ask for help (part 8) with the report from menu 6.3.</p>
+<h3 id="p-03-36-going-further-optional">3.6 Going further (optional)</h3>
+<ul>
+<li><strong>Transceiver qualification</strong> (menu 8.3, <code>trx-qualif</code>): for an expert who wants to check everything <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span> declares for your transceiver. Start with choice 2 (exploration without transmission); the report it produces is valuable for validating the transceiver sheet. Choice 6 (“qualification case”) runs everything in sequence for a team member who came to qualify the transceiver: reading of the transceiver before and after (what must be restored by hand), exploration, qualification, the timed safety tests of § 3.5, and a zip report to hand over to the developers.</li>
+<li><strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-transceiver-profile">Transceiver profile</span></strong> (menu 2.3): saves the configuration under a name (“IC-7300 home”) to load it again later if you change transceivers.</li>
+</ul>
+<h3 id="p-03-37-report-the-validation">3.7 Report the validation</h3>
+<p>If your transceiver is not yet validated (list: <a href="https://bob56fr.github.io/openRemoteTRX/postes/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/postes/</a>), your result counts: open a “Report a bug” issue (even if everything is fine, title “&lt;your transceiver&gt;: commissioning tests”) with the summary of the guided test, the result of the 9 safety tests and, if it has a sheet, the points it says to check.</p><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-04"><h2 id="p-04" class="partie">4. Using the station on the local network</h2>
+<p>The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span> is your home Wi-Fi or cable: the phone and the station sit behind the same internet box.</p>
+<h3 id="p-04-41-a-fixed-address-for-the-station">4.1 A fixed address for the station</h3>
+<p>In your box, <strong>reserve an IP address</strong> for the station PC (DHCP reservation). The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> created by the wizard carries the PC&#x27;s address: if it changes, the browser and the app will no longer recognise it. After an address change, run the wizard again (menu 2.1) to recreate the certificate.</p>
+<p>The address to use is shown at the top of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> and by the diagnostic.</p>
+<h3 id="p-04-42-the-web-page">4.2 The web page</h3>
+<ol>
+<li>On the phone or a PC: <code>https://&lt;station-address&gt;:8443</code></li>
+<li>The browser reports an <strong>unrecognised <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span></strong>: this is expected (certificate created by your station, not by an authority). “Advanced”, then “Proceed”. This is done only once per device.</li>
+<li>Log in with the account created by the wizard (Enter in the password field is enough).</li>
+</ol>
+<div class="note"><p><strong>Password remembered by the browser.</strong> Chrome <strong>never</strong> saves a password on a page whose certificate is not recognised, even after “Proceed”. The solution: install once, on each device, your <strong>station&#x27;s authority</strong> (below). After that, no more warning and the password is remembered.</p></div>
+<h4 id="p-04-install-the-station-authority-once-per-device">Install the station authority (once per device)</h4>
+<ol>
+<li>On the station, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>, menu <strong>4.4</strong> “Station certificate”: choice <strong>1</strong> (recreate the certificate, signed by the station authority), then restart the station when the console offers it. The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-certificate-fingerprint">certificate fingerprint</span> changes: <strong>pair the Android app again</strong> (menu 4.1).</li>
+<li>On the device, open the station page: under the password, tap <strong>“Install the station certificate”</strong> (or open <code>https://&lt;station-address&gt;:8443/station-ca.crt</code>).</li>
+<li><strong>Windows</strong>: open the downloaded file, “Install Certificate”, “Current User”, “Place all certificates in the following store”, <strong>“Trusted Root Certification Authorities”</strong>, Finish, then accept the Windows warning. Close <strong>all</strong> Chrome windows and open it again. Careful: with “Automatically select the certificate store”, Windows puts it in “Personal”, where Chrome ignores it (address still struck through in red): install it again and choose the right store.</li>
+<li><strong>Android</strong>: Settings, Security (or “Security and privacy”), More security settings, Install from device storage (or “Encryption and credentials”), <strong>“CA certificate”</strong>, choose the downloaded file and confirm. Open Chrome again.</li>
+<li>Open the page: no more warning; log in, Chrome offers to save the password.</li>
+</ol>
+<div class="note"><p>This authority can vouch <strong>only</strong> for private addresses (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span>, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span>) and your station&#x27;s names: even if its key were stolen, it could not impersonate another site (bank…) on your devices.</p></div>
+<p>What you should see: frequency and mode following the transceiver, S-meter, received audio (tap the sound button if the browser blocked it).</p>
+<p>To <strong>transmit</strong>, the page needs the <strong>microphone</strong>: the browser asks for it at the first transmission. It only offers it over HTTPS, hence the certificate.</p>
+<div class="note danger"><p><strong>Safety.</strong> The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> is a <strong>toggle</strong>: one press to transmit, one press to go back to receive. The state shown is the one the station confirms, never a guess. <strong>STOP</strong> cuts at any time. <strong>STOP held for 3 seconds</strong> (countdown under the word STOP) opens a window: “Disconnect”, or “Power off the transceiver remotely” (with a confirmation; only if remote power-on is in service, menu 2.8). A hidden page (other tab, locked screen) stops the transmission.</p>
+<p><strong>Transceiver off.</strong> A red “RIG OFF” banner says so. If remote power-on is in service, your connection powers the transceiver on by itself: a window shows the steps (serial ports checked, command, start-up, read-back) and, if it fails, a clear message with “Retry” and “Continue without the rig”; the “Power on the rig” button of the banner does the same. An automatic reconnection never powers the transceiver on. The app does the same (its STOP cuts as soon as it is pressed); in the car, Android Auto shows “RIG OFF” or “POWERING ON THE RIG…” as the title.</p></div>
+<h3 id="p-04-43-several-devices-several-users">4.3 Several devices, several users</h3>
+<p>Simple rule: <strong>one account per device</strong>, named after the device (<code>PC</code>, <code>S25</code>, <code>tablet</code>…), even if they are all yours. The same account opened on a second device <strong>closes the connection of the first</strong> (and cuts its transmission if it was transmitting). With one account per device, the station knows which one is transmitting, and you can remove a single device (lost phone) without touching the others.</p>
+<p>Everything is done in menu <strong>4.3 “<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-operator-account">Operator accounts</span>”</strong> of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>:</p>
+<ul>
+<li><strong>add</strong> an account: username, password (Enter = a strong password is generated, write it down), then the <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-pairing">pairing</span> QR code</strong> of this account for the app;</li>
+<li><strong>change a password</strong> (a forgotten password is replaced: the station does not know it in clear);</li>
+<li><strong>disable</strong> an account (lost or lent phone), then enable it again;</li>
+<li><strong>delete</strong> an account.</li>
+</ul>
+<p>The station applies the changes within a few seconds, without restarting; the connection of an account that is disabled, deleted or whose password changed is closed at once. The last active operator account can be neither disabled nor deleted. Only one person can transmit at a time. For listeners without any control, prefer <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-visitor">visitors</span></strong> (menu 4.2, part 9).</p>
+<h3 id="p-04-44-the-android-app">4.4 The Android app</h3>
+<p>The app (“openRemoteTRX”, Android 10 or later) brings what the page cannot do: transmission that continues with the screen off, headset button, Android Auto, driving mode.</p>
+<ol>
+<li>Install the app (invitation-only testing, part 0).</li>
+<li>On the station, menu <strong>4.1</strong>: <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> shows the address, the accounts, the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-certificate-fingerprint">certificate fingerprint</span> and a <strong>QR code</strong> (without password).</li>
+<li>In the app: “<strong>Scan the station&#x27;s QR code</strong>”. The address, username and fingerprint are filled in; enter the password.</li>
+<li>Log in: same check as for the page (frequency, received audio), then a transmission test on a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span> with STOP.</li>
+</ol>
+<p>The certificate fingerprint protects the link: the app refuses a station whose <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> has changed. After a new certificate (address change), do the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-pairing">pairing</span> again.</p>
+<div class="note danger"><p><strong>Safety.</strong> In the car, the phone&#x27;s touch <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> is hidden (driving mode): use Android Auto, voice commands or the steering-wheel buttons, and obey the highway code.</p></div><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-05"><h2 id="p-05" class="partie">5. Using the station remotely (outside the local network)</h2>
+<p>The station does not manage the network: it listens on an address and a port, and protects access with a username and password. You choose how your phone reaches it from outside. The full technical guide: <a href="https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant.md" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant.md</a></p>
+<h3 id="p-05-51-choose-vpn-or-open-port">5.1 Choose: VPN or open port</h3>
+<div class="table"><table><thead><tr><th></th><th>A. VPN (recommended)</th><th>B. Open port on the box</th></tr></thead><tbody><tr><td>Principle</td><td>a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> links the phone to the station&#x27;s network</td><td>the box forwards an Internet port to the station</td></tr><tr><td>Examples</td><td>WireGuard (often built into the box), Tailscale, OpenVPN</td><td>box + domain name + recognised <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span></td></tr><tr><td>Visible from the Internet</td><td>nothing</td><td>the login page</td></tr><tr><td>Audio (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-webrtc">WebRTC</span>, UDP)</td><td>goes through easily</td><td>often goes through, <strong>not always</strong> (strict box, address shared by the provider)</td></tr></tbody></table></div>
+<p>Choose the VPN if in doubt: nothing is exposed, and the audio goes through.</p>
+<h3 id="p-05-52-option-a-vpn">5.2 Option A: VPN</h3>
+<ol>
+<li>Install the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> of your choice: server on the box or on the station PC, client on the phone. For Tailscale, a dedicated guide: <a href="https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant-tailscale.md" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant-tailscale.md</a></li>
+<li><strong>One <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn-profile">VPN profile</span> per device</strong>, never shared. Two devices on the same profile steal the link from each other: dropouts every 15 to 30 seconds.</li>
+<li>If the VPN lands <strong>on your <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span></strong> (VPN of the box): nothing to change on the station, use the same address as at home. If the VPN gives the station PC <strong>a separate address</strong> (Tailscale, WireGuard on the PC): run the wizard again (menu 2.1, network access) so that the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> also covers this address, then pair the app again (menu 4.1).</li>
+<li>On the phone, on 4G, VPN active: open the same page <code>https://&lt;station-address&gt;:8443</code>.</li>
+</ol>
+<p>On Android, only one VPN can be active at a time. With <strong>Android Auto</strong>, route only the station&#x27;s network through the tunnel (not all traffic), otherwise the car refuses the link: detailed settings in the technical guide, section “Android Auto et VPN”.</p>
+<h3 id="p-05-53-option-b-open-port-on-the-box">5.3 Option B: open port on the box</h3>
+<p>For those who know their box and <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificates</span>.</p>
+<ol>
+<li><strong>Check that it is possible</strong>: compare the “WAN” address of your box with the one given by a “what is my IP address” website. If they differ, your provider shares your address (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cgnat">CGNAT</span>): no port can be opened, use a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span>.</li>
+<li>A <strong>domain name</strong> pointing to your box (dynamic DNS if the address changes).</li>
+<li>A <strong>recognised certificate</strong>: the simplest is an HTTPS proxy (Caddy) on the station PC, which obtains and renews a Let&#x27;s Encrypt certificate by itself; the station then keeps listening locally. Example and settings in the technical guide, section “Option B”.</li>
+<li>On the box, forward port 443 (TCP) to the station PC.</li>
+</ol>
+<div class="note danger"><p><strong>Safety.</strong> With an <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-open-port">open port</span>, the <strong>password is your only barrier</strong>: long and unique for each account. The station slows down attempts (5 failures per minute and per origin, 30 per quarter of an hour and per account), but a stolen password allows transmitting in your <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-allowed-bands">allowed bands</span>. The transmission safeguards stay active in all cases, and so does the transceiver&#x27;s transmit timer (part 1).</p></div>
+<h3 id="p-05-54-tests-from-outside">5.4 Tests from outside</h3>
+<p>Phone <strong>on 4G</strong> (Wi-Fi off), <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span> on the transceiver:</p>
+<ol>
+<li>The page opens (option B: padlock without warning).</li>
+<li>A wrong password is refused.</li>
+<li>The right password connects: frequency, S-meter, <strong>received audio</strong>.</li>
+<li>Transmission on the dummy load: <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span>, then <strong>STOP</strong>; then transmit and switch to airplane mode: back to receive.</li>
+<li>If the page opens but the audio does not establish: UDP is not getting through (option B): switch to the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span>.</li>
+</ol>
+<p>In case of repeated dropouts, menu 6.4 (network quality) says which segment fails: phone, mobile network, tunnel, box or station.</p><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-06"><h2 id="p-06" class="partie">6. An unattended station</h2>
+<p>A remotely controlled station runs most of the time with nobody next to it. This part prepares for that.</p>
+<h3 id="p-06-61-alerts-on-your-phone-ntfy">6.1 Alerts on your phone (ntfy)</h3>
+<p>The station&#x27;s <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span> can send you notifications: transmission cut for safety, failure, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-safety-lockout">safety lockout</span>, memory or disk almost full, link dropout, and a silent “Station in service” message every hour (if it stops arriving, the station or its connection has failed).</p>
+<ol>
+<li>Install the <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ntfy">ntfy</span></strong> app on the phone.</li>
+<li>Choose a <strong>long topic name that is impossible to guess</strong> (for example 20 random letters and digits): on the public ntfy.sh server, anyone who knows the name reads the messages.</li>
+<li>Subscribe to this topic in the ntfy app.</li>
+<li>On the station, menu <strong>3.5</strong> “Alerts on the phone”: choice 1, paste the address <code>https://ntfy.sh/&lt;your-topic&gt;</code>, save, accept the restart. The screen never shows the full address.</li>
+<li>Check: choice 4, “Send a test alert now”; the phone must ring at once (code ORT-8025). After that, the “Station in service” message arrives every hour (choice 3 to change this rhythm).</li>
+</ol>
+<p>Each alert carries an “ORT-NNNN” code with a link to its explanation (part 8). Two alerts arrive at restart after a shutdown that was not clean: <strong>ORT-8030</strong> (Debian, Raspberry Pi: the machine stopped abruptly, power cut or crash) and <strong>ORT-8031</strong> (the supervisor alone stopped); each gives the time of the last sign of life. A normal stop (menu 1.2, PC shutdown) sends nothing.</p>
+<h3 id="p-06-62-the-safety-lockout">6.2 The safety lockout</h3>
+<p>After repeated failures that restarts did not fix, the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span> <strong>puts the station in <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-safety-lockout">safety lockout</span></strong>: transceiver in receive, access cut, alert sent. The safety lockout <strong>survives restarts</strong>: find the cause (menus 6.1 and 6.2), then lift it with menu <strong>1.4</strong>.</p>
+<h3 id="p-06-63-after-a-power-cut">6.3 After a power cut</h3>
+<div class="table"><table><thead><tr><th>Item</th><th>To set</th></tr></thead><tbody><tr><td>PC</td><td>in the BIOS / UEFI: “Restore on AC power loss” = <strong>Power On</strong> (the name varies with the motherboard)</td></tr><tr><td>Raspberry Pi</td><td>nothing: it restarts as soon as power returns</td></tr><tr><td>Debian or Raspberry Pi station</td><td>nothing: it starts with the machine, without opening a session</td></tr><tr><td>Windows station</td><td>it starts at <strong>session login</strong>: without automatic login of your session, it stays stopped</td></tr><tr><td>Transceiver</td><td>most transceivers do <strong>not</strong> power on by themselves. The station can power it on through <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> (menu <strong>2.8</strong>, off by default, with a power off / power on test): your connection from the page or the app powers it on</td></tr><tr><td>Box</td><td>powers on by itself; check that the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> does too</td></tr></tbody></table></div>
+<p>A <strong>UPS</strong> for the PC, the box and the transceiver&#x27;s power supply avoids most of these cases.</p>
+<h3 id="p-06-64-hardware-protection">6.4 Hardware protection</h3>
+<ul>
+<li><strong>Lightning</strong>: a station away from any human presence is exposed. Lightning arrester on the antenna cable, and antenna grounded or disconnected when a storm is forecast.</li>
+<li><strong>Power</strong>: the transceiver&#x27;s ceiling (HF MAX POWER, part 1) remains the last barrier.</li>
+<li><strong>Transceiver timer</strong> (TX TIME OUT TIMER): set to 3 min, it cuts even if everything else has failed.</li>
+<li><strong>Temperature</strong>: the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span> watches the PC&#x27;s processor and alerts when it stays above 70 °C for one minute (a peak of a few seconds does not count); the alert says which programs were heating. On Debian and on a Pi, the history of the last 24 h (one reading every 10 s) is attached to the troubleshooting report (menu 6.3). On a Pi, a fan is essential. The transceiver&#x27;s temperature cannot be read by the station on the transceivers tested (IC-7300MK2, FTDX10): proper ventilation around the transceiver.</li>
+<li><strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-operator">Local operator</span></strong>: if someone uses the transceiver on site, remote transmission is blocked during their transmission and then for 2 minutes; the station never cuts them for this reason. A transmission with the microphone is cut by the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-absolute-tot">absolute TOT</span> (135 s), unless the operator touched the transceiver (volume, frequency, mode, leaving DATA mode…) in the 2 minutes before speaking or while speaking: the station knows they are present and lets them speak for up to 5 minutes (<code>local_tx_max_s</code>), with a simple alert in between. The transceiver timer, if set shorter, cuts first. These settings are in menu <strong>3.4</strong> “Operator on site”: keep “shared station”; otherwise, a microphone held down leads to the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-safety-lockout">safety lockout</span>.</li>
+</ul><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-07"><h2 id="p-07" class="partie">7. Day-to-day operation</h2>
+<h3 id="p-07-71-start-stop-monitor">7.1 Start, stop, monitor</h3>
+<p><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> (on Windows: Start menu &gt; <strong>openRemoteTRX</strong>):</p>
+<div class="table"><table><thead><tr><th>Need</th><th>Menu</th></tr></thead><tbody><tr><td>Start / restart</td><td>1.1</td></tr><tr><td>Stop (before unplugging the transceiver, or for another program)</td><td>1.2</td></tr><tr><td>Live status, STOP TX key</td><td>1.3 (<code>trx-monitor</code>)</td></tr><tr><td>Permanent station indicator</td><td>8.4: indicator in the top bar (Debian), next to the clock (Windows)</td></tr><tr><td>Log</td><td>6.2</td></tr></tbody></table></div>
+<p>The station always returns to receive at start and stop. Stop it before unplugging the transceiver&#x27;s USB cable.</p>
+<p><strong>Vital signs <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span></strong> (Debian and Raspberry Pi): a read-only page, made for a small screen next to the transceiver or for a quick look from the phone: transceiver, transmission, connections (one dot per <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-operator-account">operator account</span>), machine health (temperature, load, memory), Internet, recent alerts, 24 h history. On the station: <code>http://localhost:8450/</code>; from the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span> or the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span>: the address on the “Web dashboard” line at the top of openRemoteTRX Console (<code>https://&lt;station-address&gt;:8450/</code>). No command is possible there: no password, no access from the Internet.</p>
+<h3 id="p-07-72-update">7.2 Update</h3>
+<ul>
+<li><strong>Debian and Raspberry Pi</strong>: when a “NEW VERSION … AVAILABLE” frame appears at the top of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>, menu <strong>7.1</strong>: it shows what is new in each version, checks the signature, installs the new version next to the old one and keeps your configuration. If there is a problem: menu <strong>7.2</strong> (back to the previous version, without Internet). Station without Internet: drop the zip on the Desktop and use menu <strong>7.3</strong>.</li>
+<li><strong>Windows</strong>: download the new zip, run its <code>installer.cmd</code>; configuration and profiles are kept. Keep the zip of the old version to go back.</li>
+</ul>
+<p>The update is refused during a transmission.</p>
+<h3 id="p-07-73-back-up">7.3 Back up</h3>
+<p>Copy these files elsewhere (USB stick, another PC) after each configuration change:</p>
+<div class="table"><table><thead><tr><th></th><th>Debian, Raspberry Pi</th><th>Windows</th></tr></thead><tbody><tr><td>Configuration (accounts, bands, safeguards)</td><td><code>/etc/trx-remote/station.toml</code></td><td><code>C:\ProgramData\trx-remote\station.toml</code></td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">Certificate</span> and its key</td><td><code>tls</code> folder next to <code>station.toml</code></td><td>same</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-transceiver-profile">Transceiver profiles</span>, Breizh key</td><td><code>/etc/trx-remote/profils/</code>, <code>breizh.key</code></td><td>in <code>C:\ProgramData\trx-remote\</code></td></tr></tbody></table></div>
+<p>These files contain <strong>secrets</strong> (certificate key, password hashes): keep the backup in a safe place. To move a Windows station to Debian or to a Raspberry Pi, put its <code>station.toml</code> next to <code>install.sh</code> before installing. On a Pi, also keep a copy of the SD card (or SSD) once everything is set: it is the fastest way to start again if it fails.</p>
+<h3 id="p-07-74-change-a-setting">7.4 Change a setting</h3>
+<ul>
+<li><p>One part of the configuration, without going through the whole wizard again: only its questions are asked, Enter keeps each current setting.</p>
+<div class="table"><table><thead><tr><th>To change</th><th>Menu</th></tr></thead><tbody><tr><td>the transceiver, its port, the speed, the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> (with a link test)</td><td><strong>2.5</strong></td></tr><tr><td>the sound cards</td><td><strong>2.6</strong></td></tr><tr><td>the HF spectrum through the second port (Icom)</td><td><strong>2.7</strong></td></tr><tr><td>remote power on and off of the transceiver (off by default)</td><td><strong>2.8</strong></td></tr><tr><td>the receive audio gain and its limiter (received level shown, suggested value)</td><td><strong>2.9</strong></td></tr><tr><td>the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-allowed-bands">allowed bands</span></td><td><strong>3.2</strong></td></tr><tr><td>the maximum power and the duration of a transmission (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span>)</td><td><strong>3.3</strong></td></tr><tr><td>network access and <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">HTTPS</span></td><td><strong>4.5</strong></td></tr></tbody></table></div></li>
+</ul>
+<ul>
+<li>A specific setting without a menu: menu <strong>8.1</strong> (checked copy, differences shown, old version kept). The description of each setting: <a href="https://bob56fr.github.io/openRemoteTRX/station-toml/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/station-toml/</a></li>
+<li>A new device, a password to change, a lost phone: menu <strong>4.3</strong> (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-operator-account">operator accounts</span>).</li>
+<li>Start everything again (new transceiver, new PC): menu <strong>2.1</strong>; accounts and safeguards are kept.</li>
+<li>The full manual of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>: <a href="https://bob56fr.github.io/openRemoteTRX/console/en/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/console/en/</a> (or the <code>h</code> key in the console: <code>h 8.1</code>).</li>
+</ul>
+<h3 id="p-07-74-bis-fewer-menus-the-display-level">7.4 bis Fewer menus: the display level</h3>
+<p><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> shows more or fewer menus depending on the <strong>level</strong> chosen in menu <strong>0</strong> (“Language &amp; level”) or, in the browser, with the Basic / Normal / Expert buttons at the top of the page:</p>
+<div class="table"><table><thead><tr><th>Level</th><th>What is shown</th></tr></thead><tbody><tr><td><strong>Basic</strong></td><td>start, stop, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span>, full wizard, transceiver test, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-pairing">pairing</span> a phone, accounts, diagnostic, report, update (and “reactivate the station” when it is in <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-safety-lockout">safety lockout</span>)</td></tr><tr><td><strong>Normal</strong></td><td>in addition, all the usual settings (bands, power, alerts, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-visitor">visitors</span>, features…)</td></tr><tr><td><strong>Expert</strong></td><td>in addition, temperature thresholds, <code>station.toml</code> by hand, automatic tests, transceiver qualification</td></tr></tbody></table></div>
+<p>The level only hides: a number typed (<code>3.3</code>) always opens its menu, and the browser search finds all the menus. Without a saved choice, the console starts in Basic. In the browser, the language can also be changed with one click at the top of the page (FR, EN, DE, ES).</p>
+<h3 id="p-07-75-the-console-in-the-browser">7.5 The console in the browser</h3>
+<p>The same menus, in a web page: live station status, themes as tiles, search (“<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ntfy">ntfy</span>”, “<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-tot">TOT</span>”…), help for each menu when the mouse hovers over it (at the first tap on a tablet). The chosen menu opens in a panel on the right (full screen on a phone), <strong>without a terminal</strong>: its questions become buttons (choices, Yes / No, Confirm), fields (number with its limits, password), and what the commands display scrolls in a dark frame, with the [OK], [ATTENTION] and [ERREUR] lines in colour. The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-configuration-wizard">configuration wizard</span> (2.1) and its parts (2.5 to 2.7, 3.2, 3.3, 4.5), like the DX Cluster setting, also ask their questions as buttons and fields; each answer is written in the frame, under its question. A refusal is shown in red. “Other answer…” always lets you type your answer if a button is missing. The station&#x27;s administration password (sudo) is asked once per session, in the panel. The <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span> (1.3) is shown full screen in the page: same sections as in the terminal (radio, SDR receiver if it is in service, audio, connections, health, computer, network with its “Detail” button, log), updated continuously, with the <strong>STOP TX</strong> button (it can only cut a transmission). Editing <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-stationtoml">station.toml</span> (8.1) is done in a large text field: “Check and save” has the station check the file, show the differences and ask for confirmation before writing; a wrong file is refused in red and nothing is written. “Open in the terminal”, at the top of the panel, replays any menu in the terminal at the bottom of the page. Same page on Debian, on a Raspberry Pi and on Windows.</p>
+<ul>
+<li><strong>On the station PC</strong>: key <strong>w</strong> in the full screen of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span>, or <code>trx-console --web</code> in a terminal. The browser opens by itself.</li>
+<li><strong>From any device on the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span> or the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span></strong> (PC, tablet, phone): once, on the station, menu <strong>4.6</strong> “openRemoteTRX Console on the network”: put it in service, then choose the <strong>administrator</strong> <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-operator-account">operator accounts</span> (yours). Then open <code>https://&lt;station-address&gt;:8444/</code> and log in with your usual username and password. Logged in to the control page with an administrator account, you also find the link in the “openRemoteTRX Console (administration)” section, under “Connection”.</li>
+</ul>
+<div class="note danger"><p><strong>Safety.</strong> An administrator account opens the station&#x27;s configuration: strong password, not to be lent. The console can never be reached from the Internet (public addresses refused); after 5 failed attempts, the address is blocked for 15 minutes; each connection sends an alert to the phone (ntfy); the session closes after 30 minutes without action, and a new connection closes the previous one. The station&#x27;s sudo password is still asked once per session, at the first administration menu.</p></div><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-08"><h2 id="p-08" class="partie">8. Troubleshooting</h2>
+<h3 id="p-08-81-the-first-reflex">8.1 The first reflex</h3>
+<ol>
+<li><strong>Diagnostic</strong> (menu 6.1): it tells you what is wrong and what to do.</li>
+<li><strong>Log</strong> (menu 6.2): messages start with an “ORT-NNNN” code.</li>
+<li>Each code has its own explanation page (cause, what to do): <a href="https://bob56fr.github.io/openRemoteTRX/erreurs/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/erreurs/</a> (search field: type the code).</li>
+</ol>
+<h3 id="p-08-82-common-problems">8.2 Common problems</h3>
+<div class="table"><table><thead><tr><th>Symptom</th><th>Likely cause</th><th>What to do</th></tr></thead><tbody><tr><td>The diagnostic does not find the transceiver</td><td>transceiver off; wrong port (the transceiver&#x27;s second port, or “Standard” on Yaesu); transceiver speed different from the one in the wizard; driver missing (Windows)</td><td>switch on; go through menu 2.5 again with the command port; set the speed (transceiver sheet)</td></tr><tr><td>No received audio</td><td>transceiver sound card taken by the desktop; microphone forbidden to applications (Windows); level too low (transceiver setting, gain in menu 2.9)</td><td>part 1.4; part 2, Windows tab; transceiver sheet</td></tr><tr><td>Transmission starts but nothing is modulated</td><td>in this mode the transceiver takes the voice from its microphone, not from USB (Icom: DATA MOD; Yaesu: MOD SOURCE and REAR SELECT)</td><td>transceiver sheet, “Voice through USB”</td></tr><tr><td>Only DATA modes can transmit</td><td>the wizard noted that the voice does not go through USB</td><td>set up the transceiver, then run the wizard again and answer “yes”</td></tr><tr><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span> at maximum, distorted audio</td><td>transceiver USB input level too high (Icom: USB MOD Level; Yaesu: RPORT GAIN)</td><td>part 3.4</td></tr><tr><td>The transceiver goes into transmission when the PC starts</td><td>an RTS or DTR line of the USB port keys the transmitter (Icom: USB SEND / USB Keying; Yaesu: RPTT SELECT, PC KEYING)</td><td><strong>unplug the USB</strong>, set these settings to OFF (transceiver sheet)</td></tr><tr><td>Slow Raspberry Pi, choppy audio, transceiver USB dropping out</td><td>power supply too weak or overheating (<code>vcgencmd get_throttled</code> other than <code>throttled=0x0</code>)</td><td>official power supply, fan (part 2, Raspberry Pi tab)</td></tr><tr><td>“Microphone unavailable” in the page</td><td>page opened over HTTP</td><td>open the address with <strong>https://</strong></td></tr><tr><td>Page unreachable from the phone</td><td>station stopped; address changed; network on the Public profile (Windows)</td><td>menu 1.1; part 4.1; part 2, Windows tab</td></tr><tr><td>Connected but no audio remotely</td><td>UDP does not get through (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-open-port">open port</span> on the router)</td><td><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> (part 5)</td></tr><tr><td>Dropouts every 15 to 30 s</td><td>two devices on the same <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn-profile">VPN profile</span></td><td>one profile per device</td></tr><tr><td>Transmission cut by itself</td><td>maximum time reached, phone no longer responding, frequency outside the bands, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-operator">local operator</span></td><td>normal: the reason is shown in the page and the log</td></tr><tr><td>Nothing responds any more, “station in <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-safety-lockout">safety lockout</span>” alert</td><td>repeated failures</td><td>part 6.2</td></tr><tr><td>Transceiver test refused: “ORT-9313 … the station is running”</td><td>the test needs the transceiver for itself</td><td>stop the station (menu 1.2), run the test again, restart the station</td></tr><tr><td>A tool stops with “ORT-9312 … unexpected error”</td><td>software fault in an unforeseen case (new transceiver, sound card…)</td><td>the message gives the detail file (<code>plantages</code> folder): attach it to the help request (part 8.3)</td></tr></tbody></table></div>
+<h3 id="p-08-83-asking-for-help">8.3 Asking for help</h3>
+<ol>
+<li>Menu <strong>6.3</strong>: creates a troubleshooting report (zip on the Desktop, or in the account folder on a Pi without a desktop) <strong>without any password</strong> (Windows as well as Debian). From the web console, the <strong>“Download the report”</strong> button fetches it directly to your PC or phone. The traces of tools that stopped on an error (code ORT-9312) are in the <code>plantages</code> folder of the station&#x27;s state folder, and the report includes them. To read it yourself: menu <strong>6.6</strong>, which gives the link to the <strong>analyser</strong>; drop the zip there and the analysis runs in your browser (the report is sent nowhere).</li>
+<li>From the web page: “Report a problem” section (text reviewed before sending).</li>
+<li>Open an issue on <a href="https://github.com/Bob56fr/openRemoteTRX/issues" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/issues</a> with the <strong>English</strong> form (“Report a bug”), describe what you were doing, what you expected, what happened, and attach the report.</li>
+<li><strong>Getting help remotely</strong> (station-to-station monitoring, menu <strong>6.5</strong>, to be enabled first: part 9): the person helping you creates a 10-character code and reads it out to you; type it at choice 4, then compare out loud the <strong>6 digits</strong> shown on both sides. Different: answer “no”, the link is erased. Then choose what you send (“Diagnostic” recommended; frequency and mode only if you want). They then see the state of your station and its error codes, <strong>masked</strong> (no password, no address, no serial number), and can <strong>ask</strong> you for assistance mode (news every 30 seconds, for a limited time): you are the one who accepts (choice 7). They <strong>cannot command anything</strong> on your station. You stop everything whenever you want (choice 9). They can also ask you for your <strong>troubleshooting report</strong> (the one in point 1, fully masked); you can also send it yourself (choice 10). On their side, they get an alert on their phone if your station stops giving news. <strong>Away from your station</strong>, everything can also be done in the web page, “Monitoring” section: button “Get help: I have a code”, comparison of the 6 digits, choice of what is sent, answer to requests, end.</li>
+</ol><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-09"><h2 id="p-09" class="partie">9. Optional features</h2>
+<p>All of them are <strong>disabled</strong> at the start. Enable them once the station is validated (parts 3 to 5): menu <strong>5.5</strong> “Features in service” switches them on or off by number (it also starts the feature&#x27;s module); a feature that needs other settings is refused, with the menu where to make them.</p>
+<div class="table"><table><thead><tr><th>Feature</th><th>What it is for</th><th>Where to enable it</th></tr></thead><tbody><tr><td>Receive-only <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-visitor">Visitors</span></strong></td><td>accounts that listen to the station and see the screen, with <strong>no</strong> command at all (radio club, demonstration)</td><td>menu 4.2, then the “Visitor listening” switch in the page</td></tr><tr><td><strong>DX Cluster</strong></td><td>spots on the spectrum and badges on the band buttons</td><td>menu 5.1</td></tr><tr><td><strong>FreeDV</strong> RADE V1 (reception)</td><td>FreeDV digital voice decoded by the station</td><td>decoders to compile (<code>sudo bash compiler-freedv.sh</code> in the Debian package folder), then menu 5.5 (“FreeDV reception”); the locator for FreeDV activity: <code>[freedv] locator</code> (menu 8.1)</td></tr><tr><td><strong>SELCALL</strong></td><td>group-call squelch in SSB</td><td>menu 5.5, then the SELCALL section of the page</td></tr><tr><td><strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-swr">SWR</span> measurement</strong></td><td>SWR curve of the antenna over a band, in FM, at reduced power</td><td>web page or application; the station transmits: <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-allowed-bands">allowed bands</span> only</td></tr><tr><td><strong>Group presence</strong></td><td>see which friends equipped with openRemoteTRX are in a QSO, and join them</td><td>menu 5.3</td></tr><tr><td><strong>Station-to-station monitoring</strong></td><td>get help remotely from someone you trust, or help another operator: station state and error codes, masked and encrypted, without <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> or <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-open-port">open port</span>; no command possible towards the station being helped</td><td>menu 5.5 (“Monitoring between stations”), then menu 6.5 or the “Monitoring” section of the page (part 8.3)</td></tr><tr><td><strong>Breizh Audio Box</strong></td><td>voice processing on another PC of the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-local-network">local network</span></td><td>menu 5.2</td></tr><tr><td><strong>Live broadcast</strong></td><td>let a few <strong>listeners</strong> on the Internet hear the transceiver&#x27;s audio, without an account on the station: they listen on the page of a broadcast server (private channel with username and password, or public); <strong>DIFFUSION</strong> indicator always visible in the page; your voice during your transmissions is broadcast only if you ask for it; outside your bands, silence for the listeners (unless set otherwise): their page gives the reason (outside the bands, transmission without your voice, no more audio from the transceiver), as do menu 5.6 and the 🔇 indicator; alert on the phone at the start and at the end</td><td>menu 5.6 (server and secrets given by the server administrator), menu 5.5 (“Live broadcast”), then menu 5.6 or the “Live broadcast” section of the page to start and stop</td></tr><tr><td><strong>Replay</strong> of a recording</td><td>transmit again a recording of the reception</td><td>granted in the wizard; generally <strong>forbidden</strong> in the amateur service</td></tr><tr><td><strong>SDR receiver</strong> (SDRplay)</td><td>second waterfall and listening (AM, FM, SSB, CW) of a receive-only SDR, next to the TRX; SDR audio muted during any transmission; TRX / SDR balance and, on headphones, one source per ear; waterfall zoom (“Zoom − / +” around the listened frequency, ◄ ► to move the window), colour palette, width (at most the one chosen in menu 2.4) and antenna A / B from the page; DX Cluster spots on the SDR waterfall (tap a spot: the SDR listens to it, the TRX does not move); the station slows down or suspends the SDR by itself if it is too loaded; SDR IN STANDBY when nobody has shown its section or listened to it for 1 minute (less load and heat), woken in a few seconds when the section is opened (“SDR: leaving standby, a few more seconds…”); SDR chosen and set in menu 2.4 of <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-openremotetrx-console">openRemoteTRX Console</span> (search on all USB ports and hubs); “TRX QSY” to a frequency read on the SDR; SDR running: below the TRX frequency, a purple “SDR” line (frequency, mode, filter being listened to; tapping it opens the SDR section on its waterfall), on the right two bargraphs of the audio heard (TRX: tap = mute in the page, reset at each connection; SDR: tap = listening started or stopped, like “Listen”), “S-TRX” and “S-SDR” S-meters (S-SDR while listening to the SDR, approximate “≈” until it is calibrated: SDR on the TRX frequency with “QSY TRX → SDR”, a steady signal, then “Calibrate S-SDR to the TRX” in the SDR section; calibration kept in the browser)</td><td>first install the manufacturer&#x27;s SDRplay API, then the station; <code>trx-sdr --list</code> gives the serial number; <code>[sdr]</code> and “sdr” in <code>[modules] run</code> (menu 8.1)</td></tr></tbody></table></div>
+<div class="note"><p><strong>SDR receiver: protect its input.</strong> The SDR cannot withstand the power of your TRX. Separate antenna, or a switch and sequencer that ground the SDR input before any transmission: it is up to you to provide this, according to your equipment. The station cannot do it for you (a transmission with the transceiver microphone is only seen after the fact). The SDR is identified by its <strong>serial number</strong>: on a machine that has several, never enter the one of an SDR used by another application. Plug it into its own USB port, never into the transceiver&#x27;s hub. The “USB ports” line of the COMPUTER card (<span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span>, menu 1.3) tells you whether a USB bus is overloaded or whether the SDR is slowed down; the details and what to do are in the diagnostic (menu 6.1). A blue socket (USB 3) does not speed up a USB 2 SDR: it shares the 480 Mbit/s of the computer&#x27;s USB 2 part.</p></div>
+<div class="note danger"><p><strong>Safety.</strong> Retransmitting to third parties what the station receives (visitors, broadcast listeners) makes you responsible, especially outside the amateur radio bands; by default, visitors and listeners hear only silence outside your bands (two independent settings).</p></div>
+<p>Depending on the transceiver, two features of the page may be missing: the <strong>transceiver&#x27;s HF spectrum</strong> (only through the second port of an Icom such as the IC-7300MK2; otherwise only the audio spectrum is shown) and the <strong>FIL1/2/3 filter presets</strong> (specific to Icom).</p><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-glossaire"><h2 id="glossaire" class="partie">Glossary</h2>
+<p>The words of the guide, arranged by theme. The diagram of the building blocks is in <a href="#p-00-how-it-is-organised">part 0</a>.</p>
+<h3 id="glossaire-the-hardware">The hardware</h3>
+<div class="table"><table><thead><tr><th>Term</th><th>What it is</th></tr></thead><tbody><tr><td><strong>Transceiver</strong>, <strong>TRX</strong>, <strong>Rig</strong></td><td>your radio transmitter-receiver</td></tr><tr><td><strong>Station PC</strong></td><td>the computer next to the transceiver, always on, that runs the station: a PC running Debian or Windows, or a Raspberry Pi</td></tr><tr><td><strong>Raspberry Pi</strong></td><td>small single-board computer, low power; the Pi 4 (4 GB) or the Pi 5 running Raspberry Pi OS 64-bit can serve as the station PC</td></tr><tr><td><strong>Hardware watchdog</strong></td><td>a chip of the Raspberry Pi that restarts it if the system freezes for more than 15 s; enabled by the installation</td></tr><tr><td><strong>Station</strong></td><td>the whole transceiver + PC + openRemoteTRX software; “start the station” = start its services</td></tr><tr><td><strong>CAT</strong></td><td><em>Computer Aided Transceiver</em>: control of the transceiver by the computer (frequency, mode, transmission…)</td></tr><tr><td><strong>Enhanced COM Port</strong> / <strong>Standard COM Port</strong></td><td>the two serial ports that some Yaesu transceivers (FTDX10…) create on the PC through their USB cable: the first one is for CAT, the second one (RTS/DTR lines) is not used by the station</td></tr><tr><td><strong>Transceiver sound card</strong></td><td>the sound card built into the transceiver, seen by the PC through the USB cable (“USB Audio CODEC” on Yaesu, “USB Audio Device” on the IC-7300MK2): received audio to the PC, voice to the transceiver</td></tr><tr><td><strong>Dummy load</strong></td><td>50 Ω resistor that replaces the antenna: the transceiver transmits without radiating. Mandatory for all tests</td></tr><tr><td><strong>ALC</strong></td><td>transceiver meter that shows whether the modulation is too strong; used to set the voice level</td></tr><tr><td><strong>SWR</strong></td><td>standing wave ratio: matching of the antenna. The station can measure it across a band</td></tr><tr><td><strong>VFO A / VFO B</strong></td><td>the transceiver&#x27;s two working frequencies; the page shows which one is active</td></tr><tr><td><strong>Split</strong></td><td>receive on one frequency, transmit on another</td></tr></tbody></table></div>
+<h3 id="glossaire-the-station-software">The station software</h3>
+<div class="table"><table><thead><tr><th>Term</th><th>What it is</th></tr></thead><tbody><tr><td><strong>openRemoteTRX</strong></td><td>the name of the project; the Android app has this name, the station is also called “openRemoteTRX”</td></tr><tr><td><strong>Hamlib</strong></td><td>the free library that can talk to about 300 transceiver models; each model has a <strong>number</strong> (IC-7300MK2 = 3094, FTDX10 = 1042)</td></tr><tr><td><strong>rigctld</strong></td><td>the Hamlib program that keeps the link with the transceiver; it listens only on the PC itself, never on the network</td></tr><tr><td><strong>Gateway</strong> (<code>trx-gateway</code>)</td><td>the heart of the station: serves the web page, checks the accounts, carries the audio and <strong>decides on transmission</strong></td></tr><tr><td><strong>Supervisor</strong> (<code>trx-supervisor</code>)</td><td>the independent guardian: watches the gateway, rigctld and the PC; it can <strong>only cut</strong> a transmission, restart a service or put the station in safety lockout; sends the alerts</td></tr><tr><td><strong>openRemoteTRX Console</strong> (<code>trx-console</code>)</td><td>the station&#x27;s control panel in a terminal: install, configure, start, test, update, troubleshoot (numbered menus “2.1”, “2.2”…)</td></tr><tr><td><strong>Configuration wizard</strong> (<code>trx-setup</code>)</td><td>the questions that create the configuration (menu 2.1); it only reads from the transceiver</td></tr><tr><td><strong>Dashboard</strong> (<code>trx-monitor</code>)</td><td>the live status in a terminal (menu 1.3); a single action: STOP TX</td></tr><tr><td><strong>Vital signs dashboard</strong></td><td>read-only page (port 8450, Debian and Raspberry Pi) for a small screen near the transceiver or a phone</td></tr><tr><td><strong>Indicator</strong></td><td>the station&#x27;s status light in the top bar (Debian) or next to the clock (Windows); read-only</td></tr><tr><td><strong>Guided test</strong> (<code>trx-hwtest</code>)</td><td>the step-by-step test of the real transceiver (menu 2.2)</td></tr><tr><td><strong>Qualification</strong> (<code>trx-qualif</code>)</td><td>the complete exploration of what Hamlib declares for a transceiver (menu 8.3), for experts</td></tr><tr><td><strong><code>station.toml</code></strong></td><td>the station&#x27;s configuration file: transceiver, ports, accounts, allowed bands, safety settings</td></tr><tr><td><strong>Transceiver profile</strong></td><td>a transceiver configuration saved under a name, to change transceivers (menu 2.3)</td></tr><tr><td><strong>Module</strong></td><td>an optional feature that runs next to the gateway (DX Cluster, group presence…)</td></tr><tr><td><strong>Signed update</strong></td><td>the Debian packages are signed: the update over the Internet (menu 7.1) refuses a package whose signature does not match; an unsigned zip (menu 7.3) asks for a confirmation</td></tr></tbody></table></div>
+<h3 id="glossaire-user-side">User side</h3>
+<div class="table"><table><thead><tr><th>Term</th><th>What it is</th></tr></thead><tbody><tr><td><strong>Web page</strong></td><td>the station&#x27;s interface in a browser, at the address <code>https://&lt;station-address&gt;:8443</code></td></tr><tr><td><strong>Android app</strong></td><td>the openRemoteTRX app: the same as the page, plus transmitting with the screen off, the headset, the car</td></tr><tr><td><strong>Android Auto</strong></td><td>the app&#x27;s display on the car screen: listening, memories, PTT, no graphics</td></tr><tr><td><strong>Driving mode</strong></td><td>the app&#x27;s reduced screen in the car: no touch PTT</td></tr><tr><td><strong>Operator account</strong></td><td>username + password that allow controlling the transceiver and transmitting; <strong>one per device</strong> (<code>PC</code>, <code>S25</code>…), managed in menu 4.3</td></tr><tr><td><strong>Visitor</strong></td><td>receive-only account: listens and sees the screen, no command</td></tr><tr><td><strong>Pairing</strong></td><td>adding the station to the app, with the <strong>QR code</strong> of menu 4.1</td></tr></tbody></table></div>
+<h3 id="glossaire-transmission-safety">Transmission safety</h3>
+<div class="table"><table><thead><tr><th>Term</th><th>What it is</th></tr></thead><tbody><tr><td><strong>PTT</strong></td><td><em>Push To Talk</em>: switching to transmit</td></tr><tr><td><strong>Toggle PTT</strong></td><td>one press to transmit, one press to go back to receive (never “as long as you press”)</td></tr><tr><td><strong>STOP</strong></td><td>immediate return to receive, always available</td></tr><tr><td><strong>TOT</strong></td><td><em>Time Out Timer</em>: maximum duration of a transmission (90 s by default, 120 s at most), with a beep 10 s before the cut</td></tr><tr><td><strong>Absolute TOT</strong></td><td>duration beyond which the supervisor cuts any transmission, even one made with the transceiver&#x27;s microphone (135 s; 5 minutes if the operator touched the transceiver just before or during it)</td></tr><tr><td><strong>Heartbeat</strong></td><td>the sign of life the phone sends twice a second during transmission; if it is missing for 2 s, back to receive</td></tr><tr><td><strong>Allowed bands</strong></td><td>the frequency ranges where the station accepts to transmit; empty list = receive only</td></tr><tr><td><strong>Local operator</strong></td><td>someone using the transceiver in front of it: remote transmission is blocked during their transmission and then for 2 minutes</td></tr><tr><td><strong>Transmit audio gate</strong></td><td>the audio path to the transceiver, opened by the gateway only during an authorised transmission</td></tr><tr><td><strong>Safety lockout</strong></td><td>the state the supervisor puts the station in after repeated failures: stopped safely (receive, access cut), it waits for an intervention; reactivate it with menu 1.4 (“Reactivate the station”)</td></tr><tr><td><strong>Transceiver timer</strong> (TX TIME OUT TIMER)</td><td>the transceiver&#x27;s own cut, independent of the station: the last barrier</td></tr></tbody></table></div>
+<h3 id="glossaire-the-network">The network</h3>
+<div class="table"><table><thead><tr><th>Term</th><th>What it is</th></tr></thead><tbody><tr><td><strong>Local network</strong> (LAN)</td><td>the home network, behind the internet box</td></tr><tr><td><strong>Port 8443</strong></td><td>the port where the gateway receives the page and the app</td></tr><tr><td><strong>HTTPS</strong>, <strong>certificate</strong></td><td>the encryption of the link; the station creates its own certificate (“self-signed”): the browser warns the first time</td></tr><tr><td><strong>Certificate fingerprint</strong></td><td>the summary of the certificate that the app remembers to refuse a fake station</td></tr><tr><td><strong>WebRTC</strong></td><td>the technique that carries the live audio, over <strong>UDP</strong></td></tr><tr><td><strong>VPN</strong></td><td>an encrypted tunnel that puts the phone “inside” the home network, from anywhere (WireGuard, Tailscale…)</td></tr><tr><td><strong>VPN profile</strong></td><td>the keys of one device in the VPN: one profile per device, never shared</td></tr><tr><td><strong>Open port</strong></td><td>the internet box letting traffic in from the Internet to the station; requires a real certificate and a strong password</td></tr><tr><td><strong>SSH</strong></td><td>the encrypted connection that opens a terminal of another machine from your PC: <code>ssh -l &lt;account&gt; &lt;address&gt;</code>; used to drive a Raspberry Pi without a screen</td></tr><tr><td><strong>CGNAT</strong></td><td>address shared by the provider between several customers: no port can be opened, a VPN is needed</td></tr><tr><td><strong>ntfy</strong></td><td>the notification service that carries the station&#x27;s alerts to your phone</td></tr><tr><td><strong>ORT code</strong></td><td>the number of a station message (“ORT-5031”); each code has its explanation page</td></tr></tbody></table></div><p class="haut"><a href="#top">Back to top</a></p></section>
+<section id="s-p-10"><h2 id="p-10" class="partie">10. Summary: where are you?</h2><div class="outils"><strong id="progress" data-model="{n} / {m} steps ticked"></strong><button type="button" id="print">Print</button><button type="button" id="reset">Untick all</button><div class="barre"><span id="bar"></span></div><p class="memo" id="memo" data-saved="Ticked boxes are kept in this browser." data-unsaved="This browser does not keep the boxes: print the page to keep a record."></p></div>
+<p>Tick as you go. On the guide&#x27;s web page, boxes are ticked online and stay ticked in your browser; on GitHub, print this page or copy the list.</p>
+<h3 id="p-10-0-before-you-start">0. Before you start</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c1-1"><span>Remote operation conditions checked for my licence</span></label></li>
+<li><label><input type="checkbox" id="c1-2"><span><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">Dummy load</span> available for the tests</span></label></li>
+<li><label><input type="checkbox" id="c1-3"><span>System chosen (Debian recommended, Raspberry Pi or Windows) and package downloaded</span></label></li>
+</ul>
+<h3 id="p-10-1-prepare-the-transceiver">1. Prepare the transceiver</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c2-4"><span>Manufacturer&#x27;s USB driver installed before plugging in the cable (Windows)</span></label></li>
+<li><label><input type="checkbox" id="c2-5"><span>Transceiver command port identified (transceiver sheet)</span></label></li>
+<li><label><input type="checkbox" id="c2-6"><span>Transceiver <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span> speed noted, menus of the transceiver sheet set</span></label></li>
+<li><label><input type="checkbox" id="c2-7"><span>Voice through USB set in each mode used</span></label></li>
+<li><label><input type="checkbox" id="c2-8"><span>No RTS / DTR line of the USB port keys the transmitter</span></label></li>
+<li><label><input type="checkbox" id="c2-9"><span>VOX off, transceiver transmit timer at 3 min, maximum power set</span></label></li>
+<li><label><input type="checkbox" id="c2-10"><span>Transceiver sound card removed from the PC&#x27;s default sound</span></label></li>
+</ul>
+<h3 id="p-10-2-install-the-station">2. Install the station</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c3-11"><span>Software installed (install.sh or installer.cmd)</span></label></li>
+<li><label><input type="checkbox" id="c3-12"><span>Session reopened (Debian, Raspberry Pi); Private network profile and sleep disabled (Windows)</span></label></li>
+<li><label><input type="checkbox" id="c3-13"><span>Raspberry Pi: official power supply, fan, <code>throttled=0x0</code></span></label></li>
+</ul>
+<h3 id="p-10-3-integrate-the-trx-and-test-it">3. Integrate the TRX and test it</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c4-14"><span>Wizard completed (model of my transceiver, command port, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ptt">PTT</span> by <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-cat">CAT</span>, bands of my licence)</span></label></li>
+<li><label><input type="checkbox" id="c4-15"><span>Diagnostic without failure</span></label></li>
+<li><label><input type="checkbox" id="c4-16"><span>Guided test in receive only passed</span></label></li>
+<li><label><input type="checkbox" id="c4-17"><span>Guided test with transmission passed on a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span></span></label></li>
+<li><label><input type="checkbox" id="c4-18"><span>Station started, page open, modulation set with the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-alc">ALC</span> (transceiver USB input level)</span></label></li>
+<li><label><input type="checkbox" id="c4-19"><span>Test 1: STOP cuts the transmission</span></label></li>
+<li><label><input type="checkbox" id="c4-20"><span>Test 2: cut after 90 s, warning 10 s before</span></label></li>
+<li><label><input type="checkbox" id="c4-21"><span>Test 3: link cut during transmission, back to receive</span></label></li>
+<li><label><input type="checkbox" id="c4-22"><span>Test 4: screen locked during transmission, back to receive</span></label></li>
+<li><label><input type="checkbox" id="c4-23"><span>Test 5: transmission refused outside my bands</span></label></li>
+<li><label><input type="checkbox" id="c4-24"><span>Test 6: transmission with the transceiver microphone, remote PTT blocked</span></label></li>
+<li><label><input type="checkbox" id="c4-25"><span>Test 7: STOP TX from the <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dashboard">dashboard</span></span></label></li>
+<li><label><input type="checkbox" id="c4-26"><span>Test 8: station stopped during transmission</span></label></li>
+<li><label><input type="checkbox" id="c4-27"><span>Test 9: no transmission when the PC (or the Pi) starts</span></label></li>
+<li><label><input type="checkbox" id="c4-28"><span>Test results reported, if my transceiver is not yet validated (issue “&lt;my transceiver&gt;: commissioning tests”)</span></label></li>
+</ul>
+<h3 id="p-10-4-use-on-the-local-network">4. Use on the local network</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c5-29"><span>IP address reserved for the station PC in the router</span></label></li>
+<li><label><input type="checkbox" id="c5-30"><span>Web page opened over https, <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> accepted, microphone allowed</span></label></li>
+<li><label><input type="checkbox" id="c5-31"><span>One account per device (menu 4.3), long passwords</span></label></li>
+<li><label><input type="checkbox" id="c5-32"><span>Android application paired with the QR code (menu 4.1), transmission test and STOP</span></label></li>
+</ul>
+<h3 id="p-10-5-use-remotely">5. Use remotely</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c6-33"><span>Choice made: <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn">VPN</span> (recommended) or <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-open-port">open port</span></span></label></li>
+<li><label><input type="checkbox" id="c6-34"><span>One <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-vpn-profile">VPN profile</span> per device</span></label></li>
+<li><label><input type="checkbox" id="c6-35"><span>From 4G: page, received audio, transmission on a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-dummy-load">dummy load</span>, STOP</span></label></li>
+<li><label><input type="checkbox" id="c6-36"><span>From 4G: airplane mode during transmission, back to receive</span></label></li>
+</ul>
+<h3 id="p-10-6-unattended-station">6. Unattended station</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c7-37"><span><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-ntfy">ntfy</span> alerts received (long and secret topic), “Station in service” message seen</span></label></li>
+<li><label><input type="checkbox" id="c7-38"><span>PC set to power on again after a power cut (a Pi does it by itself)</span></label></li>
+<li><label><input type="checkbox" id="c7-39"><span>UPS, surge protector, transceiver ventilation</span></label></li>
+<li><label><input type="checkbox" id="c7-40"><span>I know how to reactivate the station after a <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-safety-lockout">safety lockout</span> (menu 1.4) once the cause is found</span></label></li>
+</ul>
+<h3 id="p-10-7-day-to-day-operation">7. Day-to-day operation</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c8-41"><span>I know how to start, stop and monitor the station</span></label></li>
+<li><label><input type="checkbox" id="c8-42"><span>I know how to update and go back to the previous version</span></label></li>
+<li><label><input type="checkbox" id="c8-43"><span>Configuration and <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-https">certificate</span> backed up elsewhere</span></label></li>
+<li><label><input type="checkbox" id="c8-44"><span><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-transceiver-profile">Transceiver profile</span> saved (menu 2.3)</span></label></li>
+</ul>
+<h3 id="p-10-station-in-service">Station in service</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c9-45"><span>First transmission on the antenna, in my bands, with identification</span></label></li>
+</ul><p class="haut"><a href="#top">Back to top</a></p></section>
+<footer>Free software (AGPL-3.0-or-later) · <a href="https://github.com/Bob56fr/openRemoteTRX/tree/main/User-Guide/en" target="_blank" rel="noopener noreferrer">Source of this guide on GitHub</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></footer>
+</main>
+<div id="defs" hidden data-more="#glossaire" data-more-label="See the glossary"><div id="def-hamlib" data-terme="Hamlib">the free library that can talk to about 300 transceiver models; each model has a <strong>number</strong> (IC-7300MK2 = 3094, FTDX10 = 1042)</div><div id="def-dummy-load" data-terme="Dummy load">50 Ω resistor that replaces the antenna: the transceiver transmits without radiating. Mandatory for all tests</div><div id="def-tot" data-terme="TOT"><em>Time Out Timer</em>: maximum duration of a transmission (90 s by default, 120 s at most), with a beep 10 s before the cut</div><div id="def-vpn" data-terme="VPN">an encrypted tunnel that puts the phone “inside” the home network, from anywhere (WireGuard, Tailscale…)</div><div id="def-visitor" data-terme="Visitor">receive-only account: listens and sees the screen, no command</div><div id="def-swr" data-terme="SWR">standing wave ratio: matching of the antenna. The station can measure it across a band</div><div id="def-openremotetrx-console" data-terme="openRemoteTRX Console">the station&#x27;s control panel in a terminal: install, configure, start, test, update, troubleshoot (numbered menus “2.1”, “2.2”…)</div><div id="def-supervisor" data-terme="Supervisor">the independent guardian: watches the gateway, rigctld and the PC; it can <strong>only cut</strong> a transmission, restart a service or put the station in safety lockout; sends the alerts</div><div id="def-ssh" data-terme="SSH">the encrypted connection that opens a terminal of another machine from your PC: <code>ssh -l &lt;account&gt; &lt;address&gt;</code>; used to drive a Raspberry Pi without a screen</div><div id="def-cat" data-terme="CAT"><em>Computer Aided Transceiver</em>: control of the transceiver by the computer (frequency, mode, transmission…)</div><div id="def-ptt" data-terme="PTT"><em>Push To Talk</em>: switching to transmit</div><div id="def-allowed-bands" data-terme="Allowed bands">the frequency ranges where the station accepts to transmit; empty list = receive only</div><div id="def-local-network" data-terme="Local network">the home network, behind the internet box</div><div id="def-https" data-terme="HTTPS">the encryption of the link; the station creates its own certificate (“self-signed”): the browser warns the first time</div><div id="def-open-port" data-terme="Open port">the internet box letting traffic in from the Internet to the station; requires a real certificate and a strong password</div><div id="def-gateway" data-terme="Gateway">the heart of the station: serves the web page, checks the accounts, carries the audio and <strong>decides on transmission</strong></div><div id="def-rigctld" data-terme="rigctld">the Hamlib program that keeps the link with the transceiver; it listens only on the PC itself, never on the network</div><div id="def-dashboard" data-terme="Dashboard">the live status in a terminal (menu 1.3); a single action: STOP TX</div><div id="def-alc" data-terme="ALC">transceiver meter that shows whether the modulation is too strong; used to set the voice level</div><div id="def-local-operator" data-terme="Local operator">someone using the transceiver in front of it: remote transmission is blocked during their transmission and then for 2 minutes</div><div id="def-configuration-wizard" data-terme="Configuration wizard">the questions that create the configuration (menu 2.1); it only reads from the transceiver</div><div id="def-certificate-fingerprint" data-terme="Certificate fingerprint">the summary of the certificate that the app remembers to refuse a fake station</div><div id="def-transceiver-profile" data-terme="Transceiver profile">a transceiver configuration saved under a name, to change transceivers (menu 2.3)</div><div id="def-operator-account" data-terme="Operator account">username + password that allow controlling the transceiver and transmitting; <strong>one per device</strong> (<code>PC</code>, <code>S25</code>…), managed in menu 4.3</div><div id="def-pairing" data-terme="Pairing">adding the station to the app, with the <strong>QR code</strong> of menu 4.1</div><div id="def-webrtc" data-terme="WebRTC">the technique that carries the live audio, over <strong>UDP</strong></div><div id="def-vpn-profile" data-terme="VPN profile">the keys of one device in the VPN: one profile per device, never shared</div><div id="def-cgnat" data-terme="CGNAT">address shared by the provider between several customers: no port can be opened, a VPN is needed</div><div id="def-safety-lockout" data-terme="Safety lockout">the state the supervisor puts the station in after repeated failures: stopped safely (receive, access cut), it waits for an intervention; reactivate it with menu 1.4 (“Reactivate the station”)</div><div id="def-ntfy" data-terme="ntfy">the notification service that carries the station&#x27;s alerts to your phone</div><div id="def-absolute-tot" data-terme="Absolute TOT">duration beyond which the supervisor cuts any transmission, even one made with the transceiver&#x27;s microphone (135 s; 5 minutes if the operator touched the transceiver just before or during it)</div><div id="def-stationtoml" data-terme="station.toml">the station&#x27;s configuration file: transceiver, ports, accounts, allowed bands, safety settings</div></div>
+<script>(function () {
+  var KEY = "trx-guide-en";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".cases input"));
+  var saved = {}, store = null;
+  try { store = window.localStorage; saved = JSON.parse(store.getItem(KEY) || "{}") || {}; } catch (e) { store = null; }
+  var memo = document.getElementById("memo");
+  if (memo) memo.textContent = memo.getAttribute(store ? "data-saved" : "data-unsaved");
+  function update() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    var text = document.getElementById("progress");
+    if (text) text.textContent = text.getAttribute("data-model").replace("{n}", done).replace("{m}", boxes.length);
+    var bar = document.getElementById("bar");
+    if (bar) bar.style.width = (boxes.length ? Math.round(100 * done / boxes.length) : 0) + "%";
+  }
+  function save() {
+    if (!store) return;
+    var state = {};
+    boxes.forEach(function (b) { if (b.checked) state[b.id] = 1; });
+    try { store.setItem(KEY, JSON.stringify(state)); } catch (e) { /* stockage plein ou refusé */ }
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!saved[b.id];
+    b.addEventListener("change", function () { save(); update(); });
+  });
+  var reset = document.getElementById("reset");
+  if (reset) reset.addEventListener("click", function () {
+    boxes.forEach(function (b) { b.checked = false; }); save(); update();
+  });
+  var print = document.getElementById("print");
+  if (print) print.addEventListener("click", function () { window.print(); });
+  update();
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    // hauteur du contenu, pas celle de la fenêtre : l'iframe rapetisse aussi quand un onglet plus court s'affiche
+    var h = Math.ceil(document.body.getBoundingClientRect().height);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();</script>
+<script>(function () {
+  var defs = document.getElementById("defs");
+  if (!defs) return;
+  var bubble = null, owner = null, timer = 0, hovered = false;
+  function close() {
+    clearTimeout(timer);
+    if (bubble) { bubble.parentNode.removeChild(bubble); bubble = null; }
+    if (owner) { owner.setAttribute("aria-expanded", "false"); owner.removeAttribute("aria-describedby"); owner = null; }
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(close, 250); }
+  function place() {
+    var r = owner.getBoundingClientRect(), w = bubble.offsetWidth, h = bubble.offsetHeight;
+    var vw = document.documentElement.clientWidth;
+    var left = Math.max(8, Math.min(r.left, vw - w - 8)) + window.scrollX;
+    var top = r.bottom + window.scrollY + 6;
+    if (r.bottom + h + 12 > window.innerHeight && r.top > h + 12) top = r.top + window.scrollY - h - 6;
+    bubble.style.left = left + "px";
+    bubble.style.top = top + "px";
+  }
+  function open(term) {
+    clearTimeout(timer);
+    if (owner === term) return;
+    close();
+    var def = document.getElementById(term.getAttribute("data-def"));
+    if (!def) return;
+    bubble = document.createElement("div");
+    bubble.className = "bulle";
+    bubble.id = "bulle";
+    bubble.setAttribute("role", "tooltip");
+    var title = document.createElement("strong");
+    title.textContent = def.getAttribute("data-terme");
+    bubble.appendChild(title);
+    var body = document.createElement("div");
+    body.innerHTML = def.innerHTML;
+    bubble.appendChild(body);
+    var more = defs.getAttribute("data-more");
+    if (more) {
+      var a = document.createElement("a");
+      a.className = "plus";
+      a.href = more;
+      if (/^https?:/.test(more)) { a.target = "_blank"; a.rel = "noopener"; }
+      a.textContent = defs.getAttribute("data-more-label");
+      a.addEventListener("click", close);
+      bubble.appendChild(a);
+    }
+    bubble.addEventListener("pointerenter", function () { clearTimeout(timer); });
+    bubble.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") later(); });
+    document.body.appendChild(bubble);
+    owner = term;
+    term.setAttribute("aria-expanded", "true");
+    term.setAttribute("aria-describedby", "bulle");
+    place();
+  }
+  function termOf(node) { return node && node.closest ? node.closest(".terme") : null; }
+  document.addEventListener("pointerover", function (e) {
+    var t = termOf(e.target);
+    if (t && e.pointerType === "mouse") { hovered = true; open(t); }
+  });
+  document.addEventListener("pointerout", function (e) {
+    var t = termOf(e.target);
+    if (t && e.pointerType === "mouse" && !t.contains(e.relatedTarget)) { hovered = false; later(); }
+  });
+  document.addEventListener("click", function (e) {
+    var t = termOf(e.target);
+    if (t) { if (owner === t && !hovered) close(); else open(t); return; }
+    if (bubble && !bubble.contains(e.target)) close();
+  });
+  document.addEventListener("keydown", function (e) {
+    var t = termOf(e.target);
+    if (e.key === "Escape") { close(); return; }
+    if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (owner === t) close(); else open(t); }
+  });
+  window.addEventListener("resize", function () { if (bubble) place(); });
+})();</script>
+<script>(function () {
+  var KEY = "trx-guide-systeme";
+  var groups = Array.prototype.slice.call(document.querySelectorAll(".onglets"));
+  var details = Array.prototype.slice.call(document.querySelectorAll("details"));
+  window.addEventListener("beforeprint", function () { details.forEach(function (d) { d.open = true; }); });
+  if (!groups.length) return;
+  var saved = null;
+  try { saved = window.localStorage.getItem(KEY); } catch (e) { saved = null; }
+  function show(group, key) {
+    var buttons = group.querySelectorAll(".onglets-barre button");
+    var found = false;
+    Array.prototype.forEach.call(buttons, function (b) { if (b.getAttribute("data-os") === key) found = true; });
+    if (!found) key = buttons[0].getAttribute("data-os");
+    Array.prototype.forEach.call(buttons, function (b) {
+      var on = b.getAttribute("data-os") === key;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+      document.getElementById(b.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  function choose(key) {
+    groups.forEach(function (g) { show(g, key); });
+    try { window.localStorage.setItem(KEY, key); } catch (e) { /* stockage refusé */ }
+  }
+  groups.forEach(function (group) {
+    group.classList.add("actifs");
+    var bar = group.querySelector(".onglets-barre");
+    bar.hidden = false;
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button"));
+    buttons.forEach(function (b, i) {
+      b.addEventListener("click", function () {
+        var top = b.getBoundingClientRect().top;
+        choose(b.getAttribute("data-os"));
+        window.scrollBy(0, b.getBoundingClientRect().top - top);   // l'onglet touché reste sous le doigt
+      });
+      b.addEventListener("keydown", function (e) {
+        var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!step) return;
+        var next = buttons[(i + step + buttons.length) % buttons.length];
+        next.click();
+        next.focus();
+      });
+    });
+    show(group, saved || "");
+  });
+})();</script>
+</body>
+</html>

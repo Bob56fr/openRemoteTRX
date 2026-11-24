@@ -2,10 +2,18 @@
 <!-- Copyright (C) 2026 RF-DIY.COM -->
 <!-- Guide de l'opérateur (mise en service d'une station), affiché depuis GitHub Pages. À coller UNE FOIS dans un
      bloc « HTML personnalisé » de WordPress : la page se met à jour toute seule à chaque publication.
-     La page envoie sa hauteur ; ce petit script l'applique à l'iframe (pas de double barre de défilement).
-     Seuls les messages venant de GitHub Pages du projet sont acceptés.
+     Quatre langues : la page a son propre choix de langue en haut (Français, English, Deutsch, Español), qui marche
+     aussi dans l'iframe. Pour une page WordPress par langue, change seulement l'adresse de « src » (et celle du lien
+     de secours) :
+       français  https://bob56fr.github.io/openRemoteTRX/guide/
+       anglais   https://bob56fr.github.io/openRemoteTRX/guide/en/
+       allemand  https://bob56fr.github.io/openRemoteTRX/guide/de/
+       espagnol  https://bob56fr.github.io/openRemoteTRX/guide/es/
+     La page envoie sa hauteur (aussi quand on change d'onglet Debian / Raspberry Pi / Windows ou de langue) ; ce petit
+     script l'applique à l'iframe (pas de double barre de défilement). Seuls les messages venant de GitHub Pages du
+     projet sont acceptés.
      « allow-same-origin » laisse la page (origine github.io, distincte du site) garder les cases cochées du
-     récapitulatif dans le navigateur ; elle n'a aucun accès au site WordPress. -->
+     récapitulatif et le système choisi dans le navigateur ; elle n'a aucun accès au site WordPress. -->
 <iframe id="trx-guide" src="https://bob56fr.github.io/openRemoteTRX/guide/" title="Guide de l'opérateur openRemoteTRX"
         loading="lazy" referrerpolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"

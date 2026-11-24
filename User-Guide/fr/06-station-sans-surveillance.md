@@ -17,7 +17,10 @@ les heures (s'il n'arrive plus, la station ou sa connexion est en panne).
 5. Vérifie : choix 4, « Envoyer une alerte d'essai » ; le téléphone doit sonner tout de suite (code ORT-8025).
    Ensuite, le message « Station en service » arrive toutes les heures (choix 3 pour changer ce rythme).
 
-Chaque alerte porte un code « ORT-NNNN » avec un lien vers son explication (partie 8).
+Chaque alerte porte un code « ORT-NNNN » avec un lien vers son explication (partie 8). Deux alertes arrivent au
+redémarrage après un arrêt qui n'était pas propre : **ORT-8030** (Debian, Raspberry Pi : la machine s'est arrêtée
+brutalement, coupure de courant ou plantage) et **ORT-8031** (le superviseur seul s'est arrêté) ; chacune donne
+l'heure du dernier signe de vie. Un arrêt normal (menu 1.2, extinction du PC) n'envoie rien.
 
 ## 6.2 La mise en sécurité
 
@@ -30,7 +33,8 @@ en réception, accès coupé, alerte envoyée. La mise en sécurité **survit au
 | Élément | À régler |
 |---|---|
 | PC | dans le BIOS / UEFI : « Restore on AC power loss » = **Power On** (le nom varie selon la carte mère) |
-| Station Debian | rien : elle démarre avec le PC, sans ouvrir de session |
+| Raspberry Pi | rien : il redémarre dès que le courant revient |
+| Station Debian ou Raspberry Pi | rien : elle démarre avec la machine, sans ouvrir de session |
 | Station Windows | elle démarre à l'**ouverture de session** : sans connexion automatique de ta session, elle reste arrêtée |
 | Poste | la plupart des postes ne se rallument **pas** seuls. La station sait l'allumer par la CAT (menu **2.8**, hors service par défaut, avec un essai éteindre / rallumer) : ta connexion depuis la page ou l'application le rallume |
 | Box | se rallume seule ; vérifie que le VPN aussi |
@@ -43,8 +47,11 @@ Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart 
   antenne mise à la terre ou déconnectée en cas d'orage prévu.
 - **Puissance** : le plafond du poste (HF MAX POWER, partie 1) reste la dernière barrière.
 - **Minuteur du poste** (TX TIME OUT TIMER) : réglé à 3 min, il coupe même si tout le reste a lâché.
-- **Température** : le superviseur surveille le processeur du PC et alerte au-delà de 70 °C. Celle du poste n'est
-  pas lisible par la station sur les postes essayés (IC-7300MK2, FTDX10) : ventilation correcte autour du poste.
+- **Température** : le superviseur surveille le processeur du PC et alerte quand il reste au-dessus de 70 °C
+  pendant une minute (une pointe de quelques secondes ne compte pas) ; l'alerte dit quels programmes chauffaient.
+  Sous Debian et sur un Pi, l'historique des dernières 24 h (une mesure toutes les 10 s) est joint au rapport de
+  dépannage (menu 6.3). Sur un Pi, ventilateur indispensable. La température du poste n'est pas lisible par la
+  station sur les postes essayés (IC-7300MK2, FTDX10) : ventilation correcte autour du poste.
 - **Opérateur sur place** : si quelqu'un utilise le poste sur place, l'émission à distance est bloquée pendant
   son émission puis 2 minutes ; la station ne le coupe jamais pour ce motif. Une émission au micro est coupée par
   le TOT absolu (135 s), sauf si l'opérateur a touché le poste (volume, fréquence, mode, sortie du mode DATA…) dans
