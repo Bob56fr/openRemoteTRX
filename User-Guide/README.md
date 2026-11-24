@@ -60,4 +60,5 @@ traduite. Elles se placent dans `User-Guide/captures/` (nom en minuscules, chiff
 
 Elles sont publiées une seule fois à côté des pages, s'ouvrent en grand au toucher et passent dans le PDF. Contenu
 public : masquer adresse IP, nom de machine, empreinte du certificat et identifiants avant de les ajouter. Les
-schémas (`images/*.svg`) restent propres à chaque langue : ils contiennent du texte.
+schémas (`images/*.svg`) contiennent du texte : ils sont fabriqués pour chaque langue par
+`python scripts/build_guide_schemas.py` (un seul dessin, textes par langue), jamais modifiés à la main.

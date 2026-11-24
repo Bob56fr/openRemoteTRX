@@ -11,6 +11,8 @@
 
 ## Cómo está organizado
 
+![Qué está dónde: equipos, red, estación](images/reseau.svg)
+
 ![Los bloques de una estación openRemoteTRX](images/briques.svg)
 
 - Usas un **navegador** o la **aplicación Android**. Hablan con la **pasarela**, el corazón de la estación,

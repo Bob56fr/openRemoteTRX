@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 900" width="640" height="900" role="img" aria-labelledby="r-titre r-desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <title id="r-titre">Où est quoi : les appareils, le réseau, la station</title>
+  <desc id="r-desc">En haut, hors de la maison : PC portable, tablette et smartphone joignent Internet par la 4G, la 5G ou un autre Wi-Fi, puis la box de la maison par un tunnel VPN chiffré (ou un port 443 ouvert). À la maison, sur le réseau local (câble ou Wi-Fi) : le PC de la station (Debian, Raspberry Pi ou Windows), relié au poste par un câble USB, et les mêmes appareils, qui ouvrent la même adresse https://&lt;station&gt;:8443.</desc>
+  <defs>
+    <marker id="r-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7a8f"/></marker>
+    <marker id="r-flv" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7a56c2"/></marker>
+  </defs>
+  <rect width="640" height="900" rx="14" fill="#ffffff"/>
+
+  <!-- Ailleurs -->
+  <rect x="12" y="12" width="616" height="178" rx="12" fill="#f4f1fb" stroke="#cfc3ea"/>
+  <text x="30" y="40" fill="#5b4a8a" font-size="14" font-weight="700" letter-spacing=".6">AILLEURS : 4G / 5G, AUTRE WI-FI</text>
+  <rect x="30" y="58" width="180" height="80" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="120" y="92" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">PC portable</text>
+  <text x="120" y="116" fill="#55657a" font-size="14" text-anchor="middle">navigateur</text>
+  <rect x="230" y="58" width="180" height="80" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="320" y="92" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Tablette</text>
+  <text x="320" y="116" fill="#55657a" font-size="14" text-anchor="middle">navigateur ou application</text>
+  <rect x="430" y="58" width="180" height="80" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="520" y="92" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Smartphone</text>
+  <text x="520" y="116" fill="#55657a" font-size="14" text-anchor="middle">application, Android Auto</text>
+  <text x="320" y="170" fill="#5b4a8a" font-size="14" text-anchor="middle">un profil VPN par appareil, jamais partagé</text>
+
+  <line x1="120" y1="140" x2="230" y2="216" stroke="#6b7a8f" stroke-width="2"/>
+  <line x1="320" y1="140" x2="320" y2="216" stroke="#6b7a8f" stroke-width="2"/>
+  <line x1="520" y1="140" x2="410" y2="216" stroke="#6b7a8f" stroke-width="2"/>
+
+  <!-- Internet -->
+  <rect x="140" y="216" width="360" height="60" rx="30" fill="#f7f8fa" stroke="#8795a8" stroke-width="2"/>
+  <text x="320" y="243" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Internet</text>
+  <text x="320" y="264" fill="#55657a" font-size="14" text-anchor="middle">réseau mobile 4G / 5G ou autre box</text>
+
+  <!-- Maison -->
+  <rect x="12" y="300" width="616" height="588" rx="12" fill="#eef4fb" stroke="#b8cbe0"/>
+  <text x="30" y="328" fill="#2c5d8f" font-size="14" font-weight="700" letter-spacing=".6">À LA MAISON : RÉSEAU LOCAL</text>
+  <rect x="170" y="380" width="300" height="78" rx="10" fill="#fff" stroke="#7a56c2" stroke-width="2"/>
+  <text x="320" y="412" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Box Internet</text>
+  <text x="320" y="436" fill="#55657a" font-size="14" text-anchor="middle">serveur VPN · adresse réservée à la station</text>
+
+  <!-- Tunnel VPN -->
+  <line x1="320" y1="278" x2="320" y2="376" stroke="#7a56c2" stroke-width="5" stroke-dasharray="10 6" marker-end="url(#r-flv)"/>
+  <text x="334" y="314" fill="#5b4a8a" font-size="14" font-weight="700">tunnel VPN chiffré (recommandé)</text>
+  <text x="334" y="334" fill="#55657a" font-size="13">WireGuard de la box, Tailscale…</text>
+  <text x="334" y="352" fill="#55657a" font-size="13">ou port 443 ouvert sur la box (partie 5)</text>
+
+  <line x1="320" y1="460" x2="320" y2="500" stroke="#6b7a8f" stroke-width="2"/>
+  <line x1="90" y1="500" x2="560" y2="500" stroke="#6b7a8f" stroke-width="3"/>
+  <text x="330" y="490" fill="#55657a" font-size="13">câble ou Wi-Fi</text>
+  <line x1="180" y1="500" x2="180" y2="542" stroke="#6b7a8f" stroke-width="2" marker-end="url(#r-fl)"/>
+  <line x1="485" y1="500" x2="485" y2="542" stroke="#6b7a8f" stroke-width="2" marker-end="url(#r-fl)"/>
+  <text x="190" y="526" fill="#55657a" font-size="13">câble conseillé</text>
+
+  <!-- PC de la station -->
+  <rect x="30" y="546" width="300" height="164" rx="12" fill="#fff1d6" stroke="#d99a2b" stroke-width="2.5"/>
+  <text x="180" y="580" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">PC de la station</text>
+  <text x="180" y="604" fill="#55657a" font-size="14" text-anchor="middle">Debian, Raspberry Pi ou Windows</text>
+  <text x="180" y="634" fill="#1d2733" font-size="14" text-anchor="middle">page et son : https://…:8443</text>
+  <text x="180" y="656" fill="#1d2733" font-size="14" text-anchor="middle">passerelle, superviseur, sécurités</text>
+  <text x="180" y="684" fill="#8a5a0a" font-size="13" text-anchor="middle">détail : schéma suivant</text>
+
+  <!-- Terminaux du réseau local -->
+  <text x="485" y="560" fill="#2c5d8f" font-size="13" font-weight="700" text-anchor="middle">À LA MAISON AUSSI</text>
+  <rect x="380" y="570" width="210" height="42" rx="9" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="485" y="597" fill="#1d2733" font-size="15" font-weight="600" text-anchor="middle">PC · navigateur</text>
+  <rect x="380" y="620" width="210" height="42" rx="9" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="485" y="647" fill="#1d2733" font-size="15" font-weight="600" text-anchor="middle">Tablette</text>
+  <rect x="380" y="670" width="210" height="42" rx="9" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="485" y="697" fill="#1d2733" font-size="15" font-weight="600" text-anchor="middle">Smartphone en Wi-Fi</text>
+
+  <!-- Poste -->
+  <line x1="180" y1="712" x2="180" y2="772" stroke="#1d2733" stroke-width="3" marker-end="url(#r-fl)"/>
+  <text x="192" y="738" fill="#1d2733" font-size="13" font-weight="600">câble USB</text>
+  <text x="192" y="756" fill="#55657a" font-size="13">commande (CAT) + son</text>
+  <rect x="30" y="776" width="300" height="94" rx="12" fill="#fff" stroke="#1d2733" stroke-width="2.5"/>
+  <text x="180" y="812" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Poste (TRX)</text>
+  <text x="180" y="836" fill="#55657a" font-size="14" text-anchor="middle">antenne, ou charge fictive</text>
+  <text x="180" y="856" fill="#55657a" font-size="14" text-anchor="middle">pour les essais</text>
+
+  <rect x="380" y="776" width="210" height="94" rx="12" fill="#f7f8fa" stroke="#b8cbe0"/>
+  <text x="485" y="806" fill="#1d2733" font-size="14" font-weight="700" text-anchor="middle">Même adresse partout</text>
+  <text x="485" y="828" fill="#55657a" font-size="13" text-anchor="middle">à la maison et en VPN :</text>
+  <text x="485" y="850" fill="#2f74c0" font-size="13" text-anchor="middle">https://&lt;station&gt;:8443</text>
+</svg>

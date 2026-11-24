@@ -244,10 +244,25 @@ def test_tabs_and_accordion_render_and_refuse_broken_blocks() -> None:
 def test_language_bar_links_every_published_language() -> None:
     builder = _builder()
     french = builder.render_page("fr")
-    assert '<strong aria-current="page" lang="fr">Français</strong>' in french
+    assert '<strong aria-current="page" lang="fr"><svg viewBox="0 0 60 40" aria-hidden="true">' in french
+    assert "<span>Français</span></strong>" in french and french.count('<svg viewBox="0 0 60 40"') == len(builder.LANGS)
     assert '<a href="en/" lang="en"' in french and '<a href="es/" lang="es"' in french
     german = builder.render_page("de")
     assert '<a href="../" lang="fr"' in german and '<a href="../en/" lang="en"' in german
     pages = builder.build()
     for lang in builder.LANGS:
         assert (builder.SITE if lang == "fr" else builder.SITE / lang) / "index.html" in pages
+
+
+def test_diagrams_of_every_language_come_from_the_shared_drawing() -> None:
+    spec = importlib.util.spec_from_file_location("build_guide_schemas", ROOT / "scripts" / "build_guide_schemas.py")
+    schemas = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(schemas)
+    built = schemas.build()
+    langs = {p.parent.parent.name for p in built}
+    assert langs == set(_builder().LANGS), "un jeu de schémas par langue publiée"
+    for path, data in built.items():
+        assert path.read_bytes() == data, f"{path.relative_to(ROOT)} périmé : python scripts/build_guide_schemas.py"
+    for lang in langs:
+        page = (GUIDE / lang / "00-avant-de-commencer.md").read_text(encoding="utf-8")
+        assert page.index("(images/reseau.svg)") < page.index("(images/briques.svg)"), f"{lang} : réseau, puis briques"

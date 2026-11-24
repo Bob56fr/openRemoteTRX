@@ -63,7 +63,9 @@ figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
 .telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
 .langues{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:flex-end;margin:0 0 .4rem;font-size:.9rem}
-.langues a,.langues strong{border:1px solid var(--ligne);border-radius:2rem;padding:.1rem .7rem;text-decoration:none}
+.langues a,.langues strong{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--ligne);
+  border-radius:2rem;padding:.15rem .7rem .15rem .45rem;text-decoration:none}
+.langues svg{width:1.4rem;height:auto;border-radius:.15rem;box-shadow:0 0 0 1px rgba(255,255,255,.25);flex:none}
 .langues strong{background:var(--carte);border-color:var(--accent);font-weight:600}
 .onglets{margin:.8rem 0 1.2rem;border:1px solid var(--ligne);border-radius:.6rem;background:var(--carte)}
 .onglets-barre{display:flex;flex-wrap:wrap;gap:.3rem;padding:.45rem .5rem 0;border-bottom:1px solid var(--ligne)}
@@ -98,7 +100,7 @@ details[open]>summary{margin-bottom:.3rem}
 </head>
 <body>
 <main>
-<nav class="langues" aria-label="Language"><a href="../" lang="fr" hreflang="fr">Français</a><strong aria-current="page" lang="en">English</strong><a href="../de/" lang="de" hreflang="de">Deutsch</a><a href="../es/" lang="es" hreflang="es">Español</a></nav>
+<nav class="langues" aria-label="Language"><a href="../" lang="fr" hreflang="fr"><svg viewBox="0 0 60 40" aria-hidden="true"><rect width="20" height="40" fill="#002395"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ED2939"/></svg><span>Français</span></a><strong aria-current="page" lang="en"><svg viewBox="0 0 60 40" aria-hidden="true"><rect width="60" height="40" fill="#012169"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#C8102E" stroke-width="3"/><path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="13"/><path d="M30,0 V40 M0,20 H60" stroke="#C8102E" stroke-width="8"/></svg><span>English</span></strong><a href="../de/" lang="de" hreflang="de"><svg viewBox="0 0 60 40" aria-hidden="true"><rect width="60" height="14" fill="#000"/><rect y="13" width="60" height="14" fill="#DD0000"/><rect y="26" width="60" height="14" fill="#FFCE00"/></svg><span>Deutsch</span></a><a href="../es/" lang="es" hreflang="es"><svg viewBox="0 0 60 40" aria-hidden="true"><rect width="60" height="40" fill="#AA151B"/><rect y="10" width="60" height="20" fill="#F1BF00"/></svg><span>Español</span></a></nav>
 <h1 id="top">Commissioning an openRemoteTRX station: operator guide</h1>
 <p class="telecharger"><a href="guide-openRemoteTRX-en.pdf" target="_blank" rel="noopener">Download as PDF</a><span>A4, one part per page, to print</span></p>
 <p>This guide takes you, step by step, from unpacking to the first link from outside. It applies to any transceiver known to <span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-hamlib">Hamlib</span>; what is specific to one model (USB driver, menus, ports) is in its <strong>transceiver sheet</strong>:</p>
@@ -188,98 +190,163 @@ ssh -t -l &lt;account&gt; &lt;pi-address&gt;</code></pre>
 <li>An independent <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-supervisor">supervisor</span></strong> that watches the station and can send you alerts on your phone.</li>
 </ul>
 <h3 id="p-00-how-it-is-organised">How it is organised</h3>
-<figure class="schema"><svg class="schema-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 990" width="640" height="990" role="img" aria-labelledby="titre desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
-  <title id="titre">Les briques d'une station openRemoteTRX</title>
-  <desc id="desc">De haut en bas : l'utilisateur (navigateur ou application Android) joint par le réseau la passerelle du PC de la station ; la passerelle commande le poste par rigctld (Hamlib) et échange le son avec sa carte son ; le superviseur surveille le tout, ne peut que couper l'émission et envoie les alertes ntfy ; openRemoteTRX Console, trx-monitor et l'indicateur lisent l'état ; station.toml porte la configuration ; le poste est relié par un seul câble USB.</desc>
+<figure class="schema"><svg class="schema-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 900" width="640" height="900" role="img" aria-labelledby="r-titre r-desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <title id="r-titre">What is where: devices, network, station</title>
+  <desc id="r-desc">At the top, away from home: laptop, tablet and smartphone reach the Internet over 4G, 5G or another Wi-Fi, then the home router through an encrypted VPN tunnel (or an open port 443). At home, on the local network (cable or Wi-Fi): the station PC (Debian, Raspberry Pi or Windows), connected to the transceiver by a USB cable, and the same devices, which open the same address https://&lt;station&gt;:8443.</desc>
   <defs>
-    <marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#9aa8bb"/>
-    </marker>
-    <marker id="flecheR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#e0524a"/>
-    </marker>
+    <marker id="r-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7a8f"/></marker>
+    <marker id="r-flv" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7a56c2"/></marker>
   </defs>
-  <rect width="640" height="990" rx="14" fill="#0f141c"/>
+  <rect width="640" height="900" rx="14" fill="#ffffff"/>
 
-  <!-- Côté utilisateur -->
-  <text x="20" y="34" fill="#9aa8bb" font-size="15" font-weight="600" letter-spacing=".5">CÔTÉ UTILISATEUR</text>
-  <rect x="20" y="48" width="285" height="96" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2"/>
-  <text x="162" y="84" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">Navigateur</text>
-  <text x="162" y="108" fill="#9aa8bb" font-size="15" text-anchor="middle">la page web de la station</text>
-  <text x="162" y="128" fill="#9aa8bb" font-size="15" text-anchor="middle">(PC, tablette, téléphone)</text>
-  <rect x="335" y="48" width="285" height="96" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2"/>
-  <text x="477" y="84" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">Application Android</text>
-  <text x="477" y="108" fill="#9aa8bb" font-size="15" text-anchor="middle">openRemoteTRX</text>
-  <text x="477" y="128" fill="#9aa8bb" font-size="15" text-anchor="middle">+ Android Auto en voiture</text>
+  <!-- Ailleurs -->
+  <rect x="12" y="12" width="616" height="178" rx="12" fill="#f4f1fb" stroke="#cfc3ea"/>
+  <text x="30" y="40" fill="#5b4a8a" font-size="14" font-weight="700" letter-spacing=".6">AWAY: 4G / 5G, OTHER WI-FI</text>
+  <rect x="30" y="58" width="180" height="80" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="120" y="92" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Laptop</text>
+  <text x="120" y="116" fill="#55657a" font-size="14" text-anchor="middle">browser</text>
+  <rect x="230" y="58" width="180" height="80" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="320" y="92" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Tablet</text>
+  <text x="320" y="116" fill="#55657a" font-size="14" text-anchor="middle">browser or app</text>
+  <rect x="430" y="58" width="180" height="80" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="520" y="92" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Smartphone</text>
+  <text x="520" y="116" fill="#55657a" font-size="14" text-anchor="middle">app, Android Auto</text>
+  <text x="320" y="170" fill="#5b4a8a" font-size="14" text-anchor="middle">one VPN profile per device, never shared</text>
 
-  <!-- Réseau -->
-  <line x1="162" y1="146" x2="162" y2="268" stroke="#9aa8bb" stroke-width="2" marker-start="url(#fleche)" marker-end="url(#fleche)"/>
-  <line x1="477" y1="146" x2="477" y2="268" stroke="#9aa8bb" stroke-width="2" marker-start="url(#fleche)" marker-end="url(#fleche)"/>
-  <rect x="80" y="172" width="480" height="66" rx="33" fill="#0b1017" stroke="#2a3445" stroke-width="1.5"/>
-  <text x="320" y="200" fill="#dbe3ee" font-size="16" font-weight="600" text-anchor="middle">Réseau local, VPN ou Internet</text>
-  <text x="320" y="223" fill="#9aa8bb" font-size="14" text-anchor="middle">HTTPS port 8443 (commandes) + WebRTC (son)</text>
+  <line x1="120" y1="140" x2="230" y2="216" stroke="#6b7a8f" stroke-width="2"/>
+  <line x1="320" y1="140" x2="320" y2="216" stroke="#6b7a8f" stroke-width="2"/>
+  <line x1="520" y1="140" x2="410" y2="216" stroke="#6b7a8f" stroke-width="2"/>
+
+  <!-- Internet -->
+  <rect x="140" y="216" width="360" height="60" rx="30" fill="#f7f8fa" stroke="#8795a8" stroke-width="2"/>
+  <text x="320" y="243" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Internet</text>
+  <text x="320" y="264" fill="#55657a" font-size="14" text-anchor="middle">4G / 5G mobile network or another router</text>
+
+  <!-- Maison -->
+  <rect x="12" y="300" width="616" height="588" rx="12" fill="#eef4fb" stroke="#b8cbe0"/>
+  <text x="30" y="328" fill="#2c5d8f" font-size="14" font-weight="700" letter-spacing=".6">AT HOME: LOCAL NETWORK</text>
+  <rect x="170" y="380" width="300" height="78" rx="10" fill="#fff" stroke="#7a56c2" stroke-width="2"/>
+  <text x="320" y="412" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Internet router</text>
+  <text x="320" y="436" fill="#55657a" font-size="14" text-anchor="middle">VPN server · address reserved for the station</text>
+
+  <!-- Tunnel VPN -->
+  <line x1="320" y1="278" x2="320" y2="376" stroke="#7a56c2" stroke-width="5" stroke-dasharray="10 6" marker-end="url(#r-flv)"/>
+  <text x="334" y="314" fill="#5b4a8a" font-size="14" font-weight="700">encrypted VPN tunnel (recommended)</text>
+  <text x="334" y="334" fill="#55657a" font-size="13">router WireGuard, Tailscale…</text>
+  <text x="334" y="352" fill="#55657a" font-size="13">or port 443 open on the router (part 5)</text>
+
+  <line x1="320" y1="460" x2="320" y2="500" stroke="#6b7a8f" stroke-width="2"/>
+  <line x1="90" y1="500" x2="560" y2="500" stroke="#6b7a8f" stroke-width="3"/>
+  <text x="330" y="490" fill="#55657a" font-size="13">cable or Wi-Fi</text>
+  <line x1="180" y1="500" x2="180" y2="542" stroke="#6b7a8f" stroke-width="2" marker-end="url(#r-fl)"/>
+  <line x1="485" y1="500" x2="485" y2="542" stroke="#6b7a8f" stroke-width="2" marker-end="url(#r-fl)"/>
+  <text x="190" y="526" fill="#55657a" font-size="13">cable recommended</text>
 
   <!-- PC de la station -->
-  <rect x="10" y="252" width="620" height="540" rx="12" fill="none" stroke="#2a3445" stroke-width="2" stroke-dasharray="6 5"/>
-  <text x="360" y="742" fill="#9aa8bb" font-size="15" font-weight="600" letter-spacing=".5">PC DE LA STATION</text>
-  <text x="360" y="764" fill="#9aa8bb" font-size="14">(Debian ou Windows)</text>
+  <rect x="30" y="546" width="300" height="164" rx="12" fill="#fff1d6" stroke="#d99a2b" stroke-width="2.5"/>
+  <text x="180" y="580" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Station PC</text>
+  <text x="180" y="604" fill="#55657a" font-size="14" text-anchor="middle">Debian, Raspberry Pi or Windows</text>
+  <text x="180" y="634" fill="#1d2733" font-size="14" text-anchor="middle">page and audio: https://…:8443</text>
+  <text x="180" y="656" fill="#1d2733" font-size="14" text-anchor="middle">gateway, supervisor, safety</text>
+  <text x="180" y="684" fill="#8a5a0a" font-size="13" text-anchor="middle">details: next diagram</text>
 
-  <rect x="30" y="272" width="580" height="110" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2.5"/>
-  <text x="320" y="306" fill="#dbe3ee" font-size="20" font-weight="700" text-anchor="middle">Passerelle  ·  trx-gateway</text>
-  <text x="320" y="331" fill="#9aa8bb" font-size="15" text-anchor="middle">sert la page, vérifie les comptes, transporte le son,</text>
-  <text x="320" y="352" fill="#9aa8bb" font-size="15" text-anchor="middle">décide de l'émission : PTT en bascule, TOT, bandes,</text>
-  <text x="320" y="373" fill="#9aa8bb" font-size="15" text-anchor="middle">retour en réception si le téléphone ne répond plus</text>
+  <!-- Terminaux du réseau local -->
+  <text x="485" y="560" fill="#2c5d8f" font-size="13" font-weight="700" text-anchor="middle">AT HOME TOO</text>
+  <rect x="380" y="570" width="210" height="42" rx="9" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="485" y="597" fill="#1d2733" font-size="15" font-weight="600" text-anchor="middle">PC · browser</text>
+  <rect x="380" y="620" width="210" height="42" rx="9" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="485" y="647" fill="#1d2733" font-size="15" font-weight="600" text-anchor="middle">Tablet</text>
+  <rect x="380" y="670" width="210" height="42" rx="9" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="485" y="697" fill="#1d2733" font-size="15" font-weight="600" text-anchor="middle">Smartphone on Wi-Fi</text>
 
-  <rect x="30" y="432" width="270" height="96" rx="10" fill="#171e29" stroke="#4c9be8" stroke-width="2"/>
-  <text x="165" y="466" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">rigctld (Hamlib)</text>
-  <text x="165" y="490" fill="#9aa8bb" font-size="15" text-anchor="middle">parle au poste ; écoute sur</text>
-  <text x="165" y="510" fill="#9aa8bb" font-size="15" text-anchor="middle">cette machine seulement</text>
+  <!-- Poste -->
+  <line x1="180" y1="712" x2="180" y2="772" stroke="#1d2733" stroke-width="3" marker-end="url(#r-fl)"/>
+  <text x="192" y="738" fill="#1d2733" font-size="13" font-weight="600">USB cable</text>
+  <text x="192" y="756" fill="#55657a" font-size="13">control (CAT) + audio</text>
+  <rect x="30" y="776" width="300" height="94" rx="12" fill="#fff" stroke="#1d2733" stroke-width="2.5"/>
+  <text x="180" y="812" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Transceiver (TRX)</text>
+  <text x="180" y="836" fill="#55657a" font-size="14" text-anchor="middle">antenna, or dummy load</text>
+  <text x="180" y="856" fill="#55657a" font-size="14" text-anchor="middle">for the tests</text>
 
-  <rect x="340" y="432" width="270" height="96" rx="10" fill="#171e29" stroke="#e0524a" stroke-width="2"/>
-  <text x="475" y="466" fill="#dbe3ee" font-size="19" font-weight="700" text-anchor="middle">Superviseur</text>
-  <text x="475" y="490" fill="#9aa8bb" font-size="15" text-anchor="middle">trx-supervisor : surveille,</text>
-  <text x="475" y="510" fill="#9aa8bb" font-size="15" text-anchor="middle">ne peut que COUPER l'émission</text>
+  <rect x="380" y="776" width="210" height="94" rx="12" fill="#f7f8fa" stroke="#b8cbe0"/>
+  <text x="485" y="806" fill="#1d2733" font-size="14" font-weight="700" text-anchor="middle">Same address everywhere</text>
+  <text x="485" y="828" fill="#55657a" font-size="13" text-anchor="middle">at home and over the VPN:</text>
+  <text x="485" y="850" fill="#2f74c0" font-size="13" text-anchor="middle">https://&lt;station&gt;:8443</text>
+</svg><figcaption>What is where: devices, network, station · <a href="images/reseau.svg" target="_blank" rel="noopener">open the diagram full size</a></figcaption></figure>
+<figure class="schema"><svg class="schema-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 820" width="640" height="820" role="img" aria-labelledby="b-titre b-desc" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <title id="b-titre">The building blocks of an openRemoteTRX station</title>
+  <desc id="b-desc">From top to bottom: the user (browser or Android app) reaches the gateway of the station PC over the local network or the VPN; the gateway controls the transceiver through rigctld (Hamlib) and exchanges audio with its sound card; the supervisor watches everything, can only cut transmission (T 0) and sends ntfy alerts; openRemoteTRX Console and the dashboards read the status; station.toml holds the configuration; the transceiver is connected by a USB cable.</desc>
+  <defs>
+    <marker id="b-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7a8f"/></marker>
+    <marker id="b-flr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8402f"/></marker>
+  </defs>
+  <rect width="640" height="820" rx="14" fill="#ffffff"/>
 
-  <rect x="90" y="580" width="210" height="80" rx="10" fill="#171e29" stroke="#3fae72" stroke-width="2"/>
-  <text x="195" y="613" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">station.toml</text>
-  <text x="195" y="638" fill="#9aa8bb" font-size="15" text-anchor="middle">la configuration</text>
+  <text x="20" y="32" fill="#2c5d8f" font-size="14" font-weight="700" letter-spacing=".6">USER SIDE</text>
+  <rect x="20" y="44" width="285" height="88" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="162" y="78" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Browser</text>
+  <text x="162" y="104" fill="#55657a" font-size="14" text-anchor="middle">PC, tablet, phone</text>
+  <rect x="335" y="44" width="285" height="88" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="477" y="78" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Android app</text>
+  <text x="477" y="104" fill="#55657a" font-size="14" text-anchor="middle">+ Android Auto in the car</text>
 
-  <rect x="340" y="580" width="270" height="110" rx="10" fill="#171e29" stroke="#3fae72" stroke-width="2"/>
-  <text x="475" y="612" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">Outils de la station</text>
-  <text x="475" y="636" fill="#9aa8bb" font-size="15" text-anchor="middle">openRemoteTRX Console, trx-monitor,</text>
-  <text x="475" y="656" fill="#9aa8bb" font-size="15" text-anchor="middle">indicateur : lisent l'état ;</text>
-  <text x="475" y="676" fill="#9aa8bb" font-size="15" text-anchor="middle">seule action : STOP TX</text>
+  <line x1="162" y1="134" x2="162" y2="166" stroke="#6b7a8f" stroke-width="2" marker-start="url(#b-fl)" marker-end="url(#b-fl)"/>
+  <line x1="477" y1="134" x2="477" y2="166" stroke="#6b7a8f" stroke-width="2" marker-start="url(#b-fl)" marker-end="url(#b-fl)"/>
+  <rect x="95" y="168" width="450" height="58" rx="29" fill="#f7f8fa" stroke="#8795a8" stroke-width="2"/>
+  <text x="320" y="193" fill="#1d2733" font-size="16" font-weight="700" text-anchor="middle">Local network or VPN (previous diagram)</text>
+  <text x="320" y="213" fill="#55657a" font-size="13" text-anchor="middle">HTTPS port 8443 (commands) + WebRTC (audio)</text>
+  <line x1="162" y1="228" x2="162" y2="306" stroke="#6b7a8f" stroke-width="2" marker-start="url(#b-fl)" marker-end="url(#b-fl)"/>
+  <line x1="477" y1="228" x2="477" y2="306" stroke="#6b7a8f" stroke-width="2" marker-start="url(#b-fl)" marker-end="url(#b-fl)"/>
 
-  <!-- Flux internes -->
-  <line x1="165" y1="384" x2="165" y2="430" stroke="#9aa8bb" stroke-width="2" marker-end="url(#fleche)"/>
-  <text x="173" y="412" fill="#9aa8bb" font-size="13">commandes</text>
-  <line x1="475" y1="430" x2="475" y2="386" stroke="#e0524a" stroke-width="2" marker-end="url(#flecheR)"/>
-  <text x="483" y="412" fill="#e0524a" font-size="13">surveille, relance</text>
-  <line x1="338" y1="470" x2="302" y2="470" stroke="#e0524a" stroke-width="2" marker-end="url(#flecheR)"/>
+  <!-- Cadre du PC de la station : fond ambre -->
+  <rect x="20" y="246" width="600" height="420" rx="14" fill="#fff1d6" stroke="#d99a2b" stroke-width="2.5"/>
+  <text x="36" y="272" fill="#8a5a0a" font-size="14" font-weight="700" letter-spacing=".6">STATION PC</text>
+  <text x="36" y="292" fill="#8a5a0a" font-size="13">Debian, Raspberry Pi or Windows</text>
 
-  <!-- Vers le poste et les alertes -->
-  <line x1="55" y1="530" x2="55" y2="838" stroke="#9aa8bb" stroke-width="2" marker-end="url(#fleche)"/>
-  <text x="62" y="740" fill="#9aa8bb" font-size="14">CAT</text>
-  <line x1="320" y1="384" x2="320" y2="838" stroke="#9aa8bb" stroke-width="2" marker-start="url(#fleche)" marker-end="url(#fleche)"/>
-  <text x="328" y="560" fill="#9aa8bb" font-size="14">son</text>
-  <polyline points="612,480 622,480 622,836" fill="none" stroke="#e0524a" stroke-width="2" marker-end="url(#flecheR)"/>
+  <rect x="40" y="308" width="560" height="92" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2.5"/>
+  <text x="320" y="338" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Gateway · trx-gateway</text>
+  <text x="320" y="362" fill="#55657a" font-size="14" text-anchor="middle">serves the page, checks accounts, carries audio, decides on</text>
+  <text x="320" y="382" fill="#55657a" font-size="14" text-anchor="middle">transmission: toggle PTT, TOT, bands, back to receive</text>
 
-  <!-- Poste et alertes -->
-  <rect x="30" y="840" width="380" height="130" rx="10" fill="#171e29" stroke="#dbe3ee" stroke-width="2"/>
-  <text x="220" y="874" fill="#dbe3ee" font-size="20" font-weight="700" text-anchor="middle">Poste (TRX) : Yaesu FTDX10</text>
-  <text x="220" y="900" fill="#9aa8bb" font-size="15" text-anchor="middle">un seul câble USB :</text>
-  <text x="220" y="922" fill="#9aa8bb" font-size="15" text-anchor="middle">CAT par l'« Enhanced COM Port »</text>
-  <text x="220" y="944" fill="#9aa8bb" font-size="15" text-anchor="middle">son par l'« USB Audio CODEC »</text>
+  <line x1="160" y1="402" x2="160" y2="444" stroke="#6b7a8f" stroke-width="2" marker-end="url(#b-fl)"/>
+  <text x="170" y="428" fill="#55657a" font-size="13">commands</text>
+  <rect x="40" y="446" width="250" height="84" rx="10" fill="#fff" stroke="#2f74c0" stroke-width="2"/>
+  <text x="165" y="476" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">rigctld (Hamlib)</text>
+  <text x="165" y="498" fill="#55657a" font-size="13" text-anchor="middle">talks to the transceiver; listens</text>
+  <text x="165" y="516" fill="#55657a" font-size="13" text-anchor="middle">on this machine only</text>
 
-  <rect x="430" y="840" width="195" height="130" rx="10" fill="#171e29" stroke="#e0524a" stroke-width="2"/>
-  <text x="527" y="878" fill="#dbe3ee" font-size="18" font-weight="700" text-anchor="middle">Alertes ntfy</text>
-  <text x="527" y="904" fill="#9aa8bb" font-size="15" text-anchor="middle">sur ton téléphone :</text>
-  <text x="527" y="926" fill="#9aa8bb" font-size="15" text-anchor="middle">coupure, panne,</text>
-  <text x="527" y="948" fill="#9aa8bb" font-size="15" text-anchor="middle">mise en sécurité</text>
+  <rect x="350" y="446" width="250" height="84" rx="10" fill="#fff" stroke="#c8402f" stroke-width="2"/>
+  <text x="475" y="476" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Supervisor</text>
+  <text x="475" y="498" fill="#55657a" font-size="13" text-anchor="middle">watches everything, can only</text>
+  <text x="475" y="516" fill="#55657a" font-size="13" text-anchor="middle">CUT transmission</text>
+  <line x1="520" y1="444" x2="520" y2="404" stroke="#c8402f" stroke-width="2" marker-end="url(#b-flr)"/>
+  <text x="510" y="428" fill="#c8402f" font-size="13" text-anchor="end">watches, restarts</text>
+  <line x1="348" y1="500" x2="294" y2="500" stroke="#c8402f" stroke-width="2" marker-end="url(#b-flr)"/>
+  <text x="321" y="490" fill="#c8402f" font-size="12" font-weight="700" text-anchor="middle">T 0</text>
 
-  <!-- Étiquette posée par-dessus la ligne du son (croisement) -->
-  <rect x="263" y="441" width="114" height="17" rx="3" fill="#0f141c"/>
-  <text x="320" y="454" fill="#e0524a" font-size="13" font-weight="700" text-anchor="middle">retour RX (T 0)</text>
+  <rect x="40" y="556" width="250" height="90" rx="10" fill="#fff" stroke="#2e8b57" stroke-width="2"/>
+  <text x="165" y="592" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">station.toml</text>
+  <text x="165" y="616" fill="#55657a" font-size="13" text-anchor="middle">the configuration</text>
+  <rect x="350" y="556" width="250" height="90" rx="10" fill="#fff" stroke="#2e8b57" stroke-width="2"/>
+  <text x="475" y="584" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">Tools</text>
+  <text x="475" y="606" fill="#55657a" font-size="13" text-anchor="middle">openRemoteTRX Console, dashboards:</text>
+  <text x="475" y="624" fill="#55657a" font-size="13" text-anchor="middle">read the status;</text>
+  <text x="475" y="642" fill="#55657a" font-size="13" text-anchor="middle">only action: STOP TX</text>
+
+  <line x1="60" y1="532" x2="60" y2="700" stroke="#1d2733" stroke-width="2" marker-end="url(#b-fl)"/>
+  <text x="22" y="684" fill="#1d2733" font-size="13" font-weight="600">CAT</text>
+  <line x1="320" y1="402" x2="320" y2="700" stroke="#1d2733" stroke-width="2" marker-start="url(#b-fl)" marker-end="url(#b-fl)"/>
+  <text x="327" y="686" fill="#1d2733" font-size="13" font-weight="600">audio</text>
+
+  <rect x="20" y="702" width="380" height="100" rx="12" fill="#fff" stroke="#1d2733" stroke-width="2.5"/>
+  <text x="210" y="738" fill="#1d2733" font-size="18" font-weight="700" text-anchor="middle">Transceiver (TRX)</text>
+  <text x="210" y="762" fill="#55657a" font-size="14" text-anchor="middle">a single USB cable on most transceivers:</text>
+  <text x="210" y="782" fill="#55657a" font-size="14" text-anchor="middle">control (CAT) + the rig's sound card</text>
+  <path d="M602,488 H628 V690 H520 V700" fill="none" stroke="#c8402f" stroke-width="2" marker-end="url(#b-flr)"/>
+  <rect x="420" y="702" width="200" height="100" rx="12" fill="#fff" stroke="#c8402f" stroke-width="2"/>
+  <text x="520" y="738" fill="#1d2733" font-size="17" font-weight="700" text-anchor="middle">ntfy alerts</text>
+  <text x="520" y="762" fill="#55657a" font-size="13" text-anchor="middle">on your phone: cut,</text>
+  <text x="520" y="782" fill="#55657a" font-size="13" text-anchor="middle">fault, safety lockout</text>
 </svg><figcaption>The building blocks of an openRemoteTRX station · <a href="images/briques.svg" target="_blank" rel="noopener">open the diagram full size</a></figcaption></figure>
 <ul>
 <li>You use a <strong>browser</strong> or the <strong>Android app</strong>. They talk to the <strong><span class="terme" tabindex="0" role="button" aria-expanded="false" data-def="def-gateway">gateway</span></strong>, the heart of the station, which runs on the <strong>station PC</strong> next to the transceiver.</li>

@@ -38,6 +38,19 @@ SITE = ROOT / "docs" / "site" / "guide"
 LANGS = ("fr", "en", "de", "es")     # langues publiées ; « fr » = référence (page à la racine de guide/)
 LANG_NAMES = {"fr": "Français", "en": "English", "de": "Deutsch", "es": "Español"}
 TABS_OPEN, TABS_CLOSE = "<!-- onglets -->", "<!-- /onglets -->"
+# Drapeaux du choix de langue, en SVG comme dans la console web (Windows n'affiche pas les drapeaux en emoji).
+FLAGS = {
+    "fr": '<rect width="20" height="40" fill="#002395"/><rect x="20" width="20" height="40" fill="#fff"/>'
+          '<rect x="40" width="20" height="40" fill="#ED2939"/>',
+    "en": '<rect width="60" height="40" fill="#012169"/>'
+          '<path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/>'
+          '<path d="M0,0 L60,40 M60,0 L0,40" stroke="#C8102E" stroke-width="3"/>'
+          '<path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="13"/>'
+          '<path d="M30,0 V40 M0,20 H60" stroke="#C8102E" stroke-width="8"/>',
+    "de": '<rect width="60" height="14" fill="#000"/><rect y="13" width="60" height="14" fill="#DD0000"/>'
+          '<rect y="26" width="60" height="14" fill="#FFCE00"/>',
+    "es": '<rect width="60" height="40" fill="#AA151B"/><rect y="10" width="60" height="20" fill="#F1BF00"/>',
+}
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 PART = re.compile(r"^(\d\d)-[a-z0-9-]+\.md$")
 ANNEXES = ("glossaire.md",)          # fichiers hors parties numérotées, placés avant le récapitulatif
@@ -199,7 +212,9 @@ figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
 .telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
 .langues{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:flex-end;margin:0 0 .4rem;font-size:.9rem}
-.langues a,.langues strong{border:1px solid var(--ligne);border-radius:2rem;padding:.1rem .7rem;text-decoration:none}
+.langues a,.langues strong{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--ligne);
+  border-radius:2rem;padding:.15rem .7rem .15rem .45rem;text-decoration:none}
+.langues svg{width:1.4rem;height:auto;border-radius:.15rem;box-shadow:0 0 0 1px rgba(255,255,255,.25);flex:none}
 .langues strong{background:var(--carte);border-color:var(--accent);font-weight:600}
 .onglets{margin:.8rem 0 1.2rem;border:1px solid var(--ligne);border-radius:.6rem;background:var(--carte)}
 .onglets-barre{display:flex;flex-wrap:wrap;gap:.3rem;padding:.45rem .5rem 0;border-bottom:1px solid var(--ligne)}
@@ -852,7 +867,8 @@ def language_bar(lang: str, ui: dict[str, str]) -> str:
     """Choix de la langue : liens relatifs entre guide/ (français) et guide/<langue>/ (les autres)."""
     items = []
     for other in LANGS:
-        name = esc(LANG_NAMES[other])
+        name = (f'<svg viewBox="0 0 60 40" aria-hidden="true">{FLAGS[other]}</svg>'
+                f'<span>{esc(LANG_NAMES[other])}</span>')
         if other == lang:
             items.append(f'<strong aria-current="page" lang="{other}">{name}</strong>')
             continue

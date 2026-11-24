@@ -11,6 +11,8 @@
 
 ## So ist es aufgebaut
 
+![Was ist wo: Geräte, Netzwerk, Station](images/reseau.svg)
+
 ![Die Bausteine einer openRemoteTRX-Station](images/briques.svg)
 
 - Sie verwenden einen **Browser** oder die **Android-App**. Sie sprechen mit dem **Gateway**, dem Herz der Station,

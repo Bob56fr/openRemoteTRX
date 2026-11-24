@@ -11,6 +11,8 @@
 
 ## How it is organised
 
+![What is where: devices, network, station](images/reseau.svg)
+
 ![The building blocks of an openRemoteTRX station](images/briques.svg)
 
 - You use a **browser** or the **Android app**. They talk to the **gateway**, the heart of the station, which runs on
