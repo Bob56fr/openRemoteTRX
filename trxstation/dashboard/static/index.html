@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0F14">
+<meta name="referrer" content="no-referrer">
+<title>Station – signes vitaux</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="wide">
+<main class="screen" id="screen" aria-live="off">
+  <header class="top">
+    <div class="side"><span class="call">openRemoteTRX</span><span class="small" id="station-name">station</span></div>
+    <div class="pill off" id="pill"><span class="dot"></span><span id="pilltext">CONNEXION…</span></div>
+    <div class="side r"><span class="clock"><span id="utc">--:--:--</span> <small class="small">UTC</small></span><span class="small" id="local">&nbsp;</span></div>
+  </header>
+  <div id="banner"></div>
+  <div class="body">
+    <section class="panel station" id="station" aria-label="Station"></section>
+    <section class="panel pc" id="pc" aria-label="Ordinateur"></section>
+  </div>
+  <footer class="foot"><span id="footl"></span><span id="footr"></span></footer>
+</main>
+<div class="nolink" id="nolink" hidden>Programme injoignable : affichage figé</div>
+<script src="app.js"></script>
+</body>
+</html>

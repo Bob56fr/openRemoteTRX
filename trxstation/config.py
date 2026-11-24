@@ -254,6 +254,19 @@ class RemoteConsole:
 
 
 @dataclass
+class Dashboard:
+    """Tableau de bord des signes vitaux (étape 385, demande de l'utilisateur du 2026-11-24) : programme à part, en LECTURE
+    SEULE (trxstation/dashboard/, service trx-dashboard), pour le mini écran 960×480 de la station (127.0.0.1, mode kiosque)
+    et pour un téléphone par le VPN. Sans clé d'accès (décision du 2026-11-24 : rien de vital) ; hors boucle locale, HTTPS
+    par le certificat de [network], comme la page de pilotage. Pastilles des terminaux = comptes opérateurs de [[clients]]
+    (jamais une liste écrite à la main)."""
+    enabled: bool = True              # false : service arrêté
+    port: int = 8450
+    listen: list[str] = field(default_factory=lambda: ["127.0.0.1"])   # adresses écoutées ; jamais 0.0.0.0
+    rig_name: str = ""                # nom du poste affiché (la station ne connaît que le numéro Hamlib)
+
+
+@dataclass
 class Freedv:
     """FreeDV RADE V1 en RÉCEPTION (lot F1, cahier des charges FreeDV) : deux décodeurs en processus enfants de la
     passerelle (trxstation/freedv/). Le choix du mode FreeDV (voix décodée à la place du son du poste) se fait depuis
@@ -592,6 +605,7 @@ class Config:
     monitor_link: MonitorLink = field(default_factory=MonitorLink)
     diffusion: Diffusion = field(default_factory=Diffusion)
     remote_console: RemoteConsole = field(default_factory=RemoteConsole)
+    dashboard: Dashboard = field(default_factory=Dashboard)
     freedv: Freedv = field(default_factory=Freedv)
     sdr: Sdr = field(default_factory=Sdr)
     bands: list[Band] = field(default_factory=list)
@@ -656,6 +670,7 @@ def validate(cfg: Config) -> list[str]:
     p += _monitor_link_problems(cfg.monitor_link, cfg.modules)
     p += _diffusion_problems(cfg.diffusion, cfg.modules, cfg.sdr)
     p += _remote_console_problems(cfg)
+    p += _dashboard_problems(cfg)
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
@@ -1104,6 +1119,33 @@ def _remote_console_problems(cfg: Config) -> list[str]:
     return p
 
 
+def _dashboard_problems(cfg: Config) -> list[str]:
+    db, p = cfg.dashboard, []
+    if not isinstance(db.enabled, bool):
+        p.append(_t("bool", where="[dashboard]", name="enabled"))
+    if isinstance(db.port, bool) or not isinstance(db.port, int) or not 1024 <= db.port <= 65535:
+        p.append(_t("dashboard.port_range", port=db.port))
+    elif db.port in (cfg.network.gateway_port, cfg.network.rigctld_port, cfg.remote_console.port):
+        p.append(_t("dashboard.port_taken", port=db.port))
+    if not isinstance(db.listen, list) or not db.listen or not all(isinstance(a, str) for a in db.listen):
+        p.append(_t("dashboard.listen", address=db.listen))
+    else:
+        for addr in db.listen:
+            try:
+                ip = ipaddress.ip_address(addr)
+            except ValueError:
+                p.append(_t("dashboard.listen", address=addr))
+                continue
+            if ip.is_unspecified:
+                p.append(_t("dashboard.listen_any", address=addr))
+            elif not ip.is_loopback and not (cfg.network.tls_cert and cfg.network.tls_key) \
+                    and cfg.network.allow_insecure_http is not True:
+                p.append(_t("dashboard.tls", address=addr))       # même règle que la page de pilotage
+    if not isinstance(db.rig_name, str) or len(db.rig_name) > 40:
+        p.append(_t("dashboard.rig_name"))
+    return p
+
+
 def _remote_console_compat(d: dict) -> dict:
     """[remote_console] des versions 0.176.0 et 0.177.0 (raccourci SSH) : ssh_user devient account, les ports SSH et
     du tunnel sont oubliés, et le service n'est PAS mis en marche sans un choix fait au menu 4.6."""
@@ -1216,7 +1258,8 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "power", "breizh",
-                 "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "freedv", "sdr", "bands", "clients"}
+                 "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "dashboard", "freedv", "sdr", "bands",
+                 "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(_t("unknown_root_key", key=key))
     try:
@@ -1243,6 +1286,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             monitor_link=_build(MonitorLink, d.get("monitor_link", {}), "monitor_link", problems),
             diffusion=_build(Diffusion, d.get("diffusion", {}), "diffusion", problems),
             remote_console=_build(RemoteConsole, _remote_console_compat(d), "remote_console", problems),
+            dashboard=_build(Dashboard, d.get("dashboard", {}), "dashboard", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
@@ -1524,6 +1568,12 @@ def render_toml(cfg: Config) -> str:
         f"account = {_s(cfg.remote_console.account)}   # compte Linux de la console (jamais root) ; vide sous Windows",
         f"port = {cfg.remote_console.port}   # https://<station>:{cfg.remote_console.port}/",
         f"idle_min = {cfg.remote_console.idle_min}   # session fermée après ce temps sans action (minutes)",
+        "",
+        "[dashboard]   # tableau de bord des signes vitaux, lecture seule (mini écran de la station, téléphone par le VPN)",
+        f"enabled = {str(cfg.dashboard.enabled).lower()}",
+        f"port = {cfg.dashboard.port}",
+        f"listen = {_list(cfg.dashboard.listen)}   # 127.0.0.1 = écran de la station ; + adresse réseau (VPN) : HTTPS",
+        f"rig_name = {_s(cfg.dashboard.rig_name)}   # nom du poste affiché",
         "",
         "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",
         f"enabled = {str(cfg.freedv.enabled).lower()}",

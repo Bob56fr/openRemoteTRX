@@ -70,12 +70,29 @@
     const a = $("#webapp"), w = state.webapp;
     const host = location.hostname;
     const here = host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
-    if (!w || (w.local && !here)) { a.hidden = true; return; }
+    if (!w || (w.local && !here)) { a.hidden = true; dashboardLink(w, here, host); return; }
     const name = host.includes(":") && !host.startsWith("[") ? "[" + host + "]" : host;
     const url = w.scheme + "://" + (w.local ? "127.0.0.1" : name) + ":" + w.port + "/";
     a.href = url;
     a.textContent = ui("web.webapp", { url: url.replace(/\/$/, "") });
     a.title = ui("web.webapp_open");
+    a.hidden = false;
+    dashboardLink(w, here, host);
+  }
+  // Lien du tableau de bord des signes vitaux (étape 385), sous celui de l'application web : il n'écoute que sur
+  // les adresses de [dashboard] listen et refuse un autre nom (en-tête Host) : le nom de cette page s'il en fait
+  // partie, sinon sa première adresse réseau ; 127.0.0.1 seulement depuis la station elle-même.
+  function dashboardLink(w, here, host) {
+    const a = $("#dashboard"), d = w && w.dashboard;
+    const hosts = (d && d.hosts) || [];
+    const bare = host.replace(/^\[|\]$/g, "");
+    if (!d || (!hosts.length && !here)) { a.hidden = true; return; }
+    const pick = hosts.length ? (hosts.includes(bare) ? bare : hosts[0]) : "127.0.0.1";
+    const name = pick.includes(":") ? "[" + pick + "]" : pick;
+    const url = (hosts.length ? d.scheme : "http") + "://" + name + ":" + d.port + "/";
+    a.href = url;
+    a.textContent = ui("web.dashboard", { url: url.replace(/\/$/, "") });
+    a.title = ui("web.dashboard_open");
     a.hidden = false;
   }
   function header() {

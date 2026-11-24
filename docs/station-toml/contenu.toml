@@ -128,6 +128,13 @@ intro = "<p>openRemoteTRX Console dans le navigateur, depuis n'importe quel PC, 
 ou = "Menu 4.6 d'openRemoteTRX Console."
 relu = "redemarrage"
 
+[sections.dashboard]
+titre = "Tableau de bord des signes vitaux [dashboard]"
+intro = "<p>Une page en LECTURE SEULE qui montre d'un coup d'œil l'état de la station : poste, émission, services, ordinateur, réseau, alertes des dernières 24 heures. Elle est faite pour un petit écran branché sur la station (<code>http://127.0.0.1:8450/</code>) et pour un téléphone par le réseau local ou le VPN. Aucune commande, aucun mot de passe : rien de vital n'y est montré. Les pastilles des terminaux sont les comptes opérateurs de <code>[[clients]]</code> (visiteurs exclus), dans l'ordre du fichier. Service à part (<code>trx-dashboard</code>) : l'écran reste allumé quand la passerelle tombe, et affiche « station muette ».</p>"
+ou = "Menu 8.1. Adresse affichée dans l'en-tête d'openRemoteTRX Console (« Tableau de bord Web »)."
+relu = "redemarrage"
+depuis = "0.280.0"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -829,6 +836,34 @@ role = "Durée sans action (menu ouvert, touche tapée) après laquelle la sessi
 niveau = "expert"
 bornes = "5 à 240 minutes."
 depuis = "0.178.0"
+
+# ---------------------------------------------------------------- dashboard
+
+[reglages."dashboard.enabled"]
+role = "true : la station sert le tableau de bord des signes vitaux (service <code>trx-dashboard</code>). false : service arrêté."
+niveau = "courant"
+depuis = "0.280.0"
+
+[reglages."dashboard.port"]
+role = "Port du tableau de bord."
+niveau = "expert"
+bornes = "1024 à 65535, différent du port de la page de pilotage, de rigctld et d'openRemoteTRX Console."
+depuis = "0.280.0"
+
+[reglages."dashboard.listen"]
+role = "Adresses écoutées. <code>127.0.0.1</code> = l'écran de la station seulement ; ajouter l'adresse de la station sur le réseau local ou le VPN pour l'ouvrir depuis un téléphone (en HTTPS avec le certificat de <code>[network]</code>)."
+niveau = "courant"
+bornes = "Adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige <code>[network] tls_cert</code> et <code>tls_key</code>, ou <code>allow_insecure_http = true</code> dans un VPN."
+securite = "Pas de mot de passe : toute personne qui joint cette adresse voit l'état de la station (aucune commande possible). Jamais une adresse publique."
+exemple = "<code>listen = [\"127.0.0.1\", \"&lt;adresse de la station&gt;\"]</code>"
+depuis = "0.280.0"
+
+[reglages."dashboard.rig_name"]
+role = "Nom du poste affiché dans le tableau de bord (la station ne connaît que son numéro Hamlib). Vide : aucun nom affiché."
+niveau = "courant"
+bornes = "40 caractères au plus."
+exemple = "<code>rig_name = \"IC-7300MK2\"</code>"
+depuis = "0.280.0"
 
 # ---------------------------------------------------------------- breizh
 

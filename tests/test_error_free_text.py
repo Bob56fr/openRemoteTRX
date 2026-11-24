@@ -42,6 +42,10 @@ CONVERTED = [
     "supervisor/main.py",
     "supervisor/notify.py",
     "supervisor/usb.py",
+    # étape 385 : tableau de bord des signes vitaux (né avec les codes)
+    "dashboard/app.py",
+    "dashboard/server.py",
+    "dashboard/station.py",
     # étape 209 : monitoring inter-stations (module « monlink », né avec les codes)
     "monlink/engine.py",
     "monlink/service.py",

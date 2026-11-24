@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trx-station"
-version = "0.279.0"
+version = "0.280.0"
 description = "Passerelle de pilotage à distance d'un TRX radioamateur (côté Raspberry Pi)"
 requires-python = ">=3.11"
 # Cœur en stdlib ; les modules de l'audio, du web et de l'interface sont dans les extras ci-dessous.
@@ -36,6 +36,7 @@ trx-sdr = "trxstation.sdr.devices:main"
 
 [tool.setuptools.package-data]
 "trxstation.gateway.api" = ["static/*"]
+"trxstation.dashboard" = ["static/*"]   # tableau de bord des signes vitaux (étape 385)
 "trxstation.modules" = ["builtin/*/manifest.toml"]
 "trxstation" = ["console_help.json"]
 "trxstation.console_web" = ["static/*", "static/vendor/*"]   # console web (étape 229) : page, xterm.js livré avec la station   # aide de la touche « h » d'openRemoteTRX Console (scripts/build_console_doc.py)

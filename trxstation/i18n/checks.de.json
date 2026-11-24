@@ -150,5 +150,11 @@
   "diffusion.incomplete": "[diffusion] aktiviert ohne server oder station: es könnte nichts gesendet werden",
   "rig.tuner": "[rig] tuner muss true oder false sein (Antennentuner des Geräts in Gebrauch)",
   "rig.port_usb": "[rig] {name}: USB-Kennung unlesbar ({value}); erwartet « 10C4:EA70 SN=… IF=00 » oder leer. Fern-Ein/Aus erneut einrichten (openRemoteTRX Console, Menü 2.8)",
-  "safety.swr_alert": "[safety] swr_alert ist {value}: 0 (aus) oder ein SWR zwischen 1,2 und 10 (Warnung bei hohem SWR beim Senden)"
+  "safety.swr_alert": "[safety] swr_alert ist {value}: 0 (aus) oder ein SWR zwischen 1,2 und 10 (Warnung bei hohem SWR beim Senden)",
+  "dashboard.port_range": "[dashboard] port muss eine Portnummer zwischen 1024 und 65535 sein (gelesen: {port})",
+  "dashboard.port_taken": "[dashboard] Port {port} wird bereits von der Station verwendet (Steuerseite, rigctld oder Konsole): Wählen Sie einen anderen",
+  "dashboard.listen": "[dashboard] listen: Liste von IP-Adressen erwartet (gelesen: {address})",
+  "dashboard.listen_any": "[dashboard] listen: {address} würde auf allen Adressen lauschen; geben Sie 127.0.0.1 und die gewünschte Netzwerkadresse an",
+  "dashboard.tls": "[dashboard] listen: {address} liegt im Netzwerk, HTTPS ist erforderlich ([network] tls_cert und tls_key) oder allow_insecure_http = true in einem VPN",
+  "dashboard.rig_name": "[dashboard] rig_name: Text mit höchstens 40 Zeichen"
 }

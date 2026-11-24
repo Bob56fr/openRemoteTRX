@@ -20,7 +20,7 @@ STATE_DIR=/var/lib/trx-remote
 LOG=/var/log/trx-remote-install.log
 SERVICE_USER=trx
 UNIT_DIR=/etc/systemd/system
-UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-update-check.timer trx-remote.target)
+UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-dashboard.service trx-update-check.timer trx-remote.target)
 HELPER_UNITS=(trx-update-check.service trx-console-web@.service)   # copiées, jamais activées ici (timer ; menu 4.6)
 TMPFILES=/etc/tmpfiles.d/trx-remote.conf
 MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
@@ -169,6 +169,7 @@ start_if_configured() {
       warn "la station n'a pas démarré : openRemoteTRX Console, menus « Diagnostic » et « Journal »"
     fi
     restart_network_console
+    start_dashboard
   elif [[ -f $CONF ]]; then
     warn "configuration incomplète : la station démarrera après l'assistant d'openRemoteTRX Console"
   else
@@ -211,6 +212,25 @@ restart_network_console() {
     systemd-run --quiet --on-active=30 systemctl try-restart "$(basename "$link")" >/dev/null 2>&1 || true
     ok "openRemoteTRX Console sur le réseau : relancée dans 30 s sur cette version (reconnexion dans le navigateur)"
   done
+}
+
+# Tableau de bord des signes vitaux (étape 385) : service à part de trx-remote.target (l'écran reste allumé quand la
+# passerelle tombe). L'installation séparée d'essai (openDashBoardDisplay, service --user du compte du bureau, même
+# port 8450) est arrêtée d'abord : trx-dashboard la remplace.
+start_dashboard() {
+  local user_unit
+  if [[ -n $TARGET_USER ]]; then
+    user_unit="$(getent passwd "$TARGET_USER" | cut -d: -f6)/.config/systemd/user/opendashboard.service"
+    if [[ -f $user_unit ]]; then
+      systemctl --user -M "$TARGET_USER@" disable --now opendashboard.service >/dev/null 2>&1 || true
+      ok "ancien tableau de bord séparé (openDashBoardDisplay) arrêté : remplacé par trx-dashboard"
+    fi
+  fi
+  if systemctl restart trx-dashboard.service; then
+    ok "tableau de bord des signes vitaux : http://127.0.0.1:8450/ (adresse réseau : en-tête d'openRemoteTRX Console)"
+  else
+    warn "tableau de bord des signes vitaux pas démarré : journalctl -u trx-dashboard"
+  fi
 }
 
 # ------------------------------------------------------------------ désinstallation

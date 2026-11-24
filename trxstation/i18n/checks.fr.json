@@ -150,5 +150,11 @@
   "diffusion.incomplete": "[diffusion] activée sans server ni station : rien ne pourrait être diffusé",
   "rig.tuner": "[rig] tuner doit valoir true ou false (coupleur d'antenne du poste utilisé)",
   "rig.port_usb": "[rig] {name} : identité USB illisible ({value}) ; format attendu « 10C4:EA70 SN=… IF=00 », ou vide. Refaire la mise en service de l'allumage à distance (openRemoteTRX Console, menu 2.8)",
-  "safety.swr_alert": "[safety] swr_alert vaut {value} : 0 (arrêt) ou un TOS entre 1,2 et 10 (alerte de TOS élevé pendant l'émission)"
+  "safety.swr_alert": "[safety] swr_alert vaut {value} : 0 (arrêt) ou un TOS entre 1,2 et 10 (alerte de TOS élevé pendant l'émission)",
+  "dashboard.port_range": "[dashboard] port doit être un numéro de port entre 1024 et 65535 (lu : {port})",
+  "dashboard.port_taken": "[dashboard] port {port} déjà pris par la station (page de pilotage, rigctld ou console) : choisis-en un autre",
+  "dashboard.listen": "[dashboard] listen : liste d'adresses IP attendue (lu : {address})",
+  "dashboard.listen_any": "[dashboard] listen : {address} écouterait sur toutes les adresses ; donner 127.0.0.1 et l'adresse réseau voulue",
+  "dashboard.tls": "[dashboard] listen : {address} est sur le réseau, il faut HTTPS ([network] tls_cert et tls_key) ou allow_insecure_http = true dans un VPN",
+  "dashboard.rig_name": "[dashboard] rig_name : texte de 40 caractères au plus"
 }

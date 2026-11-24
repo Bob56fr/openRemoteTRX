@@ -337,9 +337,15 @@ class WebConsole:
             cfg, _ = cfgmod.load_unchecked(con.config)
         except (cfgmod.ConfigError, OSError):
             return None
-        n = cfg.network
+        n, db = cfg.network, cfg.dashboard
+        # tableau de bord des signes vitaux (étape 385) : ses adresses exactes (il vérifie l'en-tête Host, et n'écoute
+        # jamais sur toutes les adresses) ; None s'il est hors service
+        listen = db.listen if isinstance(db.listen, list) else []
+        dash_hosts = [a for a in listen if isinstance(a, str) and a not in ("127.0.0.1", "localhost", "::1")]
+        dashboard = {"scheme": "https" if n.tls_cert and dash_hosts else "http", "port": db.port,
+                     "hosts": dash_hosts} if db.enabled is True else None
         return {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
-                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1")}
+                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"), "dashboard": dashboard}
 
     async def state(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request):
@@ -705,7 +711,8 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
            "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
            "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.close", "web.dash.stale", "web.report.download",
-           "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint", "web.webapp", "web.webapp_open")
+           "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint", "web.webapp", "web.webapp_open", "web.dashboard",
+           "web.dashboard_open")
 
 UI_START = ("\nConsole web de la station : {url}\n"
             "  Adresse à usage unique, à ouvrir sur CETTE machine (navigateur ouvert tout seul s'il y en a un).\n"

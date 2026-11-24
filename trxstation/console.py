@@ -288,6 +288,20 @@ def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list
     return "  " + t("head.console", urls=", ".join(console_url(host, port).rstrip("/") for host in hosts))
 
 
+def dashboard_line(enabled: bool, listen: list[str], port: int, tls: bool, t: Translator | None = None) -> str | None:
+    """En-tête de la console : adresse(s) du tableau de bord des signes vitaux ([dashboard], étape 385) ; None s'il est
+    hors service. HTTPS sur les adresses du réseau quand [network] a un certificat ; 127.0.0.1 toujours en HTTP."""
+    t = t or Translator()
+    if not enabled:
+        return None
+    hosts = [a for a in listen if a not in ("127.0.0.1", "localhost", "::1")]
+    if not hosts:
+        return "  " + t("head.dashboard_local", url=f"http://127.0.0.1:{port}")
+    scheme = "https" if tls else "http"
+    return "  " + t("head.dashboard", urls=", ".join(
+        f"{scheme}://{f'[{h}]' if ':' in h else h}:{port}" for h in hosts))
+
+
 def rig_vitals_line(rig: dict | None, t: Translator | None = None) -> str:
     """En-tête de la console : tension d'alimentation et température du poste, telles que la passerelle les publie
     (aucune connexion de plus à rigctld). `rig` None = passerelle arrêtée. « — » = valeur non fournie par le poste
@@ -3354,7 +3368,11 @@ class Console:
             found = []
         status = self._gateway_status()
         rc = cfg.remote_console
+        db = cfg.dashboard
+        dash = dashboard_line(db.enabled is True, list(db.listen) if isinstance(db.listen, list) else [], db.port,
+                              bool(n.tls_cert), self.t)
         return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found, self.t),
+                *([dash] if dash else []),
                 console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t),
                 rig_vitals_line(status.rig if status is not None else None, self.t)]
 

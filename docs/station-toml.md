@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-openRemoteTRX version 0.279.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+openRemoteTRX version 0.280.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant d'openRemoteTRX Console et se modifie ensuite par openRemoteTRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -256,6 +256,19 @@ Se modifie : Menu 4.6 d'openRemoteTRX Console. (au redémarrage).
 | `account` | courant | `""` | Compte Linux sous lequel tourne la console (celui de l'opérateur qui administre : il doit pouvoir utiliser sudo et faire partie du groupe `trx`). Vide sous Windows. Valeurs : Nom de compte Linux : minuscules, chiffres, _ . - (32 caractères au plus). Jamais root. Exemple : `account = "pi"` (depuis 0.178.0) |
 | `port` | expert | `8444` | Port HTTPS de la console. L'adresse d'écoute est celle de la page de pilotage (`[network] gateway_bind`), avec le même certificat. Valeurs : 1024 à 65535, différent du port de la page de pilotage et de rigctld. (depuis 0.178.0) |
 | `idle_min` | expert | `30` | Durée sans action (menu ouvert, touche tapée) après laquelle la session se ferme : il faut se reconnecter. Valeurs : 5 à 240 minutes. (depuis 0.178.0) |
+
+## Tableau de bord des signes vitaux [dashboard]
+
+Une page en LECTURE SEULE qui montre d'un coup d'œil l'état de la station : poste, émission, services, ordinateur, réseau, alertes des dernières 24 heures. Elle est faite pour un petit écran branché sur la station (`http://127.0.0.1:8450/`) et pour un téléphone par le réseau local ou le VPN. Aucune commande, aucun mot de passe : rien de vital n'y est montré. Les pastilles des terminaux sont les comptes opérateurs de `[[clients]]` (visiteurs exclus), dans l'ordre du fichier. Service à part (`trx-dashboard`) : l'écran reste allumé quand la passerelle tombe, et affiche « station muette ».
+
+Se modifie : Menu 8.1. Adresse affichée dans l'en-tête d'openRemoteTRX Console (« Tableau de bord Web »). (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `true` | true : la station sert le tableau de bord des signes vitaux (service `trx-dashboard`). false : service arrêté. (depuis 0.280.0) |
+| `port` | expert | `8450` | Port du tableau de bord. Valeurs : 1024 à 65535, différent du port de la page de pilotage, de rigctld et d'openRemoteTRX Console. (depuis 0.280.0) |
+| `listen` | courant | `["127.0.0.1"]` | Adresses écoutées. `127.0.0.1` = l'écran de la station seulement ; ajouter l'adresse de la station sur le réseau local ou le VPN pour l'ouvrir depuis un téléphone (en HTTPS avec le certificat de `[network]`). Valeurs : Adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige `[network] tls_cert` et `tls_key`, ou `allow_insecure_http = true` dans un VPN. **Sécurité** : Pas de mot de passe : toute personne qui joint cette adresse voit l'état de la station (aucune commande possible). Jamais une adresse publique. Exemple : `listen = ["127.0.0.1", "<adresse de la station>"]` (depuis 0.280.0) |
+| `rig_name` | courant | `""` | Nom du poste affiché dans le tableau de bord (la station ne connaît que son numéro Hamlib). Vide : aucun nom affiché. Valeurs : 40 caractères au plus. Exemple : `rig_name = "IC-7300MK2"` (depuis 0.280.0) |
 
 ## FreeDV en réception [freedv]
 

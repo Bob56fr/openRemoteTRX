@@ -150,5 +150,11 @@
   "diffusion.incomplete": "[diffusion] enabled without server or station: nothing could be broadcast",
   "rig.tuner": "[rig] tuner must be true or false (rig antenna tuner in use)",
   "rig.port_usb": "[rig] {name}: unreadable USB identity ({value}); expected « 10C4:EA70 SN=… IF=00 », or empty. Set up remote power again (openRemoteTRX Console, menu 2.8)",
-  "safety.swr_alert": "[safety] swr_alert is {value}: 0 (off) or an SWR between 1.2 and 10 (high SWR alert while transmitting)"
+  "safety.swr_alert": "[safety] swr_alert is {value}: 0 (off) or an SWR between 1.2 and 10 (high SWR alert while transmitting)",
+  "dashboard.port_range": "[dashboard] port must be a port number between 1024 and 65535 (read: {port})",
+  "dashboard.port_taken": "[dashboard] port {port} already used by the station (control page, rigctld or console): choose another one",
+  "dashboard.listen": "[dashboard] listen: a list of IP addresses is expected (read: {address})",
+  "dashboard.listen_any": "[dashboard] listen: {address} would listen on every address; give 127.0.0.1 and the network address you want",
+  "dashboard.tls": "[dashboard] listen: {address} is on the network, HTTPS is required ([network] tls_cert and tls_key) or allow_insecure_http = true inside a VPN",
+  "dashboard.rig_name": "[dashboard] rig_name: text of at most 40 characters"
 }

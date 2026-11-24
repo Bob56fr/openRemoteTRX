@@ -1,0 +1,26 @@
+[Unit]
+Description=Tableau de bord des signes vitaux de la station (lecture seule : mini écran, téléphone par le VPN)
+# Indépendant de trx-remote.target : quand la passerelle tombe, l'écran reste allumé et affiche « station muette ».
+After=network-online.target trx-gateway.service
+Wants=network-online.target
+ConditionPathExists=/etc/trx-remote/station.toml
+
+[Service]
+Type=simple
+User=trx
+Group=trx
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/trx-remote/venv/bin/python -m trxstation.dashboard --config /etc/trx-remote/station.toml
+KillSignal=SIGTERM
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+# 2 = configuration refusée : relancer ne changerait rien ([dashboard] de station.toml).
+RestartPreventExitStatus=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

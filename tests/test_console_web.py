@@ -119,9 +119,12 @@ def test_state_gives_the_web_app_link_under_the_station_state(tmp_path):
         cfg, _ = cfgmod.load_unchecked(wc.config)
         data = await (await client.get("/api/state")).json()
         n = cfg.network
+        dash = {"scheme": "http", "port": cfg.dashboard.port, "hosts": []} if cfg.dashboard.enabled else None
         assert data["webapp"] == {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
-                                  "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1")}
+                                  "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"),
+                                  "dashboard": dash}                # tableau de bord (étape 385), 127.0.0.1 par défaut
         assert data["ui"]["web.webapp"] == "Application Web : {url}" and data["ui"]["web.webapp_open"]
+        assert data["ui"]["web.dashboard"] == "Tableau de bord Web : {url}" and data["ui"]["web.dashboard_open"]
         wc.config.unlink()                                                  # station pas encore configurée
         assert (await (await client.get("/api/state")).json())["webapp"] is None
     scenario(tmp_path, body)

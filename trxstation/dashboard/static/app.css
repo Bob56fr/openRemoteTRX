@@ -1,0 +1,137 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (C) 2026 RF-DIY.COM
+ * openDashBoardDisplay : signes vitaux de la station openRemoteTRX.
+ * Deux dispositions : « large » (écran USB 960×480, téléphone en paysage) = la maquette mise à l'échelle ;
+ * « haute » (téléphone en portrait) = blocs empilés.
+ */
+:root{
+  --bg:#0B0F14; --panel:#131A22; --tile:#0F151C; --line:#233040; --line2:#1E2935;
+  --txt:#E6EDF3; --txt2:#C3CFDB; --mut:#8B9BAD; --dim:#5E6B79;
+  --rx:#4FC3F7; --tx:#FF7A45; --warn:#F5B83D; --crit:#FF5C4D; --ok:#4ADE80; --lit:#5CFF9D;
+  --mono:'JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace;
+  --sans:Inter,'DejaVu Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:var(--txt);font-family:var(--sans);-webkit-text-size-adjust:100%}
+body.wide{overflow:hidden;display:flex;align-items:center;justify-content:center}
+body.tall{overflow-y:auto}
+
+.screen{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg)}
+body.wide .screen{width:960px;height:480px;flex-shrink:0;transform-origin:center center}
+body.tall .screen{min-height:100%}
+
+/* ---------- bandeau ---------- */
+.top{height:52px;flex-shrink:0;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.top .side{flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0}
+.top .side.r{align-items:flex-end}
+.call{font-size:20px;font-weight:700;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.small{font-size:12px;color:var(--mut)}
+.clock{font-family:var(--mono);font-size:22px;font-weight:600;white-space:nowrap}
+.pill{display:flex;align-items:center;gap:10px;padding:8px 20px;border-radius:999px;font-size:18px;font-weight:700;letter-spacing:.1em;white-space:nowrap}
+.pill .dot{width:12px;height:12px;border-radius:50%}
+.pill.rx{background:#0E2A36;border:1px solid #2B6F8A;color:var(--rx)} .pill.rx .dot{background:var(--rx)}
+.pill.tx{background:#3A1A0E;border:1px solid var(--tx);color:#FF9F73} .pill.tx .dot{background:var(--tx)}
+.pill.safe{background:#3A1010;border:1px solid var(--crit);color:#FF8A80} .pill.safe .dot{background:var(--crit)}
+.pill.off{background:#1A2029;border:1px solid #3A4552;color:var(--mut)} .pill.off .dot{background:#4B5866}
+.pill .t{font-family:var(--mono);letter-spacing:0}
+.alertband{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:8px 16px;border-radius:10px;background:#3A1010;border:1px solid var(--crit);color:#FFD2CC;font-size:15px}
+.alertband.warn{background:#2E2410;border-color:var(--warn);color:#FCE7B8}
+.alertband b{color:#fff}
+.alertband svg{flex-shrink:0}
+
+/* ---------- corps ---------- */
+.body{flex-grow:1;min-height:0;display:flex;gap:10px}
+body.tall .body{flex-direction:column}
+.panel{padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.station{flex:1 1 0}
+.pc{width:330px;flex-shrink:0;gap:10px}
+body.tall .pc{width:auto}
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.label{font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--mut);flex-shrink:0}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);text-align:right;min-width:0}
+.led{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.led.warn{background:var(--warn)} .led.crit{background:var(--crit)} .led.off{background:#4B5866}
+
+.freqline{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.freq{font-family:var(--mono);font-size:30px;font-weight:600;line-height:1}
+.freq.dim{color:#4B5866}
+.badge{font-size:15px;font-weight:700;padding:2px 10px;border-radius:5px;background:#1C2733;border:1px solid #2E3D4E}
+.badge.dim{color:#4B5866}
+.sline{display:flex;align-items:center;gap:10px;font-size:13px}
+.track{position:relative;flex-grow:1;height:10px;border-radius:4px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.track>i{display:block;height:100%}
+.track>s{position:absolute;top:0;width:2px;height:100%;background:var(--warn)}
+.sline b{font-family:var(--mono);font-weight:600;min-width:64px;text-align:right}
+
+/* fonctions du poste : libellé vert lumineux quand la fonction est active */
+.fns{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.fn{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--tile);min-width:0}
+.fn.v{justify-content:space-between}
+.fn span{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fn b{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--mut);white-space:nowrap;flex-shrink:0}
+.fn.on{border-color:#1F5A3A;background:#0D2219}
+.fn.on span{color:var(--lit);text-shadow:0 0 6px rgba(92,255,157,.75),0 0 14px rgba(92,255,157,.35)}
+.fn.on b{color:#C9FFDD}
+.fn.txon{border-color:#8A4A2B;background:#2A170E}
+.fn.txon span{color:#FF9F73;text-shadow:0 0 6px rgba(255,122,69,.7)}
+.fn.txon b{color:#FFD9C7}
+.fn.w2{grid-column:span 2}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+body.tall .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tile{padding:6px 10px;border-radius:8px;background:var(--tile);border:1px solid var(--line2);display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+.tile span{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile b{font-family:var(--mono);font-size:18px;font-weight:600;white-space:nowrap}
+.tile b small{font-family:var(--sans);font-size:12px;font-weight:400;color:var(--mut)}
+.tile em{font-style:normal;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.warn{border-color:#6B5216} .tile.crit{border-color:#7A2A24;background:#1E1012}
+
+/* terminaux de l'opérateur */
+.terms{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.terms>span:first-child{font-size:11px;color:var(--mut);width:72px}
+.term{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid var(--line2);background:var(--tile);font-size:14px;font-weight:600;color:var(--dim)}
+.term i{width:10px;height:10px;border-radius:50%;background:#3A4552}
+.term.on{border-color:#1F5A3A;background:#0D2219;color:var(--lit);text-shadow:0 0 6px rgba(92,255,157,.6)}
+.term.on i{background:var(--lit);box-shadow:0 0 8px var(--lit)}
+.term.tx{border-color:#8A4A2B;background:#2A170E;color:#FF9F73}
+.term.tx i{background:var(--tx);box-shadow:0 0 8px var(--tx)}
+.term small{font-size:11px;font-weight:500;text-shadow:none}
+
+/* ---------- PC : historique 24 h ---------- */
+.hist{display:flex;flex-direction:column;gap:5px}
+.hrow{display:grid;grid-template-columns:76px 1fr 54px;align-items:center;gap:8px;font-size:13px}
+.hrow svg{display:block;width:100%;height:20px}
+.hrow b{font-family:var(--mono);font-weight:600;text-align:right;white-space:nowrap}
+.hrow b.crit{color:#FF8A80} .hrow b.warn{color:var(--warn)}
+.haxis{display:grid;grid-template-columns:76px 1fr 54px;gap:8px;font-family:var(--mono);font-size:10px;color:var(--mut)}
+.haxis div{display:flex;justify-content:space-between}
+.sep{height:1px;background:var(--line);flex-shrink:0}
+.svc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;font-size:13px}
+.svc>span{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+.svc>span em{margin-left:auto;font-style:normal;color:var(--mut);overflow:hidden;text-overflow:ellipsis}
+.svc>span em.crit{color:#FF8A80;font-weight:600}
+.sdr{margin-top:auto;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--tile);display:flex;flex-direction:column;gap:4px}
+.sdr .g{display:grid;grid-template-columns:auto auto auto auto;justify-content:space-between;gap:10px;font-size:12px}
+.sdr .g div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.sdr .g span{font-size:11px;color:var(--mut)}
+.sdr .g b{font-family:var(--mono);font-weight:600;white-space:nowrap}
+
+.foot{height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 6px;font-size:12px;color:var(--mut)}
+.foot .stale{color:#FF8A80;font-weight:600}
+body.tall .foot{height:auto;flex-wrap:wrap}
+
+/* page sans données : station muette ou programme injoignable */
+.nolink{position:fixed;inset:auto 12px 12px auto;padding:6px 12px;border-radius:8px;background:#3A1010;border:1px solid var(--crit);color:#FFD2CC;font-size:13px}
+.nolink[hidden]{display:none}
+
+/* ---------- disposition haute (téléphone en portrait) ---------- */
+body.tall .top{height:auto;flex-wrap:wrap;padding:8px 12px;gap:6px 10px}
+body.tall .top .pill{order:3;width:100%;justify-content:center;padding:6px 12px;font-size:16px}
+body.tall .clock{font-size:18px}
+body.tall .station,body.tall .pc{flex:none}
+body.tall .head{flex-wrap:wrap}
+body.tall .st{text-align:left}
+body.tall .freq{font-size:26px}
+body.tall .fns{grid-template-columns:repeat(3,minmax(0,1fr))}
+body.tall .fn.w2{grid-column:1 / -1}
+body.tall .sdr .g{grid-template-columns:1fr 1fr;justify-content:stretch}
