@@ -90,5 +90,6 @@ def test_page_is_public_self_contained_and_reports_its_height(lang):
 def test_wordpress_block_trusts_only_github_pages():
     block = (ROOT / "docs" / "wordpress" / "station-toml-iframe.html").read_text(encoding="utf-8")
     assert 'event.origin !== "https://bob56fr.github.io"' in block and "event.source !== frame.contentWindow" in block
-    assert "allow-same-origin" not in block and "sandbox=" in block
+    assert "allow-same-origin" in block and "allow-top-navigation" not in block  # sinon origine « null » : hauteur refusée
+    assert "sandbox=" in block
     assert "https://bob56fr.github.io/openRemoteTRX/station-toml/" in block

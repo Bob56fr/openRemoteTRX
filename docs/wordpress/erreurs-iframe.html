@@ -4,10 +4,13 @@
      personnalisé » de WordPress : les pages se mettent à jour toutes seules à chaque changement du catalogue.
      Lien direct vers un code : adresse de la page WordPress suivie de ?code=ORT-2104 (ouvre la page de ce code).
      La page envoie sa hauteur ; ce petit script l'applique à l'iframe (pas de double barre de défilement).
-     Seuls les messages venant de GitHub Pages du projet sont acceptés. -->
+     Seuls les messages venant de GitHub Pages du projet sont acceptés.
+     « allow-same-origin » est NÉCESSAIRE : sans lui, la page reçoit une origine anonyme (« null »), ce script
+     refuse sa hauteur et l'iframe garde une barre de défilement. La page (github.io) reste d'une autre origine que
+     le site : elle n'a aucun accès au site WordPress. -->
 <iframe id="trx-erreurs-doc" src="https://bob56fr.github.io/openRemoteTRX/erreurs/" title="Codes d'erreur d'openRemoteTRX"
         loading="lazy" referrerpolicy="no-referrer"
-        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
         style="display:block;width:100%;height:3200px;border:0;border-radius:8px;background:#0f141c"></iframe>
 <p style="font-size:.9em;opacity:.75">Page introuvable ? <a href="https://bob56fr.github.io/openRemoteTRX/erreurs/"
    target="_blank" rel="noopener noreferrer">Ouvrir la liste des codes dans un nouvel onglet</a>.</p>

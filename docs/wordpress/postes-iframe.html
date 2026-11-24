@@ -3,10 +3,13 @@
 <!-- Postes essayés avec openRemoteTRX (tableaux de comparaison et fiche de chaque poste), affichés depuis GitHub Pages.
      À coller UNE FOIS dans un bloc « HTML personnalisé » de WordPress : la page se met à jour toute seule à chaque
      fiche ajoutée ou corrigée dans le dépôt (docs/postes/donnees/). La page envoie sa hauteur ; ce petit script
-     l'applique à l'iframe (pas de double barre de défilement). Seuls les messages de GitHub Pages sont acceptés. -->
+     l'applique à l'iframe (pas de double barre de défilement). Seuls les messages de GitHub Pages sont acceptés.
+     « allow-same-origin » est NÉCESSAIRE : sans lui, la page reçoit une origine anonyme (« null »), ce script
+     refuse sa hauteur et l'iframe garde une barre de défilement. La page (github.io) reste d'une autre origine que
+     le site : elle n'a aucun accès au site WordPress. -->
 <iframe id="trx-postes-doc" src="https://bob56fr.github.io/openRemoteTRX/postes/" title="Postes essayés avec openRemoteTRX"
         loading="lazy" referrerpolicy="no-referrer"
-        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
         style="display:block;width:100%;height:3200px;border:0;border-radius:8px;background:#0f141c"></iframe>
 <p style="font-size:.9em;opacity:.75">Page introuvable ? <a href="https://bob56fr.github.io/openRemoteTRX/postes/"
    target="_blank" rel="noopener noreferrer">Ouvrir la liste des postes dans un nouvel onglet</a>.</p>
