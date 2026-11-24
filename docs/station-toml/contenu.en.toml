@@ -1,0 +1,1325 @@
+# Guide to the station.toml settings (public page, dark theme, iframe on the rf-diy.com site).
+# The LIST of settings and their default values come from the code (trxstation/config.py); the explanations from here.
+# A setting without an explanation, or an explanation without a setting, stops scripts/build_station_toml_doc.py and the tests.
+# Public content: generic examples only, never a real IP address, machine name, username or key.
+#
+# [reglages."section.cle"]: role (required), niveau = "courant" | "expert", and if needed: bornes, securite,
+# exemple, defaut (replaces the value from the code when it depends on the system), depuis (version it appeared in).
+
+[page]
+titre = "Station settings: station.toml"
+intro = """
+<p><code>station.toml</code> is the station configuration file: the transceiver, the sound cards, the network, the
+transmit safety rules, the accounts, the optional features. It is written by the openRemoteTRX Console wizard and is then changed
+through openRemoteTRX Console (menu 8.1, and the dedicated menus given for each section). The station <strong>checks</strong> it
+at every start: an inconsistent value is refused with a precise message, never silently ignored.</p>
+"""
+lecture = """
+<p><strong>Beginner</strong>: only the <span class="courant">common</span> settings concern you; the wizard sets them
+for you. The <span class="pro">expert</span> settings have safe default values: only touch them if you know what you
+are doing. File location: <code>/etc/trx-remote/station.toml</code> (Debian, Raspberry Pi),
+<code>C:\\ProgramData\\trx-remote\\station.toml</code> (Windows).</p>
+"""
+
+# ---------------------------------------------------------------- sections
+
+[sections.racine]
+titre = "File header"
+intro = "<p>Two numbers managed by the station itself.</p>"
+ou = "Nothing to do: written by the station."
+relu = "redemarrage"
+
+[sections.rig]
+titre = "The transceiver [rig]"
+intro = "<p>The transceiver controlled through Hamlib: model, CAT link, PTT control, modes and power.</p>"
+ou = "Wizard (menu 2.1), transceiver profiles (menu 2.3), or menu 8.1."
+relu = "redemarrage"
+
+[sections.audio]
+titre = "Audio [audio]"
+intro = "<p>The two audio directions between the station and the transceiver (audio interface such as Digirig, SignaLink, or the transceiver's USB sound card).</p>"
+ou = "Wizard (menu 2.1), transceiver profiles (menu 2.3), or menu 8.1."
+relu = "redemarrage"
+
+[sections.tools]
+titre = "Tools [tools]"
+intro = "<p>Where to find Hamlib when it is not in the system path.</p>"
+ou = "Wizard (menu 2.1) or menu 8.1."
+relu = "redemarrage"
+
+[sections.network]
+titre = "Network [network]"
+intro = "<p>How the web page and the app reach the station. See also the remote access guide (VPN or exposed port with HTTPS).</p>"
+ou = "Wizard (menu 2.1), phone pairing (menu 4.1), or menu 8.1."
+relu = "redemarrage"
+
+[sections.safety]
+titre = "Transmit safety [safety]"
+intro = "<p>The rules the station applies to EVERY transmission requested remotely, independently of the page and the app.</p>"
+ou = "Menu 8.1; temperature thresholds: menu 3.1; replay: wizard (menu 2.1)."
+relu = "redemarrage"
+
+[sections.bands]
+titre = "Allowed bands [[bands]]"
+intro = """
+<p>One entry per band where transmitting is allowed. <strong>Empty list = receive only.</strong> The bands offered
+by the wizard (IARU Region 1) are a starting point: check them against your licence and your country.</p>
+"""
+ou = "Wizard (menu 2.1) or menu 8.1."
+relu = "redemarrage"
+
+[sections.clients]
+titre = "Accounts [[clients]]"
+intro = "<p>One entry per account that can connect: operators (full control) and visitors (listen only).</p>"
+ou = "Wizard (menu 2.1), visitors (menu 4.2), command <code>trx-setup --add-client</code>."
+relu = "chaud"
+
+[sections.access]
+titre = "Receive-only visitors [access]"
+intro = "<p>Accounts that listen to the station and see the operator's screen, without any command to the transceiver.</p>"
+ou = "Menu 4.2."
+relu = "chaud"
+
+[sections.swr]
+titre = "SWR measurement [swr]"
+intro = "<p>The antenna SWR curve, started from the page or the app: a short FM carrier per point. Last measurement: menu 5.4.</p>"
+ou = "Menu 8.1."
+relu = "redemarrage"
+
+[sections.power]
+titre = "Powering the transceiver on and off remotely [power]"
+intro = "<p>Power the transceiver on when an operator connects and power it off from the page or the app (STOP held for 3 s). Off by default. Only for a transceiver that allows it over CAT (Hamlib: “set / get Power Stat”) and keeps its USB powered once switched off. The station never transmits to power the transceiver on or off.</p>"
+ou = "openRemoteTRX Console, menu 2.8 (enabling with a power off / power on test); fine settings: menu 8.1."
+relu = "redemarrage"
+
+[sections.breizh]
+titre = "Breizh Audio Box in the transmit path [breizh]"
+intro = "<p>The microphone audio goes through Breizh Audio Box (voice processing) on another PC of the local network before reaching the transceiver. If Breizh stops answering, the station switches back to direct by itself. The microphone audio travels UNENCRYPTED on the local network: only on a trusted network.</p>"
+ou = "Menu 8.1; the pairing key is created with openRemoteTRX Console (file <code>breizh.key</code> next to station.toml)."
+relu = "redemarrage"
+
+[sections.netprobe]
+titre = "Network quality probe [netprobe]"
+intro = "<p>The station continuously measures the link with each connected phone or browser (loss, round trip time, jitter, outages) and, after an outage, tells which part of the path probably failed. A small indicator shows it; the statistics of the last 30 days, clearing and export are in the page and the app. The probe only measures: it never acts on transmission.</p>"
+ou = "Menu 8.1. The indicator thresholds chosen in the page or the app (statistics, “Thresholds” section) are stored separately and take precedence over the ones here."
+relu = "redemarrage"
+
+[sections.presence]
+titre = "Group presence [presence]"
+intro = "<p>A group of friends using openRemoteTRX sees who is active on their station and, if each one agrees, on which frequency and in which mode. A relay on the Internet carries ENCRYPTED states that it cannot read. The “presence” module has no right over the transceiver: it can neither transmit nor change frequency; a QSY to a friend only happens when the operator taps it, in receive.</p>"
+ou = "Menu 8.1, and add “presence” to <code>[modules] run</code>. Groups, nickname and what is shared are set in the page, the app or openRemoteTRX Console (stored separately, not in station.toml)."
+relu = "redemarrage"
+
+[sections.monitor_link]
+titre = "Station-to-station monitoring [monitor_link]"
+intro = "<p>To HELP an operator in trouble, or TO BE HELPED, without a VPN or an open port: the helped operator's station sends, through the same relay as presence and end-to-end encrypted, what ITS operator has accepted (heartbeat, machine health, transceiver state without frequency or mode by default, error codes), always masked (passwords, addresses, serial numbers). The helping station can only read and ASK: no command to the helped station exists. The “monlink” module has no right over the transceiver.</p>"
+ou = "Menu 8.1, and add “monlink” to <code>[modules] run</code>. Nickname, invitations, links and sending profiles are set in openRemoteTRX Console (stored separately, not in station.toml)."
+relu = "redemarrage"
+
+[sections.diffusion]
+titre = "Live broadcast [diffusion]"
+intro = "<p>Let a few Internet users who have NO account on the station hear the transceiver audio, like a live podcast: the station sends the audio to a broadcast server (Icecast), and listeners hear it on that server's page or in VLC. They never reach the station. Closed by default, private by default (listener username and password), 1 hour by default; the voice transmitted by the operator is only broadcast if they ask for it. The “diffusion” module has no right over the transceiver. No server is imposed: use the one given by the server administrator, with the source password and the metadata key (separate file, never in station.toml).</p>"
+ou = "Menu 8.1, and add “diffusion” to <code>[modules] run</code>. Protocol: <code>docs/protocole-diffusion.md</code> in the repository."
+relu = "redemarrage"
+
+[sections.remote_console]
+titre = "openRemoteTRX Console on the network [remote_console]"
+intro = "<p>openRemoteTRX Console in the browser, from any PC, tablet or phone on the local network or the VPN, without SSH: <code>https://&lt;station&gt;:8444/</code>. You log in with an <strong>operator account marked as administrator</strong> (<code>admin = true</code> in <code>[[clients]]</code>); the session closes after 30 minutes without activity. The console runs under an ordinary Linux account, never root: the sudo password is still asked in the terminal, once per session. Never reachable from the Internet (public addresses refused).</p>"
+ou = "Menu 4.6 of openRemoteTRX Console."
+relu = "redemarrage"
+
+[sections.dashboard]
+titre = "Vital signs dashboard [dashboard]"
+intro = "<p>A READ-ONLY page that shows the station state at a glance: transceiver, transmission, services, computer, network, alerts of the last 24 hours. It is made for a small screen plugged into the station (<code>http://127.0.0.1:8450/</code>) and for a phone over the local network or the VPN. No command, no password: nothing vital is shown on it. The terminal badges are the operator accounts of <code>[[clients]]</code> (visitors excluded), in the order of the file. Separate service (<code>trx-dashboard</code>): the screen stays on when the gateway goes down, and shows “station silent”.</p>"
+ou = "Menu 8.1. Address shown in the openRemoteTRX Console header (“Web dashboard”)."
+relu = "redemarrage"
+depuis = "0.280.0"
+
+[sections.spectrum]
+titre = "Transceiver HF spectrum [spectrum]"
+intro = "<p>The transceiver's HF spectrum and waterfall in the page and the app, through a second port of the transceiver (Icom) or through Hamlib.</p>"
+ou = "Wizard (menu 2.1), transceiver profiles (menu 2.3), or menu 8.1."
+relu = "redemarrage"
+
+[sections.freedv]
+titre = "FreeDV receive [freedv]"
+intro = "<p>The station itself decodes FreeDV digital voice (RADE V1) with two programs from the FreeDV team, started only when the operator chooses FreeDV mode in the page: everyone connected, visitors included, then hears the decoded voice instead of the transceiver audio, with sync, SNR and received callsigns. Receive only: nothing is transmitted, and the transceiver is not touched.</p>"
+ou = "Menu 8.1; FreeDV mode is chosen in the page (“FreeDV” section), it is not kept after a restart."
+relu = "redemarrage"
+
+[sections.sdr]
+titre = "SDR receiver [sdr]"
+intro = "<p>An SDR receiver alongside the transceiver, receive only: its waterfall is shown in the page (“SDR” section). The SDR is identified by its serial number. The manufacturer's API must be installed by hand BEFORE the station, which then compiles the sdr-core program, and “sdr” must be added to <code>[modules] run</code>.</p>"
+ou = "Menu 8.1; centre, gain and rate are then set from the page."
+relu = "redemarrage"
+
+[sections.selcall]
+titre = "SELCALL [selcall]"
+intro = "<p>Digital squelch by group call: the received audio stays muted until your code is called.</p>"
+ou = "Menu 8.1; the code and options are set from the page or the app."
+relu = "redemarrage"
+
+[sections.cluster]
+titre = "DX Cluster [cluster]"
+intro = "<p>Spots from DX clusters, the RBN and CB operators, shown on the spectrum and in a list.</p>"
+ou = "Menu 8.1; source passwords: file <code>secrets.toml</code> (never here)."
+relu = "redemarrage"
+
+[sections."cluster.source"]
+titre = "DX Cluster sources [[cluster.source]]"
+intro = "<p>One entry per spot source (telnet cluster, RBN, website).</p>"
+ou = "Menu 8.1."
+relu = "redemarrage"
+
+[sections.supervisor]
+titre = "Supervisor [supervisor]"
+intro = """
+<p>The second safety layer, independent of the gateway: it watches transmission, rigctld and the machine, cuts
+transmission when in doubt and restarts whatever stops responding.</p>
+"""
+ou = "Menu 8.1."
+relu = "redemarrage"
+
+[sections.modules]
+titre = "Modules [modules]"
+intro = "<p>Additional programs started alongside the station (DX Cluster…), connected through a local bus.</p>"
+ou = "Menu 8.1."
+relu = "redemarrage"
+
+[sections.update]
+titre = "Updates [update]"
+intro = "<p>Search for newly published versions (nothing is installed without your consent).</p>"
+ou = "Menu 8.1; installation: menu 7.1."
+relu = "redemarrage"
+
+# ---------------------------------------------------------------- racine
+
+[reglages."racine.schema_version"]
+role = "Version of the file format. The station updates it itself during a migration."
+niveau = "expert"
+
+[reglages."racine.config_revision"]
+role = "Counter increased at every save by openRemoteTRX Console: tells which version of the file is in use."
+niveau = "expert"
+
+# ---------------------------------------------------------------- rig
+
+[reglages."rig.model"]
+role = "Transceiver model number in Hamlib (list: <code>rigctl -l</code>). 1 = dummy transceiver, to try without hardware."
+niveau = "courant"
+exemple = "IC-7300MK2: 3094 (Hamlib 4.7)."
+
+[reglages."rig.port"]
+role = "Serial port of the CAT link. Under Linux, prefer the stable name <code>/dev/serial/by-id/…</code> (it does not change from one restart to the next)."
+niveau = "courant"
+exemple = "Windows: <code>COM8</code>; Linux: <code>/dev/serial/by-id/usb-Silicon_Labs_…-if00-port0</code>."
+
+[reglages."rig.speed"]
+role = "Serial speed of the CAT link. Empty: Hamlib's default speed for this model. Must match the transceiver setting."
+niveau = "courant"
+exemple = "19200, 115200."
+
+[reglages."rig.ptt_type"]
+role = "How the station keys the transceiver: <code>RIG</code> (CAT command), <code>RTS</code> or <code>DTR</code> (line of a serial port), <code>GPIO</code> / <code>GPION</code> (Raspberry Pi pin), <code>NONE</code> (none: receive only)."
+niveau = "courant"
+securite = "The station reads the PTT state back after every command; with <code>NONE</code>, no transmission is possible."
+
+[reglages."rig.ptt_port"]
+role = "Port of the PTT control when it is not on the CAT port (RTS or DTR of another port). Empty: the CAT port."
+niveau = "expert"
+
+[reglages."rig.extra_conf"]
+role = "Extra options passed to rigctld (<code>-C name=value</code>), for a transceiver that needs them."
+niveau = "expert"
+securite = "Forbidden here: the spectrum options (<code>async</code>, <code>multicast_…</code>, set by [spectrum]) and <code>cache_timeout</code>. The station always starts rigctld with <code>cache_timeout=0</code> (since 0.134.0): with a cache, after a cut rigctld returns the commanded value instead of the real state of the transceiver, and a transceiver still transmitting would look as if it had stopped."
+exemple = "[\"civaddr=0x94\"]"
+
+[reglages."rig.tx_modes"]
+role = "Modes in which transmitting is allowed; empty = all. On Icom transceivers, audio from the USB sound card is only transmitted in data modes (USB-D, LSB-D, FM-D…): in another mode, the transceiver would modulate with its own microphone."
+niveau = "courant"
+securite = "A transmit request in a mode missing from the list is refused. The SWR measurement uses the first FM mode allowed here (FM, PKTFM or FM-D)."
+exemple = "Icom: [\"PKTUSB\", \"PKTLSB\", \"FM-D\", \"AM-D\"]."
+
+[reglages."rig.max_power_w"]
+role = "Maximum power of the transceiver in watts. 0: unknown, the page and the app show percentages instead of watts."
+niveau = "courant"
+exemple = "100 for a 100 W transceiver."
+
+[reglages."rig.tuner"]
+role = "The transceiver's built-in antenna tuner is used. At each operator connection, the station then reads the transceiver's automatic tuning settings through the second CI-V port (IC-7300MK2: [TUNER] Switch = Auto, PTT Start = ON) and warns if they are wrong or cannot be checked. It never changes them."
+niveau = "courant"
+securite = "Remotely, without automatic tuning when keying, a new frequency may transmit into a high SWR. Outside the amateur bands, tuning on PTT is not guaranteed by the transceiver."
+exemple = "true if the antenna goes through the transceiver's tuner; false (default) otherwise."
+depuis = "0.210.0"
+
+[reglages."rig.port_usb"]
+role = "USB identity of the transceiver port (manufacturer, product, serial number, interface), recorded when remote power-on is enabled. Before each power-on, the station checks that the port in <code>port</code> is STILL the transceiver's; if it has changed (another USB socket under Windows), power-on is refused and the new port is named."
+niveau = "expert"
+securite = "The station only READS this identity; it never opens another port on its own initiative (a serial port opened by mistake can raise RTS or DTR, hence a PTT)."
+exemple = "<code>10C4:EA70 SN=01D0F21E IF=00</code> (“Enhanced” port of the CP2105 of an FTDX10); empty = not recorded."
+depuis = "0.222.0"
+
+[reglages."rig.ptt_port_usb"]
+role = "USB identity of the PTT port when it is separate from the transceiver port (PTT by RTS or DTR); same check as <code>port_usb</code>."
+niveau = "expert"
+exemple = "Empty (default): PTT over CAT, or port not recorded."
+depuis = "0.222.0"
+
+# ---------------------------------------------------------------- audio
+
+[reglages."audio.capture_device"]
+role = "Sound card that receives the audio from the transceiver (the audio heard remotely). Empty: the system default card."
+niveau = "courant"
+exemple = "Linux: <code>plughw:CARD=CODEC,DEV=0</code>; Windows: <code>Microphone (USB Audio CODEC)</code>."
+
+[reglages."audio.playback_device"]
+role = "Sound card that sends audio to the transceiver (your voice when transmitting). Empty: the system default card."
+niveau = "courant"
+
+[reglages."audio.sample_rate"]
+role = "Sample rate. Only 48,000 is supported (Opus codec)."
+niveau = "expert"
+bornes = "48000 only."
+
+[reglages."audio.rx_gain_db"]
+role = "Gain applied to the received audio, in dB (negative = quieter), for all terminals, visitors and broadcast included. Set by openRemoteTRX Console, menu 2.9, which suggests a value based on the received level."
+niveau = "courant"
+bornes = "-40 to +20 dB."
+
+[reglages."audio.rx_limiter"]
+role = "Limiter of the received audio: peaks capped at -1 dBFS before the terminals, so that a high gain or a strong signal does not clip. <code>false</code> = gain applied without a cap (clipping possible), for troubleshooting only. openRemoteTRX Console, menu 2.9."
+niveau = "courant"
+depuis = "0.227.0"
+exemple = "rx_limiter = true"
+
+[reglages."audio.tx_gain_db"]
+role = "Gain applied to the audio sent to the transceiver, in dB."
+niveau = "courant"
+securite = "Too much overdrives the transmitter: set it on a dummy load while watching the ALC."
+
+# ---------------------------------------------------------------- tools
+
+[reglages."tools.hamlib_dir"]
+role = "Hamlib installation folder under Windows (the one that contains <code>bin\\rigctld.exe</code>). Empty: Hamlib must be in the PATH."
+niveau = "courant"
+exemple = "<code>C:\\Program Files\\hamlib-w64-4.7.2</code>"
+
+# ---------------------------------------------------------------- network
+
+[reglages."network.rigctld_host"]
+role = "Listening address of rigctld, the Hamlib service that talks to the transceiver."
+niveau = "expert"
+securite = "rigctld has NO authentication: it must listen locally only (127.0.0.1). The station refuses any other value."
+
+[reglages."network.rigctld_port"]
+role = "Local port of rigctld."
+niveau = "expert"
+
+[reglages."network.gateway_bind"]
+role = "Listening address of the station for the page and the app. <code>127.0.0.1</code>: this machine only; the machine's address on your VPN; or <code>0.0.0.0</code>: all its addresses."
+niveau = "courant"
+securite = "Outside the machine, HTTPS is required (<code>tls_cert</code>, <code>tls_key</code>), except with <code>allow_insecure_http</code> inside a VPN."
+
+[reglages."network.gateway_port"]
+role = "Station port for the web page and the app."
+niveau = "courant"
+
+[reglages."network.web_client"]
+role = "Serves the web control page on the same port as the app. false: app only."
+niveau = "expert"
+
+[reglages."network.tls_cert"]
+role = "HTTPS certificate of the station (PEM file). The wizard generates one; its fingerprint is used to pair the phone (menu 4.1)."
+niveau = "courant"
+
+[reglages."network.tls_key"]
+role = "Private key of the HTTPS certificate."
+niveau = "courant"
+securite = "Secret file: it must be readable by the station only."
+
+[reglages."network.allow_insecure_http"]
+role = "Allows listening outside the machine WITHOUT HTTPS. Only accept this inside a VPN that already encrypts everything."
+niveau = "expert"
+securite = "On the Internet without a VPN, passwords and audio would travel unencrypted: leave false."
+
+[reglages."network.trusted_proxies"]
+role = "Addresses (or ranges) of the trusted relays in front of the station, whose X-Forwarded-For header is believed to know the client's real address."
+niveau = "expert"
+
+[reglages."network.ice_servers"]
+role = "STUN/TURN servers to set up audio (WebRTC) across the Internet. []: local network or VPN only."
+niveau = "expert"
+
+# ---------------------------------------------------------------- safety
+
+[reglages."safety.tot_s"]
+role = "Maximum duration of a transmission (TOT) in seconds: beyond it, the station goes back to receive, with a warning beep beforehand."
+niveau = "courant"
+bornes = "Above 0 and at most <code>tot_ceiling_s</code>."
+securite = "Also limits the length of a replayed recording (TOT minus 5 s)."
+
+[reglages."safety.tot_ceiling_s"]
+role = "TOT ceiling: the value of <code>tot_s</code> cannot exceed it."
+niveau = "courant"
+securite = "The supervisor cuts on its own side beyond <code>[supervisor] tot_abs_s</code>, which must stay larger."
+
+[reglages."safety.enforce_bands"]
+role = "true: the station refuses to transmit outside the <code>[[bands]]</code>. false: the transceiver forbids it (for example the “TX limit” of Icom transceivers); the responsibility is yours."
+niveau = "courant"
+securite = "With true and an empty band list, no transmission is possible (receive only)."
+
+[reglages."safety.warn_before_s"]
+role = "Seconds before the end of the TOT when the warning is given."
+niveau = "expert"
+bornes = "Between 0 and <code>tot_s</code>."
+
+[reglages."safety.heartbeat_interval_ms"]
+role = "Expected rate of heartbeats from the phone or the page during a transmission (proof that the client is still there)."
+niveau = "expert"
+
+[reglages."safety.heartbeat_timeout_ms"]
+role = "With no heartbeat for this long, the station goes back to receive (client lost, network down)."
+niveau = "expert"
+securite = "Do not increase it without a reason: this is what cuts a transmission whose client has disappeared."
+
+[reglages."safety.rig_temp_warn_c"]
+role = "Transceiver temperature (if Hamlib provides it) from which a warning is shown and sent."
+niveau = "courant"
+bornes = "Between 20 and 90 °C, lower than <code>rig_temp_cut_c</code>."
+
+[reglages."safety.rig_temp_cut_c"]
+role = "Beyond it, remote transmission is cut and refused until the temperature is back below <code>rig_temp_warn_c</code>."
+niveau = "courant"
+
+[reglages."safety.swr_alert"]
+role = "SWR above which the station warns the operator who is transmitting (red banner and beep in the page), if the SWR read stays above it for more than one second; one alert per transmission. 0: off."
+niveau = "courant"
+bornes = "0, or 1.2 to 10."
+securite = "Alert ONLY: the station never cuts the transmission for a high SWR (the transceiver already reduces its power by itself)."
+exemple = "2.0 (default)."
+depuis = "0.212.0"
+
+[reglages."safety.allow_replay"]
+role = "Allows replaying a recording of the received audio (page and app): record a correspondent then send it back on transmit. Asked by the wizard when the transceiver is added; refused by default."
+niveau = "courant"
+securite = "Retransmitting a station's transmission to third parties is generally FORBIDDEN in the amateur service: only enable it knowingly, under your own responsibility."
+depuis = "0.91.0"
+
+[reglages."safety.rig_tot_warn"]
+role = "Transceiver TOT (internal transmit timer) READ when an operator connects: if it is OFF, the page and the app say so, once a day per account. Only for a transceiver whose reading has been qualified (currently the Icom IC-7300MK2, PTT over CAT); for the others, the wizard reminds you to set it."
+niveau = "courant"
+securite = "READ only: the station never changes the transceiver TOT and does not prevent transmitting. An uncertain reading (silent transceiver, unexpected answer) never gives “OFF”: no notice."
+exemple = "true (default)."
+depuis = "0.245.0"
+
+# ---------------------------------------------------------------- bands
+
+[reglages."bands.name"]
+role = "Band name, shown in messages."
+niveau = "courant"
+exemple = "\"40m\""
+
+[reglages."bands.low_mhz"]
+role = "Lower band edge, in MHz."
+niveau = "courant"
+exemple = "7.000"
+
+[reglages."bands.high_mhz"]
+role = "Upper band edge, in MHz."
+niveau = "courant"
+exemple = "7.200"
+
+# ---------------------------------------------------------------- clients
+
+[reglages."clients.id"]
+role = "Login username of the account, typed in the page or the app. Since 0.247.0, case does not matter when logging in (“PC” opens the account “pc”): two accounts that differ only by case are refused."
+niveau = "courant"
+exemple = "\"telephone\", \"voiture\""
+
+[reglages."clients.token"]
+role = "Old plain-text secret (older versions). Still accepted, but to be replaced by a password (<code>password_hash</code>)."
+niveau = "expert"
+securite = "A plain-text secret in the file can be read by anyone who reads the file: replace it."
+
+[reglages."clients.password_hash"]
+role = "Password hash (scrypt); never the password itself. Written by the wizard, menu 4.2 or <code>trx-setup --set-password</code>."
+niveau = "courant"
+
+[reglages."clients.role"]
+role = "<code>operator</code>: full control; <code>listener</code>: listen-only visitor, no command to the transceiver."
+niveau = "courant"
+
+[reglages."clients.pseudo"]
+role = "Name shown to the other connected users instead of the username (several accounts can use the same one)."
+niveau = "courant"
+
+[reglages."clients.enabled"]
+role = "false: connection refused, and a current connection is closed."
+niveau = "courant"
+
+[reglages."clients.expires"]
+role = "End date of the account (YYYY-MM-DD, station time); empty: never."
+niveau = "courant"
+
+[reglages."clients.admin"]
+role = "true: this operator account can also open openRemoteTRX Console over the network (<code>[remote_console]</code>, menu 4.6). Other operators control the transceiver but do not administer the station."
+niveau = "courant"
+bornes = "Operators only (never a visitor)."
+securite = "The password of an administrator account opens the station configuration: do not lend it."
+depuis = "0.178.0"
+
+# ---------------------------------------------------------------- access
+
+[reglages."access.max_listeners"]
+role = "Number of visitors connected at the same time; 0: visitor listening closed on the station. Otherwise, the operator opens or closes listening from their page or the app."
+niveau = "courant"
+bornes = "0 to 20."
+
+[reglages."access.max_operators"]
+role = "Number of operator connections at the same time (separate quota: a visitor never takes an operator's place)."
+niveau = "expert"
+bornes = "1 to 8."
+
+[reglages."access.listeners_need_operator"]
+role = "true: visitors admitted only if an operator is connected remotely."
+niveau = "courant"
+
+[reglages."access.operator_grace_s"]
+role = "After the last operator is lost, wait before disconnecting the visitors."
+niveau = "expert"
+bornes = "0 to 600 s."
+
+[reglages."access.listeners_outside_bands"]
+role = "false: silence for visitors when reception leaves the station's bands."
+niveau = "courant"
+
+[reglages."access.listener_spectrum_fps"]
+role = "Maximum rate of the HF spectrum sent to visitors (frames per second); the operator keeps their own."
+niveau = "expert"
+bornes = "1 to 20."
+
+[reglages."access.overload_temp_c"]
+role = "Station protection: processor temperature beyond which (for 10 s) visitors are disconnected."
+niveau = "expert"
+bornes = "50 to 105 °C."
+
+[reglages."access.overload_cpu_pct"]
+role = "Same protection: processor load (all cores) in %."
+niveau = "expert"
+bornes = "50 to 100 %."
+
+[reglages."access.overload_lag_ms"]
+role = "Same protection: delay of the station loop, in milliseconds."
+niveau = "expert"
+bornes = "20 to 2000 ms."
+
+[reglages."access.overload_mem_pct"]
+role = "Same protection: minimum free memory, in %."
+niveau = "expert"
+bornes = "1 to 50 %."
+
+# ---------------------------------------------------------------- swr
+
+[reglages."power.enabled"]
+role = "true: transceiver powered on when an operator connects and powered off from the page or the app. false (default): no remote power on or off."
+niveau = "courant"
+securite = "Power-off refused during any transmission and when the transceiver is used on site; after a power-on, the station reads the PTT back and puts the transceiver back in receive if it came on transmitting."
+exemple = "Enable through menu 2.8 of openRemoteTRX Console, which first tries to power the transceiver off and on again."
+depuis = "0.222.0"
+
+[reglages."power.on_timeout_s"]
+role = "Wait for the transceiver to answer after the power-on order. Beyond it, power-on is reported as failed with a clear message."
+niveau = "expert"
+bornes = "5 to 120 s (default 30; an FTDX10 answers in about 8 s)."
+depuis = "0.222.0"
+
+[reglages."power.idle_off"]
+role = "Automatic power-off of the transceiver when nobody has been connected (neither operator nor visitor) for <code>idle_off_hours</code> hours, with no broadcast running and no action on the transceiver. Postponed by 10 min during a transmission, never forced."
+niveau = "courant"
+exemple = "false (default)."
+depuis = "0.222.0"
+
+[reglages."power.idle_off_hours"]
+role = "Time without any connection before the automatic power-off."
+niveau = "courant"
+bornes = "1 to 168 h (default 4)."
+depuis = "0.222.0"
+
+[reglages."power.notify"]
+role = "ntfy alert at each power-on, power-off or failure (who, how). A transceiver that comes on TRANSMITTING always sends an alert, even without this setting."
+niveau = "courant"
+exemple = "false (default); requires <code>[supervisor] notify_url</code>."
+depuis = "0.222.0"
+
+[reglages."swr.enabled"]
+role = "false: the SWR measurement is not offered."
+niveau = "courant"
+depuis = "0.90.0"
+
+[reglages."swr.max_power_pct"]
+role = "Power ceiling of the measurement, in % of the transceiver power. The operator chooses the power (15 % by default) below this ceiling."
+niveau = "courant"
+bornes = "5 to 50 %."
+securite = "Never above 50 %: a few watts are enough to measure."
+depuis = "0.90.0"
+
+[reglages."swr.max_points"]
+role = "Maximum number of points in a measurement."
+niveau = "expert"
+bornes = "2 to 200."
+depuis = "0.90.0"
+
+[reglages."swr.point_tx_max_s"]
+role = "Maximum transmit time for one point. The actual time is calibrated on first use for each transceiver model, without exceeding this value."
+niveau = "expert"
+bornes = "0.5 to 3 s."
+depuis = "0.90.0"
+
+# ---------------------------------------------------------------- freedv
+
+[reglages."freedv.enabled"]
+role = "true: FreeDV is offered in the page (section and “FDV” indicator); the decoders only run while FreeDV mode is chosen by the operator."
+niveau = "courant"
+securite = "Receive only: FreeDV mode changes neither the frequency nor the mode of the transceiver, and is refused during a transmission. A decoder failure never stops the station: after 5 restarts in 10 minutes, the transceiver audio comes back."
+depuis = "0.122.0"
+
+[reglages."freedv.ka9q_path"]
+role = "Program that decodes the voice and the callsign (freedv-ka9q, from freedv-integrations). A bare name is looked up in the PATH, then among the decoders shipped with the station (Windows package). Debian and Raspberry Pi: <code>sudo bash compiler-freedv.sh</code> (package folder) compiles them and puts them in the PATH; nothing to set afterwards."
+niveau = "expert"
+bornes = "Path of a file, or bare name; never empty. Not found: FreeDV mode is refused with the name of the missing program."
+exemple = "<code>freedv-ka9q</code> (default, Debian and Windows), or the full path of a program compiled separately."
+depuis = "0.122.0"
+
+[reglages."freedv.locator"]
+role = "Maidenhead locator of the station. Used by the “FreeDV activity” list (module <code>freedv_activity</code> of <code>[modules] run</code>): distance of each station and reception chance score. It is sent nowhere: FreeDV Reporter is only read as an observer."
+niveau = "courant"
+bornes = "4 or 6 characters (JN18 or JN18du), or empty (list without distance, less accurate score)."
+exemple = "<code>JN18du</code>"
+depuis = "0.125.0"
+
+[reglages."freedv.radae_rx_path"]
+role = "Program that gives sync, SNR and frequency offset (radae_rx, from rade_c). A bare name is looked up in the PATH, then among the decoders shipped with the station (Windows package), like freedv-ka9q."
+niveau = "expert"
+bornes = "Path of a file, or bare name; never empty."
+exemple = "<code>radae_rx</code>"
+depuis = "0.122.0"
+
+# ---------------------------------------------------------------- sdr
+
+[reglages."sdr.enabled"]
+role = "true: the “SDR” section (waterfall of an SDR receiver alongside the transceiver) is offered to operators. “sdr” is also needed in <code>[modules] run</code> and the SDR serial number in <code>serial</code>."
+niveau = "courant"
+securite = "Receive only: the SDR module has no right over the transceiver; “QSY the TRX” goes through the usual frequency command, refused during a transmission. An SDR failure never stops the station. Protecting the SDR input against the power transmitted by the transceiver (separate antenna, sequencer) is the operator's responsibility."
+depuis = "0.140.0"
+
+[reglages."sdr.driver"]
+role = "SDR type. <code>sdrplay</code>: SDRplay RSP, whose API is installed by hand (manufacturer's software) BEFORE installing the station. <code>rtlsdr</code> (station 0.149.0+): RTL-SDR dongle (including the RTL-SDR Blog V4), driver installed by the station itself; the kernel TV driver is set aside. Chosen in menu 2.4 of openRemoteTRX Console with the SDR."
+niveau = "expert"
+bornes = "<code>sdrplay</code> or <code>rtlsdr</code>."
+depuis = "0.140.0"
+
+[reglages."sdr.serial"]
+role = "Serial number of this station's SDR. The SDR is always identified by this number, never by its USB port: on a machine with several SDRs, each one serves the right application. <code>trx-sdr --list</code> shows the free SDRs and those already taken by another application."
+niveau = "courant"
+bornes = "Letters and digits, 4 to 32; required when <code>enabled = true</code>. Number missing at start-up: the module waits (new attempt every 30 s) and never opens another SDR."
+securite = "Never enter the number of an SDR used by another application on the machine."
+exemple = "<code>1234567ABC</code>"
+depuis = "0.140.0"
+
+[reglages."sdr.core_path"]
+role = "sdr-core program (native core of the SDR module). Empty: the one compiled by the installation (next to the station), otherwise the PATH."
+niveau = "expert"
+bornes = "Path of a file, or empty."
+depuis = "0.140.0"
+
+[reglages."sdr.sample_rate_hz"]
+role = "Width covered by the SDR waterfall (sample rate). 2 MHz covers a whole HF band or the 2 m band and puts little load on the machine; 6 and 8 MHz need much more computing."
+niveau = "courant"
+bornes = "SDRplay: 2000000, 6000000 or 8000000; RTL-SDR dongle: 1024000, 2048000 or 2400000 (Hz)."
+exemple = "<code>2000000</code>"
+depuis = "0.140.0"
+
+[reglages."sdr.center_hz"]
+role = "Centre frequency of the SDR at first start. The last one chosen from the page is then reused (stored on the station, not in this file)."
+niveau = "courant"
+bornes = "1,000 to 2,000,000,000 Hz."
+exemple = "<code>7100000</code>"
+depuis = "0.140.0"
+
+[reglages."sdr.antenna"]
+role = "Antenna input of the SDR (RSP2: A or B; no effect on an RTL-SDR dongle, which has only one)."
+niveau = "courant"
+bornes = "A or B."
+depuis = "0.140.0"
+
+[reglages."sdr.lna_state"]
+role = "Preamplifier (LNA) state at first start: 0 = maximum gain. Then set from the page, where it is shown the right way round (“RF gain” slider: 8 = maximum gain)."
+niveau = "expert"
+bornes = "0 to 8."
+depuis = "0.140.0"
+
+[reglages."sdr.gain_reduction_db"]
+role = "IF gain reduction at first start, used when the IF AGC is off (<code>agc = false</code>). Then set from the page; increase it if overload is reported."
+niveau = "expert"
+bornes = "20 to 59 dB."
+depuis = "0.140.0"
+
+[reglages."sdr.agc"]
+role = "Hardware IF AGC: the SDR sets the IF gain reduction itself to keep the signal at the right level; the page then only offers the “RF gain” slider. false: the gain reduction is set by hand (“IF gain” slider). Then changed from the page."
+niveau = "courant"
+bornes = "true or false."
+depuis = "0.141.0"
+
+[reglages."sdr.audio_port"]
+role = "UDP port through which the SDR module sends the demodulated audio to the gateway. It only listens on 127.0.0.1 (never on the network) and only accepts packets carrying the module's token."
+niveau = "expert"
+bornes = "1024 to 65535, different from <code>[modules] bus_port</code>. Port already taken: waterfall only (code ORT-6003)."
+exemple = "<code>47821</code>"
+depuis = "0.142.0"
+
+[reglages."sdr.fft_size"]
+role = "Number of FFT points of the waterfall: the larger it is, the finer the detail."
+niveau = "expert"
+bornes = "Power of 2 from 512 to 16,384."
+depuis = "0.140.0"
+
+[reglages."sdr.bins"]
+role = "Number of bins in a line sent to clients (each bin keeps the maximum of the points it covers). Fewer bins = less mobile data."
+niveau = "expert"
+bornes = "Power of 2 from 128 to fft_size."
+depuis = "0.140.0"
+
+[reglages."sdr.lines_per_s"]
+role = "Waterfall lines per second at first start; then set from the page."
+niveau = "expert"
+bornes = "1 to 15."
+depuis = "0.140.0"
+
+[reglages."sdr.max_cpu_pct"]
+role = "Processor ceiling of the SDR module (sdr-core and module together), as a percentage of ONE core. Beyond it for 10 s, the module throttles itself step by step (slower waterfall, then 1 line/s, then sample rate at 2 MHz); a step is given back after 5 minutes well below the ceiling. The gateway also throttles the module when IT is struggling, independently of this setting."
+niveau = "expert"
+bornes = "20 to 800 (150 = one and a half cores)."
+exemple = "<code>150</code>"
+depuis = "0.144.0"
+
+[reglages."sdr.max_mem_mb"]
+role = "Memory ceiling of the SDR module (sdr-core and module together), in MB. Beyond it for 10 s, the module throttles itself as for <code>max_cpu_pct</code>."
+niveau = "expert"
+bornes = "50 to 4000."
+exemple = "<code>400</code>"
+depuis = "0.144.0"
+
+# ---------------------------------------------------------------- presence
+
+[reglages."presence.enabled"]
+role = "true: the station registers with the relay and exchanges presence with the groups it belongs to (“presence” must also be in <code>[modules] run</code>)."
+niveau = "courant"
+securite = "Presence only shows: no data received from the relay can control the transceiver."
+depuis = "0.117.0"
+
+[reglages."presence.relay_url"]
+role = "Address of the presence relay."
+niveau = "expert"
+bornes = "https:// required; http:// only towards 127.0.0.1 or localhost (tests with a relay on the same machine)."
+exemple = "Default relay: <code>https://relay.rf-diy.com</code> (since 0.257.0; before: <code>https://rf-diy.com/orx-relay/public</code>, removed after the migration: a station.toml that still has it must be corrected); local test: <code>http://127.0.0.1:8099</code>."
+depuis = "0.117.0"
+
+[reglages."presence.key_file"]
+role = "File with the station's keys for presence (signing and receiving group keys). Empty: <code>presence.key</code> in the state folder, created by the module at first start. Relative: next to station.toml."
+niveau = "expert"
+securite = "This file identifies the station to the relay and the groups: never copy it to another station."
+depuis = "0.117.0"
+
+# ---------------------------------------------------------------- monitor_link
+
+[reglages."monitor_link.enabled"]
+role = "true: the station registers with the monitoring relay, collects the messages of its links and sends what each profile allows (“monlink” must also be in <code>[modules] run</code>). Without a confirmed link, nothing is sent."
+niveau = "courant"
+securite = "Monitoring only reads and shows: no message received can control the transceiver or the station."
+depuis = "0.159.0"
+
+[reglages."monitor_link.relay_url"]
+role = "Address of the monitoring relay (the same as the presence one)."
+niveau = "expert"
+bornes = "https:// required; http:// only towards 127.0.0.1 or localhost (tests with a relay on the same machine)."
+exemple = "Default relay: <code>https://relay.rf-diy.com</code> (since 0.257.0; before: <code>https://rf-diy.com/orx-relay/public</code>, removed after the migration: a station.toml that still has it must be corrected); local test: <code>http://127.0.0.1:8099</code>."
+depuis = "0.159.0"
+
+[reglages."monitor_link.key_file"]
+role = "File with the station's keys for monitoring (signing, encryption of links). Empty: <code>monlink.key</code> in the state folder (sub-folder <code>monlink</code>), created by the module at first start. Relative: next to station.toml. Different from the presence keys: the two services cannot be linked."
+niveau = "expert"
+securite = "This file identifies the station to its monitoring partners: never copy it to another station."
+depuis = "0.159.0"
+
+# ---------------------------------------------------------------- diffusion
+
+[reglages."diffusion.enabled"]
+role = "true: the “diffusion” module lets an operator start a broadcast. No broadcast starts by itself, neither at start-up, nor after a gateway restart or a safety lockout."
+niveau = "courant"
+securite = "Enabling the rebroadcast of your transceiver is the operator's responsibility (the station does not filter bands)."
+depuis = "0.188.0"
+
+[reglages."diffusion.server"]
+role = "Name of the broadcast server, given by its administrator. Empty: no broadcast possible (no server imposed)."
+niveau = "courant"
+exemple = "server = \"diffusion.example.org\""
+depuis = "0.188.0"
+
+[reglages."diffusion.station"]
+role = "Name of the station on this server (2 to 32 characters a-z, 0-9 and -), given by its administrator: it forms the address of the listeners' page (<code>https://&lt;serveur&gt;/ecoute/&lt;station&gt;</code>) and of the streams."
+niveau = "courant"
+exemple = "station = \"f4xyz\""
+depuis = "0.188.0"
+
+[reglages."diffusion.source_port"]
+role = "TLS port where the station sends the audio, directly to the Icecast server (not port 443: an HTTP proxy cannot relay a source)."
+niveau = "expert"
+bornes = "1 to 65535"
+depuis = "0.188.0"
+
+[reglages."diffusion.api_port"]
+role = "HTTPS port for the metadata (nickname, frequency…) and the number of listeners."
+niveau = "expert"
+bornes = "1 to 65535"
+depuis = "0.188.0"
+
+[reglages."diffusion.codec"]
+role = "<code>opus</code> (32 kb/s, the lightest, default) or <code>mp3</code> (64 kb/s: older iPhones, radio apps)."
+niveau = "courant"
+depuis = "0.188.0"
+
+[reglages."diffusion.audio_port"]
+role = "UDP port through which the gateway gives the audio to the module, on 127.0.0.1 only (packets signed with a token). Only change it if another program uses it."
+niveau = "expert"
+bornes = "1024 to 65535, different from [modules] bus_port and from [sdr] audio_port"
+depuis = "0.188.0"
+
+[reglages."diffusion.key_file"]
+role = "File with the broadcast secrets (source password, metadata key, listener username and password). Empty: <code>diffusion.key</code> in the state folder (sub-folder <code>diffusion</code>). Relative: next to station.toml."
+niveau = "expert"
+securite = "Permissions 0600 required under Linux: a file readable by other accounts is refused. Never attach it to a message."
+depuis = "0.188.0"
+
+[reglages."diffusion.outside_bands"]
+role = "false (default): silence for listeners when reception leaves the allowed bands (<code>[[bands]]</code>) or the frequency is unknown, without stopping the broadcast: the audio comes back as soon as the transceiver is back in a band. true: everything is broadcast, whatever the frequency. Independent of <code>[access] listeners_outside_bands</code> (visitors)."
+niveau = "courant"
+securite = "What is broadcast is the operator's responsibility (user decision of 2026-11-17)."
+depuis = "0.189.0"
+
+[reglages."diffusion.tls"]
+role = "true: encrypted connections and server certificate checked. false only towards 127.0.0.1 (fake test server, <code>python -m trxstation.devtools.fake_icecast</code>)."
+niveau = "expert"
+securite = "Refused towards any other server: the source password would travel unencrypted."
+depuis = "0.188.0"
+
+[reglages."remote_console.enabled"]
+role = "true: the station serves openRemoteTRX Console over HTTPS on the network (service <code>trx-console-web@compte</code> under Debian, supervisor process under Windows)."
+niveau = "courant"
+securite = "An administrator account is almost as good as SSH access to the station: strong password, local network or VPN only. 5 failures block the address for 15 minutes; each login sends an ntfy alert."
+depuis = "0.178.0"
+
+[reglages."remote_console.account"]
+role = "Linux account under which the console runs (the one of the administering operator: it must be able to use sudo and belong to the <code>trx</code> group). Empty under Windows."
+niveau = "courant"
+bornes = "Linux account name: lowercase letters, digits, _ . - (32 characters at most). Never root."
+exemple = "<code>account = \"pi\"</code>"
+depuis = "0.178.0"
+
+[reglages."remote_console.port"]
+role = "HTTPS port of the console. The listening address is the one of the control page (<code>[network] gateway_bind</code>), with the same certificate."
+niveau = "expert"
+bornes = "1024 to 65535, different from the control page port and from rigctld."
+depuis = "0.178.0"
+
+[reglages."remote_console.idle_min"]
+role = "Time without activity (menu open, key pressed) after which the session closes: you must log in again."
+niveau = "expert"
+bornes = "5 to 240 minutes."
+depuis = "0.178.0"
+
+# ---------------------------------------------------------------- dashboard
+
+[reglages."dashboard.enabled"]
+role = "true: the station serves the vital signs dashboard (service <code>trx-dashboard</code>). false: service stopped."
+niveau = "courant"
+depuis = "0.280.0"
+
+[reglages."dashboard.port"]
+role = "Port of the dashboard."
+niveau = "expert"
+bornes = "1024 to 65535, different from the port of the control page, of rigctld and of openRemoteTRX Console."
+depuis = "0.280.0"
+
+[reglages."dashboard.listen"]
+role = "Listening addresses. EMPTY (default since 0.281.0): automatic, like the control page: <code>127.0.0.1</code> (station screen), plus the page's address (<code>[network] gateway_bind</code>) or, if it listens everywhere, the station's private addresses (local network, VPN), over HTTPS with the certificate of <code>[network]</code>; an address that appears after start-up (VPN, DHCP) is picked up within a minute. Filled in: only these addresses (for example <code>[\"127.0.0.1\"]</code> for the station screen only)."
+niveau = "expert"
+bornes = "Empty list, or exact IP addresses; never 0.0.0.0 or ::. A network address requires <code>[network] tls_cert</code> and <code>tls_key</code>, or <code>allow_insecure_http = true</code> inside a VPN (in automatic mode, without them: 127.0.0.1 only)."
+securite = "No password: anyone who reaches these addresses sees the station state (no command possible). Never an Internet address, even in automatic mode."
+exemple = "<code>listen = []</code> (automatic) or <code>listen = [\"127.0.0.1\"]</code>"
+depuis = "0.280.0"
+
+[reglages."dashboard.rig_name"]
+role = "Transceiver name shown in the dashboard (the station only knows its Hamlib number). Empty: no name shown."
+niveau = "courant"
+bornes = "40 characters at most."
+exemple = "<code>rig_name = \"IC-7300MK2\"</code>"
+depuis = "0.280.0"
+
+# ---------------------------------------------------------------- breizh
+
+[reglages."breizh.enabled"]
+role = "true: the operator's microphone audio goes through Breizh Audio Box during transmission, when Breizh answers."
+niveau = "courant"
+securite = "Breizh can never start or extend a transmission: the station keeps the PTT, the transmit audio gate and its limiter."
+depuis = "0.99.0"
+
+[reglages."breizh.host"]
+role = "IP address of the PC running Breizh Audio Box (127.0.0.1 if it is the same PC)."
+niveau = "courant"
+bornes = "Private IP address only (RFC 1918: 10/8, 172.16/12, 192.168/16; link-local 169.254/16; loopback 127/8; IPv6 fd00::/8, fe80::/10). Neither a host name nor a public address."
+securite = "The microphone audio is not encrypted: a public address is refused."
+depuis = "0.99.0"
+
+[reglages."breizh.port"]
+role = "UDP port on which Breizh waits for the station (the same as in Breizh's “OpenRemoteTRX” tab)."
+niveau = "expert"
+bornes = "1024 to 65535."
+depuis = "0.99.0"
+
+[reglages."breizh.key_file"]
+role = "File with the pairing key shared with Breizh. Empty: <code>breizh.key</code> next to station.toml. The key is never written in station.toml."
+niveau = "expert"
+securite = "File refused if it is readable by all accounts."
+depuis = "0.99.0"
+
+[reglages."breizh.block_timeout_ms"]
+role = "Delay beyond which an audio block (10 ms) that has not come back from Breizh is sent unprocessed, at reduced gain."
+niveau = "expert"
+bornes = "15 to 100 ms."
+depuis = "0.99.0"
+
+[reglages."breizh.lost_ms"]
+role = "With no return at all from Breizh for this long, the transmission continues direct until it ends (fallback)."
+niveau = "expert"
+bornes = "50 to 500 ms, larger than block_timeout_ms."
+depuis = "0.99.0"
+
+[reglages."breizh.fallback_gain_db"]
+role = "Gain of the direct audio during a fallback (Breizh lost), so as not to overmodulate with audio meant to be processed."
+niveau = "expert"
+bornes = "-20 to 0 dB."
+depuis = "0.99.0"
+
+[reglages."breizh.reactivate_after_s"]
+role = "After a fallback, time during which Breizh must answer without fault before being used again automatically (never during a transmission). 0: only when the operator asks for it."
+niveau = "expert"
+bornes = "0, or 30 to 3600 s."
+depuis = "0.99.0"
+
+# ---------------------------------------------------------------- netprobe
+
+[reglages."netprobe.enabled"]
+role = "true: the station measures the quality of the link with each client (one-second network heartbeat in both directions, a few dozen bytes)."
+niveau = "courant"
+securite = "The probe only measures and displays: it never cuts or starts a transmission."
+depuis = "0.106.0"
+
+[reglages."netprobe.heartbeat_interval_s"]
+role = "Period of the network heartbeat between the station and each client."
+niveau = "expert"
+bornes = "0.5 to 10 s."
+depuis = "0.106.0"
+
+[reglages."netprobe.outage_missed_beats"]
+role = "Number of heartbeats without an echo that make an outage be declared."
+niveau = "expert"
+bornes = "2 to 20."
+depuis = "0.106.0"
+
+[reglages."netprobe.lan_target"]
+role = "Router (gateway of the local network) that the station probes to find out whether an outage comes from its own network. auto: the machine's default gateway."
+niveau = "expert"
+depuis = "0.106.0"
+
+[reglages."netprobe.internet_target"]
+role = "Address on the Internet that the station probes to find out whether an outage comes from the router's connection. Empty: no Internet probe."
+niveau = "expert"
+depuis = "0.106.0"
+
+[reglages."netprobe.loss_warn_pct"]
+role = "Heartbeat loss over 60 s from which the indicator turns orange (starting value)."
+niveau = "expert"
+bornes = "0.1 to 100 %, lower than loss_alert_pct."
+depuis = "0.106.0"
+
+[reglages."netprobe.loss_alert_pct"]
+role = "Heartbeat loss over 60 s from which the indicator turns red (starting value)."
+niveau = "expert"
+bornes = "0.1 to 100 %."
+depuis = "0.106.0"
+
+[reglages."netprobe.rtt_warn_ms"]
+role = "Round trip time (p95 over 60 s) from which the indicator turns orange. Starting value: the “Thresholds” section of the statistics suggests values based on your measurements."
+niveau = "expert"
+bornes = "20 to 5,000 ms, lower than rtt_alert_ms."
+depuis = "0.106.0"
+
+[reglages."netprobe.rtt_alert_ms"]
+role = "Round trip time (p95 over 60 s) from which the indicator turns red (starting value)."
+niveau = "expert"
+bornes = "20 to 5,000 ms."
+depuis = "0.106.0"
+
+[reglages."netprobe.alert_outage_s"]
+role = "A longer outage sends an alert through the notification address of [supervisor] (notify_url). 0: no outage alert."
+niveau = "courant"
+bornes = "0 to 3,600 s."
+depuis = "0.106.0"
+
+[reglages."netprobe.alert_cooldown_s"]
+role = "Minimum delay between two alerts from the probe (outage, loss)."
+niveau = "expert"
+bornes = "30 to 86,400 s."
+depuis = "0.106.0"
+
+[reglages."netprobe.log_retention_days"]
+role = "How long detailed measurements are kept (10 s summaries)."
+niveau = "expert"
+bornes = "1 to 30 days."
+depuis = "0.106.0"
+
+[reglages."netprobe.stats_retention_days"]
+role = "How long outages and hourly statistics are kept (view of the last 30 days)."
+niveau = "expert"
+bornes = "7 to 90 days."
+depuis = "0.106.0"
+
+[reglages."netprobe.vpn_shared_warn"]
+role = "true: warns when two devices seem to share the same VPN profile (same private address, or very regular outages), a known cause of outages every 15 to 30 s."
+niveau = "courant"
+depuis = "0.106.0"
+
+[reglages."netprobe.rsrp_warn_dbm"]
+role = "4G/5G signal measured by the app (RSRP) below which the indicator turns orange."
+niveau = "expert"
+bornes = "-140 to -40 dBm, above rsrp_alert_dbm."
+depuis = "0.106.0"
+
+[reglages."netprobe.rsrp_alert_dbm"]
+role = "4G/5G signal (RSRP) below which the indicator turns red."
+niveau = "expert"
+bornes = "-140 to -40 dBm."
+depuis = "0.106.0"
+
+[reglages."netprobe.sinr_warn_db"]
+role = "4G/5G signal-to-noise ratio measured by the app below which the indicator turns orange."
+niveau = "expert"
+bornes = "-20 to 30 dB, above sinr_alert_db."
+depuis = "0.106.0"
+
+[reglages."netprobe.sinr_alert_db"]
+role = "4G/5G signal-to-noise ratio below which the indicator turns red."
+niveau = "expert"
+bornes = "-20 to 30 dB."
+depuis = "0.106.0"
+
+# ---------------------------------------------------------------- spectrum
+
+[reglages."spectrum.enabled"]
+role = "HF spectrum and waterfall of the transceiver in the page and the app. false: no HF spectrum (a single port to the transceiver)."
+niveau = "courant"
+
+[reglages."spectrum.source"]
+role = "<code>civ_port</code>: second serial port of the transceiver set to CI-V (Icom, recommended); <code>rigctld</code>: Hamlib 4.6+ stream (not recommended under Windows)."
+niveau = "courant"
+
+[reglages."spectrum.data_port"]
+role = "rigctld source: local UDP port of the spectrum stream."
+niveau = "expert"
+
+[reglages."spectrum.max_fps"]
+role = "Maximum rate of the spectrum sent to clients (frames per second)."
+niveau = "expert"
+
+[reglages."spectrum.port"]
+role = "civ_port source: second serial port of the transceiver."
+niveau = "courant"
+securite = "Never the CAT port or the PTT port. On the IC-7300, set “USB SEND” and “USB Keying” to OFF for this port: otherwise it could key the transceiver."
+exemple = "Windows: <code>COM7</code>; Linux: <code>/dev/serial/by-id/…-if02-port0</code>."
+
+[reglages."spectrum.civ_address"]
+role = "civ_port source: CI-V address of the transceiver, in hexadecimal (checked again at each opening)."
+niveau = "courant"
+exemple = "IC-7300MK2: B6."
+
+[reglages."spectrum.baud"]
+role = "civ_port source: speed of the second port (same as the transceiver setting)."
+niveau = "courant"
+bornes = "9600, 19200, 38400, 57600 or 115200."
+
+# ---------------------------------------------------------------- selcall
+
+[reglages."selcall.enabled"]
+role = "SELCALL feature available on this station."
+niveau = "courant"
+
+[reglages."selcall.send_on_tx_end"]
+role = "SELCALL burst transmitted at the end of a transmission, instead of the roger beep (only if the remaining transmit time can hold it)."
+niveau = "courant"
+
+[reglages."selcall.manual_repeat"]
+role = "Manual call: number of times the burst is transmitted."
+niveau = "expert"
+bornes = "1 to 5."
+
+[reglages."selcall.manual_gap_ms"]
+role = "Manual call: silence between two bursts, in milliseconds."
+niveau = "expert"
+
+[reglages."selcall.filter_mode"]
+role = "What happens to SELCALL tones in the received audio: <code>mute</code> (muted), <code>attenuate</code> (attenuated), <code>chime</code> (replaced by a chime)."
+niveau = "expert"
+
+[reglages."selcall.attenuation_db"]
+role = "attenuate mode: attenuation of the tones, in dB."
+niveau = "expert"
+
+[reglages."selcall.audio_delay_ms"]
+role = "Delay of the received audio so that the tones are filtered before being heard."
+niveau = "expert"
+bornes = "250 to 1000 ms."
+
+[reglages."selcall.tx_level_dbfs"]
+role = "Level of the transmitted burst, below the ALC threshold (can be adjusted automatically from the page or the app)."
+niveau = "expert"
+
+[reglages."selcall.notify_on_call"]
+role = "ntfy alert (supervisor `notify_url` URL), sent by the gateway when a call opens the squelch, at most one per minute. The SELCALL code is never included (a public ntfy topic can be guessed)."
+niveau = "courant"
+
+[reglages."selcall.history_size"]
+role = "Number of last codes kept."
+niveau = "expert"
+
+# ---------------------------------------------------------------- cluster
+
+[reglages."cluster.enabled"]
+role = "DX Cluster module (spots from clusters, the RBN and CB operators)."
+niveau = "courant"
+
+[reglages."cluster.call"]
+role = "YOUR amateur radio callsign, the only one sent to the clusters and the RBN. Empty: the module refuses to start."
+niveau = "courant"
+
+[reglages."cluster.cb_call"]
+role = "Your CB callsign (CB sources); currently sent nowhere."
+niveau = "expert"
+
+[reglages."cluster.modes"]
+role = "Modes followed (CW, SSB, AM, FM, FREEDV); empty: all. Never the digital modes."
+niveau = "courant"
+
+[reglages."cluster.bands"]
+role = "Bands followed; empty: all."
+niveau = "courant"
+
+[reglages."cluster.continents"]
+role = "Continent of the SPOTTER (the one who announces); empty: all."
+niveau = "expert"
+
+[reglages."cluster.blacklist"]
+role = "Ignored callsigns; <code>XX*</code> means a prefix."
+niveau = "expert"
+
+[reglages."cluster.ttl_min"]
+role = "Lifetime of spots from clusters and CB operators, in minutes."
+niveau = "expert"
+
+[reglages."cluster.rbn_ttl_min"]
+role = "Lifetime of RBN spots, in minutes."
+niveau = "expert"
+
+[reglages."cluster.cty_update"]
+role = "Weekly update of the callsign country list (cty.dat)."
+niveau = "expert"
+
+[reglages."cluster.source"]
+role = "The spot sources: see the next section."
+niveau = "expert"
+
+# ---------------------------------------------------------------- cluster.source
+
+[reglages."cluster.source.name"]
+role = "Name of the source, shown in the stream status."
+niveau = "expert"
+
+[reglages."cluster.source.type"]
+role = "<code>telnet</code> (DX cluster), <code>rbn</code> (Reverse Beacon Network), <code>web</code> (website, CB operators)."
+niveau = "expert"
+
+[reglages."cluster.source.host"]
+role = "telnet, rbn: server name."
+niveau = "expert"
+
+[reglages."cluster.source.port"]
+role = "telnet, rbn: server port."
+niveau = "expert"
+
+[reglages."cluster.source.url"]
+role = "web: page address (https only)."
+niveau = "expert"
+
+[reglages."cluster.source.call"]
+role = "Callsign specific to this source; empty: <code>[cluster] call</code>."
+niveau = "expert"
+
+[reglages."cluster.source.secret"]
+role = "NAME of a password stored in <code>secrets.toml</code> (never the password itself); empty: none."
+niveau = "expert"
+
+[reglages."cluster.source.priority"]
+role = "Telnet clusters: 1 = main, then backups in order."
+niveau = "expert"
+
+[reglages."cluster.source.enabled"]
+role = "false: source ignored."
+niveau = "expert"
+
+# ---------------------------------------------------------------- supervisor
+
+[reglages."supervisor.tot_abs_s"]
+role = "Absolute TOT of the supervisor: beyond it, it cuts the transmission itself, even if the gateway does not. Also cuts a transmission made with the transceiver microphone."
+niveau = "courant"
+securite = "Must stay strictly larger than <code>[safety] tot_ceiling_s</code>."
+
+[reglages."supervisor.poll_interval_s"]
+role = "Monitoring rate at rest (faster during a transmission)."
+niveau = "expert"
+
+[reglages."supervisor.max_reboots_per_hour"]
+role = "Machine reboots allowed per hour; beyond that, safety lockout (receive, access cut)."
+niveau = "expert"
+
+[reglages."supervisor.notify_url"]
+role = "ntfy notification address for the station alerts (optional). Each alert carries a stable code (for example “ORT-5024 Absolute TOT exceeded”), the ntfy priority of that code, what to do and the link to the code's page (<a href=\"https://bob56fr.github.io/openRemoteTRX/erreurs/\" target=\"_blank\" rel=\"noopener noreferrer\">list of error codes</a>); a code with no alert by default is only written to the log."
+niveau = "courant"
+exemple = "<code>https://ntfy.sh/mon-sujet-secret</code>"
+securite = "Choose a topic that is hard to guess: anyone who knows it can read your alerts."
+
+[reglages."supervisor.notify_lang"]
+role = "Language of the ntfy alerts sent to the phone: title, message and steps to follow from the error catalogue. The station log stays in French; a measured value (detail) stays as the station writes it."
+niveau = "courant"
+bornes = "<code>fr</code> (default), <code>en</code>, <code>de</code> or <code>es</code>: the languages of the error catalogue (German and Spanish since version 0.241.0)."
+exemple = "<code>en</code>"
+depuis = "0.165.0"
+
+[reglages."supervisor.status_path"]
+role = "Status file written by the gateway and read by the supervisor, trx-monitor and openRemoteTRX Console."
+niveau = "expert"
+defaut = "<code>/run/trx-remote/gateway-status.json</code> (Linux); <code>C:\\ProgramData\\trx-remote\\run\\gateway-status.json</code> (Windows)."
+
+[reglages."supervisor.state_dir"]
+role = "Station state folder: safety lockout, memories, profiles, SWR measurements, station identifier."
+niveau = "expert"
+defaut = "<code>/var/lib/trx-remote</code> (Linux); <code>C:\\ProgramData\\trx-remote\\state</code> (Windows)."
+
+[reglages."supervisor.service_mode"]
+role = "<code>auto</code>, <code>systemd</code> (Linux: system services) or <code>managed</code> (the supervisor starts the processes itself, Windows)."
+niveau = "expert"
+
+[reglages."supervisor.instance_lock_port"]
+role = "Local port reserved to make sure that only one supervisor runs."
+niveau = "expert"
+
+[reglages."supervisor.stale_after_s"]
+role = "Gateway considered silent if its status file has not changed for this long."
+niveau = "expert"
+
+[reglages."supervisor.startup_grace_s"]
+role = "Grace period at start-up, while the gateway and rigctld get ready."
+niveau = "expert"
+
+[reglages."supervisor.mismatch_grace_s"]
+role = "Tolerance before judging a transmission “unexplained” (transceiver transmitting with no client)."
+niveau = "expert"
+
+[reglages."supervisor.rigctld_fail_s"]
+role = "rigctld unreachable for this long: it is restarted."
+niveau = "expert"
+
+[reglages."supervisor.recovery_wait_s"]
+role = "Wait between two levels of the recovery ladder (restarts, USB reset, safety lockout)."
+niveau = "expert"
+
+[reglages."supervisor.healthy_reset_s"]
+role = "Time without problems before starting again from the first level of the recovery ladder."
+niveau = "expert"
+
+[reglages."supervisor.temp_alert_c"]
+role = "Machine temperature beyond which an alert is sent (no other action)."
+niveau = "expert"
+
+[reglages."supervisor.mem_alert_pct"]
+role = "Memory used (in %) beyond which a <code>notify_url</code> alert is sent, if it lasts 60 s; at most one alert per hour. No other action (no restart, no safety lockout)."
+niveau = "expert"
+bornes = "0 (no alert) or 50 to 99."
+depuis = "0.115.0"
+
+[reglages."supervisor.disk_alert_pct"]
+role = "Disk used (in %) beyond which an alert is sent, measured on the state folder and on the system root; 60 s in a row, at most one alert per hour. A full disk prevents writing the state and the logs."
+niveau = "expert"
+bornes = "0 (no alert) or 50 to 99."
+depuis = "0.115.0"
+
+[reglages."supervisor.alive_every_h"]
+role = "“Station in service” message sent through <code>notify_url</code> every N hours (minimum priority); 0: none."
+niveau = "courant"
+
+[reglages."supervisor.allow_local_tx"]
+role = "true (“shared station”): a transmission made with the transceiver microphone is not cut remotely (only the absolute TOT applies), and remote PTT is blocked during the local transmission and for 2 minutes afterwards."
+niveau = "courant"
+securite = "false: any transmission not requested by the station is cut. A microphone held down then resists the cut and leads to a safety lockout in about one minute: keep true if someone uses the transceiver on site."
+
+[reglages."supervisor.local_tx_max_s"]
+role = "Shared station: transmit time with the transceiver microphone tolerated when an operator is PRESENT, that is when an action on the transceiver (volume, frequency, mode, leaving DATA mode, preamp, NR...) was seen in the 2 minutes before keying or during the transmission. Past the absolute TOT, a simple alert; at this duration, cut by the supervisor, then recovery ladder and safety lockout if the transmission resists. Without proof of presence, the absolute TOT applies."
+niveau = "expert"
+bornes = "1 to 600 s; never less than <code>tot_abs_s</code> (the larger of the two applies)."
+securite = "A microphone stuck just after an action on the transceiver transmits up to this duration before being cut."
+depuis = "0.157.0"
+
+[reglages."supervisor.gateway_unit"]
+role = "Linux: name of the gateway systemd service."
+niveau = "expert"
+
+[reglages."supervisor.rigctld_unit"]
+role = "Linux: name of the rigctld systemd service."
+niveau = "expert"
+
+# ---------------------------------------------------------------- modules
+
+[reglages."modules.run"]
+role = "Modules to run; empty: none (no bus)."
+niveau = "expert"
+exemple = "[\"cluster\"]"
+
+[reglages."modules.bus_port"]
+role = "Port of the internal module API, local only."
+niveau = "expert"
+
+[reglages."modules.run_as"]
+role = "Linux: account under which the modules run (never root)."
+niveau = "expert"
+
+[reglages."modules.extra_dir"]
+role = "Folder of additional modules; empty: supplied modules only."
+niveau = "expert"
+
+# ---------------------------------------------------------------- update
+
+[reglages."update.enabled"]
+role = "Looks for a new version at start-up then every 24 h; the console announces it, nothing is installed without your consent."
+niveau = "courant"
+
+[reglages."update.allow_prerelease"]
+role = "true: also offers pre-releases (test versions)."
+niveau = "expert"

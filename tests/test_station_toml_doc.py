@@ -40,8 +40,39 @@ def test_published_page_and_markdown_are_up_to_date():
     assert (doc.SITE / "station-toml" / version / "index.html").is_file()
 
 
-def test_page_is_public_self_contained_and_reports_its_height():
-    page = (doc.SITE / "station-toml" / "index.html").read_text(encoding="utf-8")
+def test_translations_have_the_same_settings_and_fields_as_french():
+    contents = doc.load_all()
+    doc.check_all(contents)
+    assert set(contents) == {"fr", "en", "de", "es"}
+    contents["en"]["reglages"].pop("safety.tot_s")
+    with pytest.raises(doc.DocError, match=r"\[en\].*safety.tot_s"):
+        doc.check_all(contents)
+    contents = doc.load_all()
+    contents["de"]["reglages"]["safety.tot_s"]["niveau"] = "expert" if contents["fr"]["reglages"]["safety.tot_s"]["niveau"] == "courant" else "courant"
+    with pytest.raises(doc.DocError, match=r"\[de\].*niveau"):
+        doc.check_all(contents)
+    contents = doc.load_all()
+    contents["es"]["reglages"]["safety.tot_s"].pop("role")
+    with pytest.raises(doc.DocError, match=r"\[es\]"):
+        doc.check_all(contents)
+
+
+def test_each_language_has_its_page_and_flags_to_switch():
+    for lang in doc.LANGS:
+        sub = "" if lang == "fr" else lang + "/"
+        page = (doc.SITE / "station-toml" / sub / "index.html").read_text(encoding="utf-8")
+        assert f'<html lang="{lang}">' in page
+        assert page.count("<svg") == 4 and 'class="langues"' in page and 'aria-current="page" lang="' + lang + '"' in page
+        for other in doc.LANGS:
+            if other != lang:
+                target = (doc.SITE / "station-toml" / sub / ((("../" if lang != "fr" else "")
+                                                             + ("" if other == "fr" else other + "/")) or "./")).resolve()
+                assert (target / "index.html").is_file(), (lang, other)
+
+
+@pytest.mark.parametrize("lang", ["fr", "en", "de", "es"])
+def test_page_is_public_self_contained_and_reports_its_height(lang):
+    page = (doc.SITE / "station-toml" / ("" if lang == "fr" else lang) / "index.html").read_text(encoding="utf-8")
     assert page.startswith("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->")
     assert not re.search(r"<(link|img|iframe)\b|\bsrc\s*=", page, re.I)                # tout est dans la page
     assert set(re.findall(r'href="(https?://[^"]+)"', page)) <= {doc.base.REPO_URL, doc.base.SITE_URL,
