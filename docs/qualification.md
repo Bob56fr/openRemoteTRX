@@ -246,6 +246,7 @@ Dossier `qualifications/qualif-<modèle>-<date>/` :
 - `results.json` : tous les tests (identifiant, catégorie, résultat, détail, mesures), profil
   Hamlib, plan, verdict ;
 - `fiche.toml` : brouillon de fiche TRX ;
+- `fiche-technique.toml` (étape 400) : brouillon de la fiche technique du poste (`trxstation/rigspec/models/<numéro Hamlib>.toml`) avec les délais MESURÉS en phase 1 (retard de relecture de la fréquence et du mode, mémoire par bande, squelch réel, largeurs par paliers relues) et la marge proposée ; à relire puis copier dans le dépôt (`verified = true`) ;
 - `cat_trace.log` : trace CAT horodatée (future base du rejeu en non-régression) ;
 - `dump_caps.txt`, `plan.txt`, `journal.txt`, `rx.wav`.
 

@@ -289,5 +289,8 @@
   "online.never_started": "stopped · never started",
   "online.ntfy_ok": "last alert sent {when}",
   "online.ntfy_fail": "last sending failed {when} (ORT-8013)",
-  "online.ntfy_none": "no alert sent yet"
+  "online.ntfy_none": "no alert sent yet",
+  "label.squelch": "Squelch",
+  "squelch.open": "open (signal, read from the radio)",
+  "squelch.closed": "closed (read from the radio)"
 }

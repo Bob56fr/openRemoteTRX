@@ -191,6 +191,9 @@ def _radio_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         Row(t("label.filter"), "--" if rig.get("passband_hz") is None else f"{rig['passband_hz']} Hz", dim),
         Row(t("label.smeter"), f"{s_meter_text(rig.get('strength_db'))}  {s_meter_bar(rig.get('strength_db'))}", dim),
     ]
+    if isinstance(rig.get("dcd"), bool):           # squelch lu sur le poste (étape 396) ; rien quand il est estimé
+        rows.append(Row(t("label.squelch"), t("squelch.open") if rig["dcd"] else t("squelch.closed"),
+                        "ok" if rig["dcd"] and snap.gateway_fresh else dim))
     return Panel("radio", title, tuple(rows))
 
 

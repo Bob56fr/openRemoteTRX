@@ -481,5 +481,16 @@
   "split.skipped": "Split nicht geprüft (vom Bediener übersprungen)",
   "split.not_on": "Split als AUS gelesen (Empfang {rx} MHz): vor der Antwort am Gerät einschalten",
   "split.refused_unreadable": "Split-Sendefrequenz NICHT LESBAR: Senden von der Station abgelehnt ({reason}); sicher, aber Split mit diesem Gerät aus der Ferne nicht nutzbar",
-  "split.refused_out": "Split-Senden auf {tx} MHz, außerhalb der erlaubten Bänder: Ablehnung der Station ({reason}, erwartet out_of_band)"
+  "split.refused_out": "Split-Senden auf {tx} MHz, außerhalb der erlaubten Bänder: Ablehnung der Station ({reason}, erwartet out_of_band)",
+  "check.timing": "Verzögerungen des Transceivers",
+  "timing.start": "Verzögerungen des Transceivers (technisches Datenblatt): Frequenz und Betriebsart geschrieben und zurückgelesen, anderes Band, Squelch…",
+  "timing.detail": "Rücklese-Verzögerung: Frequenz {freq} s, Betriebsart {mode} s (vorgeschlagene Marge {margin} s)",
+  "timing.band_linked": "; ein anderes Band ÄNDERT die Betriebsart (Bandspeicher)",
+  "timing.band_kept": "; ein anderes Band behält die Betriebsart",
+  "timing.band_unknown": "; Bandspeicher nicht gemessen",
+  "timing.dcd_yes": "; echter Squelch lesbar (\\get_dcd)",
+  "timing.dcd_no": "; echter Squelch nicht lesbar (geschätzte Anzeige)",
+  "timing.problems": "; Probleme: {problems}",
+  "timing.none": "keine Verzögerung gemessen ({problems})",
+  "timing.failed": "Messung unmöglich: {error}"
 }

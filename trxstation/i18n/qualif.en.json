@@ -481,5 +481,16 @@
   "split.skipped": "split not tried (skipped by the operator)",
   "split.not_on": "split read back OFF (receive {rx} MHz): switch it on at the rig before answering",
   "split.refused_unreadable": "split transmit frequency UNREADABLE: transmission refused by the station ({reason}); safe, but split unusable remotely with this rig",
-  "split.refused_out": "split transmission on {tx} MHz, outside the allowed bands: station refusal ({reason}, expected out_of_band)"
+  "split.refused_out": "split transmission on {tx} MHz, outside the allowed bands: station refusal ({reason}, expected out_of_band)",
+  "check.timing": "Radio delays",
+  "timing.start": "Radio delays (technical sheet): frequency and mode written then read back, other band, squelch…",
+  "timing.detail": "read-back delay: frequency {freq} s, mode {mode} s (proposed margin {margin} s)",
+  "timing.band_linked": "; another band CHANGES the mode (band memory)",
+  "timing.band_kept": "; another band keeps the mode",
+  "timing.band_unknown": "; band memory not measured",
+  "timing.dcd_yes": "; real squelch readable (\\get_dcd)",
+  "timing.dcd_no": "; real squelch not readable (estimated indicator)",
+  "timing.problems": "; problems: {problems}",
+  "timing.none": "no delay measured ({problems})",
+  "timing.failed": "measurement impossible: {error}"
 }

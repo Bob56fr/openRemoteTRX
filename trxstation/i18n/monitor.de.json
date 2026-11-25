@@ -289,5 +289,8 @@
   "online.never_started": "angehalten · nie gestartet",
   "online.ntfy_ok": "letzte Benachrichtigung gesendet {when}",
   "online.ntfy_fail": "letzter Versand fehlgeschlagen {when} (ORT-8013)",
-  "online.ntfy_none": "noch keine Benachrichtigung gesendet"
+  "online.ntfy_none": "noch keine Benachrichtigung gesendet",
+  "label.squelch": "Squelch",
+  "squelch.open": "offen (Signal, vom Transceiver gelesen)",
+  "squelch.closed": "geschlossen (vom Transceiver gelesen)"
 }

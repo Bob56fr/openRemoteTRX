@@ -481,5 +481,16 @@
   "split.skipped": "split non essayé (passé par l'opérateur)",
   "split.not_on": "split relu À L'ARRÊT (réception {rx} MHz) : le mettre en marche au poste avant de répondre",
   "split.refused_unreadable": "fréquence d'émission du split ILLISIBLE : émission refusée par la station ({reason}) ; sûr, mais split inutilisable à distance avec ce poste",
-  "split.refused_out": "émission du split sur {tx} MHz, hors des bandes autorisées : refus de la station ({reason}, attendu out_of_band)"
+  "split.refused_out": "émission du split sur {tx} MHz, hors des bandes autorisées : refus de la station ({reason}, attendu out_of_band)",
+  "check.timing": "Délais du poste",
+  "timing.start": "Délais du poste (fiche technique) : fréquence et mode écrits puis relus, autre bande, squelch…",
+  "timing.detail": "retard de relecture : fréquence {freq} s, mode {mode} s (marge proposée {margin} s)",
+  "timing.band_linked": " ; une autre bande CHANGE le mode (mémoire par bande)",
+  "timing.band_kept": " ; une autre bande garde le mode",
+  "timing.band_unknown": " ; mémoire par bande non mesurée",
+  "timing.dcd_yes": " ; squelch réel lisible (\\get_dcd)",
+  "timing.dcd_no": " ; squelch réel non lisible (voyant estimé)",
+  "timing.problems": " ; problèmes : {problems}",
+  "timing.none": "aucun retard mesuré ({problems})",
+  "timing.failed": "mesure impossible : {error}"
 }

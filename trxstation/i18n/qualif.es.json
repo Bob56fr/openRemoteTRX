@@ -481,5 +481,16 @@
   "split.skipped": "split no probado (saltado por el operador)",
   "split.not_on": "split leído APAGADO (recepción {rx} MHz): activarlo en el equipo antes de responder",
   "split.refused_unreadable": "frecuencia de transmisión del split ILEGIBLE: transmisión rechazada por la estación ({reason}); seguro, pero split inutilizable a distancia con este equipo",
-  "split.refused_out": "transmisión del split en {tx} MHz, fuera de las bandas permitidas: rechazo de la estación ({reason}, esperado out_of_band)"
+  "split.refused_out": "transmisión del split en {tx} MHz, fuera de las bandas permitidas: rechazo de la estación ({reason}, esperado out_of_band)",
+  "check.timing": "Retardos del equipo",
+  "timing.start": "Retardos del equipo (ficha técnica): frecuencia y modo escritos y releídos, otra banda, squelch…",
+  "timing.detail": "retardo de relectura: frecuencia {freq} s, modo {mode} s (margen propuesto {margin} s)",
+  "timing.band_linked": "; otra banda CAMBIA el modo (memoria por banda)",
+  "timing.band_kept": "; otra banda conserva el modo",
+  "timing.band_unknown": "; memoria por banda no medida",
+  "timing.dcd_yes": "; squelch real legible (\\get_dcd)",
+  "timing.dcd_no": "; squelch real no legible (indicador estimado)",
+  "timing.problems": "; problemas: {problems}",
+  "timing.none": "ningún retardo medido ({problems})",
+  "timing.failed": "medición imposible: {error}"
 }

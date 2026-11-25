@@ -667,7 +667,29 @@ class Console:
     # ------------------------------------------------------------------ parties de l'assistant (étape 220)
 
     def rig(self) -> None:
+        self._show_rig_spec()
         self._setup_part("poste", exclusive=True)
+
+    def _show_rig_spec(self) -> None:
+        """Fiche technique du poste en service (étape 400, `trxstation/rigspec`) : ce que la station sait du modèle en plus
+        de Hamlib, et si c'est mesuré sur un vrai poste ou d'après le manuel. Lecture seule ; rien si la config manque."""
+        from . import config as cfgmod
+        from . import rigspec
+        try:
+            spec = rigspec.load(cfgmod.load(self.config).rig.model)
+        except Exception:
+            return
+        t = self.t
+        self.say(t("rigspec.title", name=spec.name or t("rigspec.generic"),
+                   source=t("rigspec.verified") if spec.verified else t("rigspec.manual")))
+        self.say(t("rigspec.timing", read=f"{spec.timing.read_delay_s:g}", tuner=f"{spec.timing.tuner_delay_s:g}",
+                   linked=t("rigspec.linked") if spec.timing.linked_changes else t("rigspec.not_linked")))
+        self.say(t("rigspec.filters", kind=t(f"rigspec.filters_{spec.filters.kind}")))
+        self.say(t("rigspec.squelch", source=t(f"rigspec.squelch_{spec.squelch.source}")))
+        if spec.transmit.side_query:
+            self.say(t("rigspec.transmit"))
+        qualif_menu = menu_number("qualif")
+        self.say(t("rigspec.measure", menu=qualif_menu))
 
     def sound(self) -> None:
         self._setup_part("son", exclusive=True)

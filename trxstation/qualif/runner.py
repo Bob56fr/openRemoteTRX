@@ -292,6 +292,7 @@ class Qualification(HwTest):
             try:
                 await self.test_frequency()
                 await self.test_modes()
+                await self.test_timing()
                 await self.test_filters()
                 await self.test_reads()
                 await self.test_writes()
@@ -638,6 +639,33 @@ class Qualification(HwTest):
         self.check("latency", "Temps de réponse CAT", FIXE, True,
                    tuple(tr("latency.detail", p50=f"{p50:.1f}", p95=f"{p95:.1f}", max=f"{ordered[-1]:.1f}", rate=r, source=src)
                          for tr, r, src in ((_fr, rate[0], source[0]), (_t, rate[1], source[1]))), **data)
+
+    async def test_timing(self) -> None:
+        """Délais et comportements du poste pour sa fiche technique (étape 400, `qualif/timing.py`), sans émission."""
+        from .. import rigspec
+        from . import timing as measure_timing
+        self.say(_t("timing.start"))
+        self.note("TEST délais du poste")
+        spec = rigspec.load(self.profile.model)
+        try:
+            found = await measure_timing.measure(self.ctrl, self.link.client, spec=spec, modes=list(self.profile.modes))
+        except Exception as exc:                       # une mesure ratée n'arrête pas la qualification
+            self.check("timing", ("Délais du poste", _t("check.timing")), FIXE, None, both("timing.failed", error=_rprt(exc)))
+            return
+        self.timing = found
+        worst = found.worst_s
+        if worst is None:
+            self.check("timing", ("Délais du poste", _t("check.timing")), FIXE, None,
+                       both("timing.none", problems="; ".join(found.problems) or "—"), **found.to_dict())
+            return
+        fmt = lambda values: "/".join(f"{v:.2f}" for v in values) or "—"   # noqa: E731
+        band = "timing.band_linked" if found.band_changes_mode else "timing.band_kept" if found.band_changes_mode is False             else "timing.band_unknown"
+        dcd = "timing.dcd_yes" if found.dcd else "timing.dcd_no"
+        self.check("timing", ("Délais du poste", _t("check.timing")), FIXE, not found.problems,
+                   tuple(tr("timing.detail", freq=fmt(found.freq_delays_s), mode=fmt(found.mode_delays_s),
+                            margin=found.proposed_read_delay_s()) + tr(band) + tr(dcd)
+                         + (tr("timing.problems", problems="; ".join(found.problems)) if found.problems else "")
+                         for tr in (_fr, _t)), **found.to_dict())
 
     async def _strength_latencies(self, count: int) -> list[float]:
         found = []
@@ -1117,6 +1145,12 @@ class Qualification(HwTest):
         if self.proxy is not None:
             self.proxy.write(directory / "cat_trace.log")
         (directory / "journal.txt").write_text("\n".join(self.journal) + "\n", encoding="utf-8")
+        timing = getattr(self, "timing", None)
+        if timing is not None:                         # brouillon de la fiche technique du poste (étape 400)
+            from .. import rigspec
+            from .timing import render_draft
+            text = render_draft(rigspec.load(self.profile.model), self.profile.model, self.profile.name, timing)
+            (directory / "fiche-technique.toml").write_text(text, encoding="utf-8")
         return directory
 
 

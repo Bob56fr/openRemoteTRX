@@ -289,5 +289,8 @@
   "online.never_started": "detenida · nunca lanzada",
   "online.ntfy_ok": "última alerta enviada {when}",
   "online.ntfy_fail": "último envío fallido {when} (ORT-8013)",
-  "online.ntfy_none": "ninguna alerta enviada aún"
+  "online.ntfy_none": "ninguna alerta enviada aún",
+  "label.squelch": "Squelch",
+  "squelch.open": "abierto (señal, leído en el equipo)",
+  "squelch.closed": "cerrado (leído en el equipo)"
 }
