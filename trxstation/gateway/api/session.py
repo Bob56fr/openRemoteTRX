@@ -336,6 +336,8 @@ class ControlSession:
                    "remote_console": self._remote_console(),
                    # mises à jour connues de la station (latest.json, étape 392) : opérateurs seulement
                    "updates": self._updates(),
+                   # fiche technique du poste (étape 393) : délais, filtres, source du squelch, récepteurs
+                   "rig_spec": spec.to_dict() if (spec := getattr(self.ctrl, "spec", None)) is not None else None,
                    "lang": self.lang,                                 # langue retenue pour les textes de ce client
                    "features": self.features()})
         if not self.listener:

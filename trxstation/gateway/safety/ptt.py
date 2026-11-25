@@ -46,6 +46,7 @@ from ...errors import codes
 from ...errors.emit import by_machine, emit_event
 from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigState
 from ..cat.client import RIG_ENAVAIL, RIG_ENIMPL
+from ... import rigspec
 from .local import LocalPresence, panel_of
 from .thermal import ThermalGuard
 
@@ -151,7 +152,8 @@ class PttController:
         self._tail_task: asyncio.Task | None = None
         self._reserved_by: str | None = None  # mesure de TOS en cours : seul ce client peut prendre l'émission
         self.last_cut_request = ""          # motif de la DERNIÈRE coupure demandée, même en réception (mesure de TOS)
-        self.local = LocalPresence()        # poste utilisé sur place : PTT à distance refusé (local.py)
+        self.spec = rigspec.load(config.rig.model)   # fiche technique du poste (délais, filtres, squelch ; étape 393)
+        self.local = LocalPresence(timing=self.spec.timing)   # poste utilisé sur place : PTT à distance refusé (local.py)
         self.thermal = ThermalGuard(config.safety.rig_temp_warn_c, config.safety.rig_temp_cut_c)   # thermal.py
         # Carte son du poste disponible ? (audio/rigcard.py) None = toujours (sources de test, fichiers) ; absente =
         # émission REFUSÉE (`audio_missing`) : une porteuse sans modulation n'a rien à faire sur l'air
@@ -450,13 +452,19 @@ class PttController:
         async with self._tx_lock:
             self._require_rx_for_tuning()
             self.local.expect("frequency")  # ce changement-là est celui de la station, pas de l'opérateur
-            await self.link.set_frequency(hz)
+            try:
+                await self.link.set_frequency(hz)
+            finally:
+                self.local.expect("frequency")   # la fenêtre repart de la FIN de la commande (poste lent)
 
     async def set_mode(self, mode: str, passband_hz: int = 0) -> None:
         async with self._tx_lock:
             self._require_rx_for_tuning()
             self.local.expect("mode")
-            await self.link.set_mode(mode, passband_hz)
+            try:
+                await self.link.set_mode(mode, passband_hz)
+            finally:
+                self.local.expect("mode")
 
     async def set_offset(self, which: str, hz: int) -> None:
         """Décalage RIT ou ΔTX / XIT : refusé pendant l'émission (le XIT déplace la fréquence d'émission ; il est revérifié

@@ -1,0 +1,18 @@
+# Icom IC-705 : d'après le manuel CI-V et l'usage de la station ; délais à mesurer par la qualification (étape 393).
+format = 1
+model = 3085
+name = "Icom IC-705"
+receivers = 1
+verified = false
+
+[timing]
+read_delay_s = 0.0
+tuner_delay_s = 2.0
+linked_changes = false  # une fréquence envoyée par la CAT ne change pas le mode
+
+[filters]
+kind = "presets"        # FIL1 / FIL2 / FIL3 par mode
+presets = 3
+
+[squelch]
+source = "estimate"     # état réel (« 15 01 » ou get_dcd) à essayer au lot 4

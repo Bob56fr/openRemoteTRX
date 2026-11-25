@@ -19,14 +19,21 @@ puissance, NR, NB, fonctions, RIT / XIT, split, VFO). Le superviseur la tolère 
 `tot_abs_s`. Un réglage de la face avant ne sert QU'À cette preuve : il ne bloque pas le PTT à distance (comportement de
 l'étape 34 inchangé). Un réglage relu dans les PANEL_EXPECT_S après une écriture de la station (`CatLink.writes`), ou
 après un changement de fréquence ou de mode de la station (réglages mémorisés par bande du poste), n'est pas une preuve.
+
+DÉLAIS DU POSTE (étape 393, signalement de l'utilisateur du 2026-11-25 : « prise en main sur place » à tort sur le Yaesu
+FTDX10) : l'attente d'une commande de la station se compte depuis la FIN de la commande (`expect` rappelé après elle),
+avec la marge de la fiche technique du poste (`rigspec`, plus encore coupleur en service) ; si la fiche le dit
+(`linked_changes`), une commande de fréquence attend aussi un changement de mode (mémoire par bande) et inversement.
 """
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
 
+from ...rigspec import Timing
+
 HOLD_S = 120.0          # durée de l'état après la dernière action locale
-EXPECT_S = 3.0          # après une commande de la station, un changement du même genre lui est attribué
+EXPECT_S = 3.0          # après une commande de la station, un changement du même genre lui est attribué (+ fiche du poste)
 SETTLE_S = 2.0          # après une émission de la station, le poste relu peut traîner : on n'en déduit rien
 PRESENCE_S = 120.0      # action sur le poste vue au plus tant avant la prise d'une émission locale : opérateur présent
 PANEL_EXPECT_S = 60.0   # réglage écrit par la station : sa relecture peut venir tard (lectures facultatives à tour de rôle)
@@ -47,8 +54,9 @@ def panel_of(functions: dict | None, levels: dict | None, offsets: dict | None, 
 
 
 class LocalPresence:
-    def __init__(self, hold_s: float = HOLD_S, clock: Callable[[], float] = time.monotonic):
+    def __init__(self, hold_s: float = HOLD_S, clock: Callable[[], float] = time.monotonic, timing: Timing | None = None):
         self.hold_s, self.clock = hold_s, clock
+        self.timing = timing or Timing()       # délais du poste (fiche technique, trxstation/rigspec)
         self._until = 0.0
         self.reason = ""                       # "tx" | "frequency" | "mode"
         self._local_tx = False                 # émission locale en cours
@@ -65,9 +73,18 @@ class LocalPresence:
         """La passerelle change d'état d'émission : les relectures des SETTLE_S suivantes ne disent rien de l'opérateur."""
         self._busy_until = self.clock() + SETTLE_S
 
+    def expect_window_s(self) -> float:
+        """Durée pendant laquelle un changement relu est attribué à la station : base + marge du poste (+ coupleur)."""
+        tuner = self.timing.tuner_delay_s if self._panel.get("f:TUNER") is True else 0.0
+        return EXPECT_S + self.timing.read_delay_s + tuner
+
     def expect(self, kind: str) -> None:
-        """La station va changer la fréquence ou le mode : le prochain changement de ce genre est le sien."""
-        self._expect[kind] = self.clock() + EXPECT_S
+        """La station va changer (ou vient de changer) la fréquence ou le mode : les changements de ce genre relus dans
+        la fenêtre sont les siens. À rappeler APRÈS la commande (poste lent : la fenêtre part de la fin). Fiche du poste
+        `linked_changes` : la fréquence et le mode sont attendus ensemble (mémoire par bande)."""
+        until = self.clock() + self.expect_window_s()
+        for k in (("frequency", "mode") if self.timing.linked_changes else (kind,)):
+            self._expect[k] = max(self._expect[k], until)
 
     # ---- ce que la station relit du poste
     def observe(self, connected: bool, ptt: bool | None, frequency_hz: int | None, mode: str | None,

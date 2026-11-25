@@ -61,6 +61,7 @@ class ContractTest {
         assertEquals("fr", hello.lang)                                         // langue des textes de la station (lot T1)
         assertEquals(98, hello.updates?.app?.code); assertEquals("0.283.0", hello.updates?.station?.version)   // étape 392
         assertNull(hello.remoteConsole)
+        assertEquals("presets", hello.rigSpec?.filters?.kind); assertEquals(3, hello.rigSpec?.filters?.presets)   // étape 393
     }
 
     @Test

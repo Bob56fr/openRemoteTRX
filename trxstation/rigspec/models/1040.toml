@@ -1,0 +1,18 @@
+# Yaesu FTDX101D : d'après le manuel CAT de Yaesu (FTDX101D CAT 1904-A) et le premier essai du FTDX10 (lectures facultatives jusqu'à 2,5 s) ;
+# délais à mesurer par la qualification (étape 393).
+format = 1
+model = 1040
+name = "Yaesu FTDX101D"
+receivers = 2
+verified = false
+
+[timing]
+read_delay_s = 4.0      # poste lent : une relecture peut attendre plusieurs lectures facultatives
+tuner_delay_s = 3.0
+linked_changes = true   # mémoire par bande : une fréquence envoyée peut remettre le mode de la bande
+
+[filters]
+kind = "steps"          # largeur par paliers imposés (commande SH), sans préréglage FIL
+
+[squelch]
+source = "busy"         # commande BY : récepteur occupé, lu sur le poste

@@ -90,6 +90,8 @@ data class Hello(
     @SerialName("remote_console") val remoteConsole: RemoteConsoleInfo? = null,
     /** Mises à jour connues de la station (station 0.283.0+, opérateurs) : null pour un visiteur ou une station ancienne. */
     val updates: UpdatesInfo? = null,
+    /** Fiche technique du poste (station 0.284.0+) : délais, filtres, source du squelch ; null sur une station ancienne. */
+    @SerialName("rig_spec") val rigSpec: RigSpecInfo? = null,
     /** Langue retenue par la station pour ses textes (`detail`, `message`) ; vide sur une station antérieure à 0.236.0. */
     val lang: String = "",
     val features: List<String> = emptyList(),
@@ -192,6 +194,33 @@ data class RemoteConsoleInfo(val port: Int = 0)
 /** Version publiée (station : `{version, page_url}` ; application : avec `code` = versionCode Android). */
 @Serializable
 data class PublishedVersion(val version: String = "", val code: Int = 0, @SerialName("page_url") val pageUrl: String = "")
+
+/** `hello.rig_spec` (étape 393, trxstation/rigspec) : ce que Hamlib ne dit pas du modèle. Donnée seulement. */
+@Serializable
+data class RigSpecInfo(
+    val model: Int = 0,
+    val name: String = "",
+    val receivers: Int = 1,
+    val verified: Boolean = false,
+    val timing: RigSpecTiming = RigSpecTiming(),
+    val filters: RigSpecFilters = RigSpecFilters(),
+    val squelch: RigSpecSquelch = RigSpecSquelch(),
+)
+
+@Serializable
+data class RigSpecTiming(
+    @SerialName("read_delay_s") val readDelayS: Double = 0.0,
+    @SerialName("tuner_delay_s") val tunerDelayS: Double = 0.0,
+    @SerialName("linked_changes") val linkedChanges: Boolean = false,
+)
+
+/** `kind` : unknown, presets (FIL1/2/3), steps (paliers imposés), none. */
+@Serializable
+data class RigSpecFilters(val kind: String = "unknown", val presets: Int = 0)
+
+/** `source` : estimate (repère comparé au S-mètre), busy (état « occupé » du poste), dcd (Hamlib). */
+@Serializable
+data class RigSpecSquelch(val source: String = "estimate")
 
 /** `hello.updates` (étape 392) : version plus récente de la station, dernière APK publiée de l'application. */
 @Serializable

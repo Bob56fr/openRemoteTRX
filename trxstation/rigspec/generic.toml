@@ -1,0 +1,17 @@
+# Fiche technique GÉNÉRIQUE : tout poste sans fichier models/<numéro Hamlib>.toml (trxstation/rigspec/__init__.py).
+format = 1
+model = 0
+name = ""
+receivers = 1
+verified = false
+
+[timing]
+read_delay_s = 0.0      # l'attente de base (3 s après la fin de la commande) suffit
+tuner_delay_s = 2.0     # coupleur en service : relais qui retardent les réponses
+linked_changes = true   # prudence : un mode remis par la mémoire de bande n'est pas une action sur le poste
+
+[filters]
+kind = "unknown"
+
+[squelch]
+source = "estimate"
