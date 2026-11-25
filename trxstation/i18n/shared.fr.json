@@ -745,5 +745,6 @@
   "rigtotdialog.text": "Le TOT (minuterie d'émission) de votre poste est sur OFF. C'est la dernière sécurité à distance : si la station, le réseau ou le PC tombent pendant une émission, le poste peut rester en émission jusqu'à ce que quelqu'un intervienne sur place.",
   "rigtotdialog.how": "Réglez-le dans le menu du poste (3 min conseillé). La station le lit seulement : elle ne le change jamais et ne vous empêche pas d'émettre. Ce rappel revient une fois par jour.",
   "rigtotdialog.continue": "J'ai compris, je continue",
-  "rigtotdialog.quit": "Quitter"
+  "rigtotdialog.quit": "Quitter",
+  "powerviews.hold_release": "Relâchez pour annuler"
 }

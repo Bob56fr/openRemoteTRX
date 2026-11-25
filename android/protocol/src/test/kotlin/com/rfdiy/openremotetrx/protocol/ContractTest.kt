@@ -59,6 +59,8 @@ class ContractTest {
         assertEquals("a1b2c3", hello.memories.single().id)
         assertEquals(10, hello.spectrum?.maxFps)
         assertEquals("fr", hello.lang)                                         // langue des textes de la station (lot T1)
+        assertEquals(98, hello.updates?.app?.code); assertEquals("0.283.0", hello.updates?.station?.version)   // étape 392
+        assertNull(hello.remoteConsole)
     }
 
     @Test

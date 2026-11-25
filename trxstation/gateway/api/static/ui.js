@@ -4257,6 +4257,12 @@
       stopHold = null;
       $("stop-sub").textContent = stopSub();
       $("stop").classList.remove("holding");
+      $("stop-countdown").hidden = true;
+    }
+    function stopCountdown(seconds) {             // grand « 3 … 2 … 1 » au milieu de l'écran (étape 392)
+      $("stop-count").textContent = String(seconds);
+      $("stop-count-sub").textContent = stopSub();
+      $("stop-countdown").hidden = false;
     }
     $("stop").addEventListener("pointerdown", (ev) => {
       stopHoldCancel();
@@ -4269,9 +4275,14 @@
       const t0 = Date.now();
       $("stop").classList.add("holding");
       $("stop-sub").textContent = I18N.t("powerviews.hold_left", { seconds: 3 });
+      stopCountdown(3);
       stopHold = window.setInterval(() => {
         const left = STOP_HOLD_MS - (Date.now() - t0);
-        if (left > 0) { $("stop-sub").textContent = I18N.t("powerviews.hold_left", { seconds: Math.ceil(left / 1000) }); return; }
+        if (left > 0) {
+          $("stop-sub").textContent = I18N.t("powerviews.hold_left", { seconds: Math.ceil(left / 1000) });
+          stopCountdown(Math.ceil(left / 1000));
+          return;
+        }
         stopHoldCancel();
         if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) { /* sans vibreur */ } }
         openStopHold();

@@ -52,8 +52,8 @@ To **transmit**, the page needs the **microphone**: the browser asks for it at t
 offers it over HTTPS, hence the certificate.
 
 > **Safety.** The PTT is a **toggle**: one press to transmit, one press to go back to receive. The state shown is the
-> one the station confirms, never a guess. **STOP** cuts at any time. **STOP held for 3 seconds** (countdown under the
-> word STOP) opens a window: “Disconnect”, or “Power off the transceiver remotely” (with a confirmation; only if
+> one the station confirms, never a guess. **STOP** cuts at any time. **STOP held for 3 seconds** (large countdown in the
+> middle of the screen, releasing cancels) opens a window: “Disconnect”, or “Power off the transceiver remotely” (with a confirmation; only if
 > remote power-on is in service, menu 2.8). A hidden page (other tab, locked screen) stops the transmission.
 >
 > **Transceiver off.** A red “RIG OFF” banner says so. If remote power-on is in service, your connection powers the

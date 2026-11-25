@@ -26,6 +26,7 @@ from ...errors import codes
 from ...errors.emit import by_machine
 from ...hostinfo import hamlib_version, host_details, shared_monitor
 from ...online import online_section
+from ...update.check import parse_version, read_state, state_path
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
 from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
@@ -333,6 +334,8 @@ class ControlSession:
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
                    # openRemoteTRX Console sur le réseau (étape 233) : lien pour les opérateurs administrateurs seulement
                    "remote_console": self._remote_console(),
+                   # mises à jour connues de la station (latest.json, étape 392) : opérateurs seulement
+                   "updates": self._updates(),
                    "lang": self.lang,                                 # langue retenue pour les textes de ce client
                    "features": self.features()})
         if not self.listener:
@@ -389,6 +392,23 @@ class ControlSession:
             return None
         admin = any(c.id == self.client_id and c.admin is True for c in cfg.clients)
         return {"port": rc.port} if admin else None
+
+    def _updates(self) -> dict | None:
+        """Dernière version publiée de la station (si plus récente que celle qui tourne) et de l'application, d'après
+        `<state_dir>/update/latest.json` écrit par trx-update-check ; None pour un visiteur ou sans ce fichier."""
+        if self.listener:
+            return None
+        try:
+            known = read_state(state_path(self.ctrl.config.supervisor.state_dir))
+        except Exception:                                  # jamais d'exception ici : hello part quoi qu'il arrive
+            known = None
+        if known is None:
+            return None
+        station = None
+        if known.release is not None and (parse_version(known.release.version) or ()) > (parse_version(__version__) or ()):
+            station = {"version": known.release.version, "page_url": known.release.page_url}
+        app = {"version": known.app.version, "code": known.app.code, "page_url": known.app.page_url} if known.app else None
+        return {"station": station, "app": app}
 
     def _replay_allowed(self) -> bool:
         return not self.listener and self.ctrl.config.safety.allow_replay is True

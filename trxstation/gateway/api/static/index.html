@@ -161,6 +161,8 @@
     <div class="pttrow listener-off">
       <button id="ptt" class="ptt" disabled>PTT</button>
       <button id="stop" class="stop" disabled title="Appui : retour en réception immédiat. Maintenu 3 s : se déconnecter ou arrêter le TRX à distance" data-t-title="index.stop_title">STOP<small id="stop-sub" class="stop-sub" data-t="powerviews.hold_disconnect">appui long : déconnecter</small></button>
+      <!-- STOP maintenu : compte à rebours en grand au milieu de l'écran (sous le doigt, le texte du bouton ne se lit pas) -->
+      <div id="stop-countdown" class="stop-countdown" hidden aria-live="assertive"><b id="stop-count">3</b><span id="stop-count-sub" class="stop-count-sub"></span><span data-t="powerviews.hold_release">Relâchez pour annuler</span></div>
     </div>
 
     <div class="subrow">

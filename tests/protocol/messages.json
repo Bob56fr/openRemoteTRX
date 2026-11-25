@@ -29,7 +29,8 @@
     "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release", "i18n", "set_lang",
                  "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "replay"],
     "replay": {"max_s": 85},
-    "remote_console": null
+    "remote_console": null,
+    "updates": {"station": {"version": "0.283.0", "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}, "app": {"version": "0.91.0", "code": 98, "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}}
   },
   "state": {
     "type": "state",

@@ -745,5 +745,6 @@
   "rigtotdialog.text": "Der TOT (Sendezeitbegrenzung) Ihres Transceivers steht auf OFF. Er ist die letzte Sicherheit im Fernbetrieb: Fallen Station, Netzwerk oder PC während einer Aussendung aus, kann der Transceiver auf Sendung bleiben, bis jemand vor Ort eingreift.",
   "rigtotdialog.how": "Stellen Sie ihn im Menü des Transceivers ein (3 min empfohlen). Die Station liest ihn nur: Sie ändert ihn nie und hindert Sie nicht am Senden. Diese Erinnerung erscheint einmal pro Tag.",
   "rigtotdialog.continue": "Verstanden, weiter",
-  "rigtotdialog.quit": "Beenden"
+  "rigtotdialog.quit": "Beenden",
+  "powerviews.hold_release": "Loslassen zum Abbrechen"
 }

@@ -15,8 +15,8 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 97
-        versionName = "0.90.0"
+        versionCode = 98
+        versionName = "0.91.0"
         buildConfigField("boolean", "SCRAMBLER", "true")
         // Sonde réseau : changement de cellule (autorisation de localisation, manifestes debug / release seulement)
         buildConfigField("boolean", "CELL_INFO", "true")
@@ -68,6 +68,8 @@ dependencies {
     implementation(libs.zxing.embedded)
     implementation(libs.zxing.core)
     debugImplementation(libs.compose.ui.tooling)
+    // Version Google Play seulement (étape 392) : nouvelle version signalée par Google Play (Play Core « In-app updates »)
+    "playImplementation"(libs.play.app.update)
 }
 
 // Envoi au Play Store : une construction non signée serait refusée par la Play Console ; le dire avant de construire.

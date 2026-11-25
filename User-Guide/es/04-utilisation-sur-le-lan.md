@@ -53,7 +53,7 @@ propone en HTTPS, de ahí el certificado.
 
 > **Seguridad.** El PTT es un **conmutador**: una pulsación para transmitir, una pulsación para volver a recepción. El estado
 > mostrado es el que confirma la estación, nunca una suposición. **STOP** corta en cualquier momento. **STOP mantenido
-> 3 segundos** (cuenta atrás bajo la palabra STOP) abre una ventana: «Desconectarse», o «Apagar el TRX a
+> 3 segundos** (gran cuenta atrás en el centro de la pantalla, soltar cancela) abre una ventana: «Desconectarse», o «Apagar el TRX a
 > distancia» (con una confirmación; solo si el encendido a distancia está en servicio, menú 2.8). Una página oculta
 > (otra pestaña, pantalla bloqueada) detiene la transmisión.
 >

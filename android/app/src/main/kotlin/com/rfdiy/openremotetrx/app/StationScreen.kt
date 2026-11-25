@@ -235,10 +235,12 @@ fun StationScreen(
                 val current = editing
                 if (current != null) OutlinedButton(onClick = {
                     store.delete(current.id)
+                    UpdateNotes.forget(context, current.id)
                     accounts = store.list()
                     select(accounts.firstOrNull())
                 }) { Text(Tr.t("common.delete")) }
             }
+            UpdatesBlock(editing?.id)              // nouvelles versions (application, station) vues à la dernière connexion
         }
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {

@@ -39,6 +39,34 @@ object MobileFeatures {
     val ALWAYS: String get() = Tr.t("mobilefeatures.always")
     val IN_SERVICE: String get() = Tr.t("mobilefeatures.in_service")
 
+    /**
+     * Fonction qui n'existe que si la STATION l'offre (`hello.features`) et menu d'openRemoteTRX Console qui la met en
+     * service (étape 392 : interrupteur bloqué avec ce message, pour ne pas croire à une panne) ; null = fonction de
+     * l'application seule, toujours disponible.
+     */
+    private val STATION: Map<MobileFeature, Pair<String, String>> = mapOf(
+        MobileFeature.SELCALL to ("selcall" to "5.5"),
+        MobileFeature.BREIZH to ("breizh" to "5.5"),
+        MobileFeature.FREEDV to ("freedv" to "5.5"),
+        MobileFeature.DIFFUSION to ("diffusion" to "5.5"),
+        MobileFeature.FRIENDS to ("friends" to "5.5"),
+        MobileFeature.WATERFALL to ("spectrum" to "2.7"),
+        MobileFeature.REPLAY to ("replay" to "2.1"),
+    )
+
+    /** Nom de la fonction de la station (`hello.features`) dont dépend `feature`, ou null. */
+    fun stationFeature(feature: MobileFeature): String? = STATION[feature]?.first
+
+    /**
+     * Texte sous l'interrupteur quand la station connectée n'offre pas la fonction ; null = interrupteur utilisable
+     * (fonction de l'application, station qui l'offre, ou aucune station connectée : rien à juger).
+     */
+    fun unavailable(feature: MobileFeature, offers: ((String) -> Boolean)?): String? {
+        val (name, menu) = STATION[feature] ?: return null
+        if (offers == null || offers(name)) return null
+        return Tr.t("mobilefeatures.not_on_station", "menu" to menu)
+    }
+
     /** Choix de l'opérateur (`stored`, null = jamais réglé => défaut) ; une fonction en service est toujours affichée. */
     fun shown(feature: MobileFeature, stored: Boolean?, inService: Boolean = false): Boolean =
         inService || (stored ?: feature.default)

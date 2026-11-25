@@ -523,5 +523,13 @@
   "settings.language_now": "Les écrans et les messages de la station changent tout de suite.",
   "litewarning.title": "Téléphone sans mises à jour de sécurité",
   "litewarning.text": "Android 8 et 9 ne reçoivent plus de mises à jour de sécurité. Le mot de passe de ton compte opérateur est enregistré sur ce téléphone : utilise un compte réservé à ce téléphone (openRemoteTRX Console, menu 4.3), que tu pourras supprimer seul s'il est perdu ou volé.",
-  "litewarning.ok": "J'ai compris"
+  "litewarning.ok": "J'ai compris",
+  "updates.app_available": "Nouvelle version de l'application : {version} (vue par {station}, {date})",
+  "updates.station_available": "Station {station} : version {version} disponible (menu {menu} d'openRemoteTRX Console)",
+  "updates.store_available": "Mise à jour de l'application disponible sur Google Play",
+  "updates.open": "Voir",
+  "updates.store_open": "Mettre à jour",
+  "mobilefeatures.not_on_station": "Pas activé sur la station : menu {menu} d'openRemoteTRX Console",
+  "rigparts.console_admin_only": "Console réservée aux administrateurs",
+  "rigparts.console_no_browser": "Aucun navigateur pour ouvrir {url}"
 }

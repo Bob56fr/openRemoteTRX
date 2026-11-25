@@ -86,6 +86,10 @@ data class Hello(
     val replay: ReplayInfo? = null,
     /** FreeDV RADE V1 en réception (station 0.122.0+, comme `state.freedv`) ; null sans `[freedv] enabled`. */
     val freedv: FreedvStatus? = null,
+    /** openRemoteTRX Console sur le réseau (station 0.178.0+) : `{port}` pour un opérateur ADMINISTRATEUR, sinon null. */
+    @SerialName("remote_console") val remoteConsole: RemoteConsoleInfo? = null,
+    /** Mises à jour connues de la station (station 0.283.0+, opérateurs) : null pour un visiteur ou une station ancienne. */
+    val updates: UpdatesInfo? = null,
     /** Langue retenue par la station pour ses textes (`detail`, `message`) ; vide sur une station antérieure à 0.236.0. */
     val lang: String = "",
     val features: List<String> = emptyList(),
@@ -180,6 +184,18 @@ data class PowerStatus(
 /** Rediffusion permise par la station : durée maximale de l'enregistrement (TOT - 5 s). */
 @Serializable
 data class ReplayInfo(@SerialName("max_s") val maxS: Int = 0)
+
+/** `hello.remote_console` : port HTTPS de la console sur le réseau (même adresse que la station). */
+@Serializable
+data class RemoteConsoleInfo(val port: Int = 0)
+
+/** Version publiée (station : `{version, page_url}` ; application : avec `code` = versionCode Android). */
+@Serializable
+data class PublishedVersion(val version: String = "", val code: Int = 0, @SerialName("page_url") val pageUrl: String = "")
+
+/** `hello.updates` (étape 392) : version plus récente de la station, dernière APK publiée de l'application. */
+@Serializable
+data class UpdatesInfo(val station: PublishedVersion? = null, val app: PublishedVersion? = null)
 
 /** Santé de la machine de la station (station 0.83.0+, opérateurs seulement ; null pour un visiteur). */
 @Serializable

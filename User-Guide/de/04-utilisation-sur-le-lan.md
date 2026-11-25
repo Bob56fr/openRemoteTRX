@@ -54,7 +54,7 @@ HTTPS an, daher das Zertifikat.
 
 > **Sicherheit.** Der PTT ist ein **Umschalter**: ein Druck zum Senden, ein Druck zurück auf Empfang. Der angezeigte
 > Zustand ist der von der Station bestätigte, nie eine Vermutung. **STOP** schaltet jederzeit ab. **STOP 3 Sekunden
-> gedrückt halten** (Countdown unter dem Wort STOP) öffnet ein Fenster: „Trennen“ oder „TRX aus der Ferne
+> gedrückt halten** (großer Countdown in der Bildschirmmitte, Loslassen bricht ab) öffnet ein Fenster: „Trennen“ oder „TRX aus der Ferne
 > ausschalten“ (mit einer Bestätigung; nur wenn das Fern-Einschalten in Betrieb ist, Menü 2.8). Eine verborgene Seite
 > (anderer Tab, gesperrter Bildschirm) beendet das Senden.
 >

@@ -42,6 +42,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.Power
 import com.rfdiy.openremotetrx.logic.Tr
@@ -98,12 +105,38 @@ internal fun RigScope.StopButton(modifier: Modifier, height: Dp, onStopped: () -
                 }
             },
     ) {
+        // Compte à rebours en GRAND au milieu de l'écran (étape 392) : sous le doigt, le petit texte du bouton ne se lit
+        // pas. Fenêtre sans focus : le doigt reste sur STOP (relâcher annule toujours), rien n'est touchable dessous.
+        holdLeft?.let { left -> StopHoldCountdown(left, sub = if (rig.stopHold.powerOff || hello?.offers("power") == true)
+            Tr.t("powerviews.hold_power") else Tr.t("powerviews.hold_disconnect")) }
         Box(Modifier.padding(vertical = 4.dp).then(Modifier), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 // Deux lignes serrées au plus (langues plus longues : « … » plutôt qu'un texte coupé net en bas)
                 Text(sub, fontSize = 10.sp, lineHeight = 11.sp, textAlign = TextAlign.Center, maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+/** Place une fenêtre au centre de l'écran, quel que soit l'endroit du bouton qui l'ouvre. */
+private object CenterOfWindow : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection,
+                                   popupContentSize: IntSize): IntOffset =
+        IntOffset((windowSize.width - popupContentSize.width) / 2, (windowSize.height - popupContentSize.height) / 2)
+}
+
+/** Grand « 3 … 2 … 1 » de STOP maintenu, avec ce qui arrivera au bout et « Relâchez pour annuler ». */
+@Composable
+private fun StopHoldCountdown(left: Int, sub: String) {
+    Popup(popupPositionProvider = CenterOfWindow, properties = PopupProperties(focusable = false)) {
+        Surface(shape = RoundedCornerShape(24.dp), color = TX_COLOR.copy(alpha = 0.92f), contentColor = Color.White,
+                shadowElevation = 12.dp) {
+            Column(Modifier.padding(horizontal = 36.dp, vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("$left", fontSize = 96.sp, lineHeight = 100.sp, fontWeight = FontWeight.Bold)   // i18n-ok
+                Text(sub, fontSize = 18.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+                Text(Tr.t("powerviews.hold_release"), fontSize = 14.sp, textAlign = TextAlign.Center)
             }
         }
     }

@@ -189,6 +189,52 @@ def choose_release(items: object, installed: str, *, allow_prerelease: bool) -> 
     return best
 
 
+# Application Android publiée avec les versions de la station (étape 392) : signalée sous « Connecter » de
+# l'application installée à la main (la version Google Play a sa propre vérification)
+_APK_RE = re.compile(r"openRemoteTRX-(\d{1,4}\.\d{1,4}\.\d{1,4})-(\d{1,6})\.apk")
+
+
+@dataclass(frozen=True)
+class AppRelease:
+    """Dernière APK de l'application jointe à une version publiée : version, versionCode, page de la version."""
+    version: str
+    code: int
+    page_url: str
+
+    @classmethod
+    def from_dict(cls, data: object) -> AppRelease | None:
+        if not isinstance(data, dict):
+            return None
+        version, code, page = data.get("version"), data.get("code"), data.get("page_url")
+        if not isinstance(version, str) or parse_version(version) is None or not isinstance(page, str)                 or not page.startswith(PAGE_PREFIX) or isinstance(code, bool) or not isinstance(code, int)                 or not 0 < code < 10_000_000:
+            return None
+        return cls(version=version, code=code, page_url=page)
+
+
+def latest_app(items: object, *, allow_prerelease: bool) -> AppRelease | None:
+    """L'APK de plus grand versionCode jointe à une version publiée (jamais un brouillon), ou None."""
+    if not isinstance(items, list):
+        return None
+    best: AppRelease | None = None
+    for item in items:
+        if not isinstance(item, dict) or item.get("draft") is not False:
+            continue
+        tag, page = item.get("tag_name"), item.get("html_url")
+        if not isinstance(tag, str) or not isinstance(page, str) or not page.startswith(PAGE_PREFIX):
+            continue
+        if (bool(item.get("prerelease")) or is_prerelease_version(tag.removeprefix("v"))) and not allow_prerelease:
+            continue
+        for asset in item.get("assets") or []:
+            name = asset.get("name") if isinstance(asset, dict) else None
+            match = _APK_RE.fullmatch(name) if isinstance(name, str) else None
+            if match is None:
+                continue
+            found = AppRelease.from_dict({"version": match[1], "code": int(match[2]), "page_url": page})
+            if found is not None and (best is None or found.code > best.code):
+                best = found
+    return best
+
+
 @dataclass(frozen=True)
 class Change:
     """Notes d'une version publiée entre la version installée et celle proposée (journal des changements)."""
@@ -271,10 +317,12 @@ class UpdateState:
     release: Release | None = None    # version plus récente disponible (None = à jour ou inconnu)
     schema: int = SCHEMA
     changes: list[Change] = field(default_factory=list)   # facultatif (ajouté en 0.70.0, même schéma)
+    app: AppRelease | None = None     # facultatif (ajouté à l'étape 392, même schéma) : dernière APK publiée
 
     def to_dict(self) -> dict:
         data = asdict(self)
         data["release"] = asdict(self.release) if self.release else None
+        data["app"] = asdict(self.app) if self.app else None
         return data
 
 
@@ -314,7 +362,8 @@ def parse_state(text: str) -> UpdateState | None:
         changes = [c for c in (Change.from_dict(x) for x in raw_changes[:MAX_CHANGES]) if c is not None]             if isinstance(raw_changes, list) else []
         return UpdateState(installed=data["installed"], checked_at=float(data.get("checked_at", 0.0)),
                            ok=data.get("ok") is True, error=clean_text(data.get("error", ""), 300, single_line=True),
-                           release=Release.from_dict(data.get("release")), changes=changes)
+                           release=Release.from_dict(data.get("release")), changes=changes,
+                           app=AppRelease.from_dict(data.get("app")))
     except (ValueError, TypeError):
         return None
 
@@ -329,7 +378,8 @@ def check(*, installed: str = __version__, allow_prerelease: bool = False, fetch
             raise CheckError("réponse de GitHub illisible") from exc
         release = choose_release(items, installed, allow_prerelease=allow_prerelease)
         changes = collect_changes(items, installed, release.version, allow_prerelease=allow_prerelease) if release else []
-        return UpdateState(installed=installed, checked_at=now(), ok=True, release=release, changes=changes)
+        return UpdateState(installed=installed, checked_at=now(), ok=True, release=release, changes=changes,
+                           app=latest_app(items, allow_prerelease=allow_prerelease))
     except CheckError as exc:
         kept = previous.release if previous else None
         if kept is not None and (parse_version(kept.version) or ()) <= (parse_version(installed) or ()):
@@ -337,7 +387,8 @@ def check(*, installed: str = __version__, allow_prerelease: bool = False, fetch
         if kept is not None and kept.prerelease and not allow_prerelease:
             kept = None
         changes = [c for c in previous.changes if (parse_version(c.version) or ()) > (parse_version(installed) or ())]             if kept is not None and previous is not None else []
-        return UpdateState(installed=installed, checked_at=now(), ok=False, error=str(exc), release=kept, changes=changes)
+        return UpdateState(installed=installed, checked_at=now(), ok=False, error=str(exc), release=kept, changes=changes,
+                           app=previous.app if previous else None)
 
 
 def main(argv: list[str] | None = None, *, fetch: Fetch = http_get) -> int:

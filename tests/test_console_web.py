@@ -265,8 +265,9 @@ def test_state_gives_the_documentation_tiles_in_the_console_language(tmp_path):
     scenario(tmp_path, body)
     english = {d["id"]: {l["key"]: l["url"] for l in d["links"]} for d in docs.doc_tiles(lambda k: k, "en")}
     assert english["guides"]["console"].endswith("/console/en/")
-    assert english["guides"]["guide"] == docs.SITE + "guide/"                           # guide encore en français
-    assert english["guides"]["pdf"].endswith("guide-openRemoteTRX-fr.pdf")
+    assert english["guides"]["guide"] == docs.SITE + "guide/en/"                        # guide traduit (étape 388)
+    assert english["guides"]["pdf"] == docs.SITE + "guide/en/guide-openRemoteTRX-en.pdf"
+    assert {d["id"]: {l["key"]: l["url"] for l in d["links"]} for d in docs.doc_tiles(lambda k: k, "fr")}["guides"]["guide"]         == docs.SITE + "guide/"
     root = Path(__file__).resolve().parents[1] / "scripts"
     for name, langs in (("build_user_guide", docs.GUIDE_LANGS), ("build_console_doc", docs.CONSOLE_LANGS)):
         spec = importlib.util.spec_from_file_location(name, root / f"{name}.py")

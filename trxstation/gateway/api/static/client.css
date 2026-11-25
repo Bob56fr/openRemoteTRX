@@ -95,6 +95,13 @@ button, input, select, textarea { font: inherit; }
 .stop { flex: 0 0 26%; border: 2px solid var(--stop-bord); border-radius: .6rem; background: var(--stop-fond); color: var(--stop-texte); font-weight: 800; font-size: 1.05rem; }
 .stop-sub { display: block; font-size: .62rem; font-weight: 500; line-height: 1.1; opacity: .85; white-space: nowrap; }
 .stop.holding .stop-sub { opacity: 1; font-weight: 700; }
+/* STOP maintenu (étape 392) : grand compte à rebours, sans capter le doigt (pointer-events) */
+.stop-countdown { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 60; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: .2rem; padding: 1.2rem 2.2rem; border-radius: 1.4rem;
+  background: var(--tx-voile); color: var(--texte-sur-tx); text-align: center; box-shadow: 0 .6rem 2rem var(--voile); }
+.stop-countdown[hidden] { display: none !important; }
+.stop-countdown b { font-size: 6rem; line-height: 1; font-weight: 800; }
+.stop-count-sub { font-size: 1.1rem; font-weight: 700; }
 .login-form { display: contents; }
 button:disabled { opacity: .4; }
 

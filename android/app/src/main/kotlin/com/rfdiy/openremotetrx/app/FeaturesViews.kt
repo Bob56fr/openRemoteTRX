@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.logic.MobileFeature
@@ -46,19 +47,25 @@ object Features {
 
 /** Rubrique « Fonctionnalités mobiles » des Réglages : un interrupteur d'affichage par fonction. */
 @Composable
-internal fun FeaturesSection(prefs: SharedPreferences, inService: (MobileFeature) -> Boolean) {
+internal fun FeaturesSection(prefs: SharedPreferences, offers: ((String) -> Boolean)?, inService: (MobileFeature) -> Boolean) {
     Text(Tr.t("featuresviews.title"), style = MaterialTheme.typography.titleSmall)
     Text(Tr.t("featuresviews.hint"),
          color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
     for (f in MobileFeature.entries) {
         val busy = inService(f)
+        // Fonction absente de la station connectée (étape 392) : interrupteur bloqué et menu de la station à ouvrir,
+        // le choix enregistré n'est pas touché (il revient avec une station qui l'offre)
+        val missing = MobileFeatures.unavailable(f, offers)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppSwitch(checked = Features.chosen(f), onCheckedChange = { Features.set(prefs, f, it) })
+            AppSwitch(checked = missing == null && Features.chosen(f), onCheckedChange = { Features.set(prefs, f, it) },
+                      enabled = missing == null)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                Text(f.label, style = MaterialTheme.typography.bodyMedium)
+                Text(f.label, style = MaterialTheme.typography.bodyMedium,
+                     color = if (missing != null) Page.TEXTE_2 else Color.Unspecified)
                 Text(f.where + if (busy && !Features.chosen(f)) " · " + MobileFeatures.IN_SERVICE else "",
                      color = if (busy && !Features.chosen(f)) Page.ALERTE else Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                if (missing != null) Text(missing, color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
             }
         }
     }

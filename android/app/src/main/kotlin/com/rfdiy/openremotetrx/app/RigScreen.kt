@@ -224,6 +224,13 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         go(Radio.nudge(shownHz ?: return, step, steps))
     }
 
+    // Mises à jour annoncées par la station (étape 392), gardées pour l'écran de connexion ; un visiteur n'en reçoit pas
+    val updatesContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(hello?.updates, ui.station?.id) {
+        val info = hello?.updates
+        val account = ui.station
+        if (info != null && account != null) UpdateNotes.save(updatesContext, account.id, account.name, info)
+    }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val config = LocalConfiguration.current
     val wide = ScreenLayouts.of(config.screenWidthDp, config.screenHeightDp) == ScreenLayout.WIDE   // tablette (lot A5)

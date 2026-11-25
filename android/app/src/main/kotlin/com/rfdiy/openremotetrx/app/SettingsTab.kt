@@ -236,7 +236,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
             val voiceNow by com.rfdiy.openremotetrx.core.VoiceHub.ui.collectAsState()
             val spatialNow by com.rfdiy.openremotetrx.core.SpatialHub.ui.collectAsState()
             Panel {
-                FeaturesSection(prefs) { f ->
+                FeaturesSection(prefs, offers = hello?.let { h -> { name: String -> h.offers(name) } }) { f ->
                     when (f) {
                         MobileFeature.ROGER -> rig.beeps?.let { it.rogerEnabled || it.linkLostEnabled } == true
                         MobileFeature.EQ -> voiceNow.settings.enabled

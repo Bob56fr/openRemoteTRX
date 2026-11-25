@@ -53,7 +53,7 @@ propose qu'en HTTPS, d'où le certificat.
 
 > **Sécurité.** Le PTT est une **bascule** : un appui pour émettre, un appui pour revenir en réception. L'état
 > affiché est celui que la station confirme, jamais une supposition. **STOP** coupe à tout moment. **STOP maintenu
-> 3 secondes** (compte à rebours sous le mot STOP) ouvre une fenêtre : « Se déconnecter », ou « Arrêter le TRX à
+> 3 secondes** (grand compte à rebours au milieu de l'écran, relâcher annule) ouvre une fenêtre : « Se déconnecter », ou « Arrêter le TRX à
 > distance » (avec une confirmation ; seulement si l'allumage à distance est en service, menu 2.8). Une page masquée
 > (autre onglet, écran verrouillé) arrête l'émission.
 >

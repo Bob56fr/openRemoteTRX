@@ -10,7 +10,7 @@ from typing import Callable
 SITE = "https://bob56fr.github.io/openRemoteTRX/"
 ISSUES = "https://github.com/Bob56fr/openRemoteTRX/issues/new/choose"
 # Langues publiées : mêmes listes que scripts/build_user_guide.py et scripts/build_console_doc.py (vérifié par les tests).
-GUIDE_LANGS = ("fr",)
+GUIDE_LANGS = ("fr", "en", "de", "es")   # guide traduit à l'étape 388
 CONSOLE_LANGS = ("fr", "en", "de", "es")
 
 

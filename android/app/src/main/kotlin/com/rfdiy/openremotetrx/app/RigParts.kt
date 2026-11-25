@@ -123,7 +123,18 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
                     HostBar(h, onClick = { hostDialog = true; RigHub.hostInfo() })
                     Spacer(Modifier.width(10.dp))
                 }
-                Column(Modifier.weight(1f)) {
+                // Toucher le nom de la station (étape 392) = openRemoteTRX Console sur le réseau, à l'adresse de la station
+                // (administrateurs : `hello.remote_console`), sinon un message ; rien tant que la station n'a pas répondu
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Column(Modifier.weight(1f).clickable(enabled = hello != null) {
+                    val url = ui.station?.let { com.rfdiy.openremotetrx.logic.StationLinks.consoleUrl(it.url, hello?.remoteConsole?.port) }
+                    val text = when {
+                        url == null -> Tr.t("rigparts.console_admin_only")
+                        openLink(context, url) -> null
+                        else -> Tr.t("rigparts.console_no_browser", "url" to url)
+                    }
+                    if (text != null) android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+                }) {
                     Text(ui.station?.name ?: Tr.t("rigparts.station"), style = MaterialTheme.typography.titleLarge)
                     Text(
                         when (rig.status) {
@@ -371,3 +382,9 @@ internal fun RigScope.RigNoticeBanner() {
 internal fun RigScope.PresenceBanner() {
     rig.presence?.let { p -> p.suspended.ifEmpty { p.grace }.takeIf { it.isNotEmpty() }?.let { Banner(it, WARN) } }
 }
+
+/** Ouvre une adresse dans le navigateur du téléphone ; false si aucune application ne sait l'ouvrir. */
+internal fun openLink(context: Context, url: String): Boolean = runCatching {
+    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+}.isSuccess
