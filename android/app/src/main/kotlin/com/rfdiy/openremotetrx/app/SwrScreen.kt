@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
@@ -282,7 +283,9 @@ fun SwrScreen(rig: RigState, onClose: () -> Unit) {
                     }
                     if (text.isNotEmpty()) Text(text, style = MaterialTheme.typography.bodyMedium)
                 }
-                Canvas(Modifier.fillMaxWidth().height(230.dp)) {
+                // clipToBounds : la toile Android n'est PAS limitée au graphique ; sans lui, le fond peint recouvrait tout ce
+                // qui est au-dessus (réglages et bouton « Lancer » invisibles, signalement de l'utilisateur du 2026-11-25)
+                Canvas(Modifier.fillMaxWidth().height(230.dp).clipToBounds()) {
                     drawIntoCanvas { c ->
                         c.nativeCanvas.drawColor(BACKGROUND)
                         drawChart(c.nativeCanvas, 0f, 0f, size.width, size.height, chartPoints, density)
