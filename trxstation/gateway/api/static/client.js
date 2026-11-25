@@ -1882,7 +1882,11 @@
         controls: controls, controlsLocked: state !== "RX", instruments: instruments, power: power, swr: swr, alc: alc,
         local: localView(p), temp: tempView(p),
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
-        squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
+        // Squelch (étape 396) : état RÉEL lu sur le poste (rig.dcd) quand la fiche du poste le permet ; le repère estimé sur
+        // le S-mètre n'est alors plus montré (il ne correspond pas au poste : IC-7300, IC-705, FTDX10)
+        squelch: "SQL" in lv ? lv.SQL : null,
+        squelchOpen: typeof rig.dcd === "boolean" ? rig.dcd : null,
+        squelchMark: "SQL" in lv && typeof rig.dcd !== "boolean" ? squelchMarkerFraction(lv.SQL) : null,
         clarifier: clarifierView(fn, rig, this._caps()),
         indicators: indicatorsView(fn, lv, rig, this._caps()),
         host: this.isListener() ? null : hostView(this.state && this.state.host),

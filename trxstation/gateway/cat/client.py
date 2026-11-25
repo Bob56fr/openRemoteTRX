@@ -237,6 +237,15 @@ class RigctldClient:
             raise CatProtocolError(f"VFO illisible : {raw!r}")
         return raw
 
+    async def get_dcd(self) -> bool:
+        """Squelch ouvert (porteuse détectée) d'après le poste : « DCD: 1 » (Hamlib : Yaesu « BY », Icom « 15 01 »).
+        RigError si le poste ne le dit pas (étape 396)."""
+        raw = self._pick(await self._command("\\get_dcd"), "DCD", "#1", command="\\get_dcd")
+        try:
+            return int(float(raw)) != 0
+        except ValueError:
+            raise CatProtocolError(f"état du squelch illisible : {raw!r}") from None
+
     async def get_split_frequency(self) -> int:
         """Fréquence d'ÉMISSION en split, en Hz (« TX Frequency: 0 » hors split)."""
         raw = self._pick(await self._command("i"), "TX Frequency", "#1", command="i")

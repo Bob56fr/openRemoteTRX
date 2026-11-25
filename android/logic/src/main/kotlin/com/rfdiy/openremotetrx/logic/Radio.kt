@@ -131,8 +131,12 @@ object Radio {
         return sMeterFraction(if (raw <= 120) -54 + raw * 54 / 120 else (raw - 120) * 60 / 121)
     }
 
-    /** Squelch ouvert (le son passe) : réglé à 0, ou signal au-dessus du repère. Estimation, la station ne donne pas le DCD. */
-    fun squelchOpen(sql: Double?, strengthDb: Double?): Boolean {
+    /**
+     * Squelch ouvert (le son passe). `dcd` = état RÉEL lu sur le poste (station 0.286.0+, fiche du poste) : il l'emporte ;
+     * sinon estimation : réglé à 0, ou signal au-dessus du repère.
+     */
+    fun squelchOpen(sql: Double?, strengthDb: Double?, dcd: Boolean? = null): Boolean {
+        if (dcd != null) return dcd
         val mark = squelchMarkerFraction(sql) ?: return sql != null
         return sMeterFraction(strengthDb) >= mark
     }

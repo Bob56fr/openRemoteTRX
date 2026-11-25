@@ -2127,6 +2127,7 @@
         $("alc-text").textContent = v.alc ? v.alc.text : "—"; $("alc-mask").style.width = percentLeft(v.alc ? v.alc.fraction : 0);
         const squelch = $("squelch");
         squelch.disabled = !v.connected || v.squelch === null;
+        $("blk-sql").className = "sql listener-off" + (v.squelchOpen === true ? " sql-open" : "");   // squelch ouvert lu sur le poste  // i18n-ok (classes CSS)
         if (v.squelch !== null && performance.now() - squelchTouched > 1500) {          // pas de saut pendant que le doigt règle
           squelch.value = String(Math.round(v.squelch * 100));
           $("squelch-text").textContent = squelchLabel(Math.round(v.squelch * 100));

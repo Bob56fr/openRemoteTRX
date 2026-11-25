@@ -15,4 +15,4 @@ kind = "presets"        # FIL1 / FIL2 / FIL3 par mode
 presets = 3
 
 [squelch]
-source = "estimate"     # état réel (« 15 01 » ou get_dcd) à essayer au lot 4
+source = "dcd"          # Hamlib get_dcd (CI-V « 15 01 »), à vérifier sur le poste ; abandonné seul au premier refus

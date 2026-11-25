@@ -167,6 +167,8 @@ data class RigStatus(
     val vfo: String? = null,
     /** Alimentation (station 0.222.0+) : "on", "off" (éteint ou muet), null = inconnue ; visiteurs compris. */
     val power: String? = null,
+    /** Squelch ouvert d'après le POSTE (station 0.286.0+, fiche du poste) ; null = non lu ou en émission. Affichage seul. */
+    val dcd: Boolean? = null,
 )
 
 /** Allumage et extinction du poste (fonction « power », opérateurs ; docs/protocole.md § 21) : `state.power`. */

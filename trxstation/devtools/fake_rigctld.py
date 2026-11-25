@@ -45,6 +45,7 @@ class FakeRigctld:
         self._ptt_cache: tuple[int, float] | None = None   # (valeur, instant) mise par « T » ou par une vraie lecture
         self.writable_levels = {"SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"}   # « L » accepté (les autres : RPRT -11)
         self.vfo = "VFOA"         # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
+        self.dcd: bool | None = None   # squelch ouvert (« \get_dcd ») ; None = poste qui ne le dit pas (RPRT -11)
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
         self.delay_s = 0.0
@@ -206,6 +207,10 @@ class FakeRigctld:
             if key == "Z" and args:
                 self.xit = int(args[0])
                 return f"set_xit: {args[0]}\nRPRT 0\n"
+            if key == "\\get_dcd":                  # détection de porteuse (squelch ouvert), étape 396
+                if self.dcd is None:
+                    return "RPRT -11\n"
+                return f"get_dcd:\n{self._out('DCD', 1 if self.dcd else 0)}RPRT 0\n"
             if key == "v":
                 if self.vfo is None:
                     return "RPRT -11\n"

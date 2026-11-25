@@ -77,6 +77,7 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
                 # split (fréquence d'émission = autre VFO) et décalages du clarifieur (RIT, XIT = ΔTX) ; None = inconnu
                 "split": rig.split, "tx_frequency_hz": rig.tx_frequency_hz, "offsets": dict(rig.offsets),
                 "vfo": rig.vfo,
+                "dcd": getattr(rig, "dcd", None),   # squelch ouvert lu sur le poste (étape 396) ; None = non lu
                 # alimentation : "on", "off" (éteint ou muet), None = inconnue ; visiteurs compris (bandeau « éteint »)
                 "power": getattr(rig, "power", None)},
         "audio": pipeline.stats() if pipeline is not None else {},

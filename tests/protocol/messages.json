@@ -30,7 +30,7 @@
                  "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "replay"],
     "replay": {"max_s": 85},
     "remote_console": null,
-    "rig_spec": {"model": 3094, "name": "Icom IC-7300MK2", "receivers": 1, "verified": false, "timing": {"read_delay_s": 0.0, "tuner_delay_s": 2.0, "linked_changes": false}, "filters": {"kind": "presets", "presets": 3, "steps": {}, "quick": []}, "squelch": {"source": "estimate"}},
+    "rig_spec": {"model": 3094, "name": "Icom IC-7300MK2", "receivers": 1, "verified": false, "timing": {"read_delay_s": 0.0, "tuner_delay_s": 2.0, "linked_changes": false}, "filters": {"kind": "presets", "presets": 3, "steps": {}, "quick": []}, "squelch": {"source": "dcd"}},
     "updates": {"station": {"version": "0.283.0", "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}, "app": {"version": "0.91.0", "code": 98, "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}}
   },
   "state": {
@@ -39,7 +39,7 @@
             "fault": "", "local_remaining_s": null, "local_reason": "", "local_tx": false, "temp_alert": "", "temp_c": null},
     "rig": {"connected": true, "frequency_hz": 14074000, "mode": "PKTUSB", "passband_hz": 3000, "strength_db": -54,
             "functions": {"NR": false, "NB": true}, "levels": {"PREAMP": 10, "SWR": 1.1, "ALC": 0.3},
-            "split": false, "tx_frequency_hz": null, "offsets": {"RIT": 0, "XIT": 0}, "vfo": "VFOA", "power": "on"},
+            "split": false, "tx_frequency_hz": null, "offsets": {"RIT": 0, "XIT": 0}, "vfo": "VFOA", "power": "on", "dcd": false},
     "audio": {"rx_db": -32, "tx_db": -18, "gate_open": true, "listeners": 1, "tx_underruns": 0, "tx_overruns": 0},
     "clients": ["phone"],
     "spectrum": {"state": "ok", "code": "", "message": "", "settings": {"span": 25000}},

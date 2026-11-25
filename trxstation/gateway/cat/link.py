@@ -57,6 +57,9 @@ class RigState:
     # Alimentation : "on", "off" (éteint OU muet : Hamlib Yaesu répond 0 sans réponse du poste), None = inconnue (poste
     # qui ne déclare pas « get Power Stat »). Jamais une preuve de réception : un poste « off » n'est pas « RX confirmé ».
     power: str | None = None
+    # Squelch ouvert d'après le POSTE (« \get_dcd », étape 396) : True / False ; None = non lu (fiche du poste sans source
+    # réelle, poste qui ne le dit pas, ou émission en cours). Affichage seul : jamais utilisé par la sécurité d'émission.
+    dcd: bool | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -65,7 +68,7 @@ class RigState:
         return (self.connected, self.frequency_hz, self.mode, self.passband_hz,
                 self.strength_db, self.ptt, self.last_error,
                 tuple(sorted(self.functions.items())), tuple(sorted(self.levels.items())),
-                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())), self.vfo, self.power)
+                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())), self.vfo, self.power, self.dcd)
 
 
 class CatLink:
@@ -84,6 +87,7 @@ class CatLink:
         self._refresh_now = True
         self._strength_supported = True
         self._disabled: set[str] = set()                # lectures facultatives abandonnées (non gérées par ce poste)
+        self.read_dcd = False                           # squelch réel lu sur le poste (fiche du poste, posé par PttController)
         self._failures: dict[str, int] = {}
         self._extra_index = self._tx_index = 0
         self.ptt_cache_ok: bool | None = None           # cache du PTT de rigctld coupé ? (voir _disable_cache)
@@ -122,7 +126,8 @@ class CatLink:
 
     def _mark_off(self) -> None:
         self._update(power="off", frequency_hz=None, mode=None, passband_hz=None, strength_db=None, ptt=None,
-                     split=None, tx_frequency_hz=None, vfo=None, levels={}, functions={}, offsets={}, last_error="")
+                     split=None, tx_frequency_hz=None, vfo=None, dcd=None, levels={}, functions={}, offsets={},
+                     last_error="")
 
     async def _check_off(self) -> bool:
         """Une lecture vient d'échouer : poste éteint ? (seulement s'il déclare « get Power Stat »). True = éteint, la
@@ -264,6 +269,7 @@ class CatLink:
             if self._strength_supported:
                 if not await self._refresh_strength():
                     continue                             # poste éteint : rien d'autre à lire
+            await self._refresh_dcd()
             if self._state.ptt:
                 await self._refresh_tx_meters()
             if self._state.power != "off":
@@ -317,6 +323,33 @@ class CatLink:
             self._strength_supported = False
             self._update(strength_db=None)
         return True
+
+    async def _refresh_dcd(self) -> None:
+        """État réel du squelch (fiche du poste : source « busy » ou « dcd ») à chaque tour, comme le S-mètre. Abandonné
+        pour ce poste au premier refus définitif, réponse illisible ou délai dépassé (lecture facultative)."""
+        if not self.read_dcd or "s:DCD" in self._disabled or self._state.power == "off":
+            return
+        if self._state.ptt:                              # en émission : le squelch du récepteur ne dit rien
+            if self._state.dcd is not None:
+                self._update(dcd=None)
+            return
+        try:
+            value = await self.client.get_dcd()
+        except RigError as exc:
+            if exc.code in PERMANENT_ERRORS and time.monotonic() >= self._settle_until and not self.paused:
+                self._disable("s", "DCD", f"RPRT {exc.code}")
+            self._update(dcd=None)
+            return
+        except CatProtocolError as exc:
+            self._disable("s", "DCD", str(exc))
+            self._update(dcd=None)
+            return
+        except CatConnectionError as exc:
+            if time.monotonic() >= self._settle_until:
+                self._disable("s", "DCD", f"pas de réponse dans le délai ({exc})")
+                self._update(dcd=None)
+            raise
+        self._update(dcd=value)
 
     async def _refresh_slow(self) -> None:
         """Fréquence, mode et PTT sont publiés ensemble : jamais d'état à moitié rafraîchi."""

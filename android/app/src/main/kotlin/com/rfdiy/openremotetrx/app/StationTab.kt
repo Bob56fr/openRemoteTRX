@@ -163,7 +163,8 @@ internal fun RigScope.StationDisplay() {
                     }
                     // Repère du squelch (page : barre orange sur le S-mètre) : petit triangle orange au-dessus de la barre,
                     // suit le curseur pendant le réglage ; absent si le squelch est ouvert (0)
-                    val sqlMark = Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"))
+                    // Squelch réel lu sur le poste (étape 396) : le repère estimé n'est plus montré (faux sur ces postes)
+                    val sqlMark = if (radio?.dcd != null) null else Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"))
                     Box(Modifier.fillMaxWidth().height(15.dp)) {
                         LinearProgressIndicator(
                             progress = { Radio.sMeterFraction(radio?.strengthDb) },
@@ -204,10 +205,11 @@ internal fun RigScope.StationDisplay() {
                         // Squelch : une seule commande à la fin du geste (page : pas une par pixel)
                         val shown = squelchDrag ?: sql.toFloat()
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Vert : squelch ouvert (le son passe ; estimation par le S-mètre, la station ne donne pas le DCD)
+                            // Vert : squelch ouvert (le son passe) : lu sur le poste si sa fiche le permet, sinon estimé
+                            val sqlOpen = Radio.squelchOpen(sql, radio.strengthDb, radio.dcd)
                             Text("SQL", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp),
-                                color = if (Radio.squelchOpen(sql, radio.strengthDb)) SQL_OPEN else Color.Unspecified,
-                                fontWeight = if (Radio.squelchOpen(sql, radio.strengthDb)) FontWeight.Bold else FontWeight.Normal)
+                                color = if (sqlOpen) SQL_OPEN else Color.Unspecified,
+                                fontWeight = if (sqlOpen) FontWeight.Bold else FontWeight.Normal)
                             Slider(
                                 value = shown, onValueChange = { squelchDrag = it }, enabled = canSet,
                                 onValueChangeFinished = { squelchDrag?.let { RigHub.setSquelch(it.toDouble()) }; squelchDrag = null },

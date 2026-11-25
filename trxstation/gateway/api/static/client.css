@@ -107,6 +107,7 @@ button:disabled { opacity: .4; }
 
 .subrow { display: flex; align-items: center; gap: .8rem; justify-content: space-between; padding: .15rem 0; }
 .sql { display: flex; align-items: center; gap: .4rem; flex: 1; color: var(--mesure); font-weight: 700; font-size: .8rem; justify-content: flex-end; }
+.sql.sql-open { color: var(--succes); }   /* squelch ouvert d'après le poste (étape 396) */
 .sql input[type=range] { flex: 1; max-width: 11rem; } #squelch-text { min-width: 3rem; text-align: right; color: var(--texte-secondaire); font-weight: 400; }
 .statusline { display: flex; align-items: center; gap: .6rem; justify-content: space-between; }
 .ptt-state { padding: .1rem .6rem; border-radius: .3rem; font-weight: 700; font-size: .78rem; letter-spacing: .05em; }

@@ -888,6 +888,17 @@ test("largeurs des filtres (étape 395) : trois curseurs Icom par le port B, pal
   assert.equal(v.sentCommands("set_mode").length, 0);                         // jamais de largeur par Hamlib sur un Icom
 });
 
+test("squelch (étape 396) : état réel lu sur le poste quand il est connu, sinon le repère estimé", async () => {
+  const w = makeWorld();
+  await w.connected();
+  w.state({}, { levels: { SQL: 0.3 } });
+  assert.equal(w.ui.views.at(-1).squelchOpen, null); assert.notEqual(w.ui.views.at(-1).squelchMark, null);   // estimation
+  w.state({}, { levels: { SQL: 0.3 }, dcd: true });
+  assert.equal(w.ui.views.at(-1).squelchOpen, true); assert.equal(w.ui.views.at(-1).squelchMark, null);       // poste : ouvert
+  w.state({}, { levels: { SQL: 0.3 }, dcd: false });
+  assert.equal(w.ui.views.at(-1).squelchOpen, false);
+});
+
 test("boutons de commande : verrouillés pendant l'émission", async () => {
   const w = makeWorld();
   await w.connected(); w.state({}, { functions: { NR: false } });
