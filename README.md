@@ -8,6 +8,15 @@ Remote control of an amateur radio transceiver from the browser of a smartphone,
 
 > **Status: under active development.** Validated with an **Icom IC-7300MK2** on a Windows PC and on Debian 13. **Yaesu FTDX10** qualified on a dummy load (validation in progress). Other radios should work (see below); the status of every radio tried is published on the [radios page](https://bob56fr.github.io/openRemoteTRX/postes/). Use it on a **dummy load** at reduced power first.
 
+<table>
+  <tr>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB.jpg" width="180" alt="Station tab: frequency, S-meter, transmit"></a><br><sub>Station: frequency, S-meter, transmit</sub></td>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB%20Bottom%20.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB%20Bottom%20.jpg" width="180" alt="Station tab: bands, modes, radio controls"></a><br><sub>Bands, modes, radio controls</sub></td>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20Audio%20TAB.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20Audio%20TAB.jpg" width="180" alt="Audio tab: voice equaliser"></a><br><sub>Audio: voice equaliser</sub></td>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20SWR%20Campaign%20TAB.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20SWR%20Campaign%20TAB.jpg" width="180" alt="SWR sweep across a band"></a><br><sub>SWR sweep across a band</sub></td>
+  </tr>
+</table>
+
 ## What it does
 
 - **Web control page** served by the station over HTTPS: frequency (drag the digits, keypad, bands, steps), modes, filters (FIL presets and widths), NR / NB / Notch / ATT / preamp / AGC / compressor / power, squelch read from the radio, S-meter, Po / SWR / ALC meters, shared memories.

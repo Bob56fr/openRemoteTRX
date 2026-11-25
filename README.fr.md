@@ -8,6 +8,17 @@ Piloter un émetteur-récepteur radioamateur à distance, depuis le navigateur d
 
 > **Statut : en développement actif.** Validé avec un **Icom IC-7300MK2** sur PC Windows et sur Debian 13. **Yaesu FTDX10** qualifié sur charge fictive (validation en cours). D'autres postes devraient fonctionner (voir plus bas) ; l'état de chaque poste essayé est publié sur la [page des postes](https://bob56fr.github.io/openRemoteTRX/postes/). Utilisez-le d'abord sur **charge fictive**, à puissance réduite.
 
+<table>
+  <tr>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB.jpg" width="180" alt="Onglet Station : fréquence, S-mètre, émission"></a><br><sub>Station : fréquence, S-mètre, émission</sub></td>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB%20Bottom%20.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20Stations%20TAB%20Bottom%20.jpg" width="180" alt="Onglet Station : bandes, modes, réglages du poste"></a><br><sub>Bandes, modes, réglages du poste</sub></td>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20Audio%20TAB.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20Audio%20TAB.jpg" width="180" alt="Onglet Audio : égaliseur de la voix"></a><br><sub>Audio : égaliseur de la voix</sub></td>
+    <td align="center"><a href="images/readme/openRemoteTRX%20Android%20App%20-%20SWR%20Campaign%20TAB.jpg"><img src="images/readme/openRemoteTRX%20Android%20App%20-%20SWR%20Campaign%20TAB.jpg" width="180" alt="Mesure de TOS sur une bande"></a><br><sub>Mesure de TOS sur une bande</sub></td>
+  </tr>
+</table>
+
+<sub>Captures de l'application en anglais.</sub>
+
 ## Ce que ça fait
 
 - **Page de contrôle web** servie par la station, en HTTPS : fréquence (glisser les chiffres, clavier, bandes, pas), modes, filtres (préréglages FIL et largeurs), NR / NB / Notch / ATT / préampli / AGC / compresseur / puissance, squelch lu sur le poste, S-mètre, mesures Po / ROS / ALC, mémoires partagées.
