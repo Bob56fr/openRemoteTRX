@@ -57,7 +57,7 @@ def test_hello_example_has_every_field_of_the_spec():
     spec = EXAMPLE["rig_spec"]
     full = RigSpec().to_dict()
     assert set(spec) == set(full)
-    for section in ("timing", "filters", "squelch"):
+    for section in ("timing", "filters", "squelch", "transmit"):
         assert set(spec[section]) == set(full[section])
 
 

@@ -183,5 +183,7 @@
   "station.overload_lag": "gateway {value} ms behind",
   "station.overload_mem": "free memory at {value} %",
   "station.overload_auto": "Station overloaded ({cause}): visitor listening suspended to protect the station. Reopens automatically after 5 minutes of normal operation.",
-  "station.overload_locked": "Station overloaded ({cause}): visitor listening suspended to protect the station. Too many cuts in one hour: the operator must reopen it."
+  "station.overload_locked": "Station overloaded ({cause}): visitor listening suspended to protect the station. Too many cuts in one hour: the operator must reopen it.",
+  "refus.tx_side_unreadable": "Transmit side of the radio (MAIN or SUB) unreadable: transmission refused for safety (the transmit frequency is unknown).",
+  "coupure.tx_side_changed": "transmit side (MAIN / SUB) or its frequency changed on the radio during transmission"
 }

@@ -45,6 +45,7 @@ class FakeRigctld:
         self._ptt_cache: tuple[int, float] | None = None   # (valeur, instant) mise par « T » ou par une vraie lecture
         self.writable_levels = {"SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"}   # « L » accepté (les autres : RPRT -11)
         self.vfo = "VFOA"         # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
+        self.ascii: dict[str, str] = {}   # réponses aux lectures brutes « w » (ex. {"FT;": "FT0;"}) ; absente = RPRT -5
         self.dcd: bool | None = None   # squelch ouvert (« \get_dcd ») ; None = poste qui ne le dit pas (RPRT -11)
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
@@ -231,6 +232,10 @@ class FakeRigctld:
                     self.ptt = value
                 self._ptt_cache = (value, time.monotonic())                       # valeur COMMANDÉE, comme Hamlib
                 return f"set_ptt: {args[0]}\nRPRT 0\n"
+            if key == "w" and len(args) == 1:          # lecture ASCII brute (Yaesu : « FT; », « FA; »), étape 397
+                if args[0] not in self.ascii:
+                    return "RPRT -5\n"
+                return f"send_cmd: {args[0]}\n{self._out('Reply', self.ascii[args[0]])}RPRT 0\n"
             if key == "W" and len(args) == 2:
                 frame = bytes(int(h, 16) for h in re.findall(r"\\0x([0-9A-Fa-f]{2})", args[0]))
                 if frame not in self.civ_menus:

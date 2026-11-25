@@ -213,6 +213,16 @@ class RigctldClient:
         values = await self._command(command)
         return self._pick(values, "Reply", "#2", command="W")
 
+    async def read_ascii(self, query: str) -> str:
+        """Lecture CAT ASCII brute (Yaesu, Kenwood) par la commande « w » de rigctld, LISTE FERMÉE : seulement une lecture
+        de deux lettres et « ; » écrite dans une fiche technique livrée (`rigspec.read_queries`), jamais une écriture.
+        Renvoie la réponse du poste (ex. « FT1; ») ; étape 397, côté d'émission du FTDX101."""
+        from ...rigspec import READ_QUERY_RE, read_queries
+        if not READ_QUERY_RE.fullmatch(query) or query not in read_queries():
+            raise ValueError("lecture brute hors de la liste fermée")
+        values = await self._command(f"w {query}")
+        return self._pick(values, "Reply", "#1", command=f"w {query}").strip()
+
     async def get_ptt(self) -> bool:
         """État du PTT, LECTURE SEULE. Toute valeur non nulle (1, 2, 3) signifie émission."""
         raw = self._pick(await self._command("t"), "PTT", "#1", command="t")

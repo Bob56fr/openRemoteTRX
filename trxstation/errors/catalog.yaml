@@ -6931,6 +6931,7 @@ ORT-5017:
   - mode_changed
   - split_changed
   - xit_changed
+  - tx_side_changed
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5017/
   depuis_version: 0.123.0
   en:
@@ -8574,6 +8575,54 @@ ORT-5116:
     - Cambio de frecuencia, modo, RIT/ΔTX, función, nivel, potencia o filtro pedido durante una transmisión o un corte
     - Medida de ROE pedida fuera de recepción
     preconisation: Vuelve a recepción y rehaz el ajuste.
+
+ORT-5117:
+  gravite: erreur
+  titre: 'Émission refusée : côté d''émission illisible'
+  message: 'Le poste a deux récepteurs et son côté d''émission (MAIN ou SUB) ou sa fréquence ne se relit pas ({detail}) :
+    émission refusée par sécurité.'
+  causes:
+  - 'Réponse inattendue du poste aux lectures de sa fiche technique (Yaesu FTDX101 : FT, FA, FB)'
+  - Version de Hamlib qui ne transmet pas les lectures brutes
+  - Liaison CAT perturbée
+  preconisation: Vérifier sur le poste quelle touche TX est allumée (MAIN ou SUB), puis réessayer ; si le défaut persiste,
+    le signaler avec le journal.
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - tx_side_unreadable
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5117/
+  depuis_version: 0.287.0
+  en:
+    titre: 'Transmit refused: transmit side unreadable'
+    message: 'The radio has two receivers and its transmit side (MAIN or SUB) or its frequency cannot be read back ({detail}):
+      transmit refused for safety.'
+    causes:
+    - 'Unexpected reply from the radio to the reads of its technical sheet (Yaesu FTDX101: FT, FA, FB)'
+    - Hamlib version that does not pass raw reads
+    - Disturbed CAT link
+    preconisation: Check on the radio which TX key is lit (MAIN or SUB), then try again; if it persists, report it with the log.
+  de:
+    titre: 'Senden abgelehnt: Sendeseite nicht lesbar'
+    message: 'Der Transceiver hat zwei Empfänger und seine Sendeseite (MAIN oder SUB) oder deren Frequenz lässt sich nicht
+      zurücklesen ({detail}): Senden aus Sicherheitsgründen abgelehnt.'
+    causes:
+    - 'Unerwartete Antwort des Transceivers auf die Abfragen seines technischen Datenblatts (Yaesu FTDX101: FT, FA, FB)'
+    - Hamlib-Version, die Rohabfragen nicht weitergibt
+    - CAT-Verbindung gestört
+    preconisation: Prüfen Sie am Transceiver, welche TX-Taste leuchtet (MAIN oder SUB), und versuchen Sie es erneut; bleibt
+      der Fehler, melden Sie ihn mit dem Protokoll.
+  es:
+    titre: 'Transmisión rechazada: lado de transmisión ilegible'
+    message: 'El equipo tiene dos receptores y su lado de transmisión (MAIN o SUB) o su frecuencia no se puede releer ({detail}):
+      transmisión rechazada por seguridad.'
+    causes:
+    - 'Respuesta inesperada del equipo a las lecturas de su ficha técnica (Yaesu FTDX101: FT, FA, FB)'
+    - Versión de Hamlib que no transmite las lecturas en bruto
+    - Enlace CAT perturbado
+    preconisation: Comprueba en el equipo qué tecla TX está encendida (MAIN o SUB) y vuelve a intentarlo; si el fallo persiste,
+      infórmalo con el registro.
 
 ORT-5501:
   gravite: info

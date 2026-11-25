@@ -37,6 +37,7 @@ import contextlib
 import enum
 import logging
 import math
+import re
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
@@ -609,6 +610,9 @@ class PttController:
                 why = " (émission en split)" if plan[0] else ""
                 why += f" (ΔTX {plan[3]:+d} Hz)" if plan[2] else ""
                 raise Refused("out_of_band", f"{tx_freq / 1e6:.4f} MHz{why}")
+            side, side_tx = plan[4], plan[5]       # côté d'émission lu sur le poste : SA fréquence doit être permise aussi
+            if self.config.safety.enforce_bands and side_tx is not None and not self.config.tx_allowed(side_tx):
+                raise Refused("out_of_band", f"{side_tx / 1e6:.4f} MHz (émission par le {'SUB' if side == 'sub' else 'MAIN'})")
 
             # Aucune attente entre la dernière vérification d'`epoch` et l'écriture.
             self._tx_freq = freq
@@ -681,7 +685,35 @@ class PttController:
                 raise Refused("xit_unreadable", str(exc)) from exc
             except (CatConnectionError, OSError) as exc:
                 raise Refused("cat_error", str(exc)) from exc
-        return tx, (split, split_freq, xit_on, xit)
+        side, side_tx = None, None
+        if self.spec.transmit.side_query:          # poste à deux récepteurs (FTDX101) : côté d'émission lu sur le poste
+            side, side_freq = await self._transmit_side(client)
+            side_tx = side_freq + (xit if xit_on else 0)
+        return tx, (split, split_freq, xit_on, xit, side, side_tx)
+
+    async def _transmit_side(self, client) -> tuple[str, int]:
+        """Côté qui émet (« main » / « sub ») et SA fréquence, lus par les lectures brutes de la fiche du poste (étape 397 :
+        Yaesu FTDX101, touches TX du MAIN et du SUB, que Hamlib ne lit pas). Toute réponse inattendue => Refused (en cas
+        de doute, ne pas émettre)."""
+        t = self.spec.transmit
+        try:
+            raw = await client.read_ascii(t.side_query)
+            found = re.fullmatch(t.side_reply, raw)
+            value = found.group(1) if found else None
+            if value not in (t.main_value, t.sub_value):
+                raise Refused("tx_side_unreadable", f"réponse {raw!r} à {t.side_query}")
+            side = "sub" if value == t.sub_value else "main"
+            query = t.sub_freq_query if side == "sub" else t.main_freq_query
+            raw = await client.read_ascii(query)
+            found = re.fullmatch(t.freq_reply, raw)
+            hz = int(found.group(1)) if found else 0
+            if hz <= 0:
+                raise Refused("tx_side_unreadable", f"réponse {raw!r} à {query}")
+            return side, hz
+        except (RigError, CatProtocolError, ValueError) as exc:
+            raise Refused("tx_side_unreadable", str(exc)) from exc
+        except (CatConnectionError, OSError) as exc:
+            raise Refused("cat_error", str(exc)) from exc
 
     # ------------------------------------------------------------------ surveillance
 
@@ -763,7 +795,9 @@ class PttController:
             except Refused:
                 plan = None                         # relecture impossible : liaison et poste muet sont surveillés ailleurs
             if plan is not None and self._state is PttState.TX and plan != self._tx_plan:
-                return "split_changed" if plan[:2] != self._tx_plan[:2] else "xit_changed"
+                if plan[:2] != self._tx_plan[:2]:
+                    return "split_changed"
+                return "xit_changed" if plan[2:4] != self._tx_plan[2:4] else "tx_side_changed"
         try:
             keyed = await client.get_ptt()
         except _CAT_ERRORS:

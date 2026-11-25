@@ -183,5 +183,7 @@
   "station.overload_lag": "passerelle en retard de {value} ms",
   "station.overload_mem": "mémoire libre à {value} %",
   "station.overload_auto": "Station surchargée ({cause}) : écoute des visiteurs suspendue pour protéger la station. Réouverture automatique après 5 minutes de fonctionnement normal.",
-  "station.overload_locked": "Station surchargée ({cause}) : écoute des visiteurs suspendue pour protéger la station. Trop de coupures en une heure : l'opérateur doit la rouvrir."
+  "station.overload_locked": "Station surchargée ({cause}) : écoute des visiteurs suspendue pour protéger la station. Trop de coupures en une heure : l'opérateur doit la rouvrir.",
+  "refus.tx_side_unreadable": "Côté d'émission du poste (MAIN ou SUB) illisible : émission refusée par sécurité (la fréquence d'émission est inconnue).",
+  "coupure.tx_side_changed": "côté d'émission (MAIN / SUB) ou sa fréquence modifié sur le poste pendant l'émission"
 }

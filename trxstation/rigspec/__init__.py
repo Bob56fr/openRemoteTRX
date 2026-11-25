@@ -22,6 +22,7 @@ FOLDER = Path(__file__).resolve().parent
 FILTER_KINDS = ("unknown", "presets", "steps", "none")
 SQUELCH_SOURCES = ("estimate", "busy", "dcd")
 MAX_DELAY_S = 30.0
+READ_QUERY_RE = re.compile(r"[A-Z]{2};")           # lecture CAT ASCII sans paramètre (jamais une écriture)
 MODE_RE = re.compile(r"[A-Z][A-Z0-9-]{0,15}")      # nom de mode Hamlib (USB, PKTUSB, CWR...)
 
 
@@ -62,6 +63,20 @@ class Squelch:
 
 
 @dataclass(frozen=True)
+class Transmit:
+    """Côté d'émission d'un poste à deux récepteurs (étape 397, Yaesu FTDX101 : touches TX du MAIN et du SUB, commande
+    FT, que Hamlib ne lit pas : il lit le split par ST). La station envoie ces LECTURES brutes (deux lettres et « ; »,
+    jamais un paramètre : aucune écriture possible) avant chaque prise d'émission et pendant l'émission."""
+    side_query: str = ""         # ex. « FT; » : côté qui émet ; vide = poste sans côté d'émission à lire
+    side_reply: str = ""         # expression de la réponse, UN groupe = valeur (ex. « FT([01]); »)
+    sub_value: str = ""          # valeur du groupe quand le SUB émet (ex. « 1 ») ; toute autre valeur connue = MAIN
+    main_value: str = ""         # valeur du groupe quand le MAIN émet (ex. « 0 ») ; autre chose = illisible (refus)
+    main_freq_query: str = ""    # ex. « FA; » : fréquence du MAIN
+    sub_freq_query: str = ""     # ex. « FB; » : fréquence du SUB
+    freq_reply: str = ""         # ex. « F[AB](\d{9}); » : UN groupe = fréquence en Hz
+
+
+@dataclass(frozen=True)
 class RigSpec:
     model: int = 0                       # 0 = fiche générique
     name: str = ""
@@ -70,6 +85,7 @@ class RigSpec:
     timing: Timing = field(default_factory=Timing)
     filters: Filters = field(default_factory=Filters)
     squelch: Squelch = field(default_factory=Squelch)
+    transmit: Transmit = field(default_factory=Transmit)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -108,9 +124,10 @@ def parse(text: str, where: str = "fiche") -> RigSpec:
             raw_filters["quick"] = tuple(raw_filters["quick"])
     filters = _section(Filters, raw_filters, f"{where} [filters]")
     squelch = _section(Squelch, data.pop("squelch", {}), f"{where} [squelch]")
+    transmit = _section(Transmit, data.pop("transmit", {}), f"{where} [transmit]")
     spec = _section(RigSpec, data, where)
     spec = RigSpec(model=spec.model, name=spec.name, receivers=spec.receivers, verified=spec.verified,
-                   timing=timing, filters=filters, squelch=squelch)
+                   timing=timing, filters=filters, squelch=squelch, transmit=transmit)
     problem = check(spec)
     if problem:
         raise RigSpecError(f"{where} : {problem}")
@@ -134,6 +151,22 @@ def check(spec: RigSpec) -> str | None:
         return "filters.steps seulement pour kind = steps"
     if spec.filters.quick and (spec.filters.kind != "steps" or not _widths(list(spec.filters.quick))):
         return "filters.quick : largeurs croissantes, seulement pour kind = steps"
+    t = spec.transmit
+    values = (t.side_query, t.side_reply, t.sub_value, t.main_value, t.main_freq_query, t.sub_freq_query, t.freq_reply)
+    if any(values) and not all(values):
+        return "[transmit] : tous les champs, ou aucun"
+    if any(values):
+        for query in (t.side_query, t.main_freq_query, t.sub_freq_query):
+            if not READ_QUERY_RE.fullmatch(query):
+                return f"[transmit] : « {query} » n'est pas une lecture (deux lettres et « ; »)"
+        for pattern in (t.side_reply, t.freq_reply):
+            try:
+                if re.compile(pattern).groups != 1:
+                    return f"[transmit] : « {pattern} » doit avoir un seul groupe"
+            except re.error:
+                return f"[transmit] : expression illisible « {pattern} »"
+        if t.sub_value == t.main_value or spec.receivers != 2:
+            return "[transmit] : valeurs MAIN et SUB distinctes, seulement pour receivers = 2"
     if spec.squelch.source not in SQUELCH_SOURCES:
         return f"squelch.source parmi {SQUELCH_SOURCES}"
     return None
@@ -149,6 +182,15 @@ def quick_widths(spec: RigSpec, mode: str | None) -> tuple[int, ...]:
     """Liste courte de l'appui bref sur FIL dans ce mode ; () si le mode n'a pas tous ces paliers."""
     steps = spec.filters.steps.get(mode or "", [])
     return spec.filters.quick if spec.filters.quick and set(spec.filters.quick) <= set(steps) else ()
+
+
+def read_queries() -> frozenset[str]:
+    """Liste FERMÉE des lectures brutes que la station peut envoyer : celles des fiches livrées."""
+    out: set[str] = set()
+    for path in sorted((FOLDER / "models").glob("*.toml")):
+        t = parse(path.read_text(encoding="utf-8"), path.name).transmit
+        out.update(q for q in (t.side_query, t.main_freq_query, t.sub_freq_query) if q)
+    return frozenset(out)
 
 
 @lru_cache(maxsize=None)

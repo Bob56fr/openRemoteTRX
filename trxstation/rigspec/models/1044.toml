@@ -16,3 +16,12 @@ kind = "steps"          # largeur par paliers imposés (commande SH), sans prér
 
 [squelch]
 source = "busy"         # commande BY : récepteur occupé, lu sur le poste
+
+[transmit]              # côté d'émission (touches TX du MAIN et du SUB) : manuel CAT FTDX101D 1904-A, commandes FT, FA, FB
+side_query = "FT;"
+side_reply = 'FT([01]);'
+main_value = "0"        # « FT0; » : le MAIN émet
+sub_value = "1"         # « FT1; » : le SUB émet
+main_freq_query = "FA;"
+sub_freq_query = "FB;"
+freq_reply = 'F[AB](\d{9});'

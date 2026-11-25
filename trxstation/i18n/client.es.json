@@ -183,5 +183,7 @@
   "station.overload_lag": "pasarela con {value} ms de retraso",
   "station.overload_mem": "memoria libre al {value} %",
   "station.overload_auto": "Estación sobrecargada ({cause}): escucha de los visitantes suspendida para proteger la estación. Reapertura automática tras 5 minutos de funcionamiento normal.",
-  "station.overload_locked": "Estación sobrecargada ({cause}): escucha de los visitantes suspendida para proteger la estación. Demasiados cortes en una hora: el operador debe reabrirla."
+  "station.overload_locked": "Estación sobrecargada ({cause}): escucha de los visitantes suspendida para proteger la estación. Demasiados cortes en una hora: el operador debe reabrirla.",
+  "refus.tx_side_unreadable": "Lado de transmisión del equipo (MAIN o SUB) ilegible: transmisión rechazada por seguridad (la frecuencia de transmisión es desconocida).",
+  "coupure.tx_side_changed": "lado de transmisión (MAIN / SUB) o su frecuencia cambiado en el equipo durante la transmisión"
 }

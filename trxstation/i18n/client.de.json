@@ -183,5 +183,7 @@
   "station.overload_lag": "Gateway {value} ms im Verzug",
   "station.overload_mem": "freier Speicher bei {value} %",
   "station.overload_auto": "Station überlastet ({cause}): Mithören der Besucher zum Schutz der Station ausgesetzt. Automatische Wiederöffnung nach 5 Minuten normalem Betrieb.",
-  "station.overload_locked": "Station überlastet ({cause}): Mithören der Besucher zum Schutz der Station ausgesetzt. Zu viele Abschaltungen in einer Stunde: der Operator muss es wieder öffnen."
+  "station.overload_locked": "Station überlastet ({cause}): Mithören der Besucher zum Schutz der Station ausgesetzt. Zu viele Abschaltungen in einer Stunde: der Operator muss es wieder öffnen.",
+  "refus.tx_side_unreadable": "Sendeseite des Funkgeräts (MAIN oder SUB) nicht lesbar: Senden aus Sicherheitsgründen abgelehnt (die Sendefrequenz ist unbekannt).",
+  "coupure.tx_side_changed": "Sendeseite (MAIN / SUB) oder deren Frequenz am Funkgerät während des Sendens geändert"
 }
