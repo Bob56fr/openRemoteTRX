@@ -48,7 +48,7 @@ ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 # reconnus par leur clé de traduction : même résultat dans les quatre langues (étape 235). Une clé ajoutée ici doit
 # exister (test).
 REFUSED_KEYS = frozenset({
-    "loop.unknown", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
+    "loop.unknown", "config_download.unreadable", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
     "report.1", "update.3", "edit_config.2", "edit_config.3", "edit_config.6", "pairing.2",
     "save_profile.1", "save_profile.4", "load_profile.2", "load_profile.3", "load_profile.4",
     "save_config.5", "save_config.6", "save_config.7", "visitors.2", "visitors.4",
@@ -65,7 +65,7 @@ REFUSED_KEYS = frozenset({
 })
 # Réussites (vert) : ce qui vient d'être enregistré, installé ou envoyé.
 DONE_KEYS = frozenset({
-    "lang.saved", "save_config.8", "save_profile.7", "delete_profile.3", "friends_pseudo.2", "friends_share.3",
+    "lang.saved", "config_download.done", "save_config.8", "save_profile.7", "delete_profile.3", "friends_pseudo.2", "friends_share.3",
     "friends_leave.2", "breizh_new_key.4", "run_tests.10", "monitoring.pseudo.done", "alerts.test_sent",
     "update.18", "update.18.page", "update.18.local", "install_zip.14", "install_zip.14.page", "install_zip.14.local",
     "rollback.4", "rollback.4.page", "rollback.4.local",

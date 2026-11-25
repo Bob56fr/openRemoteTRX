@@ -878,5 +878,10 @@
   "web.docs.rigs": "Getestete Transceiver",
   "web.docs.toml": "Referenz von station.toml",
   "web.docs.autotest": "Autotest eines Transceivers (Chrome)",
-  "web.docs.github": "GitHub: Problem melden"
+  "web.docs.github": "GitHub: Problem melden",
+  "menu.config_download": "station.toml herunterladen (Sicherungskopie)",
+  "config_download.done": "Kopie der Konfiguration geschrieben: {path}\n(Web-Konsole: Schaltfläche „Herunterladen“ unten; sonst liegt die Datei auf dem Desktop)",
+  "config_download.warning": "ACHTUNG: Diese Datei enthält die Passwort-Hashes der Konten und die Adresse der ntfy-Alarme:\nbehalten Sie sie für sich, veröffentlichen Sie sie nicht und senden Sie sie nicht in einem Bericht.",
+  "config_download.unreadable": "Die Konfiguration kann nicht gelesen oder geschrieben werden ({path}): {error}.",
+  "web.config.download": "station.toml herunterladen"
 }

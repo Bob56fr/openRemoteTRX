@@ -157,7 +157,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             a = cfg.access
             access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,
                                                                       a.overload_lag_ms, a.overload_mem_pct))
-            watcher = AccessWatcher(access, registry, manager, config_path, Path(cfg.supervisor.state_dir))
+            watcher = AccessWatcher(access, registry, manager, config_path, Path(cfg.supervisor.state_dir), live_config=cfg)
             tasks += [asyncio.create_task(watcher.run(stop)), asyncio.create_task(lag.run(stop))]
             if cfg.diffusion.enabled and bridge.has_client_commands("diffusion"):   # diffusion en direct (lot D1b)
                 tasks.append(_start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop, manager, link))

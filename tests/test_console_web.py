@@ -297,3 +297,25 @@ def test_troubleshooting_report_is_downloadable_and_nothing_else(tmp_path, monke
                     "trx-remote-rapport-20261122-1259.zip.txt"):
             assert (await client.get("/api/report/" + bad)).status == 404, bad
     scenario(tmp_path, body)
+
+
+def test_station_toml_copy_of_menu_8_5_is_downloadable_and_nothing_else(tmp_path, monkeypatch):
+    """Étape 399 : copie de station.toml du menu 8.5 téléchargée depuis la page ; session exigée, nom de la copie
+    seulement, Bureau seulement (jamais /etc/trx-remote/station.toml ni un autre fichier)."""
+    desktop = tmp_path / "Bureau"
+    desktop.mkdir()
+    (desktop / "station-20261125-2300.toml").write_text("[rig]\nmodel = 1\n", encoding="utf-8")
+    (desktop / "secret.txt").write_text("non")
+    monkeypatch.setattr("trxstation.report.desktop_dir", lambda *a, **k: desktop)
+
+    async def body(wc, client):
+        url = "/api/config/station-20261125-2300.toml"
+        assert (await client.get(url)).status == 403                                     # sans session
+        await login(wc, client)
+        r = await client.get(url)
+        assert r.status == 200 and r.headers["Content-Type"].startswith("application/toml")
+        assert "attachment" in r.headers["Content-Disposition"] and b"[rig]" in await r.read()
+        for bad in ("secret.txt", "station.toml", "station-20261125-9999.toml", "..%2Fstation-20261125-2300.toml",
+                    "station-20261125-2300.toml.txt"):
+            assert (await client.get("/api/config/" + bad)).status == 404, bad
+    scenario(tmp_path, body)

@@ -39,7 +39,7 @@
           <p data-t="home.b.p">À lancer sur le PC relié au poste : il pilote le poste par Hamlib, donc <b>tous les postes
             connus de Hamlib</b> (plus de 300). Non signé : Windows demande « Informations complémentaires » puis
             « Exécuter quand même ».</p>
-          <div class="row"><a class="btn primary" id="b-get-exe" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.10.8/openRemoteTRX-Autotest-0.10.8.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
+          <div class="row"><a class="btn primary" id="b-get-exe" href="https://github.com/Bob56fr/openRemoteTRX/releases/download/autotest-v0.11.0/openRemoteTRX-Autotest-0.11.0.exe" data-t="home.b.dl">Télécharger l'utilitaire (Windows)</a></div>
         </div>
         <div class="opt" id="home-hl" hidden>
           <h4 data-t="home.hl.h">b) Test par Hamlib (mode B)</h4>
@@ -183,6 +183,8 @@
               </div>
             </div>
           </section>
+          <!-- Waterfall du poste pendant l'essai R10 (étape 398), dessiné en direct par waterfall.js -->
+          <section class="card wf" id="wfcard" hidden><h3 data-t="run.wf">Spectre du poste en direct</h3><canvas id="wf" width="950" height="180"></canvas></section>
           <section class="card" id="lastres" hidden><h3 data-t="run.lastres">Dernier résultat</h3><p id="lastres-t"></p></section>
           <button data-t="run.stop" type="button" class="stop" id="b-stop">STOP<small>retour en réception · touche Échap</small></button>
         </div>
@@ -205,6 +207,10 @@
       <p data-t="rep.what" class="what">Rapport anonyme : modèle, résultats, mesures et trace des échanges avec le poste (pour que le projet
          puisse vérifier les résultats lui-même) ; ni nom d'ordinateur, ni adresse, ni numéro de série. Envoi au projet en un
          bouton : bientôt (service pas encore en ligne), gardez le fichier téléchargé.</p>
+      <div class="card wf" id="rep-wf" hidden>
+        <h3 data-t="rep.wf">Spectre du poste (waterfall joint au rapport)</h3>
+        <img id="rep-wf-img" alt="">
+      </div>
       <div class="card">
         <h3 data-t="rep.results">Résultats</h3>
         <div class="resgrid" id="restable"></div>
@@ -337,6 +343,7 @@
 <script src="kenwood.js"></script>
 <script src="hamlib.js"></script>
 <script src="models.js"></script>
+<script src="waterfall.js"></script>
 <script src="runner.js"></script>
 <script src="report.js"></script>
 <script src="app.js"></script>

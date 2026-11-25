@@ -401,6 +401,12 @@ quand = "After menu 6.3, to see the problems found before asking for help, or wh
 modifie = "Nothing: the menu only shows the link and the steps to follow."
 admin = false
 
+[menus.config_download]
+role = "Makes a <strong>backup copy of station.toml</strong> (all the station settings) on the Desktop; in the web console, a button downloads it to your device. The copy contains the password hashes and the ntfy alert address: keep it to yourself."
+quand = "Before a big change, before reinstalling the station, or to keep a copy of the settings somewhere other than the station."
+modifie = "Nothing: the configuration is not changed; a dated copy is written to the Desktop of the console account."
+admin = false
+
 [[expert]]
 titre = "Console header"
 texte = """

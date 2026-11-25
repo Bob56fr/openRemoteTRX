@@ -878,5 +878,10 @@
   "web.docs.rigs": "Rigs tried",
   "web.docs.toml": "station.toml reference",
   "web.docs.autotest": "Rig autotest (Chrome)",
-  "web.docs.github": "GitHub: report a problem"
+  "web.docs.github": "GitHub: report a problem",
+  "menu.config_download": "Download station.toml (backup copy)",
+  "config_download.done": "Copy of the configuration written: {path}\n(web console: \"Download\" button below; otherwise the file is on the Desktop)",
+  "config_download.warning": "WARNING: this file contains the password hashes of the accounts and the ntfy alert address:\nkeep it to yourself, do not publish it or send it in a report.",
+  "config_download.unreadable": "Cannot read or write the configuration ({path}): {error}.",
+  "web.config.download": "Download station.toml"
 }

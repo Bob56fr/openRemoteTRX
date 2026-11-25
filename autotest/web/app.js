@@ -318,9 +318,26 @@
     $("txwhat").append(T("Essai "), el("b", null, ev.code), T(" : {what}. Puissance {pct} % du poste{w}, charge fictive.", { what: i.what || "", pct: S.runner ? S.runner.o.power : 10, w: S.model ? " (" + fmt(S.model.maxW / 10, S.model.maxW < 100 ? 1 : 0) + " W)" : "" }));
     $("freq").textContent = R.fmtHz(i.hz); $("mode").textContent = i.mode || "—";
   }
+  // Waterfall de l'essai R10 (étape 398) : en direct pendant la capture, image légendée jointe au rapport
+  let wfLive = null;
+  function onScope(points) {
+    const WF = window.AutotestWaterfall;
+    if (!WF) return;
+    if (!wfLive) { $("wfcard").hidden = false; wfLive = new WF.Live($("wf"), 160); wfLive.clear(); }
+    wfLive.push(points);
+  }
   const ui = {
+    waterfallImage(rows, meta) {
+      const WF = window.AutotestWaterfall, name = S.model ? S.model.name : S.chosen ? S.chosen.name : "";
+      const span = meta.edges ? R.fmtHz(meta.edges[0]) + " – " + R.fmtHz(meta.edges[1]) + " MHz" : "";   // i18n-ok
+      return WF ? WF.exportPng(document, rows, Object.assign({}, meta, {
+        title: [name, span].filter(Boolean).join(" · "),
+        footer: new Date().toLocaleString(I18N.lang === "en" ? "en-GB" : "fr-FR") + " · " + T("{n} balayages", { n: rows.length }),
+      })) : null;
+    },
     event(ev) {
-      if (ev.type === "now") $("nowtxt").textContent = ev.text;
+      if (ev.type === "scope") onScope(ev.points);
+      else if (ev.type === "now") $("nowtxt").textContent = ev.text;
       else if (ev.type === "step") setStep(ev.code, ev.state);
       else if (ev.type === "result") { setStep(ev.result.code, ev.result.status); $("lastres").hidden = false; $("lastres-t").textContent = `${ev.result.code} : ${ev.result.text}`; }
       else if (ev.type === "tx") onTx(ev);
@@ -384,6 +401,9 @@
       row.append(el("span", "c", l.code), t, el("span", "pill " + l.statut, T(l.label)));
       tb.appendChild(row);
     }
+    const wf = S.report.waterfall;                                  // image du waterfall (R10) : montrée et dans le fichier
+    $("rep-wf").hidden = !(wf && wf.png);
+    if (wf && wf.png) $("rep-wf-img").src = wf.png;
     show("s-report"); $("b-stop").hidden = false;
   }
   $("b-download").onclick = () => {

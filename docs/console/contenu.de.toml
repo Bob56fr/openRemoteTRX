@@ -401,6 +401,12 @@ quand = "Nach Menü 6.3, um die gefundenen Probleme zu sehen, bevor du um Hilfe 
 modifie = "Nichts: das Menü zeigt nur den Link und die Schritte."
 admin = false
 
+[menus.config_download]
+role = "Erstellt eine <strong>Sicherungskopie von station.toml</strong> (alle Einstellungen der Station) auf dem Desktop; in der Web-Konsole lädt eine Schaltfläche sie auf Ihr Gerät herunter. Die Kopie enthält die Passwort-Hashes und die Adresse der ntfy-Alarme: behalten Sie sie für sich."
+quand = "Vor einer größeren Änderung, vor einer Neuinstallation der Station oder um eine Kopie der Einstellungen außerhalb der Station aufzubewahren."
+modifie = "Nichts: Die Konfiguration wird nicht geändert; eine datierte Kopie wird auf den Desktop des Konsolenkontos geschrieben."
+admin = false
+
 [[expert]]
 titre = "Kopfzeilen der Konsole"
 texte = """

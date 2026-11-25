@@ -251,7 +251,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
                                                                  "rig", "sound", "hf_spectrum", "bands", "transmit", "access_network",
                                                                  "local_operator", "alerts", "features_switch",
                                                                  "remote_console", "diffusion", "remote_power", "rx_gain",
-                                                                 "analyzer"}
+                                                                 "analyzer", "config_download"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "7.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:
@@ -526,3 +526,24 @@ def test_analyzer_menu_gives_the_link_and_says_nothing_is_sent(tmp_path):
     assert module.ANALYZER_URL in text and "DANS TON NAVIGATEUR" in text and "menu 6.3" in text
     assert module.menu_number("analyzer") == "6.6" and module.menu_level("analyzer") == "basic"
     assert fake.calls == []                                                   # rien de lancé
+
+
+def test_menu_8_5_writes_a_private_dated_copy_of_station_toml_on_the_desktop(tmp_path, monkeypatch):
+    """Étape 399 (demande du 2026-11-25) : copie de station.toml sur le Bureau, lisible par le compte seul, avec
+    l'avertissement (empreintes des mots de passe, adresse ntfy) ; la console web en propose le téléchargement."""
+    import os
+    import re
+    import trxstation.console as module
+    import trxstation.report as report
+    assert module.menu_number("config_download") == "8.5"
+    monkeypatch.setattr(report, "desktop_dir", lambda: tmp_path / "Bureau")
+    write_config(tmp_path)
+    con, _, out = console(tmp_path, answers=["8.5", "", "q"])
+    assert con.loop() == 0
+    copies = list((tmp_path / "Bureau").glob("station-*.toml"))
+    assert len(copies) == 1 and re.fullmatch(r"station-\d{8}-\d{4}\.toml", copies[0].name)
+    assert copies[0].read_bytes() == con.config.read_bytes()
+    if os.name != "nt":
+        assert copies[0].stat().st_mode & 0o077 == 0
+    text = "\n".join(out)
+    assert copies[0].name in text and "empreintes des mots de passe" in text

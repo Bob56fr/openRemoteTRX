@@ -119,6 +119,7 @@ class WebConsole:
         app.router.add_get("/api/dashboard", self.dashboard)
         app.router.add_post("/api/stop_tx", self.stop_tx)
         app.router.add_get("/api/report/{name}", self.report_download)
+        app.router.add_get("/api/config/{name}", self.config_download)
         app.router.add_get("/ws", self.websocket)
         if self.network:
             app.router.add_post("/api/login", self.login)
@@ -489,6 +490,26 @@ class WebConsole:
         return web.FileResponse(path, headers={"Content-Type": "application/zip",
                                                "Content-Disposition": f'attachment; filename="{name}"'})
 
+    async def config_download(self, request: web.Request) -> web.StreamResponse:
+        """Copie de station.toml du menu 8.5 (étape 399) : session exigée, NOM au format de la copie seulement
+        (`station-AAAAMMJJ-HHMM.toml`), et seulement sur le Bureau du compte de la console : jamais un autre fichier."""
+        if not self.has_session(request):
+            raise web.HTTPForbidden()
+        name = request.match_info["name"]
+        if not CONFIG_COPY_NAME.fullmatch(name):
+            raise web.HTTPNotFound()
+        from ..report import desktop_dir
+        folder = desktop_dir()
+        path = folder / name
+        try:
+            if path.resolve().parent != folder.resolve() or not path.is_file():
+                raise web.HTTPNotFound()
+        except OSError:
+            raise web.HTTPNotFound() from None
+        self.touch()
+        return web.FileResponse(path, headers={"Content-Type": "application/toml; charset=utf-8",
+                                               "Content-Disposition": f'attachment; filename="{name}"'})
+
     async def stop_tx(self, request: web.Request) -> web.StreamResponse:
         """STOP TX du tableau de bord : « T 0 » direct à rigctld (`monitor/actions.py`), comme la touche s de
         trx-monitor. Ne peut que COUPER une émission, jamais en déclencher une."""
@@ -759,6 +780,7 @@ def _dummy_hash() -> str:
 
 
 REPORT_NAME = re.compile(r"trx-remote-rapport-\d{8}-\d{4}\.zip")    # rapport du menu 6.3 (report.py)
+CONFIG_COPY_NAME = re.compile(r"station-\d{8}-\d{4}\.toml")              # copie de station.toml du menu 8.5
 
 
 def private_source(remote: str | None) -> bool:

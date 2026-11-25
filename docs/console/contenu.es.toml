@@ -401,6 +401,12 @@ quand = "Después del menú 6.3, para ver los problemas encontrados antes de ped
 modifie = "Nada: el menú solo muestra el enlace y los pasos a seguir."
 admin = false
 
+[menus.config_download]
+role = "Hace una <strong>copia de seguridad de station.toml</strong> (todos los ajustes de la estación) en el Escritorio; en la consola web, un botón la descarga en tu dispositivo. La copia contiene las huellas de las contraseñas y la dirección de las alertas ntfy: guárdala para ti."
+quand = "Antes de un cambio importante, antes de reinstalar la estación o para guardar una copia de los ajustes fuera de la estación."
+modifie = "Nada: la configuración no cambia; se escribe una copia fechada en el Escritorio de la cuenta de la consola."
+admin = false
+
 [[expert]]
 titre = "Cabecera de la consola"
 texte = """

@@ -878,5 +878,10 @@
   "web.docs.rigs": "Postes essayés",
   "web.docs.toml": "Notice de station.toml",
   "web.docs.autotest": "Autotest d'un poste (Chrome)",
-  "web.docs.github": "GitHub : signaler un problème"
+  "web.docs.github": "GitHub : signaler un problème",
+  "menu.config_download": "Télécharger station.toml (copie de sauvegarde)",
+  "config_download.done": "Copie de la configuration écrite : {path}\n(console web : bouton « Télécharger » ci-dessous ; sinon le fichier est sur le Bureau)",
+  "config_download.warning": "ATTENTION : ce fichier contient les empreintes des mots de passe des comptes et l'adresse des alertes ntfy :\ngarde-le pour toi, ne le publie pas et ne l'envoie pas dans un rapport.",
+  "config_download.unreadable": "Impossible de lire ou d'écrire la configuration ({path}) : {error}.",
+  "web.config.download": "Télécharger station.toml"
 }

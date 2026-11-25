@@ -352,7 +352,7 @@
     /* Écoute les trames 27 00 pendant `ms` (attente fournie par l'appelant : STOP l'abrège). Le poste envoie ses trames
        au contrôleur qui a mis la sortie en marche : celles adressées à un autre (station en E1) sont COMPTÉES, jamais
        reprises. Rend les comptes, la forme des balayages et un aperçu du dernier. */
-    async scopeCapture(ms, wait) {
+    async scopeCapture(ms, wait, onSweep) {
       const asm = new ScopeAssembler(), t0 = this.clock();
       const st = { frames: 0, other: 0, sweeps: 0, lengths: {}, levelMax: 0, levelMin: null, last: null, firstT: null, lastT: null };
       this.quiet = { kept: 0, max: 40, bytes: 0 };
@@ -365,6 +365,7 @@
         st.sweeps++; st.lengths[s.points.length] = (st.lengths[s.points.length] || 0) + 1;
         for (const v of s.points) { if (v > st.levelMax) st.levelMax = v; if (st.levelMin == null || v < st.levelMin) st.levelMin = v; }
         if (st.firstT == null) st.firstT = s.t; st.lastT = s.t; st.last = s;
+        if (onSweep) { try { onSweep(s); } catch (e) { /* l'affichage ne doit jamais arrêter la capture */ } }
       };
       try { await wait(ms); }
       finally {

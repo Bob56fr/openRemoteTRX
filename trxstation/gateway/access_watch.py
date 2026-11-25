@@ -37,8 +37,9 @@ def kick_request(client_id: str, now: float | None = None) -> bytes:
 
 class AccessWatcher:
     def __init__(self, access, registry, manager, config_path: Path | None, state_dir: Path, *,
-                 interval_s: float = 1.0, wall: Callable[[], float] = time.time):
+                 interval_s: float = 1.0, wall: Callable[[], float] = time.time, live_config=None):
         self.access, self.registry, self.manager = access, registry, manager
+        self.live_config = live_config        # configuration de la passerelle (ctrl.config) : comptes et console relus aussi
         self.config_path, self.kick_path = config_path, Path(state_dir) / KICK_REQUEST
         self.reopen_path = Path(state_dir) / REOPEN_REQUEST
         self.interval_s, self.wall = interval_s, wall
@@ -68,6 +69,12 @@ class AccessWatcher:
         self._mtime, self._refused_mtime = mtime, None
         self.registry.update(cfg.clients)
         self.access.reload(cfg.clients, cfg.access)
+        if self.live_config is not None:
+            # Marque « admin » des comptes et console sur le réseau (menu 4.6) : `hello.remote_console` les lit dans la
+            # configuration de la passerelle ; sans cela, un compte rendu administrateur n'avait le lien qu'après un
+            # redémarrage de la station (signalement de l'utilisateur du 2026-11-25, application, S25)
+            self.live_config.clients = cfg.clients
+            self.live_config.remote_console = cfg.remote_console
         if self.access.guard is not None:                 # seuils de surcharge relus aussi
             from .api.overload import Limits
             a = cfg.access

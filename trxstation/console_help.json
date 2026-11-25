@@ -65,6 +65,13 @@
      "quand": "Um die Spots auf dem Spektrum und die Markierungen der Bandtasten auf der\nWebseite anzuzeigen.",
      "role": "Einstellungen des DX-Clusters: verfolgte Spots, Quellen (RBN, Telnet-Server,\nWeb), Filter, Test der Quellen."
     },
+    "config_download": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nichts: Die Konfiguration wird nicht geändert; eine datierte Kopie wird auf\nden Desktop des Konsolenkontos geschrieben.",
+     "quand": "Vor einer größeren Änderung, vor einer Neuinstallation der Station oder um\neine Kopie der Einstellungen außerhalb der Station aufzubewahren.",
+     "role": "Erstellt eine Sicherungskopie von station.toml (alle Einstellungen der\nStation) auf dem Desktop; in der Web-Konsole lädt eine Schaltfläche sie auf\nIhr Gerät herunter. Die Kopie enthält die Passwort-Hashes und die Adresse\nder ntfy-Alarme: behalten Sie sie für sich."
+    },
     "diagnostic": {
      "admin": false,
      "expert": "Gleiches Ergebnis ohne Menü: trx-console --diagnostic (Exit-Code ungleich 0\nbei einem Fehler, in einem Skript verwendbar).",
@@ -369,6 +376,13 @@
      "modifie": "The Cluster section of station.toml; a restart is offered afterwards.",
      "quand": "To show spots on the spectrum and badges on the band buttons in the page.",
      "role": "DX Cluster settings: followed spots, sources (RBN, telnet servers, web),\nfilters, source test."
+    },
+    "config_download": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nothing: the configuration is not changed; a dated copy is written to the\nDesktop of the console account.",
+     "quand": "Before a big change, before reinstalling the station, or to keep a copy of\nthe settings somewhere other than the station.",
+     "role": "Makes a backup copy of station.toml (all the station settings) on the\nDesktop; in the web console, a button downloads it to your device. The copy\ncontains the password hashes and the ntfy alert address: keep it to\nyourself."
     },
     "diagnostic": {
      "admin": false,
@@ -675,6 +689,13 @@
      "quand": "Para mostrar los spots en el espectro y las marcas de los botones de banda\nen la página.",
      "role": "Ajustes del DX Cluster: spots seguidos, fuentes (RBN, servidores telnet,\nweb), filtros, prueba de las fuentes."
     },
+    "config_download": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nada: la configuración no cambia; se escribe una copia fechada en el\nEscritorio de la cuenta de la consola.",
+     "quand": "Antes de un cambio importante, antes de reinstalar la estación o para\nguardar una copia de los ajustes fuera de la estación.",
+     "role": "Hace una copia de seguridad de station.toml (todos los ajustes de la\nestación) en el Escritorio; en la consola web, un botón la descarga en tu\ndispositivo. La copia contiene las huellas de las contraseñas y la dirección\nde las alertas ntfy: guárdala para ti."
+    },
     "diagnostic": {
      "admin": false,
      "expert": "El mismo resultado sin el menú: trx-console --diagnostic (código de salida\ndistinto de 0 en caso de fallo, utilizable en un script).",
@@ -979,6 +1000,13 @@
      "modifie": "La section Cluster de station.toml ; redémarrage proposé ensuite.",
      "quand": "Pour afficher les spots sur le spectre et les pastilles des boutons de bande\ndans la page.",
      "role": "Réglages du Cluster DX : spots suivis, sources (RBN, serveurs telnet, web),\nfiltres, essai des sources."
+    },
+    "config_download": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Rien : la configuration n'est pas changée ; une copie datée est écrite sur\nle Bureau du compte de la console.",
+     "quand": "Avant une grosse modification, avant de réinstaller la station, ou pour\ngarder une copie des réglages ailleurs que sur la station.",
+     "role": "Fait une copie de sauvegarde de station.toml (tous les réglages de la\nstation) sur le Bureau ; dans la console web, un bouton la télécharge sur\nton appareil. La copie contient les empreintes des mots de passe et\nl'adresse des alertes ntfy : garde-la pour toi."
     },
     "diagnostic": {
      "admin": false,

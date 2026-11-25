@@ -6,7 +6,7 @@
 (function (root) {
   "use strict";
 
-  const VERSION = "0.10.8";
+  const VERSION = "0.11.0";
   const SCHEMA = "openremotetrx-autotest/1";
   const STATUS_TEXT = { ok: "réussi", avert: "à vérifier", echec: "échec", na: "non disponible", saute: "sauté" };
 
@@ -51,6 +51,8 @@
       arret: run && run.stop || null,
       // Coupleur : état LU par la CAT au début (0 / 1, null = pas vu) et modèle DÉCLARÉ par l'opérateur (jamais vérifié).
       coupleur: run && (run.tuner != null || run.tunerDeclared) ? { lu: run.tuner == null ? null : run.tuner, declare: run.tunerDeclared || null } : null,
+      // Waterfall du poste vu pendant R10 (étape 398, Icom en mode A) : image PNG légendée, bornes, nombre de balayages
+      waterfall: run && run.waterfall || null,
       mesures_emission: (run && run.samples || []).map(s => Object.assign({ essai: s.label, po: s.raw.po, swr: s.raw.swr, alc: s.raw.alc },
                                                                            s.dbfs != null ? { niveau_dbfs: s.dbfs } : {})),
       trace: trace || [],

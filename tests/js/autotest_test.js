@@ -251,6 +251,31 @@ test("R10 : balayages complets comptés, bornes autour de la fréquence, spectre
   assert.equal(r.orig.scope.output, 0);
 });
 
+test("R10 : waterfall en direct (événements « scope ») et image jointe au rapport (étape 398)", async () => {
+  const WF = require(path.join(W, "waterfall.js"));
+  let asked = null;
+  const { rig, r, d } = await setup({ scopeDisplay: 1, scopeOutput: 0 }, { waterfallImage: (rows, meta) => { asked = { rows, meta }; return "data:image/png;base64,AAA"; } });
+  r.orig.freq = rig.st.freq;
+  await r._r10(); rig.stopScope();
+  const scopes = r.ui.events.filter(e => e.type === "scope");
+  assert.ok(scopes.length >= 3 && scopes[0].points.length === 475, String(scopes.length));
+  assert.equal(asked.rows.length, scopes.length); assert.deepEqual(asked.meta.edges, [14024000, 14124000]);
+  assert.equal(asked.meta.freq, rig.st.freq);
+  const out = r._finish();
+  assert.equal(out.waterfall.png, "data:image/png;base64,AAA"); assert.equal(out.waterfall.lignes, scopes.length);
+  const built = await report.build({ model: MK2, detected: d, run: out, trace: [] });
+  assert.equal(built.waterfall.png, "data:image/png;base64,AAA");
+  // Calculs purs : dégradé de la station, rééchantillonnage qui garde les pics, lignes bornées
+  assert.deepEqual(WF.colorAt(0, 160), [6, 8, 12]); assert.deepEqual(WF.colorAt(160, 160), [255, 255, 255]);
+  assert.deepEqual(WF.resample([0, 0, 90, 0, 0, 0], 3), [0, 90, 0]);
+  const rows = []; for (let i = 0; i < WF.MAX_ROWS + 5; i++) WF.keep(rows, [i]);
+  assert.equal(rows.length, WF.MAX_ROWS); assert.equal(rows[0][0], 5);
+  // sans dessin (Node, mode B) : pas d'image, l'essai garde son résultat
+  const plain = await setup({ scopeDisplay: 1, scopeOutput: 0 });
+  plain.r.orig.freq = plain.rig.st.freq; await plain.r._r10(); plain.rig.stopScope();
+  assert.equal(plain.r._finish().waterfall, null);
+});
+
 test("R10 : affichage du spectre éteint au départ = allumé pour l'essai puis éteint de nouveau", async () => {
   const { rig, r10: x } = await r10({ scopeDisplay: 0, scopeOutput: 0 });
   assert.equal(x.status, "ok", x.text); assert.deepEqual(rig.scope, { display: 0, output: 0 });

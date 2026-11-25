@@ -535,6 +535,12 @@ quand = "Après le menu 6.3, pour voir les problèmes trouvés avant de demander
 modifie = "Rien : le menu affiche seulement le lien et la marche à suivre."
 admin = false
 
+[menus.config_download]
+role = "Fait une <strong>copie de sauvegarde de station.toml</strong> (tous les réglages de la station) sur le Bureau ; dans la console web, un bouton la télécharge sur ton appareil. La copie contient les empreintes des mots de passe et l'adresse des alertes ntfy : garde-la pour toi."
+quand = "Avant une grosse modification, avant de réinstaller la station, ou pour garder une copie des réglages ailleurs que sur la station."
+modifie = "Rien : la configuration n'est pas changée ; une copie datée est écrite sur le Bureau du compte de la console."
+admin = false
+
 [[expert]]
 titre = "En-tête de la console"
 texte = """

@@ -878,5 +878,10 @@
   "web.docs.rigs": "Equipos probados",
   "web.docs.toml": "Referencia de station.toml",
   "web.docs.autotest": "Autotest de un equipo (Chrome)",
-  "web.docs.github": "GitHub: informar de un problema"
+  "web.docs.github": "GitHub: informar de un problema",
+  "menu.config_download": "Descargar station.toml (copia de seguridad)",
+  "config_download.done": "Copia de la configuración escrita: {path}\n(consola web: botón «Descargar» más abajo; si no, el archivo está en el Escritorio)",
+  "config_download.warning": "ATENCIÓN: este archivo contiene las huellas de las contraseñas de las cuentas y la dirección de las alertas ntfy:\nguárdalo para ti, no lo publiques ni lo envíes en un informe.",
+  "config_download.unreadable": "No se puede leer o escribir la configuración ({path}): {error}.",
+  "web.config.download": "Descargar station.toml"
 }

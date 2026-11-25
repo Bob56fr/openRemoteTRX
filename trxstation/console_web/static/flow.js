@@ -38,6 +38,7 @@
   // Une adresse https:// d'un message devient un lien (nouvel onglet), ex. l'analyseur des rapports (menu 6.6,
   // étape 352) ; tout le reste reste du texte (jamais de HTML venu de la console).
   const REPORT = /trx-remote-rapport-\d{8}-\d{4}\.zip/;
+  const CONFIG_COPY = /station-\d{8}-\d{4}\.toml/;          // copie de station.toml du menu 8.5 (étape 399)
   const URL_RE = /(https:\/\/[^\s"<>«»]+[^\s"<>«».,;:!?)])/;
   function linked(cls, line) {
     const span = el("span", cls);
@@ -140,6 +141,13 @@
         const a = el("a", "btn download", "⬇ " + ui("web.report.download"));
         a.href = "/api/report/" + report[0];
         a.download = report[0];
+        box.append(document.createTextNode("\n"), a);
+      }
+      const copy = CONFIG_COPY.exec(text);                 // copie de station.toml du menu 8.5 (étape 399)
+      if (copy) {
+        const a = el("a", "btn download", "⬇ " + ui("web.config.download"));
+        a.href = "/api/config/" + copy[0];
+        a.download = copy[0];
         box.append(document.createTextNode("\n"), a);
       }
       if (/ORT-\d{4}/.test(text)) box.classList.add("warn");

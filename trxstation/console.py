@@ -75,7 +75,7 @@ MENU_THEMES = (
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
     ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer")),
     ("7", "updates", ("update", "rollback", "install_zip")),
-    ("8", "expert", ("edit_config", "expert", "qualif", "indicator")),
+    ("8", "expert", ("edit_config", "expert", "qualif", "indicator", "config_download")),
 )
 # Numéros d'avant la station 0.166.0 (deux niveaux, 0.126.0 à 0.165.0) -> méthode : rappelés dans l'en-tête
 # jusqu'à RENUMBER_NOTICE_UNTIL, jamais acceptés à la saisie (« 6.3 » désigne désormais le rapport de dépannage).
@@ -1172,6 +1172,30 @@ class Console:
     def analyzer(self) -> None:
         """Lien de l'analyseur des rapports (menu 6.3 ou rapport reçu par le monitoring) : rien n'est lancé ni envoyé."""
         self.say(self.t("analyzer.1", url=ANALYZER_URL, report=REPORT_MENU, monitoring=MONITORING_MENU))
+
+    def config_download(self) -> None:
+        """Copie de station.toml sur le Bureau du compte de la console (étape 399, demande de l'utilisateur du 2026-11-25) ;
+        la console web en propose le téléchargement (lien sous le message). Le fichier contient les empreintes des mots
+        de passe et l'adresse des alertes ntfy : copie lisible par ce compte seul (0600), rien n'est envoyé."""
+        from .report import desktop_dir
+        try:
+            data = self.config.read_bytes()
+        except OSError as exc:
+            self.say(self.t("config_download.unreadable", path=str(self.config), error=exc.strerror or str(exc)))
+            return
+        folder = desktop_dir()
+        name = time.strftime("station-%Y%m%d-%H%M.toml")
+        path = folder / name
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(data)
+        except OSError as exc:
+            self.say(self.t("config_download.unreadable", path=str(path), error=exc.strerror or str(exc)))
+            return
+        self.say(self.t("config_download.done", path=str(path)))
+        self.say(self.t("config_download.warning"))
 
     def clear_safe_mode(self) -> None:
         self.say(self.t("clear_safe_mode.1"))

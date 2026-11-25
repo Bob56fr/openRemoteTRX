@@ -187,3 +187,5 @@ footer{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding-
 #o-share .share-list{margin:8px 0 12px;padding-left:20px}
 #o-share .share-list li{margin:4px 0}
 #o-share .share-file{font-family:ui-monospace,monospace;font-size:.9em;opacity:.85;word-break:break-all}
+/* Waterfall du poste (essai R10, étape 398) */
+.card.wf canvas,.card.wf img{width:100%;height:auto;border-radius:6px;background:#06080c;image-rendering:pixelated}

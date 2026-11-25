@@ -529,3 +529,24 @@ def test_host_info_gives_the_operator_a_written_summary_without_serial_or_addres
             text = json.dumps(result, ensure_ascii=False)
             assert "by-id" not in text and "/dev/" not in text and "COM" not in text      # chemin du port : numéro de série
     run(scenario)
+
+
+def test_account_made_administrator_reaches_the_gateway_configuration_without_restart(tmp_path):
+    """Signalement du 2026-11-25 : compte S25 rendu administrateur au menu 4.6, l'application disait encore « réservée
+    aux administrateurs » ; `hello.remote_console` lit la configuration de la passerelle, relue maintenant à chaud."""
+    import os
+    path = tmp_path / "station.toml"
+    phone = ClientAuth("S25", password_hash=hash_password("Un mot de passe correct 42"))
+    _write_config(path, [phone], Access())
+    live = cfgmod.load(path)
+    access = AccessControl([phone], Access())
+    watcher = AccessWatcher(access, FakeRegistry(), FakeManager(), path, tmp_path, live_config=live)
+    assert live.clients[0].admin is False
+    made = ClientAuth("S25", password_hash=phone.password_hash, admin=True)
+    cfg = dummy_config()
+    cfg.clients, cfg.access = [made], Access()
+    cfg.remote_console.enabled = True
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    os.utime(path, (5, 5))
+    assert watcher.check_config() is True
+    assert live.clients[0].admin is True and live.remote_console.enabled is True

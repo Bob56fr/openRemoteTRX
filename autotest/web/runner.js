@@ -10,7 +10,7 @@
   const civ = (typeof module !== "undefined" && module.exports) ? require("./civ.js") : root.AtCiv;
   const { T } = (typeof module !== "undefined" && module.exports) ? require("./i18n.js") : root.AtI18n;
 
-  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 3000, tune: 15000, rampPower: 50 };
+  const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10, scope: 10000, tune: 15000, rampPower: 50 };
   // E4 : paliers de la tonalité (dBFS crête), de faible à fort. Coude conseillé : -10 à -4 dBFS (la voix de la station
   // a ses crêtes à -1 dBFS par son limiteur : elle atteint alors la pleine puissance sans trop pousser l'ALC).
   const RAMP = [-30, -26, -22, -18, -14, -10, -7, -4, -1];
@@ -164,7 +164,8 @@
       return this._finish();
     }
     _finish() { this.emit({ type: "done", results: this.results }); return { results: this.results, samples: this.samples, orig: this.orig, stop: this.stopReason || null,
-                                                                      tuner: this.orig.tuner == null ? null : this.orig.tuner, tunerDeclared: this.tunerDeclared || null }; }
+                                                                      tuner: this.orig.tuner == null ? null : this.orig.tuner, tunerDeclared: this.tunerDeclared || null,
+                                                                      waterfall: this.waterfall || null }; }
 
     _r2() {
       const d = this.detected, m = this.model, hexA = a => a.toString(16).toUpperCase().padStart(2, "0") + "h";
@@ -255,9 +256,14 @@
       if (s0.display == null || s0.output == null) { this.result("R10", "na", T("Spectre non géré par ce poste en CI-V (commandes 27 10 / 27 11 refusées ou sans réponse).")); return; }
       this.orig.scope = s0;
       let st = null, on = false;
+      const rows = [], WF = (typeof module !== "undefined" && module.exports) ? require("./waterfall.js") : root.AutotestWaterfall;
       try {
         on = await L.scopeSet(1, 1);
-        if (on && !this.aborted) st = await L.scopeCapture(this.o.scope, ms => this.wait(ms));
+        // Waterfall (étape 398) : chaque balayage part en direct vers la page et est gardé pour l'image du rapport
+        if (on && !this.aborted) st = await L.scopeCapture(this.o.scope, ms => this.wait(ms), s => {
+          if (WF) WF.keep(rows, s.points);
+          this.emit({ type: "scope", points: s.points });
+        });
       } finally {
         await L.scopeSet(s0.display, s0.output);
       }
@@ -294,6 +300,13 @@
         if (st.other) parts.push(T("{n} trames pour un autre contrôleur", { n: st.other }));
       }
       if (!restored) { status = "echec"; parts.push(T("affichage ou sortie du spectre NON REMIS (à remettre à la main)")); }
+      // Image du waterfall pour le rapport (navigateur seulement : la page fournit le dessin, `ui.waterfallImage`)
+      if (rows.length && st && st.last && typeof this.ui.waterfallImage === "function") {
+        try {
+          const png = this.ui.waterfallImage(rows, { edges: civ.scopeEdges(st.last), freq: this.orig.freq, max: civ.LEVEL_MAX });
+          if (png) this.waterfall = { png, bornes_hz: civ.scopeEdges(st.last), balayages: st.sweeps, lignes: rows.length };
+        } catch (e) { /* pas d'image : l'essai garde son résultat */ }
+      }
       this.result("R10", status, parts.join(" ; ") + ".", vals);
     }
 
