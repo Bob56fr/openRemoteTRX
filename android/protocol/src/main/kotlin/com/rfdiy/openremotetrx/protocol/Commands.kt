@@ -3,6 +3,7 @@
 package com.rfdiy.openremotetrx.protocol
 
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -89,7 +90,7 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("profile", profile) }
     }
 
-    data class SpectrumSet(val setting: String, val value: JsonPrimitive) : Command("spectrum_set") {
+    data class SpectrumSet(val setting: String, val value: JsonElement) : Command("spectrum_set") {
         override fun JsonObjectBuilder.params() { put("name", setting); put("value", value) }
     }
 

@@ -980,6 +980,24 @@ class RigSession(
     /** Réglage du spectre du poste : `mode`, `span`, `ref`, `speed`, `filter` (refusé hors réception, comme la page). */
     fun spectrumSet(now: Long, name: String, value: JsonPrimitive) = control(now, Command.SpectrumSet(name, value))
 
+    /** Fenêtre FIL ouverte (Icom) : la station relit les largeurs des trois préréglages (étape 395). */
+    fun readFilterWidths(now: Long) {
+        if (Controls.filterPreset(state) != null) control(now, Command.SpectrumSet("filter_widths", kotlinx.serialization.json.JsonNull))
+    }
+
+    /** Largeur choisie dans la fenêtre FIL : préréglage `filter` (Icom, port B) ou palier le plus proche (paliers imposés). */
+    fun setFilterWidth(now: Long, filter: Int?, hz: Int) {
+        val rig = state?.rig ?: return
+        if (Controls.filterPreset(state) != null && filter != null) {
+            control(now, Command.SpectrumSet("filter_width", kotlinx.serialization.json.buildJsonObject {
+                put("filter", JsonPrimitive(filter)); put("hz", JsonPrimitive(hz))
+            }))
+            return
+        }
+        val steps = Filters.steps(hello?.rigSpec, rig.mode) ?: return
+        control(now, Command.SetMode(rig.mode!!, Filters.nearest(steps, hz)))
+    }
+
     /** QSY sur un spot : son mode (adapté à ce poste, mode données si l'émission l'exige) puis sa fréquence. */
     fun qsySpot(now: Long, id: Long) {
         val spot = spotBook.get(id) ?: return

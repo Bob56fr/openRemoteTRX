@@ -746,5 +746,13 @@
   "rigtotdialog.how": "Stellen Sie ihn im Menü des Transceivers ein (3 min empfohlen). Die Station liest ihn nur: Sie ändert ihn nie und hindert Sie nicht am Senden. Diese Erinnerung erscheint einmal pro Tag.",
   "rigtotdialog.continue": "Verstanden, weiter",
   "rigtotdialog.quit": "Beenden",
-  "powerviews.hold_release": "Loslassen zum Abbrechen"
+  "powerviews.hold_release": "Loslassen zum Abbrechen",
+  "filterdialog.title": "Filterbreiten",
+  "filterdialog.mode": "Betriebsart {mode}: Der Transceiver speichert diese Breiten für diese Betriebsart",
+  "filterdialog.current": "aktiv",
+  "filterdialog.reading": "Breiten werden vom Transceiver gelesen…",
+  "filterdialog.hint_presets": "Zum Lesen oder Einstellen einer Voreinstellung schaltet der Transceiver kurz darauf um (leises Klicken) und dann zurück zu Ihrer.",
+  "filterdialog.hint_quick": "Stufen vom Transceiver vorgegeben. Kurz auf FIL drücken: 1.8, 2.4, 2.8, 3.0, 3.5, dann 4.0 k.",
+  "filterdialog.hint_steps": "Stufen vom Transceiver für diese Betriebsart vorgegeben.",
+  "filterdialog.none": "Feste oder unbekannte Breiten in dieser Betriebsart: hier nichts einzustellen."
 }

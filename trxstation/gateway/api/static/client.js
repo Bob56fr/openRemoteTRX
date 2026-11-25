@@ -826,6 +826,31 @@
     return "FIL " + formatWidth(close ? widths[i] : passband);
   }
 
+  // ---- largeur du filtre d'après la fiche technique du poste (hello.rig_spec, étape 395) ; même logique que Filters.kt
+  function filterSteps(spec, mode) {
+    /* Paliers permis du mode (poste à paliers imposés, ex. Yaesu FTDX10) ; null si inconnus. */
+    const f = spec && spec.filters;
+    const steps = f && f.kind === "steps" && f.steps && mode ? f.steps[mode] : null;
+    return Array.isArray(steps) && steps.length > 1 ? steps : null;
+  }
+
+  function quickWidths(spec, mode) {
+    /* Liste courte de l'appui bref sur FIL (1.8 à 4.0 k) ; null si le mode n'a pas tous ces paliers. */
+    const steps = filterSteps(spec, mode), quick = spec && spec.filters ? spec.filters.quick : null;
+    return steps && Array.isArray(quick) && quick.length > 1 && quick.every((w) => steps.includes(w)) ? quick : null;
+  }
+
+  function nextWidth(list, passband) {
+    /* Largeur suivante de la liste après la largeur relue (en boucle) ; largeur inconnue : la première. */
+    if (!(passband > 0)) return list[0];
+    const next = list.find((w) => w > passband + 1);
+    return next === undefined ? list[0] : next;
+  }
+
+  function nearestStep(steps, hz) {
+    return steps[nearestIndex(steps, hz)];
+  }
+
   const AGC_CYCLE = [2, 5, 3];          // FAST, MEDIUM, SLOW
 
   // ---- puissance d'émission : 5, 10, 25, 50, 80, 100 % de la puissance maximale (en watts si la station connaît le maximum)
@@ -1834,7 +1859,9 @@
       const widths = capsInfo.filters && rig.mode ? capsInfo.filters[rig.mode] : null;
       const preset = this._filterPreset();
       if (preset) controls.push({ key: "FIL", label: "FIL" + preset + (rig.passband_hz ? " " + formatWidth(rig.passband_hz) : ""), on: true });
-      else if (!this._presetsExpected() && Array.isArray(widths) && widths.length > 1 && rig.passband_hz) controls.push({ key: "FIL", label: filterLabel(widths, rig.passband_hz), on: true });
+      else if (filterSteps(this._rigSpec(), rig.mode)) {             // paliers imposés : largeur RELUE sur le poste
+        controls.push({ key: "FIL", label: rig.passband_hz ? "FIL " + formatWidth(rig.passband_hz) : "FIL", on: true });
+      } else if (!this._presetsExpected() && Array.isArray(widths) && widths.length > 1 && rig.passband_hz) controls.push({ key: "FIL", label: filterLabel(widths, rig.passband_hz), on: true });
       fnControl("RIT", "RIT"); fnControl("XIT", "ΔTX");                  // clarifieur (ΔTX = XIT : décale l'ÉMISSION)
       fnControl("TUNER", "TUNER");
       if ("RFPOWER" in lv) controls.push({ key: "PWR", label: powerLabel(lv.RFPOWER, this.hello ? this.hello.max_power_w : 0), on: true });
@@ -2134,15 +2161,55 @@
       return !!(this.hello && this.hello.spectrum && this.hello.spectrum.source === "civ_port");
     }
 
+    _rigSpec() {
+      return this.hello && this.hello.rig_spec ? this.hello.rig_spec : null;
+    }
+
     async cycleFilter() {
       const preset = this._filterPreset();
       if (preset) return this.setSpectrum("filter", preset % 3 + 1);            // FIL1 -> FIL2 -> FIL3 -> FIL1
       if (this._presetsExpected()) return { ok: false };
       const rig = this.state && this.state.rig ? this.state.rig : {};
+      const quick = quickWidths(this._rigSpec(), rig.mode);
+      if (quick) return this.setMode(rig.mode, nextWidth(quick, rig.passband_hz));   // 1.8 -> 2.4 -> … -> 4.0 -> 1.8
+      if (filterSteps(this._rigSpec(), rig.mode)) return { ok: false, dialog: true };   // autre mode : la fenêtre des paliers
       const widths = this._caps().filters && rig.mode ? this._caps().filters[rig.mode] : null;
       if (!Array.isArray(widths) || widths.length < 2 || !rig.passband_hz) return { ok: false };
       const next = widths[(nearestIndex(widths, rig.passband_hz) + 1) % widths.length];
       return this.setMode(rig.mode, next);
+    }
+
+    filterDialogView() {
+      /* Fenêtre FIL (appui long) : « presets » = trois curseurs (Icom, largeurs lues par la station sur le port B),
+         « steps » = un curseur sur les paliers du mode (largeur relue), « fixed » = FM, « none » = rien de connu. */
+      const rig = this.state && this.state.rig ? this.state.rig : {};
+      const p = this._ptt();
+      const locked = !this.connected || (p && p.state !== "RX") || this.isListener();
+      if (this._filterPreset()) {
+        const sp = this.state.spectrum.settings || {};
+        const widths = Array.isArray(sp.filter_widths) ? sp.filter_widths : null;
+        const steps = Array.isArray(sp.filter_steps) ? sp.filter_steps : null;
+        return { kind: "presets", locked, mode: rig.mode || "", current: this._filterPreset(), steps,
+                 rows: [1, 2, 3].map((n) => ({ filter: n, hz: widths ? widths[n - 1] : null })), known: !!(widths && steps) };
+      }
+      const steps = filterSteps(this._rigSpec(), rig.mode);
+      if (steps) return { kind: "steps", locked, mode: rig.mode || "", steps, hz: rig.passband_hz || null,
+                          quick: quickWidths(this._rigSpec(), rig.mode) };
+      return { kind: "none", locked, mode: rig.mode || "" };
+    }
+
+    async readFilterWidths() {
+      /* Icom : la station passe un instant sur chaque préréglage puis remet le vôtre (lu à l'ouverture de la fenêtre). */
+      if (!this._filterPreset()) return { ok: false };
+      return this.setSpectrum("filter_widths", null);
+    }
+
+    async setFilterWidth(filter, hz) {
+      const rig = this.state && this.state.rig ? this.state.rig : {};
+      if (this._filterPreset()) return this.setSpectrum("filter_width", { filter: filter, hz: Math.round(hz) });
+      const steps = filterSteps(this._rigSpec(), rig.mode);
+      if (!steps || !rig.mode) return { ok: false };
+      return this.setMode(rig.mode, nearestStep(steps, hz));
     }
 
     async cyclePower() {
@@ -2709,7 +2776,7 @@
                 get CLUSTER_TITLES() { return clusterTitles(); },
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, get MODE_LABELS() { return modeLabels(); },
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
-                squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
+                squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE, filterSteps, quickWidths, nextWidth, nearestStep,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, get LOSS_REASONS() { return lossReasons(); }, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,

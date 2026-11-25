@@ -30,7 +30,7 @@
                  "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "replay"],
     "replay": {"max_s": 85},
     "remote_console": null,
-    "rig_spec": {"model": 3094, "name": "Icom IC-7300MK2", "receivers": 1, "verified": false, "timing": {"read_delay_s": 0.0, "tuner_delay_s": 2.0, "linked_changes": false}, "filters": {"kind": "presets", "presets": 3}, "squelch": {"source": "estimate"}},
+    "rig_spec": {"model": 3094, "name": "Icom IC-7300MK2", "receivers": 1, "verified": false, "timing": {"read_delay_s": 0.0, "tuner_delay_s": 2.0, "linked_changes": false}, "filters": {"kind": "presets", "presets": 3, "steps": {}, "quick": []}, "squelch": {"source": "estimate"}},
     "updates": {"station": {"version": "0.283.0", "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}, "app": {"version": "0.91.0", "code": 98, "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}}
   },
   "state": {

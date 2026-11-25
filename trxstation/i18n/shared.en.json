@@ -746,5 +746,13 @@
   "rigtotdialog.how": "Set it in the rig menu (3 min recommended). The station only reads it: it never changes it and does not prevent you from transmitting. This reminder comes back once a day.",
   "rigtotdialog.continue": "Understood, continue",
   "rigtotdialog.quit": "Quit",
-  "powerviews.hold_release": "Release to cancel"
+  "powerviews.hold_release": "Release to cancel",
+  "filterdialog.title": "Filter widths",
+  "filterdialog.mode": "{mode} mode: the radio keeps these widths for this mode",
+  "filterdialog.current": "in use",
+  "filterdialog.reading": "Reading the widths from the radio…",
+  "filterdialog.hint_presets": "To read or set a preset, the radio switches to it for a moment (slight click), then back to yours.",
+  "filterdialog.hint_quick": "Steps set by the radio. Short press on FIL: 1.8, 2.4, 2.8, 3.0, 3.5 then 4.0 k.",
+  "filterdialog.hint_steps": "Steps set by the radio for this mode.",
+  "filterdialog.none": "Fixed or unknown widths in this mode: nothing to set here."
 }

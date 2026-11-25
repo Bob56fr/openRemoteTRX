@@ -98,7 +98,9 @@ class Clock:
 
 def test_closed_command_list_has_no_transmit_command():
     assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A),
-                            (0x26, 0x00), (0x1A, 0x05)}
+                            (0x26, 0x00), (0x1A, 0x05), (0x1A, 0x03)}
+    # largeur du préréglage sélectionné (étape 395) : lecture, ou un octet BCD 00 à 49 et rien d'autre
+    assert ALLOWED[(0x1A, 0x03)] == {None} | {bytes([(i // 10) << 4 | i % 10]) for i in range(50)}
     assert ALLOWED[(0x1A, 0x05)] == {b"\x00\x37", b"\x00\x38", b"\x00\x85"}              # réglages de menu : LECTURE seule (pas de valeur)
     from trxstation.spectrum.civ import decode_setting
     for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables

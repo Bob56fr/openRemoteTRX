@@ -297,15 +297,26 @@ internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
             val chips = Controls.chips(hello, rig.state)
             if (chips.isNotEmpty()) {
                 // Appui : marche / arrêt (comme la page) ; appui LONG sur NR ou NB : niveaux de NR et NB (fenêtre)
+                // FIL (étape 395) : appui = préréglage ou largeur suivante ; appui LONG = fenêtre « Largeur des filtres »
+                var filterDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (chip in chips) {
                         CompactChip(
-                            chip.label, onClick = { RigHub.pressControl(chip.key) }, enabled = canSet, selected = chip.on,
-                            onLongClick = if (chip.key == "NR" || chip.key == "NB") ({ levelsDialog = true }) else null,
+                            chip.label, enabled = canSet, selected = chip.on,
+                            onClick = {
+                                if (chip.key == "FIL" && Controls.filterOpensDialog(hello, rig.state)) filterDialog = true
+                                else RigHub.pressControl(chip.key)
+                            },
+                            onLongClick = when (chip.key) {
+                                "NR", "NB" -> ({ levelsDialog = true })
+                                "FIL" -> ({ filterDialog = true; RigHub.readFilterWidths() })
+                                else -> null
+                            },
                             help = com.rfdiy.openremotetrx.logic.Help.control(chip.key),
                         )
                     }
                 }
+                if (filterDialog) FilterWidthDialog(hello, rig.state, canSet) { filterDialog = false }
             }
 
             // Autres mesures (COMP) en une ligne, s'il y en a ; POWER, SWR, ALC, Vd et température sont dans l'afficheur

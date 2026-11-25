@@ -4,7 +4,7 @@
 
 Stdlib seule. Sécurité : seules les commandes de la liste FERMÉE `ALLOWED` peuvent être encodées (identification,
 lecture de la fréquence, marche/arrêt de l'affichage du spectre et de sa sortie CI-V, préréglage de filtre
-FIL1/2/3 du mode en cours) ; la commande d'émission 1C
+FIL1/2/3 du mode en cours et largeur du préréglage sélectionné « 1A 03 ») ; la commande d'émission 1C
 n'y est pas et `encode_request` refuse tout le reste.
 Format vérifié sur un IC-7300MK2 : trames 27 00 AVEC octet de choix du spectre, 11 divisions en BCD, division 1 =
 en-tête de 12 octets (mode, deux fréquences BCD de 5 octets, hors plage), 475 points de 0 à 160.
@@ -306,3 +306,42 @@ ALLOWED[(0x27, SCOPE_REF)] |= {encode_setting(SCOPE_REF, i * REF_STEP_DB) for i 
 ALLOWED[(0x27, SCOPE_SPEED)] |= {encode_setting(SCOPE_SPEED, v) for v in SPEEDS}
 ALLOWED[(0x1A, 0x05)] = menu_reads()            # réglages de menu : LECTURE seule (spectrum/menus.py)
 ALLOWED[(0x26, 0x00)] = {None} | {encode_mode_filter(m, d, f) for m in CIV_MODES for d in DATA_MODES for f in FILTERS}
+
+
+# Largeur du préréglage de filtre SÉLECTIONNÉ (« 1A 03 », manuel CI-V de l'IC-7300MK2 p. 19 ; étape 395) : un octet BCD,
+# index d'une table par mode. SSB / CW : 00-09 = 50 à 500 Hz par 50, 10-40 = 600 à 3 600 Hz par 100 ; RTTY : 00-31
+# (jusqu'à 2 700 Hz) ; AM : 00-49 = 200 à 10 000 Hz par 200 ; FM : largeurs fixes, aucun réglage.
+_SSB_CW_WIDTHS = tuple([50 * (i + 1) for i in range(10)] + [600 + 100 * i for i in range(31)])
+WIDTH_STEPS: dict[int, tuple[int, ...]] = {
+    0x00: _SSB_CW_WIDTHS, 0x01: _SSB_CW_WIDTHS, 0x03: _SSB_CW_WIDTHS, 0x07: _SSB_CW_WIDTHS,   # LSB USB CW CW-R
+    0x04: _SSB_CW_WIDTHS[:32], 0x08: _SSB_CW_WIDTHS[:32],                                   # RTTY RTTY-R
+    0x02: tuple(200 * (i + 1) for i in range(50)),                                          # AM
+}
+
+
+def width_steps(civ_mode: int) -> tuple[int, ...]:
+    """Largeurs permises du mode CI-V (Hz, croissantes) ; () = pas de réglage (FM)."""
+    return WIDTH_STEPS.get(civ_mode, ())
+
+
+def encode_width(civ_mode: int, hz: int) -> bytes:
+    """Données d'écriture après « 1A 03 » ; ValueError si la largeur n'est pas un palier du mode."""
+    steps = width_steps(civ_mode)
+    if isinstance(hz, bool) or hz not in steps:
+        raise ValueError(f"largeur de filtre refusée : {hz!r} Hz en mode {civ_mode!r}")
+    index = steps.index(hz)
+    return bytes([(index // 10) << 4 | index % 10])
+
+
+def decode_width(civ_mode: int, payload: bytes) -> int | None:
+    """Largeur (Hz) lue dans une réponse « 1A 03 xx » ; None si illisible ou hors de la table du mode."""
+    if len(payload) != 3 or payload[:2] != b"":
+        return None
+    hi, lo = payload[2] >> 4, payload[2] & 0x0F
+    steps = width_steps(civ_mode)
+    if hi > 9 or lo > 9 or hi * 10 + lo >= len(steps):
+        return None
+    return steps[hi * 10 + lo]
+
+
+ALLOWED[(0x1A, 0x03)] = {None} | {bytes([(i // 10) << 4 | i % 10]) for i in range(50)}

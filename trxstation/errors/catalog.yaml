@@ -2845,6 +2845,41 @@ ORT-2313:
     preconisation: 'Corrige el ajuste del equipo y luego, con la estación detenida: trx-setup --spectre PORT; o trx-setup
       --spectre off.'
 
+ORT-2314:
+  gravite: avertissement
+  titre: Préréglage de filtre non remis
+  message: 'Largeurs des filtres : le préréglage FIL{filtre} du départ n''a pas pu être remis sur le poste ({detail}).'
+  causes:
+  - Poste qui ne répond plus sur le second port CI-V pendant le réglage des largeurs
+  - Poste éteint ou câble débranché au même moment
+  preconisation: 'Vérifier sur le poste le préréglage FIL en cours et le remettre à la main si besoin.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2314/
+  depuis_version: 0.285.0
+  en:
+    titre: Filter preset not restored
+    message: 'Filter widths: the initial FIL{filtre} preset could not be restored on the radio ({detail}).'
+    causes:
+    - Radio no longer answering on the second CI-V port while the widths were being set
+    - Radio switched off or cable unplugged at the same time
+    preconisation: 'Check the current FIL preset on the radio and set it back by hand if needed.'
+  de:
+    titre: Filtervoreinstellung nicht wiederhergestellt
+    message: 'Filterbreiten: Die ursprüngliche Voreinstellung FIL{filtre} konnte am Transceiver nicht wiederhergestellt werden ({detail}).'
+    causes:
+    - Transceiver antwortet während der Einstellung der Breiten nicht mehr am zweiten CI-V-Port
+    - Transceiver zur gleichen Zeit ausgeschaltet oder Kabel abgezogen
+    preconisation: 'Prüfen Sie die aktuelle FIL-Voreinstellung am Transceiver und stellen Sie sie bei Bedarf von Hand zurück.'
+  es:
+    titre: Preajuste de filtro no restablecido
+    message: 'Anchos de filtro: no se pudo restablecer en el equipo el preajuste FIL{filtre} inicial ({detail}).'
+    causes:
+    - El equipo ya no responde en el segundo puerto CI-V durante el ajuste de los anchos
+    - Equipo apagado o cable desconectado en ese momento
+    preconisation: 'Comprueba en el equipo el preajuste FIL actual y vuelve a ponerlo a mano si hace falta.'
+
 ORT-2601:
   gravite: erreur
   titre: 'Essai : fréquence non suivie par le poste'

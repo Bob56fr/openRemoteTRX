@@ -86,6 +86,8 @@ object Controls {
         val passband = rig.passbandHz
         if (preset != null) {
             out += ControlChip("FIL", "FIL$preset" + (passband?.let { " " + formatWidth(it) } ?: ""), true)
+        } else if (Filters.steps(hello?.rigSpec, rig.mode) != null) {   // paliers imposés : largeur RELUE (étape 395)
+            out += ControlChip("FIL", if (passband != null && passband > 0) "FIL " + formatWidth(passband) else "FIL", true)
         } else if (!presetsExpected(hello) && widths != null && widths.size > 1 && passband != null && passband > 0) {
             val i = nearestIndex(widths, passband)
             val close = i >= 0 && abs(widths[i] - passband) <= maxOf(50.0, widths[i] * 0.15)
@@ -133,6 +135,9 @@ object Controls {
                 when {
                     preset != null -> listOf(Command.SpectrumSet("filter", JsonPrimitive(preset % 3 + 1)))   // FIL1 -> 2 -> 3 -> 1
                     presetsExpected(hello) -> emptyList()
+                    Filters.quick(hello?.rigSpec, rig.mode) != null ->              // 1.8 -> 2.4 -> … -> 4.0 -> 1.8 k
+                        listOf(Command.SetMode(rig.mode!!, Filters.next(Filters.quick(hello?.rigSpec, rig.mode)!!, rig.passbandHz)))
+                    Filters.steps(hello?.rigSpec, rig.mode) != null -> emptyList()  // autre mode : la fenêtre des paliers
                     else -> {
                         val widths = rig.mode?.let { caps?.filters?.get(it) }
                         val passband = rig.passbandHz
@@ -143,6 +148,12 @@ object Controls {
             }
             else -> if (key in fn) listOf(Command.SetFunction(key, fn[key] != true)) else emptyList()
         }
+    }
+
+    /** Appui bref sur FIL qui ouvre la fenêtre des paliers au lieu d'envoyer une commande (mode sans liste courte). */
+    fun filterOpensDialog(hello: Hello?, state: State?): Boolean {
+        val mode = state?.rig?.mode
+        return filterPreset(state) == null && Filters.steps(hello?.rigSpec, mode) != null && Filters.quick(hello?.rigSpec, mode) == null
     }
 
     /** Indicateurs d'émission : Po (part de la puissance maximale), SWR, ALC ; puis COMP, Vd, température s'ils existent. */

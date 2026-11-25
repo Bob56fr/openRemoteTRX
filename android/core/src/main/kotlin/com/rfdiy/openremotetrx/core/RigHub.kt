@@ -347,6 +347,8 @@ object RigHub {
 
     /** Bouton d'une fonction du poste (logic.Controls) ; refusé pendant l'émission. */
     fun pressControl(key: String) { service?.onRig { session, now -> session.pressControl(now, key) } }
+    fun readFilterWidths() { service?.onRig { session, now -> session.readFilterWidths(now) } }
+    fun setFilterWidth(filter: Int?, hz: Int) { service?.onRig { session, now -> session.setFilterWidth(now, filter, hz) } }
 
     /** Bips de fin (réglage commun de la station). */
     fun setBeep(name: String, value: Boolean) = setBeep(name, JsonPrimitive(value))

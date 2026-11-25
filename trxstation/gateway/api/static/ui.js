@@ -6,7 +6,8 @@
   const web = root.TrxWeb;
   if (typeof document === "undefined" || !web) return;
   const { TrxClient, modeLabel, shortMode, matchesRigDevice, parseKilohertz, chooseLayout, formatIcomFrequency, frequencyDigits, parseFrequencyEntry,
-          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs, orderModes, versionLabel } = web;
+          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs, orderModes, versionLabel,
+          formatWidth, nearestIndex } = web;
   const wf = root.TrxWaterfall;
   if (!wf) return;
   const hfx = root.TrxHfScope || null;              // spectre HF du poste (hfscope.js) ; sans lui, la zone ne propose que puissance et audio
@@ -2118,6 +2119,7 @@
           }
         }
         renderControlDialog(v);                                                      // fenêtre NR/NB/Notch : valeurs relues, verrou en émission
+        renderFilterDialog();                                                        // fenêtre FIL : largeurs relues
         const mark = $("sql-marker");
         mark.hidden = v.squelchMark === null;
         if (v.squelchMark !== null) mark.style.left = (v.squelchMark * 100).toFixed(1) + "%";   // repère du squelch sur l'échelle du S-mètre
@@ -4491,6 +4493,28 @@
     });
     for (const [key, id] of CONTROLS) {
       const button = $(id);
+      if (key === "FIL") {
+        // FIL (étape 395) : appui = préréglage ou largeur suivante ; appui long (téléphone) ou double clic (PC) = largeurs
+        let pressTimer = null, longDone = false, clickTimer = null;
+        button.addEventListener("pointerdown", () => {
+          longDone = false;
+          if (pressTimer !== null) window.clearTimeout(pressTimer);
+          pressTimer = window.setTimeout(() => { pressTimer = null; longDone = true; openFilterDialog(); }, 550);
+        });
+        for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+          button.addEventListener(type, () => { if (pressTimer !== null) { window.clearTimeout(pressTimer); pressTimer = null; } });
+        }
+        button.addEventListener("click", () => {
+          if (longDone) { longDone = false; return; }
+          if (clickTimer !== null) { window.clearTimeout(clickTimer); clickTimer = null; openFilterDialog(); return; }
+          clickTimer = window.setTimeout(() => {
+            clickTimer = null;
+            client.cycleFilter().then((res) => { if (res && res.dialog) openFilterDialog(); }).catch(fail);
+          }, DOUBLE_CLICK_MS);
+        });
+        button.addEventListener("contextmenu", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); });
+        continue;
+      }
       if (!DIALOG_KEYS.includes(key)) { button.addEventListener("click", () => client.pressControl(key).catch(fail)); continue; }
       // NR, NB, NOTCH : appui = bascule ; appui long (téléphone) ou double clic (PC) = fenêtre de réglage
       let pressTimer = null, longDone = false, clickTimer = null;
@@ -4571,6 +4595,63 @@
       levelTimer = window.setTimeout(() => client.setLevelValue(key, value).catch(fail), 150);   // une commande à la fin du geste
     });
     $("ctl-dialog-close").addEventListener("click", closeControlDialog);
+    // ---- fenêtre des largeurs de filtre (étape 395) : trois curseurs (Icom) ou les paliers du mode (Yaesu)
+    let filterOpen = false, filterTouched = 0, filterShape = "";
+    function openFilterDialog() {
+      filterOpen = true; filterShape = "";
+      $("fil-dialog").hidden = false;
+      client.readFilterWidths().catch(() => {}).then(renderFilterDialog);      // Icom : la station relit les trois
+      renderFilterDialog();
+    }
+    function closeFilterDialog() { filterOpen = false; $("fil-dialog").hidden = true; }
+    function widthRow(title, steps, hz, current, onSet) {
+      const row = document.createElement("div");
+      row.className = "fil-row" + (current ? " current" : "");
+      const label = document.createElement("span");
+      label.className = "fil-label";
+      const slider = document.createElement("input");
+      slider.type = "range"; slider.min = "0"; slider.max = String(steps.length - 1); slider.step = "1";
+      const show = () => {
+        const w = steps[Number(slider.value)];
+        label.textContent = title + " · " + formatWidth(w) + (current ? " (" + I18N.t("filterdialog.current") + ")" : "");
+      };
+      slider.value = String(hz ? nearestIndex(steps, hz) : 0);
+      slider.addEventListener("input", () => { filterTouched = performance.now(); show(); });
+      slider.addEventListener("change", () => { filterTouched = performance.now(); onSet(steps[Number(slider.value)]); });
+      show();
+      row.appendChild(label); row.appendChild(slider);
+      return { row, slider, show };
+    }
+    function renderFilterDialog() {
+      if (!filterOpen) return;
+      const v = client.filterDialogView();
+      $("fil-dialog-mode").textContent = v.mode ? I18N.t("filterdialog.mode", { mode: v.mode }) : "";
+      let note = "";
+      const shape = v.kind + "|" + v.mode + "|" + (v.kind === "presets" ? v.known + "|" + v.current + "|" + v.rows.map((r) => r.hz).join(",")
+                                                : v.kind === "steps" ? String(v.hz) : "");
+      if (shape !== filterShape && performance.now() - filterTouched > 1500) {    // pas de saut pendant que le doigt règle
+        filterShape = shape;
+        const box = $("fil-rows");
+        while (box.firstChild) box.removeChild(box.firstChild);
+        if (v.kind === "presets" && v.known) {
+          for (const r of v.rows) {
+            const w = widthRow("FIL" + r.filter, v.steps, r.hz, r.filter === v.current,   // i18n-ok
+                               (hz) => client.setFilterWidth(r.filter, hz).then(renderFilterDialog).catch(fail));
+            box.appendChild(w.row);
+          }
+        } else if (v.kind === "steps") {
+          const w = widthRow("FIL", v.steps, v.hz, true, (hz) => client.setFilterWidth(null, hz).catch(fail));   // i18n-ok
+          box.appendChild(w.row);
+        }
+      }
+      for (const input of $("fil-rows").querySelectorAll("input")) input.disabled = v.locked;
+      if (v.locked) note = I18N.t("rigdialogs.locked_tx");
+      else if (v.kind === "presets") note = v.known ? I18N.t("filterdialog.hint_presets") : I18N.t("filterdialog.reading");
+      else if (v.kind === "steps") note = v.quick ? I18N.t("filterdialog.hint_quick") : I18N.t("filterdialog.hint_steps");
+      else note = I18N.t("filterdialog.none");
+      $("fil-dialog-note").textContent = note;
+    }
+    $("fil-dialog-close").addEventListener("click", closeFilterDialog);
     let clarTouched = -1e9, clarTimer = null;
     $("clar").addEventListener("input", (ev) => {
       const hz = Number(ev.target.value), name = ev.target.dataset.name || "XIT";

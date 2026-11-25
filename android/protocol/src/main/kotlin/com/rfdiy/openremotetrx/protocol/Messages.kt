@@ -216,7 +216,14 @@ data class RigSpecTiming(
 
 /** `kind` : unknown, presets (FIL1/2/3), steps (paliers imposés), none. */
 @Serializable
-data class RigSpecFilters(val kind: String = "unknown", val presets: Int = 0)
+data class RigSpecFilters(
+    val kind: String = "unknown",
+    val presets: Int = 0,
+    /** Paliers permis par mode Hamlib (Hz croissants), `kind` = steps ; mode absent = paliers inconnus. */
+    val steps: Map<String, List<Int>> = emptyMap(),
+    /** Liste courte de l'appui bref sur FIL (steps), dans un mode dont les paliers la contiennent toute. */
+    val quick: List<Int> = emptyList(),
+)
 
 /** `source` : estimate (repère comparé au S-mètre), busy (état « occupé » du poste), dcd (Hamlib). */
 @Serializable

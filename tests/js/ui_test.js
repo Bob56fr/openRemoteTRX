@@ -328,7 +328,7 @@ step("boutons de commande : un appui envoie la bonne commande, les cycles suiven
   assert.deepEqual([sent("set_level").at(-1).name, sent("set_level").at(-1).value], ["PREAMP", 20]); answer(true); await pending;
   pending = $("ctl-agc").click(); await wait();                                                                 // RAPIDE -> MOYEN
   assert.deepEqual([sent("set_level").at(-1).name, sent("set_level").at(-1).value], ["AGC", 5]); answer(true); await pending;
-  pending = $("ctl-fil").click(); await wait();                                                                 // 2.4k -> 1.8k
+  pending = $("ctl-fil").click(); await wait(320);                                                              // 2.4k -> 1.8k (attente du double clic)
   assert.deepEqual([sent("set_mode").at(-1).mode, sent("set_mode").at(-1).passband], ["USB", 1800]); answer(true); await pending;
   pending = $("ctl-pwr").click(); await wait();                                                                 // 50 % -> 80 %
   assert.deepEqual([sent("set_level").at(-1).name, sent("set_level").at(-1).value], ["RFPOWER", 0.8]); answer(true); await pending;

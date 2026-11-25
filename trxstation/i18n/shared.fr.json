@@ -746,5 +746,13 @@
   "rigtotdialog.how": "Réglez-le dans le menu du poste (3 min conseillé). La station le lit seulement : elle ne le change jamais et ne vous empêche pas d'émettre. Ce rappel revient une fois par jour.",
   "rigtotdialog.continue": "J'ai compris, je continue",
   "rigtotdialog.quit": "Quitter",
-  "powerviews.hold_release": "Relâchez pour annuler"
+  "powerviews.hold_release": "Relâchez pour annuler",
+  "filterdialog.title": "Largeur des filtres",
+  "filterdialog.mode": "Mode {mode} : le poste garde ces largeurs pour ce mode",
+  "filterdialog.current": "en cours",
+  "filterdialog.reading": "Lecture des largeurs sur le poste…",
+  "filterdialog.hint_presets": "Pour lire ou régler un préréglage, le poste passe un instant dessus (léger clic), puis revient au vôtre.",
+  "filterdialog.hint_quick": "Paliers imposés par le poste. Appui bref sur FIL : 1.8, 2.4, 2.8, 3.0, 3.5 puis 4.0 k.",
+  "filterdialog.hint_steps": "Paliers imposés par le poste pour ce mode.",
+  "filterdialog.none": "Largeurs fixes ou inconnues dans ce mode : aucun réglage ici."
 }

@@ -11,6 +11,7 @@ toute écriture reste filtrée par la passerelle comme avant.
 """
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import asdict, dataclass, field
 from functools import lru_cache
@@ -21,6 +22,7 @@ FOLDER = Path(__file__).resolve().parent
 FILTER_KINDS = ("unknown", "presets", "steps", "none")
 SQUELCH_SOURCES = ("estimate", "busy", "dcd")
 MAX_DELAY_S = 30.0
+MODE_RE = re.compile(r"[A-Z][A-Z0-9-]{0,15}")      # nom de mode Hamlib (USB, PKTUSB, CWR...)
 
 
 class RigSpecError(ValueError):
@@ -45,6 +47,11 @@ class Filters:
     # par paliers imposés (Yaesu `SH`) ; none = aucun réglage de largeur
     kind: str = "unknown"
     presets: int = 0
+    # steps : paliers permis par mode Hamlib (Hz, croissants), d'après le manuel CAT ; un mode absent = paliers inconnus
+    steps: dict = field(default_factory=dict)
+    # Appui BREF sur FIL (steps) : liste courte parcourue en boucle (décision de l'utilisateur du 2026-11-25 : 1.8 à
+    # 4.0 k, du DX à la HIFI), seulement dans les modes dont les paliers la contiennent toute
+    quick: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -94,7 +101,12 @@ def parse(text: str, where: str = "fiche") -> RigSpec:
     if data.pop("format", None) != FORMAT:
         raise RigSpecError(f"{where} : « format = {FORMAT} » attendu")
     timing = _section(Timing, data.pop("timing", {}), f"{where} [timing]")
-    filters = _section(Filters, data.pop("filters", {}), f"{where} [filters]")
+    raw_filters = data.pop("filters", {})
+    if isinstance(raw_filters, dict):
+        raw_filters = dict(raw_filters)
+        if isinstance(raw_filters.get("quick"), list):
+            raw_filters["quick"] = tuple(raw_filters["quick"])
+    filters = _section(Filters, raw_filters, f"{where} [filters]")
     squelch = _section(Squelch, data.pop("squelch", {}), f"{where} [squelch]")
     spec = _section(RigSpec, data, where)
     spec = RigSpec(model=spec.model, name=spec.name, receivers=spec.receivers, verified=spec.verified,
@@ -115,9 +127,28 @@ def check(spec: RigSpec) -> str | None:
         return f"filters.kind parmi {FILTER_KINDS}"
     if (spec.filters.kind == "presets") != (spec.filters.presets > 0) or not 0 <= spec.filters.presets <= 3:
         return "filters.presets de 1 à 3 pour kind = presets, 0 sinon"
+    for mode, values in spec.filters.steps.items():
+        if not isinstance(mode, str) or not MODE_RE.fullmatch(mode) or not _widths(values):
+            return f"filters.steps.{mode} : largeurs entières croissantes de 10 à 20 000 Hz"
+    if spec.filters.steps and spec.filters.kind != "steps":
+        return "filters.steps seulement pour kind = steps"
+    if spec.filters.quick and (spec.filters.kind != "steps" or not _widths(list(spec.filters.quick))):
+        return "filters.quick : largeurs croissantes, seulement pour kind = steps"
     if spec.squelch.source not in SQUELCH_SOURCES:
         return f"squelch.source parmi {SQUELCH_SOURCES}"
     return None
+
+
+def _widths(values: object) -> bool:
+    return (isinstance(values, list) and len(values) >= 2
+            and all(isinstance(v, int) and not isinstance(v, bool) and 10 <= v <= 20_000 for v in values)
+            and all(a < b for a, b in zip(values, values[1:])))
+
+
+def quick_widths(spec: RigSpec, mode: str | None) -> tuple[int, ...]:
+    """Liste courte de l'appui bref sur FIL dans ce mode ; () si le mode n'a pas tous ces paliers."""
+    steps = spec.filters.steps.get(mode or "", [])
+    return spec.filters.quick if spec.filters.quick and set(spec.filters.quick) <= set(steps) else ()
 
 
 @lru_cache(maxsize=None)

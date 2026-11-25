@@ -843,6 +843,51 @@ test("FIL1/2/3 : préréglages du poste par le port B ; jamais la largeur par Ha
   assert.equal((await w.client.pressControl("FIL")).ok, false); assert.equal(w.sentCommands("set_mode").length, 0);
 });
 
+test("largeurs des filtres (étape 395) : trois curseurs Icom par le port B, paliers du FTDX10 et appui bref 1.8 à 4.0 k", async () => {
+  const { filterSteps, quickWidths, nextWidth, nearestStep } = web;
+  const ssb = [300, 400, 600, 850, 1100, 1200, 1500, 1650, 1800, 1950, 2100, 2250, 2400, 2450, 2500, 2600, 2700, 2800, 2900, 3000, 3200, 3500, 4000];
+  const cw = [50, 100, 500, 1200, 2400, 4000];
+  const spec = { filters: { kind: "steps", presets: 0, steps: { USB: ssb, CW: cw }, quick: [1800, 2400, 2800, 3000, 3500, 4000] } };
+  assert.equal(filterSteps(spec, "USB"), ssb); assert.equal(filterSteps(spec, "FM"), null);
+  assert.deepEqual(quickWidths(spec, "USB"), [1800, 2400, 2800, 3000, 3500, 4000]);
+  assert.equal(quickWidths(spec, "CW"), null);                                // le CW n'a pas tous ces paliers
+  assert.equal(nextWidth([1800, 2400, 4000], 2400), 4000); assert.equal(nextWidth([1800, 2400, 4000], 4000), 1800);
+  assert.equal(nextWidth([1800, 2400, 4000], 2000), 2400); assert.equal(nextWidth([1800, 2400], null), 1800);
+  assert.equal(nearestStep(ssb, 2440), 2450);
+  // Yaesu : texte = largeur RELUE ; appui bref = palier suivant de la liste courte ; CW : la fenêtre des paliers
+  const w = makeWorld();
+  await w.connected();
+  w.hello({ capabilities: { modes: ["USB", "CW"], filters: { USB: [3000, 2400] } }, rig_spec: spec });
+  w.state({}, { mode: "USB", passband_hz: 2400 });
+  assert.deepEqual(w.ui.views.at(-1).controls.find((c) => c.key === "FIL"), { key: "FIL", label: "FIL 2.4k", on: true });
+  const press = w.client.pressControl("FIL"); w.answer(true); await press;
+  assert.deepEqual([w.sentCommands("set_mode").at(-1).mode, w.sentCommands("set_mode").at(-1).passband], ["USB", 2800]);
+  assert.deepEqual(w.client.filterDialogView().kind, "steps");
+  const set = w.client.setFilterWidth(null, 2440); w.answer(true); await set;
+  assert.equal(w.sentCommands("set_mode").at(-1).passband, 2450);             // toujours un palier du poste
+  w.state({}, { mode: "CW", passband_hz: 500 });
+  const before = w.sentCommands("set_mode").length;
+  assert.equal((await w.client.pressControl("FIL")).dialog, true);
+  assert.equal(w.sentCommands("set_mode").length, before);
+  // Icom : fenêtre à trois curseurs sur les largeurs relues par la station
+  const v = makeWorld();
+  await v.connected();
+  v.hello({ capabilities: { modes: ["USB"] }, spectrum: { source: "civ_port", level_max: 160, max_fps: 10 },
+            rig_spec: { filters: { kind: "presets", presets: 3, steps: {}, quick: [] } } });
+  v.dc().onmessage({ data: JSON.stringify({ type: "state",
+    ptt: { state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" },
+    rig: { connected: true, frequency_hz: 14200000, mode: "USB", passband_hz: 2400, strength_db: -12 }, audio: {}, clients: ["phone"],
+    spectrum: { state: "ok", code: "", message: "", settings: { filter: 2, filter_widths: [3000, 2400, 1800], filter_steps: [50, 100, 1800, 2400, 3000] } } }) });
+  const view = v.client.filterDialogView();
+  assert.equal(view.kind, "presets"); assert.equal(view.known, true); assert.equal(view.current, 2);
+  assert.deepEqual(view.rows.map((r) => r.hz), [3000, 2400, 1800]);
+  const read = v.client.readFilterWidths(); v.answer(true); await read;
+  assert.equal(v.sentCommands("spectrum_set").at(-1).name, "filter_widths");
+  const one = v.client.setFilterWidth(3, 1500); v.answer(true); await one;
+  assert.deepEqual(v.sentCommands("spectrum_set").at(-1).value, { filter: 3, hz: 1500 });
+  assert.equal(v.sentCommands("set_mode").length, 0);                         // jamais de largeur par Hamlib sur un Icom
+});
+
 test("boutons de commande : verrouillés pendant l'émission", async () => {
   const w = makeWorld();
   await w.connected(); w.state({}, { functions: { NR: false } });

@@ -44,6 +44,9 @@ def test_known_rigs_say_what_the_user_decided():
     ("format = 1\nmodel = 5\nname = 'x'\n[filters]\nkind = 'presets'", "presets"),
     ("format = 1\nmodel = 5\nname = 'x'\n[squelch]\nsource = 'magie'", "squelch"),
     ("format = 1\nmodel = 'cinq'", "int"),
+    ("format = 1\nmodel = 5\nname = 'x'\n[filters]\nkind = 'steps'\n[filters.steps]\nUSB = [2400, 1800]", "croissantes"),
+    ("format = 1\nmodel = 5\nname = 'x'\n[filters]\nkind = 'steps'\n[filters.steps]\nusb = [1800, 2400]", "steps"),
+    ("format = 1\nmodel = 5\nname = 'x'\n[filters]\nkind = 'presets'\npresets = 3\nquick = [1800, 2400]", "quick"),
 ])
 def test_a_wrong_spec_is_refused(text, words):
     with pytest.raises(RigSpecError, match=words):
@@ -121,3 +124,12 @@ def test_tuner_in_service_lengthens_the_wait():
 def test_generic_spec_keeps_the_old_wait():
     p, clock = presence(rigspec.load(1).timing)
     assert p.expect_window_s() == EXPECT_S
+
+
+def test_ftdx10_short_press_list_is_the_user_choice_and_only_in_ssb():
+    spec = rigspec.load(1042)
+    assert spec.filters.quick == (1800, 2400, 2800, 3000, 3500, 4000)
+    assert rigspec.quick_widths(spec, "USB") == spec.filters.quick and rigspec.quick_widths(spec, "LSB")
+    assert rigspec.quick_widths(spec, "CW") == () and rigspec.quick_widths(spec, "FM") == ()
+    assert spec.filters.steps["USB"][0] == 300 and spec.filters.steps["USB"][-1] == 4000 and len(spec.filters.steps["USB"]) == 23
+    assert len(spec.filters.steps["CW"]) == 21

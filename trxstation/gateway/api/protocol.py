@@ -126,8 +126,9 @@ MAX_MONITORING_ARGS_BYTES = 1500
 DIFFUSION_ACTIONS = ("status", "start", "stop", "listener", "reveal")
 MAX_DIFFUSION_ARGS_BYTES = 600
 MAX_SDR_ARGS_BYTES = 300
-SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
-                                                                 # filter = préréglage FIL1/2/3 du poste (port B)
+SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter", "filter_widths", "filter_width")
+# valeurs vérifiées par la liste fermée de spectrum/civ.py ; filter = préréglage FIL1/2/3 du poste (port B) ;
+# filter_widths = lecture des largeurs des trois préréglages du mode en cours, filter_width = {filter, hz} (étape 395)
 
 
 class ProtocolError(Exception):
@@ -243,6 +244,12 @@ def parse_command(raw: str | bytes) -> Command:
             value = _int(value, "value", 1, 1_000_000)
         elif setting == "filter":
             value = _int(value, "value", 1, 3)
+        elif setting == "filter_widths":
+            value = None                                    # lecture seule : aucune valeur
+        elif setting == "filter_width":
+            if not isinstance(value, dict) or set(value) != {"filter", "hz"}:
+                raise ProtocolError("invalid_params", "value doit être {filter, hz}")
+            value = {"filter": _int(value.get("filter"), "filter", 1, 3), "hz": _int(value.get("hz"), "hz", 50, 10_000)}
         elif isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or abs(value) > 100:
             raise ProtocolError("invalid_params", "value doit être un niveau en dB")
         else:

@@ -245,6 +245,10 @@ summary .cluster-dot { display: inline-block; margin-left: .4rem; vertical-align
 .kp-display { font-size: 2.2rem; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; min-height: 2.8rem; }
 .kp-display.ctl-title { font-size: 1.3rem; min-height: 0; }                 /* fenêtre de réglage NR / NB / Notch */
 #ctl-dialog .row .chip { flex: 1; min-height: 2.4rem; }
+.fil-rows { display: flex; flex-direction: column; gap: .7rem; margin: .5rem 0; }
+.fil-row { display: flex; flex-direction: column; gap: .2rem; }
+.fil-row.current .fil-label { color: var(--accent); font-weight: 700; }
+.fil-row input[type=range] { width: 100%; }
 .kp-preview { text-align: center; color: var(--mesure); min-height: 1.4rem; font-size: .9rem; }
 .kp-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
 .kp-keys button { min-height: 3.2rem; font-size: 1.4rem; font-weight: 600; }

@@ -28,6 +28,10 @@ Règles :
     (`ctrl.rig_setting`, jamais pendant une prise d'émission) ; le mode et le mode données relus sont réécrits tels
     quels, seul le filtre change ; relu toutes les FILTER_EVERY_S. Poste qui ne répond pas à « 26 00 » : `filter`
     reste None et la page garde son ancien bouton.
+  - largeurs des trois préréglages du mode en cours (étape 395, « filter_widths » / « filter_width ») : même verrou ;
+    pour lire ou écrire celle d'un FIL non sélectionné, le fil le sélectionne (« 26 00 », même mode), lit ou écrit
+    « 1A 03 », puis REMET TOUJOURS le préréglage d'origine (finally) ; lues seulement à la demande (fenêtre FIL ouverte :
+    changer de préréglage s'entend), oubliées quand le mode change.
 La lecture série (bloquante) tourne dans un fil à part : elle ne retarde jamais la boucle asyncio de la passerelle.
 """
 from __future__ import annotations
@@ -41,7 +45,7 @@ from collections.abc import Callable
 
 from ..config import Spectrum, parse_civ_address
 from .civ import (FILTERS, LEVEL_MAX, OK, SCOPE_MODE, SCOPE_REF, SCOPE_SPAN, SCOPE_SPEED, Sweep, decode_mode_filter,
-                  decode_setting, encode_mode_filter, encode_setting)
+                  decode_setting, decode_width, encode_mode_filter, encode_setting, encode_width, width_steps)
 from .probe import SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, fallback, open_serial
 from ..errors import codes
 from ..errors.emit import emit_event
@@ -85,6 +89,7 @@ class SpectrumService:
         self._listeners: list[Callable[[Sweep], None]] = []
         self._requests: queue.Queue = queue.Queue(maxsize=8)
         self._settings: dict = {}
+        self._widths_key: tuple[int, int] | None = None   # (mode, données) des largeurs publiées (étape 395)
         self._pending: Sweep | None = None         # balayage en attente de diffusion dans la boucle (le plus récent)
         self._failing: set[int] = set()            # écouteurs déjà signalés en erreur
 
@@ -175,6 +180,8 @@ class SpectrumService:
         """(réussi, motif) ; jamais d'exception. Exécuté par le fil du port B, puis relu sur le poste."""
         if name == "filter":
             return await self._set_filter(value, timeout)
+        if name in ("filter_widths", "filter_width"):
+            return await self._locked_request(name, value, timeout)
         sub = SETTING_SUBS.get(name)
         try:
             if sub is None:
@@ -197,8 +204,16 @@ class SpectrumService:
             return False, "spectrum_timeout"
 
     async def _set_filter(self, value, timeout: float) -> tuple[bool, str]:
-        from ..gateway.safety import Refused
         if isinstance(value, bool) or value not in FILTERS:
+            return False, "bad_setting"
+        return await self._locked_request("filter", value, timeout)
+
+    async def _locked_request(self, name: str, value, timeout: float) -> tuple[bool, str]:
+        """Demande au fil du port B qui change le préréglage du poste : sous le verrou des réglages du contrôleur PTT."""
+        from ..gateway.safety import Refused
+        if name == "filter_width" and (not isinstance(value, dict) or value.get("filter") not in FILTERS
+                                       or isinstance(value.get("filter"), bool) or isinstance(value.get("hz"), bool)
+                                       or not isinstance(value.get("hz"), int)):
             return False, "bad_setting"
         if self.snapshot()["state"] != "ok" or self._loop is None or self.snapshot()["settings"].get("filter") is None:
             return False, "spectrum_unavailable"
@@ -206,7 +221,7 @@ class SpectrumService:
             async with self.ctrl.rig_setting():          # même verrou que fréquence et mode : jamais pendant une prise
                 future = self._loop.create_future()
                 try:
-                    self._requests.put_nowait(("filter", value, future))
+                    self._requests.put_nowait((name, value, future))
                 except queue.Full:
                     return False, "spectrum_busy"
                 try:
@@ -266,6 +281,11 @@ class SpectrumService:
         current = self._mode_filter(port)
         values["filter"] = current[2] if current else None
         with self._lock:
+            if self._widths_key is not None and current is not None and current[:2] == self._widths_key:
+                values["filter_widths"] = self._settings.get("filter_widths")   # même mode : largeurs gardées
+                values["filter_steps"] = self._settings.get("filter_steps")
+            else:
+                self._widths_key = None
             self._settings = values
 
     @staticmethod
@@ -282,6 +302,9 @@ class SpectrumService:
         with self._lock:
             if self._settings:
                 self._settings["filter"] = current[2] if current else None
+                if self._widths_key is not None and (current is None or current[:2] != self._widths_key):
+                    self._widths_key = None                # autre mode : ses largeurs ne valent plus
+                    self._settings["filter_widths"] = self._settings["filter_steps"] = None
 
     def _change_filter(self, port: CivPort, value: int) -> tuple[bool, str]:
         current = self._mode_filter(port)
@@ -299,6 +322,60 @@ class SpectrumService:
                 self._settings["filter"] = after[2] if after else None
         return ((True, "") if after == (mode, data, value) else (False, "spectrum_refused"))
 
+    def _select_filter(self, port: CivPort, mode: int, data: int, filt: int) -> bool:
+        reply = port.request(0x26, 0x00, encode_mode_filter(mode, data, filt))
+        return reply is not None and reply.payload[:1] == bytes([OK])
+
+    def _read_width(self, port: CivPort, mode: int) -> int | None:
+        reply = port.request(0x1A, 0x03, timeout=0.6)
+        return decode_width(mode, reply.payload) if reply is not None else None
+
+    def _publish_widths(self, key: tuple[int, int] | None, widths: list | None, steps: tuple[int, ...]) -> None:
+        with self._lock:
+            self._widths_key = key
+            if self._settings:
+                self._settings["filter_widths"] = widths
+                self._settings["filter_steps"] = list(steps) if widths is not None else None
+
+    def _filter_widths(self, port: CivPort, change: dict | None) -> tuple[bool, str]:
+        """Lit les largeurs des trois préréglages du mode en cours ; `change` = {filter, hz} : écrit d'abord celle-là.
+        Le préréglage sélectionné au départ est TOUJOURS remis."""
+        current = self._mode_filter(port)
+        if current is None:
+            return False, "spectrum_refused"
+        mode, data, original = current
+        steps = width_steps(mode)
+        if not steps:                                    # FM : largeurs fixes
+            self._publish_widths((mode, data), None, ())
+            return (False, "bad_setting") if change else (True, "")
+        if change is not None:
+            try:
+                written = encode_width(mode, change["hz"])
+            except ValueError:
+                return False, "bad_setting"
+        widths: list[int | None] = [None, None, None]
+        ok, selected = True, original
+        try:
+            for filt in FILTERS:
+                if filt != selected:
+                    if not self._select_filter(port, mode, data, filt):
+                        ok = False
+                        break
+                    selected = filt
+                if change is not None and change["filter"] == filt:
+                    reply = port.request(0x1A, 0x03, written)
+                    if reply is None or reply.payload[:1] != bytes([OK]):
+                        ok = False
+                widths[filt - 1] = self._read_width(port, mode)
+        finally:
+            if selected != original and not self._select_filter(port, mode, data, original):
+                emit_event(codes.ORT_2314, logger=log, filtre=original, detail="pas de réponse du poste")
+        self._read_filter(port)
+        self._publish_widths((mode, data), widths, steps)
+        if change is not None and widths[change["filter"] - 1] != change["hz"]:
+            ok = False
+        return (True, "") if ok and None not in widths else (False, "spectrum_refused")
+
     def _serve_requests(self, port: CivPort) -> None:
         while True:
             try:
@@ -310,6 +387,9 @@ class SpectrumService:
                 continue
             if name == "filter":
                 self._resolve(future, self._change_filter(port, value))
+                continue
+            if name in ("filter_widths", "filter_width"):
+                self._resolve(future, self._filter_widths(port, value if name == "filter_width" else None))
                 continue
             sub = SETTING_SUBS[name]
             reply = port.request(0x27, sub, encode_setting(sub, value))
