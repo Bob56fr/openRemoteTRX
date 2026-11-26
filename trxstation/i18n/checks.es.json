@@ -156,5 +156,8 @@
   "dashboard.listen": "[dashboard] listen: se espera una lista de direcciones IP (leído: {address})",
   "dashboard.listen_any": "[dashboard] listen: {address} escucharía en todas las direcciones; indica 127.0.0.1 y la dirección de red deseada",
   "dashboard.tls": "[dashboard] listen: {address} está en la red, hace falta HTTPS ([network] tls_cert y tls_key) o allow_insecure_http = true dentro de una VPN",
-  "dashboard.rig_name": "[dashboard] rig_name: texto de 40 caracteres como máximo"
+  "dashboard.rig_name": "[dashboard] rig_name: texto de 40 caracteres como máximo",
+  "cw.choice": "[cw] {name}: valor no permitido (opciones: {choices})",
+  "cw.data_mode": "[cw] data_mode '{mode}': se exige un modo de [rig] tx_modes (permitidos: {allowed})",
+  "cw.delay_order": "[cw] se exige delay_min_ms <= delay_ms <= delay_max_ms"
 }

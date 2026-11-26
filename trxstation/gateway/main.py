@@ -46,6 +46,7 @@ from .memories import MemoryStore
 from .power import PowerControl
 from .voice_profiles import VoiceProfileStore
 from ..swr.runner import SwrRunner
+from .cw import CwKeyer
 from ..swr.store import SwrStore
 from .safety import PttController
 from .status import StatusPublisher
@@ -391,6 +392,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
     voices = VoiceProfileStore(Path(cfg.supervisor.state_dir) / "voice_profiles.json")   # profils d'égaliseur des opérateurs
     swr = SwrRunner(ctrl, cfg, SwrStore(Path(cfg.supervisor.state_dir) / "swr.json")) if cfg.swr.enabled else None
+    cw = CwKeyer(ctrl, pipeline.tx_sink, cfg, state_dir=cfg.supervisor.state_dir) if cfg.cw.enabled else None   # exp/cw
     try:
         station_id = ensure_station_id(cfg.supervisor.state_dir)    # GUID de la station (créé une seule fois)
     except OSError as exc:                                           # jamais bloquant : la station marche sans
@@ -414,7 +416,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
                           layouts=layouts, spectrum=spectrum, reports=reports, access=access,
                           muted=None if access is None else
                           lambda: listener_muted(access.settings, cfg, link.state.frequency_hz),
-                          alert=notifier.alert, voices=voices, swr=swr, netprobe=netprobe)
+                          alert=notifier.alert, voices=voices, swr=swr, netprobe=netprobe, cw=cw)
     registry = ClientRegistry(cfg.clients)
     app = make_app(registry, manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,

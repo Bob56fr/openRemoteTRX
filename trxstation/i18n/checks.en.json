@@ -156,5 +156,8 @@
   "dashboard.listen": "[dashboard] listen: a list of IP addresses is expected (read: {address})",
   "dashboard.listen_any": "[dashboard] listen: {address} would listen on every address; give 127.0.0.1 and the network address you want",
   "dashboard.tls": "[dashboard] listen: {address} is on the network, HTTPS is required ([network] tls_cert and tls_key) or allow_insecure_http = true inside a VPN",
-  "dashboard.rig_name": "[dashboard] rig_name: text of at most 40 characters"
+  "dashboard.rig_name": "[dashboard] rig_name: text of at most 40 characters",
+  "cw.choice": "[cw] {name}: value not allowed (choices: {choices})",
+  "cw.data_mode": "[cw] data_mode '{mode}': a mode of [rig] tx_modes is required (allowed: {allowed})",
+  "cw.delay_order": "[cw] delay_min_ms <= delay_ms <= delay_max_ms is required"
 }

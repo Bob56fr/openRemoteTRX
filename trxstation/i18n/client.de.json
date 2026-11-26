@@ -185,5 +185,17 @@
   "station.overload_auto": "Station überlastet ({cause}): Mithören der Besucher zum Schutz der Station ausgesetzt. Automatische Wiederöffnung nach 5 Minuten normalem Betrieb.",
   "station.overload_locked": "Station überlastet ({cause}): Mithören der Besucher zum Schutz der Station ausgesetzt. Zu viele Abschaltungen in einer Stunde: der Operator muss es wieder öffnen.",
   "refus.tx_side_unreadable": "Sendeseite des Funkgeräts (MAIN oder SUB) nicht lesbar: Senden aus Sicherheitsgründen abgelehnt (die Sendefrequenz ist unbekannt).",
-  "coupure.tx_side_changed": "Sendeseite (MAIN / SUB) oder deren Frequenz am Funkgerät während des Sendens geändert"
+  "coupure.tx_side_changed": "Sendeseite (MAIN / SUB) oder deren Frequenz am Funkgerät während des Sendens geändert",
+  "refus.cw_unavailable": "CW-Tastung ist auf dieser Station nicht verfügbar.",
+  "refus.cw_busy": "Die CW-Tastung ist bereits von einem anderen Operator aktiviert.",
+  "refus.cw_mode": "CW-Tastung abgelehnt: Stellen Sie das Funkgerät auf die von der Station verlangte Betriebsart (Datenmodus, z. B. PKTUSB).",
+  "refus.cw_carrier_changed": "Frequenz oder Betriebsart beim Aktivieren geändert: Aktivieren Sie CW erneut.",
+  "coupure.cw_disarm": "CW deaktiviert",
+  "coupure.cw_idle": "CW deaktiviert, keine Tastung",
+  "coupure.cw_lease_expired": "Verbindung zu langsam für CW (Frist abgelaufen)",
+  "coupure.cw_keydown_too_long": "Taste zu lange gedrückt",
+  "coupure.cw_seq_overlap": "CW-Folge unterbrochen",
+  "coupure.cw_stalled": "CW-Wiedergabe der Station verspätet",
+  "coupure.cw_failed": "Fehler der CW-Tastung",
+  "coupure.cw_carrier_changed": "Frequenz oder Betriebsart beim Aktivieren von CW geändert"
 }

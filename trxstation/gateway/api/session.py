@@ -51,7 +51,7 @@ FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0
 # Pendant une mesure de TOS, aucun client ne change les réglages du poste (la mesure les a pris et les remettra) ;
 # STOP et toute coupure restent TOUJOURS possibles (ils arrêtent la mesure).
 SWR_BLOCKED = frozenset({"set_frequency", "set_mode", "set_function", "set_level", "set_offset", "memory_recall",
-                         "spectrum_set", "selcall_send", "selcall_calibrate", "local_release", "power_on", "power_off"})    # visiteur : au-delà, connexion fermée et alerte
+                         "spectrum_set", "selcall_send", "selcall_calibrate", "local_release", "power_on", "power_off", "cw_arm"})    # visiteur : au-delà, connexion fermée et alerte
 
 
 def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None, access=None,
@@ -121,7 +121,7 @@ class ControlSession:
                  role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
                  alert: Callable[[str, str], None] | None = None,
                  kick_listener: Callable[[str], bool] | None = None, voices=None, swr=None,
-                 netprobe=None, device: str = "", agent: str = "", source: str = "", lang: str = "fr"):
+                 netprobe=None, device: str = "", agent: str = "", source: str = "", lang: str = "fr", cw=None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.lang = clean_lang(lang)             # langue des textes envoyés à CE client (`detail`, lot T1) ; codes inchangés
         self.role = LISTENER if role == LISTENER else OPERATOR
@@ -162,6 +162,7 @@ class ControlSession:
         self.layouts = layouts
         self.voices = None if role == LISTENER else voices   # VoiceProfileStore : profils d'égaliseur du COMPTE (opérateurs)
         self.swr = None if role == LISTENER else swr         # SwrRunner : mesure de TOS (opérateurs seulement)
+        self.cw = None if role == LISTENER else cw           # CwKeyer (gateway/cw.py, branche exp/cw) ou None
         self._memories_listener = lambda items: self.send({"type": "memories", "items": items})
         self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
         self._selcall_listener = lambda status: self.send({"type": "selcall", "status": status.to_dict()})
@@ -385,7 +386,8 @@ class ControlSession:
                    "freedv": self.freedv is not None,
                    "sdr": self.sdr_call is not None and not self.listener,
                    "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered,
-                   "power": self.power is not None and not self.listener and self.power.available}
+                   "power": self.power is not None and not self.listener and self.power.available,
+                   "cw": self.cw is not None and self.cw.enabled}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _remote_console(self) -> dict | None:
@@ -489,6 +491,8 @@ class ControlSession:
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
+        if self.cw is not None:
+            self.cw.forget(self.client_id)                   # tonalité arrêtée net AVANT la coupure du PTT
         if not self.listener:
             await self.ctrl.disconnect_client(self.client_id)
 
@@ -967,6 +971,21 @@ class ControlSession:
                 self.ctrl.heartbeat(self.client_id)             # silencieux : 2 par seconde en émission
             elif cmd.name == "get_state":
                 self._result(cmd.id, True, state=self._state())
+            elif cmd.name == "toggle" and self.cw is not None and self.cw.owner == self.client_id:
+                await self.cw.disarm(self.client_id)             # CW armée par ce client : relâcher = désarmer
+                self._result(cmd.id, True, ptt=self.ctrl.snapshot().to_dict())
+            elif cmd.name == "cw_arm":
+                if self.cw is None or not self.cw.enabled:
+                    self._result(cmd.id, False, reason="cw_unavailable")
+                else:                                            # prise d'émission NORMALE ; Refused : refus comme toggle
+                    info = await self.cw.arm(self.client_id, cmd.params, self.send)
+                    emit_event(codes.ORT_4019, logger=log, compte=self.client_id,
+                               action=f"CW armée, porteuse {info['carrier_hz'] / 1e6:.4f} MHz")
+                    self._result(cmd.id, True, cw=info, ptt=self.ctrl.snapshot().to_dict())
+            elif cmd.name == "cw_disarm":
+                if self.cw is not None:
+                    await self.cw.disarm(self.client_id)
+                self._result(cmd.id, True, ptt=self.ctrl.snapshot().to_dict())
             elif cmd.name == "toggle":
                 snapshot = await self.ctrl.toggle(self.client_id)
                 self._result(cmd.id, True, ptt=snapshot.to_dict())

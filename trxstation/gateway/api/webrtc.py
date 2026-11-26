@@ -40,6 +40,7 @@ from ...errors.emit import by_machine, emit_event
 log = logging.getLogger(__name__)
 CONTROL_LABEL = "control"
 SPECTRUM_LABEL = "spectrum"
+CW_LABEL = "cw"                                  # fronts de la clé CW (branche exp/cw), client -> station seulement
 
 
 class PeerLimitError(Exception):
@@ -170,7 +171,7 @@ class _Peer:
 class PeerManager:
     def __init__(self, ctrl, link, pipeline, capabilities, *, max_peers: int = 4, peer_timeout_s: float = 20.0,
                  ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None, reports=None,
-                 access=None, muted=None, alert=None, voices=None, swr=None, netprobe=None):
+                 access=None, muted=None, alert=None, voices=None, swr=None, netprobe=None, cw=None):
         self.reports = reports                  # ReportStore : rapports de problème envoyés par la page
         self.access = access                    # AccessControl : rôles, quotas, présence ; None = tout client est opérateur
         self.listener_muted = muted             # () -> bool : silence pour les visiteurs (réception hors bandes)
@@ -184,6 +185,7 @@ class PeerManager:
         self.layouts = layouts
         self.voices = voices                    # VoiceProfileStore : profils d'égaliseur de chaque opérateur
         self.swr = swr                          # SwrRunner : mesure de TOS (une seule à la fois, toutes sessions confondues)
+        self.cw = cw                            # CwKeyer (gateway/cw.py, branche exp/cw) ou None : [cw] enabled = false
         self.netprobe = netprobe                # NetProbeHub : sonde de qualité réseau ([netprobe] enabled), sinon None
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s
@@ -234,6 +236,11 @@ class PeerManager:
             if channel.label == SPECTRUM_LABEL:
                 self._attach_spectrum(client_id, peer, channel)
                 return
+            if channel.label == CW_LABEL:
+                if self.cw is not None and role != LISTENER:        # jamais d'un visiteur : rien n'y est lu
+                    keyer = self.cw
+                    channel.on("message", lambda message: keyer.receive(client_id, message))
+                return
             if channel.label != CONTROL_LABEL or peer.session is not None:
                 return                                          # un seul canal de contrôle par client
 
@@ -247,6 +254,7 @@ class PeerManager:
                                      reports=self.reports, role=role, access=self.access, alert=self.alert,
                                      kick_listener=self._kick_listener, voices=self.voices, swr=self.swr,
                                      netprobe=self.netprobe, device=device, agent=agent, source=source, lang=peer.lang,
+                                     cw=self.cw,
                                      disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             if role != LISTENER:                        # présence de groupe : jamais pour un visiteur

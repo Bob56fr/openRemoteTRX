@@ -91,7 +91,11 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "power_on", "power_off",
             # langue des textes que la station envoie à CE client (refus, coupures, messages), changée en cours de
             # connexion (lot T5 bis) : lang dans la liste fermée ; tout compte, visiteurs compris ; n'agit pas sur le poste
-            "set_lang")
+            "set_lang",
+            # manipulation CW, mode A (laboratoire, branche exp/cw ; docs/exp-cw/cahier-des-charges.md) : OPÉRATEURS ;
+            # cw_arm = prise d'émission NORMALE (mêmes refus que toggle, battements, TOT), micro FERMÉ, seule la tonalité
+            # recréée par la station part ; fronts de la clé sur le canal « cw » ; cw_disarm (ou STOP) = retour RX
+            "cw_arm", "cw_disarm")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
@@ -113,6 +117,7 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "monitoring",                # monitoring inter-stations dans la page (0.164.0+, module monlink)
                      "diffusion",                 # diffusion en direct vers un serveur Icecast (0.189.0+, module diffusion)
                      "remote_console",            # lien vers openRemoteTRX Console sur le réseau (0.178.0+, opérateurs admin)
+                     "cw",                        # manipulation CW, mode A (branche exp/cw, [cw] enabled)
                      "power")                     # allumage et extinction du poste à distance (0.222.0+, [power] enabled)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
@@ -126,6 +131,8 @@ MAX_MONITORING_ARGS_BYTES = 1500
 DIFFUSION_ACTIONS = ("status", "start", "stop", "listener", "reveal")
 MAX_DIFFUSION_ARGS_BYTES = 600
 MAX_SDR_ARGS_BYTES = 300
+CW_INTERFACES = ("straight", "iambic_a", "iambic_b", "single_lever")
+CW_NETS = ("", "wifi", "cellular", "ethernet", "vpn", "other")
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter", "filter_widths", "filter_width")
 # valeurs vérifiées par la liste fermée de spectrum/civ.py ; filter = préréglage FIL1/2/3 du poste (port B) ;
 # filter_widths = lecture des largeurs des trois préréglages du mode en cours, filter_width = {filter, hz} (étape 395)
@@ -400,6 +407,29 @@ def parse_command(raw: str | bytes) -> Command:
         if data["action"] in ("watch", "listen") and not isinstance(args.get("on"), bool):
             raise ProtocolError("invalid_params", f"{data['action']} : args.on vaut true ou false")
         params["action"], params["args"] = data["action"], args
+    elif name == "cw_arm":
+        unknown = set(data) - {"cmd", "id", "mode", "wpm", "tone_hz", "delay_ms", "align", "interface", "net"}
+        if unknown:
+            raise ProtocolError("invalid_params", "champs inconnus : " + ", ".join(sorted(unknown))[:80])
+        if data.get("mode", "A") != "A":
+            raise ProtocolError("invalid_params", "mode : A (tonalité recréée par la station)")
+        params["mode"] = "A"
+        params["wpm"] = _int(data.get("wpm", 20), "wpm", 5, 40)
+        for key, low, high in (("tone_hz", 300, 1200), ("delay_ms", 150, 500)):
+            if key in data:
+                value = data[key]
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)                         or not low <= value <= high:
+                    raise ProtocolError("invalid_params", f"{key} : nombre de {low} à {high}")
+                params[key] = float(value)
+        if not isinstance(data.get("align", False), bool):
+            raise ProtocolError("invalid_params", "align doit valoir true ou false")
+        params["align"] = data.get("align", False)
+        if data.get("interface", "straight") not in CW_INTERFACES:
+            raise ProtocolError("invalid_params", "interface : " + ", ".join(CW_INTERFACES))
+        params["interface"] = data.get("interface", "straight")
+        if data.get("net", "") not in CW_NETS:
+            raise ProtocolError("invalid_params", "net : " + ", ".join(n for n in CW_NETS if n))
+        params["net"] = data.get("net", "")
     elif name == "power_off":
         if data.get("confirm") is not True or set(data) - {"cmd", "id", "confirm"}:
             raise ProtocolError("invalid_params", "confirm doit valoir true (arrêt confirmé par l'opérateur)")

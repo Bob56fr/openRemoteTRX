@@ -117,6 +117,8 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `power_on` | `how` facultatif : `connect` (allumage à la connexion, défaut des clients) ou `button` | OPÉRATEUR (station 0.222.0+, fonction `power`, § 21) : allume le poste après vérification des ports série ; étapes envoyées par des messages `power_progress` ; réponse `result` (`on` ou `already_on`), `seconds`, `rig`, `power` ; refus : `reason`, `ort`, `step`, `detail` (§ 21) ; n'émet jamais |
 | `power_off` | `confirm` = `true` (exigé) | OPÉRATEUR (fonction `power`, § 21) : éteint le poste, refusé pendant toute émission et quand le poste est utilisé sur place ; réponse `power` |
 | `set_lang` | `lang` : `fr`, `en`, `de` ou `es` (sinon `invalid_params`) | station 0.243.0+, fonction `set_lang` (toujours annoncée) : change la langue des textes que la station envoie à CE client (même rôle que `lang` de `POST /offer`), sans se reconnecter ; admise pour un VISITEUR (sa propre langue) ; n'agit ni sur le poste ni sur les autres clients ; réponse `lang` (langue retenue). Le client ne la refuse pas pendant une émission, mais l'application et la page ne changent pas de langue pendant une émission |
+| `cw_arm` | `mode` (`A`, défaut), `wpm` (5 à 40, défaut 20), `tone_hz` (300 à 1200), `delay_ms` (150 à 500, dans les bornes de `[cw]`), `align` (booléen), `interface` (`straight`, `iambic_a`, `iambic_b`, `single_lever`), `net` (`wifi`, `cellular`, `ethernet`, `vpn`, `other`) ; tout autre champ : `invalid_params` | BRANCHE D'ESSAI `exp/cw`, OPÉRATEUR, fonction `cw` (§ 22) : prise d'émission NORMALE (mêmes refus que `toggle`, battements, TOT), micro FERMÉ ; réponse `cw` (`carrier_hz`, `tone_hz`, `delay_ms`, `mode`…) et `ptt` ; refus `cw_unavailable`, `cw_busy`, `cw_mode`, `cw_carrier_changed`, `out_of_band` (porteuse ou fréquence affichée), `tx_active` et ceux de `toggle` |
+| `cw_disarm` | aucun | BRANCHE D'ESSAI `exp/cw` (§ 22) : fermeture adoucie de la tonalité puis retour en réception ; sans effet si ce client n'a pas armé ; `toggle` du propriétaire armé fait de même ; réponse `ptt` |
 
 ## 7. Réponses et erreurs
 
@@ -500,3 +502,29 @@ hors service par défaut) et que le poste déclare « set / get Power Stat » (`
   `RigSession` (`powerOn`, `powerOff`, `powerHide`, délai de 150 s pour `power_on`), `app/PowerViews.kt` (STOP qui coupe
   dès l'APPUI, maintien 3 s, fenêtres) ; Android Auto et mode conduite : allumage à la connexion sans fenêtre, titre
   « POSTE ÉTEINT », « ALLUMAGE DU POSTE… » ou « POSTE ÉTEINT : erreur », aucun bouton.
+
+## 22. Manipulation CW, mode A (BRANCHE D'ESSAI `exp/cw`, fonction `cw`)
+
+Cahier : [`docs/exp-cw/cahier-des-charges.md`](exp-cw/cahier-des-charges.md). N'existe que dans la branche d'essai ;
+annoncée (`cw`) à un OPÉRATEUR seulement, quand `[cw] enabled` (désactivée par défaut). Client prévu : l'application
+Android seule (onglet CW) ; la page web ne s'en sert pas.
+
+- `cw_arm` : prise d'émission NORMALE du client, porte du micro fermée. Avant : mode du poste = `[cw] data_mode`
+  (jamais changé par la station), porteuse (fréquence d'émission + tonalité en USB, - en LSB) ET fréquence affichée
+  dans les bandes ; option `align` = QSY de la station AVANT la prise pour que la porteuse tombe sur la fréquence
+  affichée. Après : ce que le PttController a relu doit être ce qui a été vérifié, sinon coupure `cw_carrier_changed`.
+- Canal de données `cw` (ouvert par le client, `ordered: false`, `maxRetransmits: 0`, client -> station seulement),
+  messages JSON : `{"type":"cw","seq":3,"edges":[[41,1,1532],[42,0,1592]],"lease":1610}` ; `edges` = fronts des
+  500 dernières ms (32 au plus) `[id, 1 clé fermée / 0 ouverte, ts]`, `ts` et `lease` en ms depuis le début de la
+  séquence (horloge du client), `lease` = heure d'envoi (jamais avant le dernier front). Paquet à chaque front et
+  toutes les 20 ms pendant la séquence, toutes les 200 ms en silence armé. Paquet mal formé, d'un autre client ou
+  au-delà de 120 par seconde : ignoré. Battements (`heartbeat`) toujours exigés.
+- La station rejoue les fronts `delay_ms` plus tard, à l'échantillon près. Station -> client (canal `control`) :
+  `cw_state` (`state` `armed` / `playing` / `idle`, `seq`, `buffer_ms`, `late`, `lease_cuts`, `carrier_hz`, `reason`
+  à la fin), toutes les 200 ms pendant l'armement ; `cw_fault` (`seq`, `reason` : `lease_expired`,
+  `keydown_too_long`, `seq_overlap`, `disarm`…) ; `cw_stats` à chaque fin de séquence (`jitter_p95_ms`, `late`,
+  `lease_cuts`, `max_timing_err_ms`, `delay_ms`, `end`).
+- Fin d'émission (motif `last_cut_reason`) : `cw_disarm`, `cw_idle` (`[cw] idle_disarm_s` sans manipulation),
+  `cw_lease_expired`, `cw_keydown_too_long`, `cw_seq_overlap`, `cw_stalled` (rendu de la station en retard),
+  `cw_failed`, `cw_carrier_changed`, et toutes les coupures habituelles (STOP, `tot`, `heartbeat`, déconnexion...).
+

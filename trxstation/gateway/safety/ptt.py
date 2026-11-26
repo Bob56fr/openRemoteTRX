@@ -646,6 +646,23 @@ class PttController:
             self._watch_task = asyncio.get_running_loop().create_task(self._watchdog())
             return self.snapshot("tx_started")
 
+    async def read_transmit_plan(self) -> tuple[int, int, tuple]:
+        """LECTURE seule (laboratoire CW, branche exp/cw) : (fréquence affichée, fréquence d'émission, plan) lus à
+        l'instant, mêmes règles que la prise d'émission (split, ΔTX, côté d'émission). Refused si illisible."""
+        client = self.link.client
+        try:
+            freq = await client.get_frequency()
+        except _CAT_ERRORS as exc:
+            raise Refused("cat_error", str(exc)) from exc
+        tx, plan = await self._transmit_plan(client, freq)
+        return freq, tx, plan
+
+    @property
+    def tx_reading(self) -> tuple[int | None, str | None, tuple | None]:
+        """(fréquence, mode, plan) relus à la DERNIÈRE prise d'émission : la manipulation CW vérifie que la porteuse
+        contrôlée avant la prise est bien celle de la prise."""
+        return self._tx_freq, self._tx_mode, self._tx_plan
+
     async def _transmit_plan(self, client, rx_freq: int) -> tuple[int, tuple]:
         """Fréquence d'ÉMISSION réelle, lue à l'instant : en split, celle de l'autre VFO ; avec le ΔTX / XIT en service,
         décalée. Retourne (fréquence, (split, fréquence en split, XIT, décalage)). Un split ou un XIT que le poste déclare

@@ -50,7 +50,8 @@ LISTENER_REFUSED = frozenset({
     "monitoring",                   # monitoring inter-stations : opérateurs seulement (lot R5)
     "diffusion",                    # diffusion en direct : opérateurs seulement (lot D2)
     "freedv_set",                   # mode FreeDV de la station : opérateurs seulement (le visiteur en voit l'état)
-    "power_on", "power_off"})       # allumage et extinction du poste : opérateurs seulement (le visiteur voit « éteint »)
+    "power_on", "power_off",        # allumage et extinction du poste : opérateurs seulement (le visiteur voit « éteint »)
+    "cw_arm", "cw_disarm"})         # manipulation CW (branche exp/cw) : opérateurs seulement
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {

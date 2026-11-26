@@ -185,5 +185,17 @@
   "station.overload_auto": "Station surchargée ({cause}) : écoute des visiteurs suspendue pour protéger la station. Réouverture automatique après 5 minutes de fonctionnement normal.",
   "station.overload_locked": "Station surchargée ({cause}) : écoute des visiteurs suspendue pour protéger la station. Trop de coupures en une heure : l'opérateur doit la rouvrir.",
   "refus.tx_side_unreadable": "Côté d'émission du poste (MAIN ou SUB) illisible : émission refusée par sécurité (la fréquence d'émission est inconnue).",
-  "coupure.tx_side_changed": "côté d'émission (MAIN / SUB) ou sa fréquence modifié sur le poste pendant l'émission"
+  "coupure.tx_side_changed": "côté d'émission (MAIN / SUB) ou sa fréquence modifié sur le poste pendant l'émission",
+  "refus.cw_unavailable": "Manipulation CW absente de cette station.",
+  "refus.cw_busy": "La manipulation CW est déjà armée par un autre opérateur.",
+  "refus.cw_mode": "Manipulation CW refusée : mets le poste dans le mode demandé par la station (mode données, ex. PKTUSB).",
+  "refus.cw_carrier_changed": "Fréquence ou mode changés pendant l'armement : réarme la CW.",
+  "coupure.cw_disarm": "CW désarmée",
+  "coupure.cw_idle": "CW désarmée faute de manipulation",
+  "coupure.cw_lease_expired": "liaison trop lente pour la CW (bail dépassé)",
+  "coupure.cw_keydown_too_long": "clé fermée trop longtemps",
+  "coupure.cw_seq_overlap": "séquence CW interrompue",
+  "coupure.cw_stalled": "rendu CW de la station en retard",
+  "coupure.cw_failed": "erreur de la manipulation CW",
+  "coupure.cw_carrier_changed": "fréquence ou mode changés pendant l'armement CW"
 }

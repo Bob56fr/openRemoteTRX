@@ -185,5 +185,17 @@
   "station.overload_auto": "Estación sobrecargada ({cause}): escucha de los visitantes suspendida para proteger la estación. Reapertura automática tras 5 minutos de funcionamiento normal.",
   "station.overload_locked": "Estación sobrecargada ({cause}): escucha de los visitantes suspendida para proteger la estación. Demasiados cortes en una hora: el operador debe reabrirla.",
   "refus.tx_side_unreadable": "Lado de transmisión del equipo (MAIN o SUB) ilegible: transmisión rechazada por seguridad (la frecuencia de transmisión es desconocida).",
-  "coupure.tx_side_changed": "lado de transmisión (MAIN / SUB) o su frecuencia cambiado en el equipo durante la transmisión"
+  "coupure.tx_side_changed": "lado de transmisión (MAIN / SUB) o su frecuencia cambiado en el equipo durante la transmisión",
+  "refus.cw_unavailable": "La manipulación CW no está disponible en esta estación.",
+  "refus.cw_busy": "La manipulación CW ya está armada por otro operador.",
+  "refus.cw_mode": "Manipulación CW rechazada: pon el equipo en el modo que pide la estación (modo datos, p. ej. PKTUSB).",
+  "refus.cw_carrier_changed": "Frecuencia o modo cambiados durante el armado: vuelve a armar la CW.",
+  "coupure.cw_disarm": "CW desarmada",
+  "coupure.cw_idle": "CW desarmada por falta de manipulación",
+  "coupure.cw_lease_expired": "enlace demasiado lento para la CW (plazo superado)",
+  "coupure.cw_keydown_too_long": "manipulador cerrado demasiado tiempo",
+  "coupure.cw_seq_overlap": "secuencia CW interrumpida",
+  "coupure.cw_stalled": "reproducción CW de la estación con retraso",
+  "coupure.cw_failed": "error de la manipulación CW",
+  "coupure.cw_carrier_changed": "frecuencia o modo cambiados durante el armado de la CW"
 }

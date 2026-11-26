@@ -146,6 +146,27 @@ class Swr:
 
 
 @dataclass
+class Cw:
+    """Laboratoire CW (branche d'essai exp/cw, docs/exp-cw/cahier-des-charges.md § 10) : manipulation depuis l'écran
+    tactile de l'application Android, tonalité recréée par la station (mode A). Réglages de la STATION seulement ;
+    notice de station.toml écrite à l'adoption de la branche seulement."""
+    enabled: bool = False               # désactivé par défaut (fonction « cw » non annoncée)
+    modes: list[str] = field(default_factory=lambda: ["A"])   # A seulement dans le POC (C plus tard)
+    data_mode: str = "PKTUSB"           # mode du poste EXIGÉ pour le mode A (un mode de tx_modes) ; jamais changé par la station
+    tone_hz: float = 700.0              # tonalité recréée (300 à 1200 Hz)
+    edge_ms: float = 5.0                # fronts en cosinus surélevé (3 à 8 ms)
+    delay_ms: float = 300.0             # rejeu (150 à 500 ms) ; valeur de départ si adaptive
+    adaptive: bool = False              # rejeu adaptatif ENTRE séquences (p95 de la gigue + 50 ms, dans les bornes)
+    delay_min_ms: float = 150.0
+    delay_max_ms: float = 500.0
+    lease_grace_ms: float = 60.0        # marge du bail (20 à 200 ms)
+    max_keydown_ms: float = 2000.0      # appui continu au plus (100 à 5000 ms, plafond 5 s)
+    seq_gap_ms: float = 1500.0          # silence de fin de séquence
+    ptt_variant: str = "hold"           # « hold » (V1 : PTT tenu pendant l'armement) ; « hang » (V2) pas encore codée
+    idle_disarm_s: float = 8.0          # V1 : désarmement après ce temps sans manipulation (2 à 60 s)
+
+
+@dataclass
 class Netprobe:
     """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md) : mesure et affiche, n'agit JAMAIS sur l'émission.
     Seuils de l'indicateur = valeurs de DÉPART ; ceux choisis par l'opérateur (state_dir/netprobe/seuils.json) priment."""
@@ -600,6 +621,7 @@ class Config:
     selcall: Selcall = field(default_factory=Selcall)
     access: Access = field(default_factory=Access)
     swr: Swr = field(default_factory=Swr)
+    cw: Cw = field(default_factory=Cw)
     power: Power = field(default_factory=Power)
     breizh: Breizh = field(default_factory=Breizh)
     netprobe: Netprobe = field(default_factory=Netprobe)
@@ -665,6 +687,7 @@ def validate(cfg: Config) -> list[str]:
         p += _client_problems(client, cfg.clients)
     p += _access_problems(cfg.access)
     p += _swr_problems(cfg.swr)
+    p += _cw_problems(cfg.cw, cfg.rig)
     p += _power_problems(cfg.power, cfg.rig)
     p += _netprobe_problems(cfg.netprobe)
     p += _breizh_problems(cfg.breizh, cfg)
@@ -885,6 +908,31 @@ def _swr_problems(s: Swr) -> list[str]:
     value = s.point_tx_max_s
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.5 <= value <= 3.0:
         p.append(_t("number_between", where="[swr]", name="point_tx_max_s", low="0.5", high="3"))
+    return p
+
+
+def _cw_problems(c: Cw, rig: Rig) -> list[str]:
+    """[cw] (branche exp/cw). Toute incohérence est bloquante ; data_mode n'est confronté à tx_modes que fonction en
+    service (le défaut PKTUSB n'a pas à exister sur un poste où la CW est désactivée)."""
+    p = []
+    if not isinstance(c.enabled, bool):
+        p.append(_t("bool", where="[cw]", name="enabled"))
+    if not isinstance(c.adaptive, bool):
+        p.append(_t("bool", where="[cw]", name="adaptive"))
+    if not isinstance(c.modes, list) or not c.modes or any(m not in ("A",) for m in c.modes):
+        p.append(_t("cw.choice", name="modes", choices='["A"]'))
+    if c.ptt_variant not in ("hold",):
+        p.append(_t("cw.choice", name="ptt_variant", choices="hold"))
+    if not isinstance(c.data_mode, str) or not c.data_mode or             (c.enabled is True and rig.tx_modes and c.data_mode not in rig.tx_modes):
+        p.append(_t("cw.data_mode", mode=str(c.data_mode)[:16], allowed=", ".join(rig.tx_modes) or "-"))
+    for name, low, high in (("tone_hz", 300, 1200), ("edge_ms", 3, 8), ("delay_ms", 150, 500),
+                            ("delay_min_ms", 150, 500), ("delay_max_ms", 150, 500), ("lease_grace_ms", 20, 200),
+                            ("max_keydown_ms", 100, 5000), ("seq_gap_ms", 500, 10000), ("idle_disarm_s", 2, 60)):
+        value = getattr(c, name)
+        if not _number(value) or not low <= value <= high:
+            p.append(_t("number_between", where="[cw]", name=name, low=low, high=high))
+    if _number(c.delay_min_ms) and _number(c.delay_max_ms) and _number(c.delay_ms) and             not c.delay_min_ms <= c.delay_ms <= c.delay_max_ms:
+        p.append(_t("cw.delay_order"))
     return p
 
 
@@ -1259,7 +1307,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "power", "breizh",
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "cw", "power", "breizh",
                  "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "dashboard", "freedv", "sdr", "bands",
                  "clients"}
     for key in sorted(set(d) - top_known):
@@ -1281,6 +1329,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             selcall=_build(Selcall, d.get("selcall", {}), "selcall", problems),
             access=_build(Access, d.get("access", {}), "access", problems),
             swr=_build(Swr, d.get("swr", {}), "swr", problems),
+            cw=_build(Cw, d.get("cw", {}), "cw", problems),
             power=_build(Power, d.get("power", {}), "power", problems),
             breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
