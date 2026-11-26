@@ -128,8 +128,15 @@ Station -> client :
 
 ## 7. Application Android (seul client du POC, décision 5)
 
-- Écran CW de l'application (tablette et smartphone) : bouton « Armer CW » (prise d'émission, affiche l'état
-  renvoyé), zones tactiles inactives tant que non armé. Annoncé seulement si `hello.features` contient `cw`.
+- ONGLET « CW » DÉDIÉ (demande de l'utilisateur du 2026-11-26 ; maquette
+  https://claude.ai/artifact/NSXTCo2XT6RbHpxLVBt2pt, smartphone 2 palettes / 1 palette, tablette en paysage) :
+  EN HAUT une synthèse du poste (fréquence porteuse et affichée, mode, état RX / TX, PWR, Po, ALC, TOS, S-mètre en
+  réception, TOT restant) ; au milieu les commandes habituelles de la CW (vitesse, poids, tonalité, retour local,
+  manipulateur, inversion point / trait, caler la porteuse, texte décodé de sa propre manipulation, état du rejeu) ;
+  EN BAS le manipulateur tactile avec, juste au-dessus, le SÉLECTEUR « 1 palette » (pioche) / « 2 palettes »
+  (iambique A, B, simple levier) et « Armer CW » ; STOP toujours visible ; le PTT de l'application est remplacé
+  par « Armer CW » dans cet onglet. Onglet présent seulement si `hello.features` contient `cw`.
+- Bouton « Armer CW » (prise d'émission, affiche l'état renvoyé), zones tactiles inactives tant que non armé.
 - Interfaces : pioche, iambique A, iambique B, simple levier ; vitesse 5 à 40 mots/min, poids ; inversion
   point / trait ; zones tactiles seulement (multitouche pour l'iambique).
 - Rejet de la paume (contact trop large ou hors zone), vibration au toucher.
