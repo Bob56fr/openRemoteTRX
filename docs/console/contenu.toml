@@ -535,6 +535,12 @@ quand = "Après le menu 6.3, pour voir les problèmes trouvés avant de demander
 modifie = "Rien : le menu affiche seulement le lien et la marche à suivre."
 admin = false
 
+[menus.screen_share]
+role = "<strong>Écran partagé</strong>, en lecture seule, par le relais de rf-diy.com (chiffré de bout en bout). Choix 1 (Debian et Raspberry Pi) : la console donne un code de 10 caractères à dicter à la personne qui t'aide, puis se relance ; tout ce qui s'affiche est vu par elle en direct. Choix 2 (partout, Windows compris) : tu tapes le code dicté par un ami et tu vois sa console. Celui qui regarde ne peut <strong>rien taper</strong> : l'ami tape lui-même ce qu'on lui dit (au téléphone par exemple). <strong>Ctrl+]</strong> arrête le partage (la console continue) ; quitter la console arrête tout ; 2 heures au plus. Aussi en ligne de commande : <code>trx-console --partage</code> et <code>trx-console --voir CODE</code>."
+quand = "Quand un ami n'arrive pas à installer ou régler sa station : il partage son écran, tu le guides de vive voix en voyant ce qu'il voit. Fonctionne avant même que station.toml existe. Dans la console texte seulement (terminal ou SSH), pas dans la console web ; la fenêtre de celui qui regarde doit être au moins aussi grande que celle de l'ami (le titre de la fenêtre le signale)."
+modifie = "Rien sur la station : la console est seulement relancée sous un pseudo-terminal le temps du partage, et son écran envoyé au relais, qui l'efface au bout de 10 minutes ou à la fin du partage."
+admin = false
+
 [menus.config_download]
 role = "Fait une <strong>copie de sauvegarde de station.toml</strong> (tous les réglages de la station) sur le Bureau ; dans la console web, un bouton la télécharge sur ton appareil. La copie contient les empreintes des mots de passe et l'adresse des alertes ntfy : garde-la pour toi."
 quand = "Avant une grosse modification, avant de réinstaller la station, ou pour garder une copie des réglages ailleurs que sur la station."

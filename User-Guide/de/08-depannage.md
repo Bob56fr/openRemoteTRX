@@ -51,3 +51,12 @@
    Auf ihrer Seite erhält sie einen Alarm auf ihrem Telefon, wenn Ihre Station keine Neuigkeiten mehr gibt. **Fern von
    Ihrer Station** geht alles auch auf der Webseite, Rubrik „Monitoring“: Schaltfläche „Hilfe erhalten: ich habe einen
    Code“, Vergleich der 6 Ziffern, Wahl dessen, was gesendet wird, Antwort auf Anfragen, Ende.
+5. **Ihren Bildschirm der Person zeigen, die Ihnen hilft** (geteilter Bildschirm, Menü **6.7**, nichts zu
+   aktivieren, funktioniert sogar, bevor die Station eingerichtet ist): in der Textkonsole (Terminal oder SSH, Debian
+   oder Raspberry Pi), Auswahl 1. Die Konsole zeigt einen Code aus 10 Zeichen: Diktieren Sie ihn und drücken Sie dann
+   die Eingabetaste. Die Person, die Ihnen hilft, öffnet Menü 6.7, Auswahl 2 (auf ihrem PC, auch Windows) und tippt
+   den Code: Sie sieht Ihre Konsole live, Ende-zu-Ende verschlüsselt über das Relais von rf-diy.com. Sie kann
+   **nichts tippen**: Sie tippen selbst, was sie Ihnen sagt (zum Beispiel am Telefon). **Strg+]** beendet das Teilen
+   (Ihre Konsole läuft weiter); das Beenden der Konsole beendet alles; höchstens 2 Stunden. Auch auf der
+   Kommandozeile: `trx-console --partage` (Sie) und `trx-console --voir CODE` (die helfende Person). Ihr Fenster muss
+   mindestens so groß sein wie Ihres (der Fenstertitel sagt es ihr).

@@ -247,6 +247,13 @@
      "quand": "Wenn der Empfangston auf allen Endgeräten zu leise oder zu laut ist, zum\nBeispiel bei einem Funkgerät mit nicht einstellbarem USB-Ausgang (Yaesu\nFTDX10). Mit gestarteter Station und Signal auf der Antenne messen.",
      "role": "Stellt die Verstärkung des Empfangstons ein, den die Station an alle\nEndgeräte schickt (Telefone, Seite, Besucher, Übertragung), sowie den\nBegrenzer des Empfangstons (Spitzen bei -1 dBFS, standardmäßig an). Das Menü\nzeigt den gerade empfangenen Pegel und schlägt eine Verstärkung für -20 dBFS\nvor. Mit dem Begrenzer übersteuert eine hohe Verstärkung nicht; ihn\nauszuschalten dient nur der Fehlersuche. Die Lautstärke jedes Telefons wird\nin der Seite oder der App eingestellt."
     },
+    "screen_share": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nichts an der Station: Die Konsole wird nur für die Dauer des Teilens in\neinem Pseudo-Terminal neu gestartet und ihr Bildschirm an das Relais\ngesendet, das ihn nach 10 Minuten oder am Ende des Teilens löscht.",
+     "quand": "Wenn ein Freund seine Station nicht installieren oder einrichten kann: Er\nteilt seinen Bildschirm, Sie führen ihn mündlich und sehen, was er sieht.\nFunktioniert sogar, bevor station.toml existiert. Nur in der Textkonsole\n(Terminal oder SSH), nicht in der Webkonsole; das Fenster des Zusehenden\nmuss mindestens so groß sein wie das des Freundes (der Fenstertitel weist\ndarauf hin).",
+     "role": "Geteilter Bildschirm, nur ansehen, über das Relais von rf-diy.com\n(Ende-zu-Ende verschlüsselt). Auswahl 1 (Debian und Raspberry Pi): Die\nKonsole gibt einen 10-stelligen Code, den Sie der Person nennen, die Ihnen\nhilft, und startet neu; alles Angezeigte sieht diese Person live. Auswahl 2\n(überall, auch Windows): Sie tippen den Code eines Freundes und sehen seine\nKonsole. Wer zusieht, kann nichts tippen: Der Freund tippt selbst, was man\nihm sagt (zum Beispiel am Telefon). Strg+] beendet das Teilen (die Konsole\nläuft weiter); das Beenden der Konsole beendet alles; höchstens 2 Stunden.\nAuch auf der Kommandozeile: trx-console --partage und trx-console --voir\nCODE."
+    },
     "sdr": {
      "admin": true,
      "expert": "Ein belegter SDR (zum Beispiel von einem anderen Projekt) oder einer mit\ndoppelter Seriennummer (häufig bei RTL-SDR-Sticks ab Werk) wird abgelehnt:\ndie Station würde die Geräte verwechseln. Die Suche meldet auch einen SDR am\nselben Hub wie das Funkgerät (zu vermeiden). Ebenso auf der Kommandozeile:\ntrx-sdr --list (mit sudo wird der Name des Programms angezeigt, das einen\nRTL-SDR-Stick belegt).",
@@ -558,6 +565,13 @@
      "modifie": "The station configuration (station.toml: rx_gain_db and rx_limiter in the\n[audio] section), with administrator rights; the previous version is kept\n(station.toml.bak). Nothing is written if you give up. The station is\nrestarted on request to take the change.",
      "quand": "When received audio is too weak or too loud on every terminal, for instance\nwith a transceiver whose USB output cannot be adjusted (Yaesu FTDX10).\nMeasure with the station started and signal on the antenna.",
      "role": "Sets the receive audio gain the station sends to every terminal (phones,\npage, visitors, broadcast) and the receive limiter (peaks capped at -1 dBFS,\non by default). The menu shows the level received right now and suggests a\ngain to reach -20 dBFS. With the limiter, a high gain does not clip;\nswitching it off is only useful for troubleshooting. The volume of each\nphone is set in the page or the app."
+    },
+    "screen_share": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nothing on the station: the console is only restarted under a\npseudo-terminal while sharing, and its screen sent to the relay, which\nerases it after 10 minutes or at the end of the sharing.",
+     "quand": "When a friend cannot install or set up their station: they share their\nscreen, you guide them by voice while seeing what they see. Works even\nbefore station.toml exists. In the text console only (terminal or SSH), not\nin the web console; the viewer's window must be at least as large as the\nfriend's (the window title says so).",
+     "role": "Shared screen, view only, through the rf-diy.com relay (end-to-end\nencrypted). Choice 1 (Debian and Raspberry Pi): the console gives a\n10-character code to read out to the person helping you, then restarts;\neverything displayed is seen by them live. Choice 2 (everywhere, Windows\nincluded): you type the code given by a friend and see their console. The\nviewer cannot type anything: the friend types what they are told (by phone\nfor example). Ctrl+] stops sharing (the console goes on); quitting the\nconsole stops everything; 2 hours at most. Also from the command line:\ntrx-console --partage and trx-console --voir CODE."
     },
     "sdr": {
      "admin": true,
@@ -871,6 +885,13 @@
      "quand": "Cuando el audio recibido es demasiado débil o fuerte en todos los\nterminales, por ejemplo con un equipo cuya salida USB no se puede ajustar\n(Yaesu FTDX10). Medir con la estación arrancada y señal en la antena.",
      "role": "Ajusta la ganancia del audio recibido que la estación envía a todos los\nterminales (teléfonos, página, visitantes, difusión) y el limitador del\naudio recibido (picos limitados a -1 dBFS, activo por defecto). El menú\nmuestra el nivel recibido en este momento y propone una ganancia para llegar\na -20 dBFS. Con el limitador, una ganancia alta no satura; apagarlo solo\nsirve para un diagnóstico. El volumen de cada teléfono se ajusta en la\npágina o la aplicación."
     },
+    "screen_share": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nada en la estación: la consola solo se reinicia bajo un pseudoterminal\nmientras dura la compartición, y su pantalla se envía al relé, que la borra\nal cabo de 10 minutos o al final de la compartición.",
+     "quand": "Cuando un amigo no consigue instalar o configurar su estación: comparte su\npantalla y tú lo guías de viva voz viendo lo que ve. Funciona incluso antes\nde que exista station.toml. Solo en la consola de texto (terminal o SSH), no\nen la consola web; la ventana de quien mira debe ser al menos tan grande\ncomo la del amigo (el título de la ventana lo indica).",
+     "role": "Pantalla compartida, solo lectura, a través del relé de rf-diy.com (cifrada\nde extremo a extremo). Opción 1 (Debian y Raspberry Pi): la consola da un\ncódigo de 10 caracteres que dictas a la persona que te ayuda, y se reinicia;\ntodo lo que se muestra lo ve ella en directo. Opción 2 (en todas partes,\nWindows incluido): escribes el código dictado por un amigo y ves su consola.\nQuien mira no puede escribir nada: el amigo escribe lo que le dicen (por\nteléfono, por ejemplo). Ctrl+] detiene la compartición (la consola sigue);\nsalir de la consola lo detiene todo; 2 horas como máximo. También en línea\nde órdenes: trx-console --partage y trx-console --voir CÓDIGO."
+    },
     "sdr": {
      "admin": true,
      "expert": "Un SDR ocupado (por ejemplo por otro proyecto) o cuyo número de serie está\nduplicado (frecuente en las llaves RTL-SDR de fábrica) se rechaza: la\nestación confundiría los aparatos. La búsqueda también señala un SDR\nconectado al mismo hub que el equipo (a evitar). Lo mismo en línea de\ncomandos: trx-sdr --list (con sudo se muestra el nombre del programa que\nocupa una llave RTL-SDR).",
@@ -1182,6 +1203,13 @@
      "modifie": "La configuration de la station (station.toml : rx_gain_db et rx_limiter de\nla section [audio]), avec les droits d'administration ; l'ancienne version\nest gardée (station.toml.bak). Rien n'est écrit si tu abandonnes. La station\nest redémarrée sur ta demande pour prendre le changement.",
      "quand": "Quand le son reçu est trop faible ou trop fort sur tous les terminaux, par\nexemple avec un poste dont la sortie USB n'est pas réglable (Yaesu FTDX10).\nMesurer avec la station démarrée et du signal sur l'antenne.",
      "role": "Règle le gain du son reçu envoyé par la station à tous les terminaux\n(téléphones, page, visiteurs, diffusion) et le limiteur du son reçu (crêtes\nplafonnées à -1 dBFS, en service par défaut). Le menu montre le niveau reçu\nen ce moment et propose un gain pour viser -20 dBFS. Avec le limiteur, un\ngain fort ne sature pas ; le couper ne sert qu'au diagnostic. Le volume\npropre à chaque téléphone se règle dans la page ou l'application."
+    },
+    "screen_share": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Rien sur la station : la console est seulement relancée sous un\npseudo-terminal le temps du partage, et son écran envoyé au relais, qui\nl'efface au bout de 10 minutes ou à la fin du partage.",
+     "quand": "Quand un ami n'arrive pas à installer ou régler sa station : il partage son\nécran, tu le guides de vive voix en voyant ce qu'il voit. Fonctionne avant\nmême que station.toml existe. Dans la console texte seulement (terminal ou\nSSH), pas dans la console web ; la fenêtre de celui qui regarde doit être au\nmoins aussi grande que celle de l'ami (le titre de la fenêtre le signale).",
+     "role": "Écran partagé, en lecture seule, par le relais de rf-diy.com (chiffré de\nbout en bout). Choix 1 (Debian et Raspberry Pi) : la console donne un code\nde 10 caractères à dicter à la personne qui t'aide, puis se relance ; tout\nce qui s'affiche est vu par elle en direct. Choix 2 (partout, Windows\ncompris) : tu tapes le code dicté par un ami et tu vois sa console. Celui\nqui regarde ne peut rien taper : l'ami tape lui-même ce qu'on lui dit (au\ntéléphone par exemple). Ctrl+] arrête le partage (la console continue) ;\nquitter la console arrête tout ; 2 heures au plus. Aussi en ligne de\ncommande : trx-console --partage et trx-console --voir CODE."
     },
     "sdr": {
      "admin": true,

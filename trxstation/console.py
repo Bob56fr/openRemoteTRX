@@ -13,6 +13,8 @@ Les actions qui touchent au système passent par `sudo` : le mot de passe de ses
     trx-console               menu
     trx-console --diagnostic  diagnostic complet puis sortie (code 1 si une erreur bloquante)
     trx-console --rapport     crée le rapport de dépannage (zip sur le Bureau)
+    trx-console --partage     écran partagé : montre la console à un aidant, en lecture seule (Debian / Pi)
+    trx-console --voir CODE   écran partagé : voit la console d'un ami
 """
 from __future__ import annotations
 
@@ -73,7 +75,8 @@ MENU_THEMES = (
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
-    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer")),
+    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer",
+                                     "screen_share")),
     ("7", "updates", ("update", "rollback", "install_zip")),
     ("8", "expert", ("edit_config", "expert", "qualif", "indicator", "config_download")),
 )
@@ -83,6 +86,7 @@ RENUMBERED_IN = "0.166.0"
 RENUMBER_NOTICE_UNTIL = (0, 180, 0)
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
 # avec un message ; 1 à 9 ouvrent désormais un thème.
+SCREEN_SHARED_ENV = "TRX_SCREEN_SHARED"   # console lancée par l'écran partagé (screenshare/share.py, ENV_SHARED)
 RX_TARGET_DBFS = -20       # menu 2.9 : niveau reçu visé (voix ou bruit de bande sur antenne)
 RX_FLOOR_DBFS = -85        # en dessous : pas de son mesurable (station arrêtée, poste muet), aucune proposition
 RX_GAIN_LOW, RX_GAIN_HIGH = -40, 20     # bornes de [audio] rx_gain_db (config.validate)
@@ -97,7 +101,7 @@ OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
 # Niveau de chaque menu (étape 234) : Basic = mettre en service, utiliser, demander de l'aide ; Expert = réglages fins et
 # outils de développement ; tout le reste = Normal. « 0 » (langue et niveau) est toujours montré.
 BASIC_MENUS = frozenset({"start", "stop", "monitor", "clear_safe_mode", "assistant", "hwtest", "pairing", "operators",
-                         "diagnostic", "report", "analyzer", "update"})
+                         "diagnostic", "report", "analyzer", "update", "screen_share"})
 EXPERT_MENUS = frozenset({"temperature", "edit_config", "expert", "qualif"})
 
 
@@ -459,6 +463,8 @@ class Console:
         self.level = level if level in LEVELS else "normal"
         # Nature de la PROCHAINE question (étape 235) : lue par la console web en formulaires, ignorée au terminal.
         self.hint: dict | None = None
+        # Vrai terminal (écran partagé, étape 403) : jamais dans la console web ni dans les tests.
+        self.tty = ask is input and sys.stdin.isatty() and sys.stdout.isatty()
 
     def visible(self, method: str) -> bool:
         """Menu montré au niveau choisi ? « Sortir du mode sûr » n'encombre le niveau Basic que si la station y est."""
@@ -1194,6 +1200,54 @@ class Console:
     def analyzer(self) -> None:
         """Lien de l'analyseur des rapports (menu 6.3 ou rapport reçu par le monitoring) : rien n'est lancé ni envoyé."""
         self.say(self.t("analyzer.1", url=ANALYZER_URL, report=REPORT_MENU, monitoring=MONITORING_MENU))
+
+    def screen_share(self) -> None:
+        """Écran partagé (étape 403, docs/protocole-ecran.md) : l'opérateur aidé montre sa console texte à un aidant, en
+        LECTURE SEULE, par le relais (code de 10 caractères dicté de vive voix) ; ou l'aidant regarde celui d'un ami.
+        Terminal seulement (la console web n'a pas de terminal à partager) ; partager : Debian / Pi seulement."""
+        if not self.tty:
+            self.say(self.t("screen_share.terminal_only"))
+            return
+        self.say(self.t("screen_share.intro"))
+        choice = self.ask(self.t("screen_share.menu")).strip()
+        if choice == "1":
+            if IS_WINDOWS:
+                self.say(self.t("screen_share.linux_only"))
+            elif os.environ.get(SCREEN_SHARED_ENV):
+                self.say(self.t("screen_share.already"))
+            else:
+                self.share_screen(self.shared_console_argv())
+        elif choice == "2":
+            code = self.ask(self.t("screen_share.ask_code")).strip()
+            if code:
+                self.view_screen(code)
+        elif choice:
+            self.say(self.t("loop.unknown"))
+
+    def shared_console_argv(self, text: bool = False) -> list[str]:
+        """La console relancée dans le pseudo-terminal du partage (même station.toml)."""
+        return [self.python, "-m", "trxstation.console", "--config", str(self.config), *(["--texte"] if text else [])]
+
+    def screen_relay_url(self) -> str:
+        """Relais du monitoring de station.toml (même relais), sinon celui de rf-diy.com : une station en cours
+        d'installation n'a pas encore de station.toml. TRX_SCREEN_RELAY : essais seulement."""
+        from . import config as cfgmod
+        url = os.environ.get("TRX_SCREEN_RELAY")
+        if url:
+            return url
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            return cfg.monitor_link.relay_url or cfgmod.PRESENCE_DEFAULT_RELAY
+        except (cfgmod.ConfigError, OSError, AttributeError):
+            return cfgmod.PRESENCE_DEFAULT_RELAY
+
+    def share_screen(self, child_argv: list[str]) -> int:
+        from .screenshare.share import run_share
+        return run_share(child_argv, t=self.t, relay_url=self.screen_relay_url(), version=self.installed)
+
+    def view_screen(self, code: str) -> int:
+        from .screenshare.view import run_view
+        return run_view(code, t=self.t, relay_url=self.screen_relay_url(), version=self.installed)
 
     def config_download(self) -> None:
         """Copie de station.toml sur le Bureau du compte de la console (étape 399, demande de l'utilisateur du 2026-11-25) ;
@@ -3398,6 +3452,8 @@ class Console:
             line += self.banner([t("head.new_version", version=release.version, installed=self.installed),
                                  t("head.new_version_menu", menu=UPDATE_MENU)])
         line += "\n  " + t("head.level", level=t(f"level.{self.level}"))
+        if os.environ.get(SCREEN_SHARED_ENV):
+            line += "\n  " + self.paint(t("head.screen_shared"), YELLOW)
         if (parse_version(self.installed) or (0,)) < RENUMBER_NOTICE_UNTIL:
             line += "\n  " + self.paint(t("head.renumbered", version=RENUMBERED_IN, update=UPDATE_MENU,
                                           zip=menu_number("install_zip"), diag=menu_number("diagnostic")), YELLOW)
@@ -3638,7 +3694,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
     ap.add_argument("--reseau", action="store_true",
                     help="openRemoteTRX Console sur le réseau (service : HTTPS, comptes administrateurs, [remote_console])")
+    ap.add_argument("--partage", action="store_true",
+                    help="écran partagé : montrer cette console à un aidant, en lecture seule (Debian / Pi ; menu 6.7)")
+    ap.add_argument("--voir", nargs="?", const="", metavar="CODE",
+                    help="écran partagé : voir la console d'un ami avec le code qu'il a dicté (menu 6.7)")
     args = ap.parse_args(argv)
+    if args.partage or args.voir is not None:
+        console = Console(args.config)
+        if args.voir is not None:
+            code = args.voir or input(console.t("screen_share.ask_code")).strip()
+            return console.view_screen(code) if code else 1
+        if IS_WINDOWS:
+            print(console.t("screen_share.linux_only"))
+            return 1
+        return console.share_screen(console.shared_console_argv(text=args.texte))
     if args.web:
         from .console_web.server import run
         return run(args.config, args.port)

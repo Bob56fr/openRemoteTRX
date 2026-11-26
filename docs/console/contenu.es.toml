@@ -401,6 +401,12 @@ quand = "Después del menú 6.3, para ver los problemas encontrados antes de ped
 modifie = "Nada: el menú solo muestra el enlace y los pasos a seguir."
 admin = false
 
+[menus.screen_share]
+role = "<strong>Pantalla compartida</strong>, solo lectura, a través del relé de rf-diy.com (cifrada de extremo a extremo). Opción 1 (Debian y Raspberry Pi): la consola da un código de 10 caracteres que dictas a la persona que te ayuda, y se reinicia; todo lo que se muestra lo ve ella en directo. Opción 2 (en todas partes, Windows incluido): escribes el código dictado por un amigo y ves su consola. Quien mira no puede <strong>escribir nada</strong>: el amigo escribe lo que le dicen (por teléfono, por ejemplo). <strong>Ctrl+]</strong> detiene la compartición (la consola sigue); salir de la consola lo detiene todo; 2 horas como máximo. También en línea de órdenes: <code>trx-console --partage</code> y <code>trx-console --voir CÓDIGO</code>."
+quand = "Cuando un amigo no consigue instalar o configurar su estación: comparte su pantalla y tú lo guías de viva voz viendo lo que ve. Funciona incluso antes de que exista station.toml. Solo en la consola de texto (terminal o SSH), no en la consola web; la ventana de quien mira debe ser al menos tan grande como la del amigo (el título de la ventana lo indica)."
+modifie = "Nada en la estación: la consola solo se reinicia bajo un pseudoterminal mientras dura la compartición, y su pantalla se envía al relé, que la borra al cabo de 10 minutos o al final de la compartición."
+admin = false
+
 [menus.config_download]
 role = "Hace una <strong>copia de seguridad de station.toml</strong> (todos los ajustes de la estación) en el Escritorio; en la consola web, un botón la descarga en tu dispositivo. La copia contiene las huellas de las contraseñas y la dirección de las alertas ntfy: guárdala para ti."
 quand = "Antes de un cambio importante, antes de reinstalar la estación o para guardar una copia de los ajustes fuera de la estación."

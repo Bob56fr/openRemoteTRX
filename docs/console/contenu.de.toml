@@ -401,6 +401,12 @@ quand = "Nach Menü 6.3, um die gefundenen Probleme zu sehen, bevor du um Hilfe 
 modifie = "Nichts: das Menü zeigt nur den Link und die Schritte."
 admin = false
 
+[menus.screen_share]
+role = "<strong>Geteilter Bildschirm</strong>, nur ansehen, über das Relais von rf-diy.com (Ende-zu-Ende verschlüsselt). Auswahl 1 (Debian und Raspberry Pi): Die Konsole gibt einen 10-stelligen Code, den Sie der Person nennen, die Ihnen hilft, und startet neu; alles Angezeigte sieht diese Person live. Auswahl 2 (überall, auch Windows): Sie tippen den Code eines Freundes und sehen seine Konsole. Wer zusieht, kann <strong>nichts tippen</strong>: Der Freund tippt selbst, was man ihm sagt (zum Beispiel am Telefon). <strong>Strg+]</strong> beendet das Teilen (die Konsole läuft weiter); das Beenden der Konsole beendet alles; höchstens 2 Stunden. Auch auf der Kommandozeile: <code>trx-console --partage</code> und <code>trx-console --voir CODE</code>."
+quand = "Wenn ein Freund seine Station nicht installieren oder einrichten kann: Er teilt seinen Bildschirm, Sie führen ihn mündlich und sehen, was er sieht. Funktioniert sogar, bevor station.toml existiert. Nur in der Textkonsole (Terminal oder SSH), nicht in der Webkonsole; das Fenster des Zusehenden muss mindestens so groß sein wie das des Freundes (der Fenstertitel weist darauf hin)."
+modifie = "Nichts an der Station: Die Konsole wird nur für die Dauer des Teilens in einem Pseudo-Terminal neu gestartet und ihr Bildschirm an das Relais gesendet, das ihn nach 10 Minuten oder am Ende des Teilens löscht."
+admin = false
+
 [menus.config_download]
 role = "Erstellt eine <strong>Sicherungskopie von station.toml</strong> (alle Einstellungen der Station) auf dem Desktop; in der Web-Konsole lädt eine Schaltfläche sie auf Ihr Gerät herunter. Die Kopie enthält die Passwort-Hashes und die Adresse der ntfy-Alarme: behalten Sie sie für sich."
 quand = "Vor einer größeren Änderung, vor einer Neuinstallation der Station oder um eine Kopie der Einstellungen außerhalb der Station aufzubewahren."

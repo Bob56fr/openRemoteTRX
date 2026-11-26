@@ -48,7 +48,7 @@ ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 # reconnus par leur clé de traduction : même résultat dans les quatre langues (étape 235). Une clé ajoutée ici doit
 # exister (test).
 REFUSED_KEYS = frozenset({
-    "loop.unknown", "config_download.unreadable", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
+    "loop.unknown", "config_download.unreadable", "screen_share.terminal_only", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
     "report.1", "update.3", "edit_config.2", "edit_config.3", "edit_config.6", "pairing.2",
     "save_profile.1", "save_profile.4", "load_profile.2", "load_profile.3", "load_profile.4",
     "save_config.5", "save_config.6", "save_config.7", "visitors.2", "visitors.4",

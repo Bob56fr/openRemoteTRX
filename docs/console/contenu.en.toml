@@ -401,6 +401,12 @@ quand = "After menu 6.3, to see the problems found before asking for help, or wh
 modifie = "Nothing: the menu only shows the link and the steps to follow."
 admin = false
 
+[menus.screen_share]
+role = "<strong>Shared screen</strong>, view only, through the rf-diy.com relay (end-to-end encrypted). Choice 1 (Debian and Raspberry Pi): the console gives a 10-character code to read out to the person helping you, then restarts; everything displayed is seen by them live. Choice 2 (everywhere, Windows included): you type the code given by a friend and see their console. The viewer cannot <strong>type anything</strong>: the friend types what they are told (by phone for example). <strong>Ctrl+]</strong> stops sharing (the console goes on); quitting the console stops everything; 2 hours at most. Also from the command line: <code>trx-console --partage</code> and <code>trx-console --voir CODE</code>."
+quand = "When a friend cannot install or set up their station: they share their screen, you guide them by voice while seeing what they see. Works even before station.toml exists. In the text console only (terminal or SSH), not in the web console; the viewer's window must be at least as large as the friend's (the window title says so)."
+modifie = "Nothing on the station: the console is only restarted under a pseudo-terminal while sharing, and its screen sent to the relay, which erases it after 10 minutes or at the end of the sharing."
+admin = false
+
 [menus.config_download]
 role = "Makes a <strong>backup copy of station.toml</strong> (all the station settings) on the Desktop; in the web console, a button downloads it to your device. The copy contains the password hashes and the ntfy alert address: keep it to yourself."
 quand = "Before a big change, before reinstalling the station, or to keep a copy of the settings somewhere other than the station."
