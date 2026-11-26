@@ -571,6 +571,7 @@
   "cw.pads_one": "1 Paddle",
   "cw.pads_other": "{n} Paddles",
   "cw.arm": "CW AKTIVIEREN",
+  "cw.arm_first": "Schalten Sie zuerst „Senden erlaubt“ ein: CW-Tasten ist eine Aussendung.",
   "cw.arming": "Wird aktiviert…",
   "cw.disarm": "CW AKTIV · deaktivieren",
   "cw.stop": "STOP",

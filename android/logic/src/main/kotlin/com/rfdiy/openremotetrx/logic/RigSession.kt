@@ -770,6 +770,12 @@ class RigSession(
     /** « Armer CW » : prise d'émission normale demandée à la station (mêmes refus que le PTT) ; battements dès la demande. */
     fun cwArm(now: Long, net: String? = null) {
         if (!connected || listener || !protocolOk || !cw.ui.offered || cw.active) return
+        if (!arming.armed) {                                     // même double sécurité que le PTT (décision du 2026-11-26)
+            cw.forget(Tr.t("cw.arm_first"))
+            log(Tr.t("cw.arm_first"), LogLevel.WARN)
+            publish(now)
+            return
+        }
         val ptt = state?.ptt
         if (ptt != null && ptt.state != "RX") {
             log(Tr.t("rigsession.tx_busy", "owner" to (ptt.owner ?: "?")), LogLevel.WARN)
@@ -953,6 +959,7 @@ class RigSession(
 
     fun setArmed(now: Long, on: Boolean) {
         if (on && connected && !listener) arming.arm() else arming.disarm()
+        if (!arming.armed && cw.active) cwDisarm(now)            // « Émission autorisée » retirée : la CW armée se désarme
         publish(now)
     }
 

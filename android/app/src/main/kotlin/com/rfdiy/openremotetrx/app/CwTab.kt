@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -108,6 +109,7 @@ internal fun RigScope.CwScreen(modifier: Modifier, tablet: Boolean, onQuit: () -
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.width(250.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         PadSelector(settings, ::change, Modifier.fillMaxWidth())
+                        TxAllowedRow()
                         ArmButton(cw, Modifier.fillMaxWidth().height(64.dp))
                         StopButton(Modifier.fillMaxWidth().weight(1f))
                     }
@@ -146,7 +148,8 @@ internal fun RigScope.CwScreen(modifier: Modifier, tablet: Boolean, onQuit: () -
             CwSettingsBlock(cw, settings, ::change)
             CwNotice(cw)
         }
-        Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp),
+        Box(Modifier.padding(start = 14.dp, end = 14.dp, top = 6.dp)) { TxAllowedRow() }
+        Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             PadSelector(settings, ::change)
             ArmButton(cw, Modifier.weight(1f).height(46.dp))
@@ -330,6 +333,7 @@ private fun RigScope.ArmButton(cw: CwUi, modifier: Modifier) {
     val (label, bg, fg) = when {
         cw.armed -> Triple(Tr.t("cw.disarm"), Page.TX, Color.White)
         cw.requested -> Triple(Tr.t("cw.arming"), Page.SELECTION, Page.TEXTE_2)
+        !rig.armed -> Triple(Tr.t("cw.arm"), Page.COMMANDE, Page.TEXTE_2)     // « Émission autorisée » d'abord : terne
         else -> Triple(Tr.t("cw.arm"), Page.SELECTION, Page.TEXTE)
     }
     val usable = connected && rig.protocolOk && !listener &&
@@ -337,6 +341,17 @@ private fun RigScope.ArmButton(cw: CwUi, modifier: Modifier) {
     Box(modifier.background(bg, RoundedCornerShape(12.dp)).border(1.dp, if (cw.armed) Page.TX else Page.ACCENT, RoundedCornerShape(12.dp))
         .clickable(enabled = usable) { if (cw.armed) RigHub.cwDisarm() else RigHub.cwArm() }, contentAlignment = Alignment.Center) {
         Text(label, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = fg)
+    }
+}
+
+/** « Émission autorisée » dans l'onglet même (le smartphone n'y a pas de barre d'onglets) : exigée pour armer la CW,
+ *  comme pour le PTT ; la retirer désarme la CW. */
+@Composable
+private fun RigScope.TxAllowedRow() {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
+        Spacer(Modifier.width(8.dp))
+        Text(Tr.t("rigparts.armed"), color = Page.TEXTE, fontSize = 14.sp, modifier = Modifier.weight(1f))
     }
 }
 

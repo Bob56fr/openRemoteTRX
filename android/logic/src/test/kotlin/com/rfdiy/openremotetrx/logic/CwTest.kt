@@ -165,6 +165,7 @@ class CwTest {
 
     private fun armed(): Pair<RigSession, CwLink> {
         val (s, link) = session()
+        s.setArmed(5, true)                                   // « Émission autorisée »
         s.cwArm(10)
         s.onMessage(20, """{"type":"result","id":${link.idOf("cw_arm")},"ok":true,"cw":{"carrier_hz":7030700,"delay_ms":300},"ptt":{"state":"TX","owner":"phone"}}""")
         s.onMessage(25, """{"type":"state","ptt":{"state":"TX","owner":"phone"},"rig":{"connected":true}}""")
@@ -188,6 +189,7 @@ class CwTest {
         s.cwSettings(1, CwSettings(CwInterface.STRAIGHT, wpm = 18, toneHz = 650))
         s.cwPress(2, 2.0, Paddle.DOT, true)
         assertTrue(link.cw.isEmpty())                                         // pas armée : rien ne part
+        s.setArmed(5, true)                                   // « Émission autorisée »
         s.cwArm(10)
         val arm = Json.parseToJsonElement(link.sent.last { "cw_arm" in it }).jsonObject
         assertEquals("straight", arm["interface"]!!.jsonPrimitive.content)
@@ -210,6 +212,7 @@ class CwTest {
     @Test
     fun `refus de la station - desarmee avec le motif dans la langue de l'application`() {
         val (s, link) = session()
+        s.setArmed(5, true)                                   // « Émission autorisée »
         s.cwArm(10)
         s.onMessage(20, """{"type":"result","id":${link.idOf("cw_arm")},"ok":false,"reason":"cw_mode","detail":"poste en USB"}""")
         assertFalse(s.snapshot.cw.armed || s.snapshot.cw.requested)
@@ -258,5 +261,25 @@ class CwTest {
         val (s2, _) = armed()
         s2.onMessage(40, """{"type":"cw_state","state":"idle","reason":"heartbeat"}""")
         assertEquals(Tr.t("cw.ended", "reason" to Texts.cut("heartbeat")), s2.snapshot.cw.notice)
+    }
+
+    @Test
+    fun `armer la CW exige Emission autorisee, comme le PTT`() {
+        val (s, link) = session()
+        s.cwArm(10)
+        assertTrue(link.sent.none { "cw_arm" in it })
+        assertFalse(s.snapshot.cw.requested || s.snapshot.cw.armed)
+        assertEquals(Tr.t("cw.arm_first"), s.snapshot.cw.notice)
+        s.setArmed(20, true)
+        s.cwArm(30)
+        assertTrue(link.sent.any { "cw_arm" in it })
+    }
+
+    @Test
+    fun `Emission autorisee retiree pendant la CW armee - desarmee`() {
+        val (s, link) = armed()
+        s.setArmed(40, false)
+        assertTrue(link.sent.last().contains("cw_disarm"))
+        assertFalse(s.snapshot.cw.armed)
     }
 }

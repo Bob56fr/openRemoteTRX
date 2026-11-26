@@ -95,3 +95,10 @@
   `dir` (le copier pour le lire). Non essayé dans l'émulateur : deux palettes pressées ensemble (multitouche), retour
   local (émulateur sans son), tablette, rotation.
   Prochain : vrai téléphone (S25) et tablette, puis CW-3 (IC-7300MK2 sur charge fictive).
+- 2026-11-26 : « ÉMISSION AUTORISÉE » EXIGÉE POUR ARMER LA CW (décision de l'utilisateur, à la place du choix
+  d'exécution du lot CW-2). `RigSession.cwArm` refuse sans elle (`cw.arm_first`, 4 langues, aucun `cw_arm` envoyé) ;
+  la retirer pendant l'armement désarme (`setArmed(false)` -> `cwDisarm`) ; interrupteur « Émission autorisée » dans
+  l'onglet CW au-dessus du sélecteur (smartphone et tablette), ARM CW terne tant qu'elle est coupée. Tests Android
+  268 / 0 (2 nouveaux). Émulateur : ARM CW sans elle = refus expliqué, station en RX ; avec = TX ; retirée = RX en
+  0,23 s (`cw_disarm`). Piège : le Python d'un venv relance l'interpréteur de base (deux processus par programme) :
+  `stop-station.ps1` tue l'arbre (`taskkill /T`), sinon l'ancienne passerelle garde le port 18443.

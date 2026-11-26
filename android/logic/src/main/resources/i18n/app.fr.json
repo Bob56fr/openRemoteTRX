@@ -571,6 +571,7 @@
   "cw.pads_one": "1 palette",
   "cw.pads_other": "{n} palettes",
   "cw.arm": "ARMER CW",
+  "cw.arm_first": "Active d'abord « Émission autorisée » : manipuler en CW, c'est émettre.",
   "cw.arming": "Armement…",
   "cw.disarm": "CW ARMÉE · désarmer",
   "cw.stop": "STOP",

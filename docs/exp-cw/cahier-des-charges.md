@@ -141,6 +141,9 @@ Station -> client :
   d'onglets en bas (les doigts la heurteraient) : le manipulateur va jusqu'au bas de l'écran. TABLETTE validée telle
   quelle (synthèse en haut, sélecteur, « Armer CW » et STOP à gauche des palettes, onglets sur le côté).
 - Bouton « Armer CW » (prise d'émission, affiche l'état renvoyé), zones tactiles inactives tant que non armé.
+- « Armer CW » EXIGE « Émission autorisée » comme le PTT (décision de l'utilisateur du 2026-11-26) : interrupteur
+  dans l'onglet CW (le smartphone n'y a pas de barre d'onglets), ARM CW terne et refus expliqué sans lui ; le retirer
+  pendant l'armement désarme la CW.
 - Interfaces : pioche, iambique A, iambique B, simple levier ; vitesse 5 à 40 mots/min, poids ; inversion
   point / trait ; zones tactiles seulement (multitouche pour l'iambique).
 - Rejet de la paume (contact trop large ou hors zone), vibration au toucher.
