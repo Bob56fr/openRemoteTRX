@@ -385,7 +385,13 @@ class CwClient {
                 val state = num("state")?.contentOrNull ?: return
                 if (state == "idle") {                            // i18n-ok
                     val reason = num("reason")?.contentOrNull.orEmpty()
-                    forget(if (reason.isEmpty()) "" else Tr.t("cw.ended", "reason" to Texts.cut(reason)))
+                    // une cause propre à la CW se dit déjà « CW … » : pas de « CW désarmée : CW désarmée … »
+                    val text = Texts.cut(reason)
+                    forget(when {
+                        reason.isEmpty() -> ""
+                        reason.startsWith("cw_") -> Tr.t("cw.ended_own", "reason" to text.replaceFirstChar { it.uppercase() })   // i18n-ok
+                        else -> Tr.t("cw.ended", "reason" to text)
+                    })
                     return
                 }
                 ui = ui.copy(armed = true, requested = false, playing = state == "playing",      // i18n-ok

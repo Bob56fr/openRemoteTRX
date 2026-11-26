@@ -73,3 +73,25 @@
   Tests : Android sur tour radio (dossier à part `C:\dev\openRemoteTRX-cw-and`) 265 réussis, 0 échec, APK de
   débogage dans `dist\openRemoteTRX-cw-debug.apk` (hors dépôt) ; suite Python 3070 réussis, 3 échecs connus CRLF.
   Prochain : essai émulateur + fausse station, puis CW-3 (IC-7300MK2 sur charge fictive).
+- 2026-11-26 : ESSAI DANS L'ÉMULATEUR contre une station factice, sur tour radio (Android 17, Medium_Phone_API_37.0,
+  sans fenêtre ; scripts dans `docs/exp-cw/emulateur/`) : vraie passerelle de la branche, faux rigctld mis en PKTUSB
+  sur 7,030 MHz AVANT la passerelle, `[cw] enabled = true`, ports à part 18443 / 14532 / 47910, son émis enregistré
+  dans un WAV et mesuré par `analyse.py` (`trxstation/cw/analysis.py`). RÉSULTATS : connexion (8 ms), onglet CW
+  présent, armement = émission (« TX · CW ARMED », TOT), manipulation par l'écran tactile (`input swipe`) reçue par le
+  canal `cw` : iambique B à 20 wpm = points 60,000 ms, traits 180,000 ms, espaces 60,000 ms dans le son de la station
+  (aucun clic : plus grand saut = celui d'une sinusoïde pure ; -33 dB hors de ±150 Hz), gigue p95 18 ms, 0 paquet en
+  retard ; clé droite (1 palette) : appuis de 700 / 250 ms rendus 710 / 264 ms (durée réelle d'`adb swipe`) ; palette
+  tenue 3 s sans coupure (battements maintenus) ; 8 s sans manipuler = `cw_idle` ; STOP = réception en 0,12 s ; Close =
+  désarmé en 0,48 s (`cw_disarm`) et retour à l'onglet Station ; application tuée = réception en 2,06 s (battements) ;
+  réseau coupé = réception en 2,1 s (battements). DÉFAUTS TROUVÉS ET CORRIGÉS : rangée STOP / Close sous la barre
+  d'état (l'écran CW n'avait pas les marges de la fenêtre : `modifier` de RigScreen) ; fréquence « 7 030 700 Hz MHz
+  porteuse » (`cw.carrier`) ; un message de fin INSÉRÉ décalait « Armer CW » et les palettes (un toucher tombait à
+  côté) : place réservée d'une ligne ; « CW désarmée : CW désarmée faute de manipulation » (cause propre à la CW dite
+  une fois : `cw.ended_own`, test). Deux lignes de `config.py` et `protocol.py` recollées par un script de remplacement
+  (sans effet) remises en forme. Tests : Android 266 / 0 ; Python 3070 réussis, 3 échecs CRLF connus et
+  `test_qualif_autodrills::test_the_out_of_band_drill_is_refused_and_the_frequency_restored` sensible à la charge (passe
+  seul, 14 / 14). Pièges : clavier de l'émulateur qui double des caractères (saisir par morceaux de 12 et vérifier),
+  touche Retour = sortie de l'application quand aucun clavier n'est ouvert, un WAV en cours d'écriture paraît vide dans
+  `dir` (le copier pour le lire). Non essayé dans l'émulateur : deux palettes pressées ensemble (multitouche), retour
+  local (émulateur sans son), tablette, rotation.
+  Prochain : vrai téléphone (S25) et tablette, puis CW-3 (IC-7300MK2 sur charge fictive).

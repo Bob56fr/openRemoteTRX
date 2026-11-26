@@ -923,7 +923,8 @@ def _cw_problems(c: Cw, rig: Rig) -> list[str]:
         p.append(_t("cw.choice", name="modes", choices='["A"]'))
     if c.ptt_variant not in ("hold",):
         p.append(_t("cw.choice", name="ptt_variant", choices="hold"))
-    if not isinstance(c.data_mode, str) or not c.data_mode or             (c.enabled is True and rig.tx_modes and c.data_mode not in rig.tx_modes):
+    if not isinstance(c.data_mode, str) or not c.data_mode or \
+            (c.enabled is True and rig.tx_modes and c.data_mode not in rig.tx_modes):
         p.append(_t("cw.data_mode", mode=str(c.data_mode)[:16], allowed=", ".join(rig.tx_modes) or "-"))
     for name, low, high in (("tone_hz", 300, 1200), ("edge_ms", 3, 8), ("delay_ms", 150, 500),
                             ("delay_min_ms", 150, 500), ("delay_max_ms", 150, 500), ("lease_grace_ms", 20, 200),
@@ -931,7 +932,8 @@ def _cw_problems(c: Cw, rig: Rig) -> list[str]:
         value = getattr(c, name)
         if not _number(value) or not low <= value <= high:
             p.append(_t("number_between", where="[cw]", name=name, low=low, high=high))
-    if _number(c.delay_min_ms) and _number(c.delay_max_ms) and _number(c.delay_ms) and             not c.delay_min_ms <= c.delay_ms <= c.delay_max_ms:
+    if _number(c.delay_min_ms) and _number(c.delay_max_ms) and _number(c.delay_ms) and \
+            not c.delay_min_ms <= c.delay_ms <= c.delay_max_ms:
         p.append(_t("cw.delay_order"))
     return p
 

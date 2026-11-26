@@ -249,4 +249,14 @@ class CwTest {
         assertTrue(s.snapshot.cw.notice.contains(Texts.cut("cw_lease_expired")))
         assertTrue(Tr.has("coupure.cw_lease_expired"))
     }
+
+    @Test
+    fun `fin de la CW - cause propre a la CW dite une seule fois, autre cause precedee de CW desarmee`() {
+        val (s, _) = armed()
+        s.onMessage(40, """{"type":"cw_state","state":"idle","reason":"cw_idle"}""")
+        assertEquals(Texts.cut("cw_idle").replaceFirstChar { it.uppercase() } + ".", s.snapshot.cw.notice)
+        val (s2, _) = armed()
+        s2.onMessage(40, """{"type":"cw_state","state":"idle","reason":"heartbeat"}""")
+        assertEquals(Tr.t("cw.ended", "reason" to Texts.cut("heartbeat")), s2.snapshot.cw.notice)
+    }
 }

@@ -237,7 +237,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     // Onglet CW (branche exp/cw) : écran plein, AVANT le spectre en paysage (un téléphone tourné garde la CW à l'écran)
     if (tab == Tab.CW && !rig.cw.offered) tab = Tab.STATION
     if (tab == Tab.CW) {
-        scope.CwScreen(tablet = wide, onQuit = { tab = Tab.STATION })
+        scope.CwScreen(modifier, tablet = wide, onQuit = { tab = Tab.STATION })
         scope.RigDialogsHost()
         return
     }

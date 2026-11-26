@@ -78,7 +78,7 @@ private fun saveSettings(prefs: android.content.SharedPreferences, s: CwSettings
 
 /** Onglet CW plein écran. `onQuit` : retour à l'onglet Station ; `onSection` (tablette) : autre onglet choisi. */
 @Composable
-internal fun RigScope.CwScreen(tablet: Boolean, onQuit: () -> Unit, onSection: (Tab) -> Unit = { onQuit() }) {
+internal fun RigScope.CwScreen(modifier: Modifier, tablet: Boolean, onQuit: () -> Unit, onSection: (Tab) -> Unit = { onQuit() }) {
     var settings by remember { mutableStateOf(loadSettings(prefs)) }
     fun change(s: CwSettings) {
         settings = s
@@ -89,7 +89,7 @@ internal fun RigScope.CwScreen(tablet: Boolean, onQuit: () -> Unit, onSection: (
     DisposableEffect(Unit) { onDispose { RigHub.cwDisarm() } }               // quitter l'onglet = désarmer, toujours
     val cw = rig.cw
     if (tablet) {
-        Row(Modifier.fillMaxSize().background(Page.FOND)) {
+        Row(modifier.fillMaxSize().background(Page.FOND)) {
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 CwSummary(cw, settings, wide = true)
                 Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
@@ -130,7 +130,7 @@ internal fun RigScope.CwScreen(tablet: Boolean, onQuit: () -> Unit, onSection: (
         }
         return
     }
-    Column(Modifier.fillMaxSize().background(Page.FOND)) {
+    Column(modifier.fillMaxSize().background(Page.FOND)) {
         Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StopButton(Modifier.weight(1f).height(52.dp))
@@ -183,7 +183,7 @@ private fun RigScope.CwSummary(cw: CwUi, settings: CwSettings, wide: Boolean) {
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(Format.frequency(carrier), fontSize = if (wide) 44.sp else 32.sp, fontWeight = FontWeight.SemiBold, color = Page.TEXTE)
-            Text(Tr.t("cw.carrier_mhz"), fontSize = 13.sp, color = Page.TEXTE_2, modifier = Modifier.weight(1f))
+            Text(Tr.t("cw.carrier"), fontSize = 13.sp, color = Page.TEXTE_2, modifier = Modifier.weight(1f))
             Text(Tr.t("cw.dial", "freq" to Format.frequency(r?.frequencyHz)), fontSize = 12.sp, color = Page.TEXTE_2)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -223,7 +223,9 @@ private fun CwDecoded(cw: CwUi, modifier: Modifier, big: Boolean) {
 
 @Composable
 private fun CwNotice(cw: CwUi) {
-    if (cw.notice.isNotEmpty()) Text(cw.notice, fontSize = 12.sp, color = Page.ALERTE)
+    // place réservée même sans message : un message qui apparaît ne déplace jamais « Armer CW » ni les palettes
+    Text(cw.notice, fontSize = 12.sp, color = Page.ALERTE, maxLines = 1, overflow = TextOverflow.Ellipsis,
+         modifier = Modifier.fillMaxWidth().height(18.dp))
 }
 
 @Composable

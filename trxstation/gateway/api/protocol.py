@@ -418,7 +418,8 @@ def parse_command(raw: str | bytes) -> Command:
         for key, low, high in (("tone_hz", 300, 1200), ("delay_ms", 150, 500)):
             if key in data:
                 value = data[key]
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)                         or not low <= value <= high:
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) \
+                        or not low <= value <= high:
                     raise ProtocolError("invalid_params", f"{key} : nombre de {low} à {high}")
                 params[key] = float(value)
         if not isinstance(data.get("align", False), bool):
