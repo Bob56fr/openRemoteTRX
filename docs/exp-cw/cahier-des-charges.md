@@ -1,7 +1,9 @@
-# Laboratoire CW : manipulation Morse à l'écran tactile (cahier des charges v2)
+# Laboratoire CW : manipulation Morse à l'écran tactile (cahier des charges v3)
 
 Branche d'essai `exp/cw` (dossier `C:\dev\openRemoteTRX-cw`). Version d'essai `X.Y.Z.devN+cw`, aucun numéro d'étape.
 Rédigé le 2026-11-26 d'après le cahier v1 de l'utilisateur et les décisions prises le même jour (§ 2).
+v3 (même jour) : CW seulement dans l'application Android, jamais dans la page web (décision 5) ; règle d'envoi du
+client corrigée d'après le banc du lot CW-0 (§ 5.1) ; résultats du banc (§ 14).
 Journal de la branche : `docs/exp-cw/journal.md`.
 
 ## 1. But et nature de la branche
@@ -11,7 +13,8 @@ C'est une PREUVE DE CONCEPT : on code le minimum pour savoir si l'idée tient su
 (§ 11). Abandon = branche supprimée, aucune trace dans `main` sauf un résumé du journal dans `docs/boite-a-idees.md`.
 Adoption = fusion dans `main` en UNE étape, avec l'exception de sécurité inscrite dans CLAUDE.md (§ 3).
 
-Hors du POC (après adoption seulement) : application Android, mode B, mode D, full break-in, télémétrie partagée.
+Hors du POC (après adoption seulement) : mode B, mode D, full break-in, télémétrie partagée.
+Jamais : manipulation CW depuis la page web (décision 5), Android Auto, mode conduite.
 
 ## 2. Décisions (2026-11-26)
 
@@ -23,6 +26,8 @@ Hors du POC (après adoption seulement) : application Android, mode B, mode D, f
 4. **Ordre** : moteur et banc de simulation, mode A dans la passerelle, page web, essai réel, puis mode C.
    Mode B : note de faisabilité seulement. Mode D : abandonné (intérêt faible, dissimulation des pertes d'aiortc
    non maîtrisable).
+5. **Écran tactile Android seulement** (tablette ou smartphone, décision de l'utilisateur du 2026-11-26) : la page
+   web ne manipule JAMAIS en CW (ni bouton « Armer CW », ni canal `cw`). Client du POC = application Android.
 
 ## 3. Exception de sécurité (texte à inscrire dans CLAUDE.md À L'ADOPTION)
 
@@ -32,7 +37,8 @@ Hors du POC (après adoption seulement) : application Android, mode B, mode D, f
 > la porte audio ne laisse passer que la tonalité CW recréée par la station, jamais le micro ; appui continu
 > limité à `max_keydown_ms` (2 s, plafond 5 s) ; bail du rejeu dépassé, désarmement, coupure de connexion,
 > STOP ou toute coupure existante = tonalité coupée net puis « T 0 ». Désactivé par défaut (`[cw] enabled = false`).
-> Jamais depuis Android Auto ni en mode conduite.
+> Seulement depuis l'écran tactile de l'application Android ; jamais depuis la page web, Android Auto ni le mode
+> conduite.
 
 Tant que la branche n'est pas adoptée, cette exception ne vaut QUE dans la branche, essais sur charge fictive.
 
@@ -61,7 +67,12 @@ Tant que la branche n'est pas adoptée, cette exception ne vaut QUE dans la bran
 - Chaque paquet porte la FENÊTRE des fronts récents (les fronts des 500 dernières ms de la séquence, au plus 32),
   plus le bail courant. La station élimine les doublons par `id` : une perte isolée ne coûte rien, aucun blocage
   en tête de file.
-- Paquet toutes les 20 ms tant que la clé est fermée, à chaque front sinon, et toutes les 200 ms en silence armé.
+- Paquet à chaque front et toutes les 20 ms PENDANT TOUTE LA SÉQUENCE (clé fermée ou ouverte), puis toutes les
+  200 ms en silence armé. (v2 : 20 ms seulement clé fermée ; le banc CW-0 a montré qu'un front d'ouverture perdu
+  n'était alors répété qu'au front suivant, 60 à 420 ms plus tard à 20 mots/min : élément allongé ou coupure de
+  bail. Débit : 50 paquets de ~100 octets par seconde, négligeable.)
+- Le client ne garantit l'état de la clé que jusqu'à « maintenant » : `lease` = heure d'envoi du paquet (sert aussi
+  à mesurer la gigue).
 
 ### 5.2 Messages (forme de `docs/protocole.md`, clé `type`)
 
@@ -89,7 +100,8 @@ Station -> client :
 - Ancre = heure d'arrivée du premier paquet de la séquence + `delay_ms` ; un front se joue à `ancre + ts`.
 - `delay_ms` : fixe (150 à 500 ms) ou adaptatif ENTRE séquences (p95 de la gigue mesurée + 50 ms, bornes de
   `station.toml`), jamais au milieu d'une séquence.
-- Front d'ouverture en retard : ré-ancrage (la suite est décalée), compté `late`.
+- Front de FERMETURE de la clé (début de tonalité) en retard : ré-ancrage (la suite est décalée), compté `late`.
+  Front d'ouverture (fin de tonalité) en retard : joué tout de suite, compté `late` (allongement borné par le bail).
 - **Bail** : la tonalité ne joue que tant que le rejeu n'a pas dépassé `lease + lease_grace_ms` (défaut 60 ms).
   Bail dépassé = fermeture immédiate avec front adouci, séquence abandonnée, `cw_fault lease_expired`.
   Cette règle remplace « battement 150 ms », « cw_up en retard » et « late_abort » du v1.
@@ -109,21 +121,25 @@ Station -> client :
 
 ## 6. Écoute pendant la manipulation
 
-- Tonalité locale du client au toucher (Web Audio : oscillateur + enveloppe programmée) ; latence de sortie
-  affichée (`outputLatency` / `baseLatency`). L'audio reçu n'est jamais le retour de manipulation.
+- Tonalité locale de l'application au toucher (sortie à faible latence : AAudio / Oboe, enveloppe programmée,
+  but < 30 ms du toucher au son) ; latence mesurée affichée. L'audio reçu n'est jamais le retour de manipulation.
 - V1 : réception muette pendant l'armement (PTT tenu). V2 : atténuation du son reçu (-20 dB, réglable jusqu'au
   silence) jusqu'à « rejeu + latence réseau mesurée + tampon » après la fin de la séquence.
 
-## 7. Page web (seul client du POC)
+## 7. Application Android (seul client du POC, décision 5)
 
-- Bouton « Armer CW » (prise d'émission, affiche l'état renvoyé), zones inactives tant que non armé.
+- Écran CW de l'application (tablette et smartphone) : bouton « Armer CW » (prise d'émission, affiche l'état
+  renvoyé), zones tactiles inactives tant que non armé. Annoncé seulement si `hello.features` contient `cw`.
 - Interfaces : pioche, iambique A, iambique B, simple levier ; vitesse 5 à 40 mots/min, poids ; inversion
-  point / trait ; zones à la souris, au toucher, et touches du clavier (Ctrl gauche / droit) pour le PC.
-- Rejet de la paume (contact trop large ou hors zone), vibration au toucher si disponible.
+  point / trait ; zones tactiles seulement (multitouche pour l'iambique).
+- Rejet de la paume (contact trop large ou hors zone), vibration au toucher.
 - Affichage : fréquence porteuse, état du tampon, gigue, `late`, coupures de bail, caractères décodés de sa propre
   manipulation (aide et diagnostic).
-- STOP existant toujours visible et toujours actif.
-- Textes en quatre langues dès le POC (`page.<langue>.json`, règle du dépôt).
+- STOP existant toujours visible et toujours actif. Écran CW fermé et désarmé en mode conduite et en Android Auto.
+- Keyer et paquets dans `:logic` (sans appel Android : `:logic` est aussi compilé par openRemoteTRX Lite) ; vecteurs
+  communs avec le banc Python (même manipulateur, mêmes paquets).
+- Textes en quatre langues dès le POC (`app.<langue>.json`, règle du dépôt).
+- La page web n'a RIEN de CW (ni affichage, ni canal) ; sa liste de commandes ne change pas.
 
 ## 8. Mode C (après l'essai réel du mode A)
 
@@ -165,9 +181,9 @@ conservées à l'adoption seulement.
 
 | Lot | Contenu | Matériel |
 |---|---|---|
-| CW-0 | Ordonnanceur + bail + générateur de tonalité en calculs purs ; banc pytest (gigue 0 à 200 ms, pertes 0 à 10 %, réordonnancement, coupures), analyse du son produit (durées, fronts, clics) | aucun |
-| CW-1 | Mode A dans la passerelle (`cw_arm` / `cw_disarm`, canal `cw`, porte audio, PttController), tests de panne (bail, connexion, gel de la passerelle, superviseur, STOP, TOT, QSY refusé, hors bande sur la porteuse) | poste factice Hamlib n° 1 |
-| CW-2 | Page web (§ 7), essai dans Chromium avec une fausse station | aucun |
+| CW-0 | FAIT (2026-11-26, § 14) : ordonnanceur + bail + générateur de tonalité en calculs purs ; banc pytest (gigue 0 à 200 ms, pertes 0 à 10 %, réordonnancement, coupures), analyse du son produit (durées, fronts, clics) | aucun |
+| CW-1 | Mode A dans la passerelle (`cw_arm` / `cw_disarm`, canal `cw`, porte audio, PttController), tests de panne (bail, connexion, gel de la passerelle, superviseur, STOP, TOT, QSY refusé, hors bande sur la porteuse) ; client d'essai Python (`devtools`) qui rejoue le banc par WebRTC | poste factice Hamlib n° 1 |
+| CW-2 | Application Android (§ 7), essai dans l'émulateur puis sur une vraie tablette et le S25 contre une fausse station | aucun |
 | CW-3 | Essai réel IC-7300MK2 sur charge fictive : porteuse mesurée, fronts écoutés sur un second récepteur, Wi-Fi puis 4G, V1 puis V2 | IC-7300MK2 |
 | CW-4 | Premiers QSO réels (Wi-Fi, 4G), notes de ressenti dans le journal | antenne |
 | CW-5 | Mode C (si CW-3 et CW-4 le justifient) | IC-7300MK2 |
@@ -180,8 +196,7 @@ conservées à l'adoption seulement.
 - ressenti de l'utilisateur jugé utilisable sur au moins une interface.
 
 **ABANDON** si l'un de ces points échoue après correction raisonnable, ou si la latence de la tonalité locale
-du navigateur rend la manipulation inconfortable sans remède (alors seule une application native pourrait aider :
-à décider à ce moment).
+de l'application rend la manipulation inconfortable sans remède.
 
 ## 12. Mesures (POC)
 
@@ -195,4 +210,21 @@ Pas d'envoi : joint au rapport 6.3 à l'adoption. Questionnaire de fin de sessio
   rappel dans l'aide).
 - V1 ou V2 par défaut : tranché après CW-3.
 - Mode C : comportement réel de `\stop_morse` et du PTT relu pendant le keyer de l'IC-7300MK2.
-- Application Android (Oboe, haptique, < 30 ms toucher -> tonalité) : seulement après adoption.
+- Tonalité locale Android : latence réelle du toucher au son sur la tablette et le S25 (AAudio / Oboe, ou
+  `AudioTrack` en mode faible latence), à mesurer au lot CW-2.
+
+## 14. Résultats du banc CW-0 (2026-11-26)
+
+Code : `trxstation/cw/` (protocol, tone, player, jitter, sim, analysis), banc `python -m trxstation.devtools.cw_bench`,
+tests `tests/test_cw_*.py` (107). Son analysé par le signal analytique (fronts retrouvés à 0,04 échantillon près).
+- Critère « ≤ 2 ms au p95, rejeu 300 ms, gigue ≤ 150 ms » : TENU avec marge (écart mesuré < 0,01 ms, de la seule
+  quantification à l'échantillon), pertes jusqu'à 20 %, 5 à 40 mots/min ; aucun élément tronqué.
+- Gigue UNIFORME : rattrapée par la redondance de la fenêtre même au-delà du rejeu (400 ms de gigue avec 300 ms de
+  rejeu : rien de perdu), car un seul des ~25 paquets qui portent un front doit arriver à temps.
+- Cas difficile = GELS de liaison façon 4G (paquets retenus puis livrés en rafale), 20 gels par minute : rejeu
+  300 ms = rien de perdu jusqu'à 300 ms de gel, coupures de bail propres au-delà ; rejeu 500 ms = jusqu'à 400 ms.
+  À mesurer en vrai au lot CW-3 (durée des gels de la 4G de l'utilisateur) avant de régler `delay_ms`.
+- Coupure de bail : tonalité arrêtée à `lease_grace_ms` exactement en temps de rejeu, son nul 5 ms plus tard
+  (critère ≤ grace + 20 ms tenu) ; jamais de tonalité qui revient après la coupure (rafale retardée ignorée).
+- Fronts : cosinus surélevé de 5 ms, 10 -> 90 % en 3,0 ms, aucun saut plus grand que celui de la sinusoïde, énergie
+  hors de ± 250 Hz à -51 dB (manipulation brutale : > -40 dB, le test sait voir les clics).
