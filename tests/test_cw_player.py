@@ -251,3 +251,13 @@ def test_long_stalls_end_in_a_clean_lease_cut_never_in_a_stuck_tone(seed):
 def test_bench_cell_runs():
     from trxstation.devtools import cw_bench
     assert cw_bench.cell(50, 0.05, CwParams(), 20, 1).startswith(" 0.00/")
+
+
+def test_a_new_sequence_after_the_client_gap_ends_the_previous_one_normally():
+    # le client compte le silence à son heure : sa nouvelle séquence arrive AVANT que le rejeu (retardé) ait vu la fin
+    gap = 1500.0
+    a = sim.Sequence(0, 1000.0, sim.morse_timeline("E"), tail_ms=gap)
+    b = sim.Sequence(1, 1000.0 + a.edges[-1][0] + gap + 1.0, sim.morse_timeline("T"))
+    r = sim.run([a, b], sim.Network(base_ms=30))
+    assert [(e["type"], e["reason"]) for e in r.events] == [("seq_end", "end"), ("seq_end", "end")]
+    assert r.player.lease_cuts == 0 and len([e for e in r.player.played if e.reason == ""]) == 4

@@ -42,3 +42,18 @@ def test_malformed_packets_are_refused(over):
 def test_not_a_dict_is_refused():
     with pytest.raises(ValueError):
         parse_packet([1, 2, 3])
+
+
+def test_shared_packet_vectors_are_up_to_date_and_valid():
+    import importlib.util
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("build_cw_vectors", root / "scripts" / "build_cw_vectors.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    on_disk = (root / "tests" / "protocol" / "cw_vectors.json").read_bytes().decode("utf-8").replace("\r\n", "\n")
+    assert on_disk == module.render(), "python scripts/build_cw_vectors.py"
+    import json
+    for case in json.loads(on_disk)["cases"]:
+        for p in case["packets"]:
+            parse_packet(p["msg"])                                # chaque paquet attendu est accepté par la station

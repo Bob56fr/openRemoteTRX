@@ -440,6 +440,9 @@ data class Bye(val reason: String, val message: String) : ServerMessage
 data class PowerProgress(val step: String, val status: String, val detail: String, val ort: String,
                          val remainingS: Double?) : ServerMessage
 
+/** Manipulation CW (branche exp/cw, § 22) : `cw_state`, `cw_fault`, `cw_stats` de MA manipulation ; lus par logic/Cw. */
+data class CwMessage(val type: String, val raw: JsonObject) : ServerMessage
+
 /** Type inconnu de cette version de l'application : ignoré (une station plus récente peut en ajouter). */
 data class Unknown(val type: String) : ServerMessage
 
@@ -477,6 +480,7 @@ object ServerMessages {
                 "module" -> ModuleMessage(obj.text("module"), obj["data"] ?: JsonNull)
                 "bye" -> Bye(obj.text("reason"), obj.text("message"))
                 "swr" -> SwrMessage(obj)
+                "cw_state", "cw_fault", "cw_stats" -> CwMessage(type, obj)
                 "breizh_event" -> BreizhEvent(obj.text("t"), obj.text("event"), obj.text("detail"))
                 "rig_notice" -> RigNotice(obj.text("event"), obj.text("detail"), obj.text("ort"))
                 "freedv_event" -> FreedvEvent(obj.text("kind"), obj.text("callsign"),

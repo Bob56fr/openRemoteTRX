@@ -126,6 +126,8 @@ data class RigState(
     val stopHold: StopHoldChoices = StopHoldChoices(false, ""),
     val powerOffNotice: String = "",
     val powerCarTitle: String? = null,
+    /** Manipulation CW (branche exp/cw) : état montré par l'onglet CW ; `offered` faux = onglet absent. */
+    val cw: CwUi = CwUi(),
 ) {
     /** Station connectée qui connaît `set_lang` (0.243.0+) : un changement de langue lui est annoncé aussitôt. */
     val stationSetsLang: Boolean get() = status == LinkStatus.CONNECTED && hello?.offers("set_lang") == true
@@ -174,6 +176,8 @@ interface SessionLink {
     fun startAttempt()
     fun send(text: String): Boolean
     fun setMicOpen(open: Boolean)
+    /** Paquet du canal « cw » (non ordonné, sans renvoi) ; faux si le canal n'est pas ouvert (Lite : jamais). */
+    fun sendCw(text: String): Boolean = false
     fun close()
     fun alert(kind: LinkAlert)
 }
@@ -277,6 +281,7 @@ class RigSession(
     private var lastForbiddenLog = Long.MIN_VALUE / 2
     private val watch = LinkWatch()
     private val arming = TxArming()
+    private val cw = CwClient()                          // manipulation CW (branche exp/cw)
     private var silenceAlerted = false
     private var hello: Hello? = null
     private var state: State? = null
@@ -421,6 +426,7 @@ class RigSession(
             is NetPong -> net.pong(msg.seq, msg.t, now)
             is NetEvent -> onNetEvent(msg)
             is PowerProgress -> onPowerProgress(msg)
+            is com.rfdiy.openremotetrx.protocol.CwMessage -> if (!listener) cw.onMessage(msg.type, msg.raw)
             is SwrMessage -> {
                 val p = SwrUi.progress(msg.raw)
                 swr = p
@@ -493,6 +499,7 @@ class RigSession(
         // Allumage et extinction du poste : opérateurs seulement
         powerOffered = protocolOk && !msg.listener && msg.offers("power")
         powerRun = null; powerOffNotice = ""
+        cw.offered(protocolOk && !msg.listener && msg.offers("cw"))     // i18n-ok
         if (!protocolOk) {
             log(Tr.t("rigsession.protocol_mismatch", "station" to msg.protocol, "app" to Protocol.VERSION), LogLevel.BAD)
         } else {
@@ -512,6 +519,19 @@ class RigSession(
         val entry = msg.id?.let { pending.remove(it) } ?: return
         if (entry.cmd == "get_state") {
             rttMs = (now - entry.sentAt).toInt()
+            return
+        }
+        if (entry.cmd == "cw_arm") {                            // manipulation CW : armée seulement sur accord de la station
+            if (msg.ok) {
+                val (carrier, delay) = cwArmInfo(msg.raw)
+                cw.armResult(true, "", carrier, delay)
+            } else {
+                heartbeat.cancelGrace()
+                cw.armResult(false, refusalOf(msg), null, null)
+                log(Tr.t("cw.refused", "detail" to refusalOf(msg)), LogLevel.WARN)
+            }
+            afterState()
+            publish(now)
             return
         }
         if (entry.cmd.startsWith("swr_")) {                     // mesure de TOS : plan, derniers choix, dernière mesure
@@ -729,7 +749,62 @@ class RigSession(
     }
 
     private fun afterState() {
-        link.setMicOpen(mineTx())                               // micro ouvert seulement en TX confirmé de ce téléphone
+        // CW armée : l'émission est celle de la tonalité recréée par la station, le micro reste FERMÉ ; la fin de
+        // l'armement vient TOUJOURS de la station (cw_state « idle », pour toute coupure) ou de la perte de la liaison
+        link.setMicOpen(mineTx() && !cw.active)                 // micro ouvert seulement en TX confirmé de ce téléphone
+    }
+
+    // ------------------------------------------------------------------ manipulation CW (branche exp/cw)
+
+    /** L'onglet CW a besoin d'un rappel fin (quelques ms) : armement en cours ou armé. */
+    val cwActive: Boolean get() = cw.active
+
+    /** Prochain instant (ms) où le manipulateur iambique change de lui-même, pour régler le rappel fin. */
+    val cwNextEventAt: Double? get() = cw.nextEventAt
+
+    fun cwSettings(now: Long, settings: CwSettings) {
+        cw.settings = settings
+        publish(now)
+    }
+
+    /** « Armer CW » : prise d'émission normale demandée à la station (mêmes refus que le PTT) ; battements dès la demande. */
+    fun cwArm(now: Long, net: String? = null) {
+        if (!connected || listener || !protocolOk || !cw.ui.offered || cw.active) return
+        val ptt = state?.ptt
+        if (ptt != null && ptt.state != "RX") {
+            log(Tr.t("rigsession.tx_busy", "owner" to (ptt.owner ?: "?")), LogLevel.WARN)
+            publish(now)
+            return
+        }
+        val s = cw.settings
+        cw.requestArm()
+        heartbeat.onToggleSent(now)
+        send(now, com.rfdiy.openremotetrx.protocol.Command.CwArm(
+            wpm = s.wpm, toneHz = s.toneHz, align = s.align, keyInterface = s.keyInterface.wire, net = net))
+        publish(now)
+    }
+
+    /** « Désarmer », « Quitter » l'onglet, mode conduite : fermeture adoucie puis réception, côté station. */
+    fun cwDisarm(now: Long) {
+        if (!cw.active) return
+        cw.forget(Tr.t("cw.disarmed"))
+        if (connected) send(now, com.rfdiy.openremotetrx.protocol.Command.CwDisarm)
+        publish(now)
+    }
+
+    /** Appui ou relâchement d'une palette à l'instant `at` (ms, même horloge que `now`). */
+    fun cwPress(now: Long, at: Double, paddle: Paddle, pressed: Boolean) {
+        if (!connected) return
+        for (p in cw.press(at, paddle, pressed)) link.sendCw(p.text)
+        publish(now)
+    }
+
+    /** Rappel fin pendant l'armement : éléments iambiques, paquets de 20 ms et de silence. */
+    fun cwPoll(now: Long, at: Double = now.toDouble()) {
+        if (!connected || !cw.armed) return
+        val before = cw.ui
+        for (p in cw.poll(at)) link.sendCw(p.text)
+        if (cw.ui != before) publish(now)
     }
 
     // ------------------------------------------------------------------ allumage et extinction du poste (lot P3)
@@ -1658,6 +1733,7 @@ class RigSession(
         freedvActivity = null; freedvActivityNotice = ""
         rigNotice = ""; rigNoticeBad = false; rigTotOff = false
         powerRun = null; powerOffNotice = ""; powerOffered = false
+        cw.forget(""); cw.offered(false)
         powerOnConnect = false                                    // une reconnexion automatique n'allume jamais le poste
         protocolOk = true
         net.stop(wall())                                         // les résumés restent : remis à la reconnexion
@@ -1727,6 +1803,7 @@ class RigSession(
             stopHold = Power.stopHold(hello, state?.rig?.power),
             powerOffNotice = powerOffNotice,
             powerCarTitle = if (connected) Power.carTitle(state?.rig?.power, powerRun) else null,
+            cw = if (listener) CwUi() else cw.ui,
         )
         if (next != snapshot) {
             snapshot = next

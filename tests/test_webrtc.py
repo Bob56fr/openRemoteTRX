@@ -198,3 +198,44 @@ def test_web_client_page_is_served_with_strict_headers():
                 async with http.post(lb.url + "/offer", json={"client_id": "phone", "password": "faux", "sdp": "x", "type": "offer"}) as r:
                     assert r.status == 401
     asyncio.run(asyncio.wait_for(scenario(), 30))
+
+
+def test_cw_channel_end_to_end():
+    """Branche exp/cw : armement par le canal de contrôle, fronts par le VRAI canal « cw » (aiortc, non ordonné, sans
+    renvoi), tonalité jouée au poste, micro jamais ouvert, STOP qui coupe ; un visiteur n'y a pas droit."""
+    if not _available():
+        return
+    import json
+    import time
+    from trxstation.cw import sim
+    from trxstation.devtools.fake_client import FakeClient, ToneTrack
+    from trxstation.devtools.loopback import PASSWORDS, Loopback
+
+    async def scenario():
+        sink = RecordingSink()
+        bench = Loopback(sink=sink, cw=True)
+        bench.fake.freq, bench.fake.mode = 7_030_000, "PKTUSB"     # réglé AVANT : sinon « poste utilisé sur place »
+        async with bench as lb:
+            phone = FakeClient(lb.url, "phone", PASSWORDS["phone"], track=ToneTrack(1000.0, -10.0, active=True))
+            await phone.connect()
+            await until(lambda: phone.state is not None, 5)
+            assert "cw" in phone.hello["features"]
+            result = await phone.command("cw_arm", wpm=20, delay_ms=200)
+            assert result["ok"] and result["cw"]["carrier_hz"] == 7_030_700 and lb.fake.ptt == 1, result
+            phone.start_heartbeat()
+            assert not lb.pipeline.gate.is_open                           # micro du client : jamais pendant la CW
+            await until(lambda: phone.cw_channel.readyState == "open", 5)
+            sq = sim.Sequence(0, 0.0, sim.morse_timeline("EE", 20), tail_ms=300)
+            t0 = time.monotonic() * 1000
+            for item in sim.client_packets([sq]):
+                wait = (t0 + item.send_ms) / 1000 - time.monotonic()
+                if wait > 0:
+                    await asyncio.sleep(wait)
+                phone.cw_channel.send(json.dumps(item.msg))
+            await asyncio.sleep(0.5)
+            assert any(rms_dbfs(f) > -20 for f in sink.frames)              # la tonalité recréée est partie au poste
+            assert lb.cw.player is not None and lb.cw.player.lease_cuts == 0
+            assert (await phone.command("stop"))["ok"]
+            await until(lambda: lb.ctrl.snapshot().state == "RX" and lb.fake.ptt == 0 and not lb.cw.armed, 5)
+            await phone.close()
+    asyncio.run(asyncio.wait_for(scenario(), 90))

@@ -194,7 +194,7 @@ conservées à l'adoption seulement.
 |---|---|---|
 | CW-0 | FAIT (2026-11-26, § 14) : ordonnanceur + bail + générateur de tonalité en calculs purs ; banc pytest (gigue 0 à 200 ms, pertes 0 à 10 %, réordonnancement, coupures), analyse du son produit (durées, fronts, clics) | aucun |
 | CW-1 | FAIT (2026-11-26, V1 seule) : mode A dans la passerelle (`cw_arm` / `cw_disarm`, canal `cw`, porte audio, PttController), tests de panne (bail, connexion, gel de la passerelle, superviseur, STOP, TOT, QSY refusé, hors bande sur la porteuse) ; client d'essai Python (`devtools`) qui rejoue le banc par WebRTC | poste factice Hamlib n° 1 |
-| CW-2 | Application Android (§ 7), essai dans l'émulateur puis sur une vraie tablette et le S25 contre une fausse station | aucun |
+| CW-2 | FAIT en code (2026-11-26) ; essai émulateur et vrai appareil À FAIRE : application Android (§ 7), essai dans l'émulateur puis sur une vraie tablette et le S25 contre une fausse station | aucun |
 | CW-3 | Essai réel IC-7300MK2 sur charge fictive : porteuse mesurée, fronts écoutés sur un second récepteur, Wi-Fi puis 4G, V1 puis V2 | IC-7300MK2 |
 | CW-4 | Premiers QSO réels (Wi-Fi, 4G), notes de ressenti dans le journal | antenne |
 | CW-5 | Mode C (si CW-3 et CW-4 le justifient) | IC-7300MK2 |

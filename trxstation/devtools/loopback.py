@@ -36,11 +36,12 @@ def listener_password(i: int) -> str:
 
 class Loopback:
     def __init__(self, *, source=None, sink=None, limits: PttLimits | None = None, spectrum=None,
-                 access: Access | None = None, listeners: int = 2):
+                 access: Access | None = None, listeners: int = 2, cw: bool = False):
         """`access` : comptes visiteurs (LISTENER_PASSWORDS) et contrôle des rôles ; None = comme avant, tous opérateurs."""
         self._source, self._sink, self._limits = source, sink, limits
         self._access, self._listeners = access, listeners
         self._spectrum = spectrum            # objet du type SpectrumService (facultatif, essais du canal « spectrum »)
+        self._cw = cw                        # manipulation CW (branche exp/cw) : [cw] enabled et CwKeyer
         self.fake = FakeRigctld()
 
     async def __aenter__(self) -> "Loopback":
@@ -66,8 +67,13 @@ class Loopback:
         self.pipeline.gate.owner_provider = lambda: self.ctrl.snapshot().owner
         self.registry = ClientRegistry(self.cfg.clients)
         self.memories = MemoryStore()
+        self.cw = None
+        if self._cw:
+            from ..gateway.cw import CwKeyer
+            self.cfg.cw.enabled = True
+            self.cw = CwKeyer(self.ctrl, self.pipeline.tx_sink, self.cfg)
         self.manager = PeerManager(self.ctrl, self.link, self.pipeline, None, peer_timeout_s=10.0, memories=self.memories,
-                                   spectrum=self._spectrum, access=self.access,
+                                   spectrum=self._spectrum, access=self.access, cw=self.cw,
                                    muted=None if self.access is None else
                                    lambda: listener_muted(self.access.settings, self.cfg, self.link.state.frequency_hz))
         self.runner = await start_server(make_app(self.registry, self.manager), "127.0.0.1", 0)

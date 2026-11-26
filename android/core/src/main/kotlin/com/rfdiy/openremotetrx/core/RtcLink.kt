@@ -56,6 +56,7 @@ class RtcLink(
     private var pc: PeerConnection? = null
     private var dc: DataChannel? = null
     private var sc: DataChannel? = null
+    private var cwc: DataChannel? = null                          // manipulation CW (branche exp/cw) : vers la station seulement
     private var micSource: AudioSource? = null
     private var micTrack: AudioTrack? = null
     private var remoteTrack: AudioTrack? = null
@@ -181,6 +182,10 @@ class RtcLink(
             })
         }
 
+        // Manipulation CW (branche exp/cw) : non ordonné, sans renvoi (la station élimine les doublons de la fenêtre) ;
+        // une station sans CW n'y lit rien
+        cwc = peer.createDataChannel("cw", DataChannel.Init().apply { ordered = false; maxRetransmits = 0 })   // i18n-ok
+
         try {
             val offer = sdp { peer.createOffer(it, MediaConstraints()) }
             sdpSet { peer.setLocalDescription(it, offer) }
@@ -200,6 +205,13 @@ class RtcLink(
 
     fun send(text: String): Boolean {
         val channel = dc ?: return false
+        if (channel.state() != DataChannel.State.OPEN) return false
+        return channel.send(DataChannel.Buffer(ByteBuffer.wrap(text.toByteArray(Charsets.UTF_8)), false))
+    }
+
+    /** Paquet du canal « cw » ; faux si le canal n'est pas (encore) ouvert : le paquet suivant porte la même fenêtre. */
+    fun sendCw(text: String): Boolean {
+        val channel = cwc ?: return false
         if (channel.state() != DataChannel.State.OPEN) return false
         return channel.send(DataChannel.Buffer(ByteBuffer.wrap(text.toByteArray(Charsets.UTF_8)), false))
     }
@@ -248,6 +260,8 @@ class RtcLink(
         dc = null
         sc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
         sc = null
+        cwc?.let { d -> runCatching { d.close(); d.dispose() } }
+        cwc = null
         sink?.let { s -> remoteTrack?.let { runCatching { it.removeSink(s) } } }   // avant de libérer la piste
         stereo?.let { s -> remoteTrack?.let { runCatching { it.removeSink(s) } } }
         pc?.let { p -> runCatching { p.close(); p.dispose() } }

@@ -229,6 +229,13 @@ class ContractTest {
             "power_on" -> Command.PowerOn(e["how"]?.jsonPrimitive?.content)
             "power_off" -> Command.PowerOff
             "set_lang" -> Command.SetLang(p("lang").content)
+            "cw_arm" -> Command.CwArm(
+                wpm = e["wpm"]?.jsonPrimitive?.intOrNull, toneHz = e["tone_hz"]?.jsonPrimitive?.intOrNull,
+                delayMs = e["delay_ms"]?.jsonPrimitive?.intOrNull, align = e["align"]?.jsonPrimitive?.content?.toBooleanStrictOrNull(),
+                keyInterface = e["interface"]?.jsonPrimitive?.content, net = e["net"]?.jsonPrimitive?.content,
+                mode = e["mode"]?.jsonPrimitive?.content,
+            )
+            "cw_disarm" -> Command.CwDisarm
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

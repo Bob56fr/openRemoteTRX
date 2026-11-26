@@ -95,6 +95,55 @@ class RigService : Service() {
 
     private fun now(): Long = SystemClock.elapsedRealtime()
 
+    // ------------------------------------------------------------------ manipulation CW (branche exp/cw)
+    private var cwTicker: Job? = null
+
+    /** Type de réseau annoncé à la station pour les mesures du POC (liste fermée de la station). */
+    private fun cwNet(): String? = when (netType()) {
+        "wifi" -> "wifi"; "mobile" -> "cellular"; "lan" -> "ethernet"; else -> null    // i18n-ok
+    }
+
+    internal fun cwArm() {
+        executor.execute {
+            session.cwArm(now(), cwNet())
+            startCwTicker()
+        }
+    }
+
+    internal fun cwDisarm() { executor.execute { session.cwDisarm(now()); CwSidetone.key(false) } }
+
+    /** Appui à l'instant `at` (horloge elapsedRealtime, ms) : relevé par l'écran au toucher, pas à l'exécution. */
+    internal fun cwPress(paddle: com.rfdiy.openremotetrx.logic.Paddle, pressed: Boolean, at: Double) {
+        executor.execute {
+            session.cwPress(now(), at, paddle, pressed)
+            CwSidetone.key(session.snapshot.cw.keyDown)
+        }
+    }
+
+    internal fun cwSettings(settings: com.rfdiy.openremotetrx.logic.CwSettings) {
+        CwSidetone.toneHz = settings.toneHz.toDouble()
+        CwSidetone.volume = settings.sidetone
+        executor.execute { session.cwSettings(now(), settings) }
+    }
+
+    /** Rappel toutes les 5 ms tant que la CW est armée ou en cours d'armement : éléments iambiques, paquets, retour local. */
+    private fun startCwTicker() {
+        if (cwTicker?.isActive == true || !session.cwActive) return
+        CwSidetone.start()
+        cwTicker = scope.launch {
+            try {
+                while (isActive && session.cwActive) {
+                    session.cwPoll(now())
+                    CwSidetone.key(session.snapshot.cw.keyDown)
+                    delay(5)
+                }
+            } finally {
+                CwSidetone.key(false)
+                CwSidetone.stop()
+            }
+        }
+    }
+
     /** Exécute sur le fil de la session. */
     internal fun onRig(block: (RigSession, Long) -> Unit) {
         executor.execute { block(session, now()) }
@@ -125,6 +174,7 @@ class RigService : Service() {
         session = RigSession(object : SessionLink {
             override fun startAttempt() = launchAttempt()
             override fun send(text: String): Boolean = rtc.send(text)
+            override fun sendCw(text: String): Boolean = rtc.sendCw(text)
             override fun setMicOpen(open: Boolean) {
                 if (headsetMic) headsetStep(headsetCall.micWanted(open, now())) else if (open) openMicAfterBeep() else closeMic()
             }

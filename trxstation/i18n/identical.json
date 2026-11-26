@@ -36,7 +36,8 @@
     "session {duration}",
     "version {version}",
     "{n} spots/min",
-    "{who} ({min} min{mode})"
+    "{who} ({min} min{mode})",
+    "TOT {time}"
   ],
   "de": [
     "Antenne",
@@ -60,7 +61,8 @@
     "Station",
     "TRX ◄ Balance ► SDR",
     "Temp",
-    "{who} ({min} min{mode})"
+    "{who} ({min} min{mode})",
+    "TOT {time}"
   ],
   "es": [
     " · FI auto",
@@ -93,6 +95,7 @@
     "{power} en {mode}",
     "{who} ({min} min{mode})",
     "« {preset} »",
-    "« {text} »"
+    "« {text} »",
+    "TOT {time}"
   ]
 }

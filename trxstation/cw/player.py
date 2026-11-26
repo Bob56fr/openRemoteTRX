@@ -151,7 +151,12 @@ class CwPlayer:
                 self.ignored += 1                # rien à jouer : la séquence commence par un front de fermeture
                 return
             if self.active:
-                self._abandon("seq_overlap")
+                # Le client ouvre une séquence après `seq_gap_ms` de silence À SON HEURE, la station ne l'a pas encore
+                # constaté dans son rejeu (retardé) : séquence finie si rien ne joue ni n'attend, chevauchement sinon.
+                if self.key_down or self._pending:
+                    self._abandon("seq_overlap")
+                else:
+                    self._finish("end")
             self.seq = pkt.seq
             self.active = True
             self.faulted = False

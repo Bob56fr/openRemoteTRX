@@ -49,3 +49,27 @@
   contrat Android (commands.json) échoue ; superviseur et trx-monitor ne voient rien de propre à la CW (émission
   normale d'un client) : suffisant pour le POC.
   Prochain : lot CW-2 (onglet CW de l'application, d'après la maquette).
+- 2026-11-26 : LOT CW-2 FAIT EN CODE (application ; essais dans l'émulateur et sur un vrai appareil PAS faits).
+  `:protocol` : `Command.CwArm` / `CwDisarm`, message `CwMessage` (cw_state, cw_fault, cw_stats), fonction `cw`.
+  `:logic` `Cw.kt` (Kotlin pur, Lite compris) : `CwKeyer` (pioche, iambique A / B, simple levier, poids, inversion ;
+  fronts CALCULÉS à la milliseconde, pas mesurés au rappel), `CwPacketizer` (règle du § 5.1 : mêmes paquets que le banc
+  Python, vecteurs partagés `tests/protocol/cw_vectors.json` fabriqués par `scripts/build_cw_vectors.py`, rejoués d'un
+  coup ET en temps réel par pas de 5 ms), `CwDecoder` (sa propre manipulation), `CwClient` ; `RigSession` :
+  `cwArm` (battements dès la demande), `cwDisarm`, `cwPress`, `cwPoll`, micro JAMAIS ouvert tant que la CW est armée
+  ou demandée, fin de l'armement venue de la station (`cw_state idle`) ou de la liaison perdue ; `SessionLink.sendCw`
+  (défaut : rien, Lite inchangé). `:core` : canal WebRTC `cw` (non ordonné, sans renvoi), rappel de 5 ms pendant
+  l'armement (`RigService`), retour local `CwSidetone` (AudioTrack faible latence, fronts de 5 ms), instant du toucher
+  pris à l'événement (horloge `elapsedRealtime`). `:app` `CwTab.kt` d'après la maquette : onglet « CW » (seulement si
+  annoncé), smartphone plein écran sans barre d'onglets (STOP et Quitter en haut, synthèse, réglages, sélecteur 1 / 2
+  palettes, palettes multitouches avec vibration), tablette (rail sur le côté) ; quitter l'onglet, le mode conduite ou
+  une ROTATION de l'écran (activité recréée) DÉSARMENT. Textes `cw.*` en 4 langues (« TOT {time} » dans identical.json).
+  Station : correctif du rejeu (`player.py`) : une nouvelle séquence du client arrivée pendant le silence de fin de la
+  précédente la termine normalement (avant : `seq_overlap` et désarmement à chaque nouvelle séquence en vrai) ; banc
+  WebRTC réel `tests/test_webrtc.py::test_cw_channel_end_to_end` (aiortc, canal `cw`) : passé 2 fois.
+  Décisions d'exécution : « Armer CW » n'exige PAS « Émission autorisée » (le bouton est lui-même l'action délibérée ;
+  à revoir si l'utilisateur le veut) ; réglages gardés sur le téléphone (`ui` : `cw_*`). Pas faits : rejet de la paume,
+  affichage de la latence du retour local (`CwSidetone.latencyMs` mesurée, pas montrée), essai dans l'émulateur contre
+  une fausse station, vrai téléphone et tablette.
+  Tests : Android sur tour radio (dossier à part `C:\dev\openRemoteTRX-cw-and`) 265 réussis, 0 échec, APK de
+  débogage dans `dist\openRemoteTRX-cw-debug.apk` (hors dépôt) ; suite Python 3070 réussis, 3 échecs connus CRLF.
+  Prochain : essai émulateur + fausse station, puis CW-3 (IC-7300MK2 sur charge fictive).

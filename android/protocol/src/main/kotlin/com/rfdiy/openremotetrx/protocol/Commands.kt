@@ -273,6 +273,26 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("confirm", true) }
     }
 
+    /** Manipulation CW, mode A (branche exp/cw, fonction « cw », docs/protocole.md § 22) : prise d'émission NORMALE,
+     *  micro fermé ; les fronts de la clé partent sur le canal « cw ». Champs absents = valeurs de la station. */
+    data class CwArm(
+        val wpm: Int? = null, val toneHz: Int? = null, val delayMs: Int? = null, val align: Boolean? = null,
+        val keyInterface: String? = null, val net: String? = null, val mode: String? = null,
+    ) : Command("cw_arm") {
+        override fun JsonObjectBuilder.params() {
+            if (mode != null) put("mode", mode)
+            if (wpm != null) put("wpm", wpm)
+            if (toneHz != null) put("tone_hz", toneHz)
+            if (delayMs != null) put("delay_ms", delayMs)
+            if (align != null) put("align", align)
+            if (keyInterface != null) put("interface", keyInterface)
+            if (net != null) put("net", net)
+        }
+    }
+
+    /** Désarmement de MA manipulation CW : fermeture adoucie de la tonalité puis retour en réception (STOP coupe aussi). */
+    data object CwDisarm : Command("cw_disarm")
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -290,7 +310,7 @@ sealed class Command(val name: String) {
             "breizh_set", "breizh_reactivate", "breizh_log",
             "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
             "net_export", "friends", "freedv_set", "sdr", "monitoring", "diffusion", "power_on", "power_off",
-            "set_lang",
+            "set_lang", "cw_arm", "cw_disarm",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

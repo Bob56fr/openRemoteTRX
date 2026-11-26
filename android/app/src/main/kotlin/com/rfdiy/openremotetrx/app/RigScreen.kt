@@ -234,6 +234,13 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val config = LocalConfiguration.current
     val wide = ScreenLayouts.of(config.screenWidthDp, config.screenHeightDp) == ScreenLayout.WIDE   // tablette (lot A5)
+    // Onglet CW (branche exp/cw) : écran plein, AVANT le spectre en paysage (un téléphone tourné garde la CW à l'écran)
+    if (tab == Tab.CW && !rig.cw.offered) tab = Tab.STATION
+    if (tab == Tab.CW) {
+        scope.CwScreen(tablet = wide, onQuit = { tab = Tab.STATION })
+        scope.RigDialogsHost()
+        return
+    }
     if (landscape && !wide && HfScope.configured(hello) && rig.status != LinkStatus.DISCONNECTED) {
         LandscapeScope(ui, canSet, onTune = { go(it) }, modifier)
         return
@@ -273,6 +280,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     onBroadcast = { tab = Tab.STATION },                           // la diffusion se suit sur l'onglet Station
                     beeps = rig.beeps, beepsConnected = connected && rig.protocolOk,
                 ) { content -> Panel(content) }
+                Tab.CW -> Unit                                   // écran plein, montré plus haut
                 Tab.REGLAGES -> {
                     scope.SettingsTab()
                     }
@@ -289,7 +297,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
 }
 
 /** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. */
-internal fun phoneTabs(rig: RigState): List<Tab> = Tab.entries.filter { it != Tab.AMIS || friendsTab(rig) }
+internal fun phoneTabs(rig: RigState): List<Tab> =
+    Tab.entries.filter { (it != Tab.AMIS || friendsTab(rig)) && (it != Tab.CW || rig.cw.offered) }
 
 /** Onglet « Amis » : station dans un groupe et fonction affichée (« Fonctionnalités mobiles », étape 300). */
 internal fun friendsTab(rig: RigState): Boolean =

@@ -174,3 +174,30 @@ def run(sequences: list[Sequence], network: Network | None = None, params: CwPar
         blocks.append(player.render(FRAME_SAMPLES))
         events.extend(player.drain_events())
     return SimResult(np.concatenate(blocks), player, events, sequences, arrivals, fs)
+
+
+def vectors() -> dict:
+    """Vecteurs communs (tests/protocol/cw_vectors.json) : fronts de la clé (heure absolue du client) et paquets que le
+    client DOIT envoyer ; rejoués par l'application Android (logic/Cw.kt), qui doit produire les mêmes paquets."""
+    def case(name: str, seqs: list[Sequence]) -> dict:
+        edges = [[round(sq.start_ms + ts, 6), 1 if down else 0] for sq in seqs for ts, down in sq.edges]
+        last = seqs[-1]
+        until = round(last.start_ms + last.edges[-1][0] + last.tail_ms, 6)
+        return {"name": name, "edges": edges, "until_ms": until,
+                "packets": [{"at": round(s.send_ms, 6), "msg": s.msg} for s in client_packets(seqs)]}
+
+    e = morse_timeline("E", 20)
+    first = Sequence(0, 0.0, e, tail_ms=3000.0 - 1.0)
+    second = Sequence(1, e[-1][0] + 3000.0, morse_timeline("T", 20), tail_ms=1600.0)
+    return {
+        "_lisez_moi": "Paquets du canal cw (docs/exp-cw/cahier-des-charges.md § 5.1) : fabriqués par "
+                      "trxstation/cw/sim.py (python scripts/build_cw_vectors.py), rejoués par l'application Android.",
+        "seq_gap_ms": SEQ_GAP_MS, "window_ms": WINDOW_MS, "max_window": MAX_WINDOW,
+        "every_ms": EVERY_MS, "silence_every_ms": SILENCE_EVERY_MS,
+        "cases": [
+            case("paris_20wpm", [Sequence(0, 0.0, morse_timeline("PARIS", 20))]),
+            case("cq_25wpm", [Sequence(0, 0.0, morse_timeline("CQ", 25))]),
+            case("long_dash_beyond_the_window", [Sequence(0, 0.0, [(0.0, True), (700.0, False)])]),
+            case("two_sequences", [first, second]),
+        ],
+    }

@@ -25,5 +25,5 @@ object Protocol {
     /** Fonctions toujours offertes (hello.features), puis celles qu'une station peut ne pas offrir. */
     val BASE_FEATURES = listOf("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release", "i18n",
         "set_lang")
-    val OPTIONAL_FEATURES = listOf("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "swr", "replay", "netprobe")
+    val OPTIONAL_FEATURES = listOf("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "swr", "replay", "netprobe", "cw")
 }

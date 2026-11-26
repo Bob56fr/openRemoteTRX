@@ -205,6 +205,14 @@ object RigHub {
 
     fun swrCancel() { service?.onRig { session, now -> session.swrCancel(now) } }
 
+    /** Manipulation CW (branche exp/cw) : armement (prise d'émission normale), désarmement, palettes, réglages. */
+    fun cwArm() { service?.cwArm() }
+    fun cwDisarm() { service?.cwDisarm() }
+    fun cwPress(paddle: com.rfdiy.openremotetrx.logic.Paddle, pressed: Boolean, atElapsedMs: Double) {
+        service?.cwPress(paddle, pressed, atElapsedMs)
+    }
+    fun cwSettings(settings: com.rfdiy.openremotetrx.logic.CwSettings) { service?.cwSettings(settings) }
+
     fun swrLast() { service?.onRig { session, now -> session.swrLast(now) } }
 
     /** Synthèse du matériel de la station (opérateurs) : réponse dans RigState.hostSections. */
