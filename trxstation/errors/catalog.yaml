@@ -6932,6 +6932,7 @@ ORT-5017:
   - split_changed
   - xit_changed
   - tx_side_changed
+  - rptr_changed
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5017/
   depuis_version: 0.123.0
   en:
@@ -8623,6 +8624,53 @@ ORT-5117:
     - Enlace CAT perturbado
     preconisation: Comprueba en el equipo qué tecla TX está encendida (MAIN o SUB) y vuelve a intentarlo; si el fallo persiste,
       infórmalo con el registro.
+
+ORT-5118:
+  gravite: erreur
+  titre: 'Émission refusée : décalage relais illisible'
+  message: 'Le poste a un décalage relais (DUP+ / DUP-) qui ne se relit pas ({detail}) : la fréquence d''émission est
+    inconnue, émission refusée par sécurité.'
+  causes:
+  - Décalage relais en service mais écart relu à 0 (Hamlib Yaesu hors des bandes relais qu'il connaît)
+  - Réponse inattendue du poste à la lecture du décalage relais
+  - Liaison CAT perturbée
+  preconisation: Passer le poste en simplex (DUP OFF) ou vérifier l'écart du relais sur le poste, puis réessayer.
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - rptr_unreadable
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5118/
+  depuis_version: 0.290.0
+  en:
+    titre: 'Transmit refused: repeater shift unreadable'
+    message: 'The radio has a repeater shift (DUP+ / DUP-) that cannot be read back ({detail}): the transmit frequency is
+      unknown, transmit refused for safety.'
+    causes:
+    - Repeater shift on but its offset reads back as 0 (Hamlib Yaesu outside the repeater bands it knows)
+    - Unexpected reply from the radio to the repeater shift read
+    - Disturbed CAT link
+    preconisation: Switch the radio to simplex (DUP OFF) or check the repeater offset on the radio, then try again.
+  de:
+    titre: 'Senden abgelehnt: Relaisablage nicht lesbar'
+    message: 'Der Transceiver hat eine Relaisablage (DUP+ / DUP-), die sich nicht zurücklesen lässt ({detail}): Die
+      Sendefrequenz ist unbekannt, Senden aus Sicherheitsgründen abgelehnt.'
+    causes:
+    - Relaisablage eingeschaltet, aber ihr Abstand wird als 0 gelesen (Hamlib Yaesu außerhalb der ihm bekannten Relaisbänder)
+    - Unerwartete Antwort des Transceivers auf die Abfrage der Relaisablage
+    - CAT-Verbindung gestört
+    preconisation: Schalten Sie den Transceiver auf Simplex (DUP OFF) oder prüfen Sie den Relaisabstand am Transceiver und
+      versuchen Sie es erneut.
+  es:
+    titre: 'Transmisión rechazada: desplazamiento de repetidor ilegible'
+    message: 'El equipo tiene un desplazamiento de repetidor (DUP+ / DUP-) que no se puede releer ({detail}): la frecuencia
+      de transmisión es desconocida, transmisión rechazada por seguridad.'
+    causes:
+    - Desplazamiento de repetidor activo pero su separación se relee como 0 (Hamlib Yaesu fuera de las bandas de repetidor
+      que conoce)
+    - Respuesta inesperada del equipo a la lectura del desplazamiento de repetidor
+    - Enlace CAT perturbado
+    preconisation: Pasa el equipo a símplex (DUP OFF) o comprueba la separación del repetidor en el equipo y vuelve a intentarlo.
 
 ORT-5501:
   gravite: info

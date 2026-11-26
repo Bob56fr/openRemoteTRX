@@ -141,7 +141,7 @@ class PttController:
         self._last_heartbeat = 0.0
         self._tx_freq: int | None = None
         self._tx_mode: str | None = None       # mode relu à la prise d'émission (seulement si tx_modes est défini)
-        self._tx_plan: tuple | None = None     # (split, fréquence en split, XIT, décalage) relus à la prise d'émission
+        self._tx_plan: tuple | None = None     # split, XIT, côté et décalage relais relus à la prise d'émission
         self._cooldown_until = 0.0
         self._warning = False
         self._last_cut_reason = ""
@@ -609,6 +609,7 @@ class PttController:
             if self.config.safety.enforce_bands and not self.config.tx_allowed(tx_freq):
                 why = " (émission en split)" if plan[0] else ""
                 why += f" (ΔTX {plan[3]:+d} Hz)" if plan[2] else ""
+                why += f" (décalage relais {plan[6] * plan[7] / 1e3:+.0f} kHz)" if plan[6] else ""
                 raise Refused("out_of_band", f"{tx_freq / 1e6:.4f} MHz{why}")
             side, side_tx = plan[4], plan[5]       # côté d'émission lu sur le poste : SA fréquence doit être permise aussi
             if self.config.safety.enforce_bands and side_tx is not None and not self.config.tx_allowed(side_tx):
@@ -648,9 +649,10 @@ class PttController:
 
     async def _transmit_plan(self, client, rx_freq: int) -> tuple[int, tuple]:
         """Fréquence d'ÉMISSION réelle, lue à l'instant : en split, celle de l'autre VFO ; avec le ΔTX / XIT en service,
-        décalée. Retourne (fréquence, (split, fréquence en split, XIT, décalage)). Un split ou un XIT que le poste déclare
-        mais qui ne se relit pas => Refused (en cas de doute, ne pas émettre). Un poste qui ne les connaît pas du tout
-        (RPRT -4 / -11 sans les avoir déclarés) n'a rien à vérifier."""
+        décalée ; avec un décalage relais (DUP+ / DUP-, étape 401), décalée de son écart. Retourne (fréquence, (split,
+        fréquence en split, XIT, décalage, côté, fréquence du côté, sens du décalage relais, son écart)). Un split, un
+        XIT ou un décalage relais que le poste déclare mais qui ne se relit pas => Refused (en cas de doute, ne pas
+        émettre). Un poste qui ne les connaît pas du tout (RPRT -4 / -11 sans les avoir déclarés) n'a rien à vérifier."""
         caps = self.link.capabilities
         tx, split, split_freq, xit_on, xit = rx_freq, False, None, False, 0
         if caps is None or caps.can_get_split is not False:
@@ -685,11 +687,40 @@ class PttController:
                 raise Refused("xit_unreadable", str(exc)) from exc
             except (CatConnectionError, OSError) as exc:
                 raise Refused("cat_error", str(exc)) from exc
+        rptr, rptr_offs = await self._repeater_shift(client)
+        tx += rptr * rptr_offs
         side, side_tx = None, None
         if self.spec.transmit.side_query:          # poste à deux récepteurs (FTDX101) : côté d'émission lu sur le poste
             side, side_freq = await self._transmit_side(client)
-            side_tx = side_freq + (xit if xit_on else 0)
-        return tx, (split, split_freq, xit_on, xit, side, side_tx)
+            side_tx = side_freq + (xit if xit_on else 0) + rptr * rptr_offs
+        return tx, (split, split_freq, xit_on, xit, side, side_tx, rptr, rptr_offs)
+
+    async def _repeater_shift(self, client) -> tuple[int, int]:
+        """Décalage relais lu à l'instant : (sens +1 / -1 / 0, écart en Hz). Un poste VHF / UHF (IC-705, IC-7100…) en
+        DUP+ émet sur la fréquence de réception PLUS l'écart : la bande se vérifie sur celle-là (étape 401, lu dans le
+        code de Hamlib : Icom commande 0F, Yaesu OS). Décalage en service dont l'écart se relit à 0 (Hamlib Yaesu : 0
+        hors des bandes relais qu'il connaît) => Refused ; un poste qui ne le déclare pas et ne le connaît pas
+        (RPRT -4 / -11) n'a rien à vérifier."""
+        caps = self.link.capabilities
+        if caps is not None and caps.can_get_rptr_shift is False:
+            return 0, 0
+        declared = caps is not None and caps.can_get_rptr_shift is True
+        try:
+            sign = await client.get_rptr_shift()
+            if not sign:
+                return 0, 0
+            offs = await client.get_rptr_offset()
+        except RigError as exc:
+            if declared or exc.code not in (RIG_ENIMPL, RIG_ENAVAIL):
+                raise Refused("rptr_unreadable", str(exc)) from exc
+            return 0, 0
+        except CatProtocolError as exc:
+            raise Refused("rptr_unreadable", str(exc)) from exc
+        except (CatConnectionError, OSError) as exc:
+            raise Refused("cat_error", str(exc)) from exc
+        if offs <= 0:
+            raise Refused("rptr_unreadable", f"décalage relais {'+' if sign > 0 else '-'} en service, écart relu {offs} Hz")
+        return sign, offs
 
     async def _transmit_side(self, client) -> tuple[str, int]:
         """Côté qui émet (« main » / « sub ») et SA fréquence, lus par les lectures brutes de la fiche du poste (étape 397 :
@@ -797,7 +828,9 @@ class PttController:
             if plan is not None and self._state is PttState.TX and plan != self._tx_plan:
                 if plan[:2] != self._tx_plan[:2]:
                     return "split_changed"
-                return "xit_changed" if plan[2:4] != self._tx_plan[2:4] else "tx_side_changed"
+                if plan[2:4] != self._tx_plan[2:4]:
+                    return "xit_changed"
+                return "rptr_changed" if plan[6:8] != self._tx_plan[6:8] else "tx_side_changed"
         try:
             keyed = await client.get_ptt()
         except _CAT_ERRORS:

@@ -58,6 +58,10 @@ class Capabilities:
     attenuators: tuple[int, ...] = ()  # valeurs d'atténuateur en dB (« Attenuator: 20dB ») ; vide = inconnu
     level_ranges: dict[str, list[float]] = field(default_factory=dict)   # niveau réglable -> [min, max, pas] (« Set level »)
     can_get_split: bool | None = None  # « Can get Split VFO » ; None = non déclaré (la sécurité tente quand même la lecture)
+    # Décalage relais (DUP+ / DUP-, VHF / UHF : IC-705, IC-7100, FTDX10 en FM 28 / 50 MHz) : « Can get Repeater Duplex » /
+    # « Can get Repeater Offset » (libellés de dump_caps, Hamlib 4.7.2 et 5.0) ; None = non déclaré (étape 401)
+    can_get_rptr_shift: bool | None = None
+    can_get_rptr_offs: bool | None = None
     max_rit_hz: int = RIT_LIMIT_HZ     # plage PERMISE du RIT : « Max RIT » du poste resserré à RIT_LIMIT_HZ (étape 97)
     max_xit_hz: int = 0
     # « Can set / get Power Stat » : allumage et extinction par la CAT (docs/alimentation-poste-cahier-des-charges.md)
@@ -175,6 +179,8 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
     caps.levels = _names(text, "Get level")
     caps.functions = _names(text, "Get functions")
     caps.can_get_split = _flag(text, "get", "Split VFO")
+    caps.can_get_rptr_shift = _flag(text, "get", "Repeater Duplex")
+    caps.can_get_rptr_offs = _flag(text, "get", "Repeater Offset")
     rit = _max_offset(text, "RIT")
     caps.max_rit_hz = min(rit, RIT_LIMIT_HZ) if rit else RIT_LIMIT_HZ   # RIT limité à ±500 Hz, même si le poste va plus loin
     caps.max_xit_hz = _max_offset(text, "XIT")                          # ΔTX : plage du poste (inchangée)

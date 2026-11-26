@@ -105,7 +105,18 @@ class RigctlProbe:
         quel que soit l'état réel du poste."""
         cache = self.cache_ms()
         try:
-            self._query("T 0")
+            try:
+                self._query("T 0")
+            except RigctlError as exc:
+                if str(exc) != "RPRT -20":
+                    raise
+                # rigctld se croit le poste éteint et refuse « T 0 » (RIG_EPOWER) : il ne relit l'alimentation que sur
+                # get_powerstat (poste rallumé à la main après une extinction par la station) ; puis « T 0 » de nouveau
+                try:
+                    self._query("\\get_powerstat")
+                except RigctlError:
+                    pass
+                self._query("T 0")
             if cache != 0:
                 self.sleep(min(CACHE_WAIT_MAX_S, (cache if cache is not None else CACHE_DEFAULT_MS) / 1000 + 0.1))
             return self.read().ptt is not True

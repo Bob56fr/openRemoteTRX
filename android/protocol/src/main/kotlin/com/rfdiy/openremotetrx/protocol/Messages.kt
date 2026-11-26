@@ -40,6 +40,9 @@ data class Capabilities(
     @SerialName("level_ranges") val levelRanges: Map<String, List<Double>> = emptyMap(),
     /** Split lisible (« Can get Split VFO ») ; null = non déclaré. */
     @SerialName("can_get_split") val canGetSplit: Boolean? = null,
+    /** Décalage relais lisible (« Can get Repeater Duplex / Offset », station 0.290.0+) ; null = non déclaré. */
+    @SerialName("can_get_rptr_shift") val canGetRptrShift: Boolean? = null,
+    @SerialName("can_get_rptr_offs") val canGetRptrOffs: Boolean? = null,
     /** Décalages maximaux du clarifieur (Hz) ; 0 = inconnu. */
     @SerialName("max_rit_hz") val maxRitHz: Int = 0,
     @SerialName("max_xit_hz") val maxXitHz: Int = 0,

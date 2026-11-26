@@ -33,6 +33,7 @@ _HEADER_RE = re.compile(r"^(get|set)_[a-z_]+:")        # écho de la commande : 
 VFO_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,11}")
 RIG_ENIMPL = -4    # non implémenté par le backend
 RIG_ENAVAIL = -11  # fonction indisponible sur ce poste
+RIG_EPOWER = -20   # rigctld croit le poste éteint : il refuse toute commande sauf l'alimentation (« T 0 » compris)
 HAMLIB_ERRORS = {
     -1: "paramètre invalide", -2: "configuration invalide", -3: "mémoire insuffisante",
     -4: "non implémenté", -5: "délai dépassé côté poste", -6: "erreur d'entrée/sortie",
@@ -275,6 +276,24 @@ class RigctldClient:
         except ValueError:
             raise CatProtocolError(f"décalage illisible : {raw!r}") from None
 
+    async def get_rptr_shift(self) -> int:
+        """Décalage relais : +1 (DUP+), -1 (DUP-), 0 (simplex). Formats relevés sur un vrai rigctld 4.7.2 (2026-11-26) :
+        « Repeater Shift: None », « + » ou « - ». RigError si le poste ne le dit pas (étape 401)."""
+        raw = self._pick(await self._command("r"), "Repeater Shift", "#1", command="r")
+        sign = {"None": 0, "+": 1, "-": -1}.get(raw)
+        if sign is None:
+            raise CatProtocolError(f"décalage relais illisible : {raw!r}")
+        return sign
+
+    async def get_rptr_offset(self) -> int:
+        """Écart du décalage relais en Hz (« Repeater Offset: 600000 », relevé sur rigctld 4.7.2). Chez Yaesu, Hamlib
+        répond 0 hors des bandes relais qu'il connaît : 0 n'est pas une preuve d'absence de décalage (étape 401)."""
+        raw = self._pick(await self._command("o"), "Repeater Offset", "#1", command="o")
+        try:
+            return int(float(raw))
+        except ValueError:
+            raise CatProtocolError(f"écart du décalage relais illisible : {raw!r}") from None
+
     async def get_powerstat(self, timeout: float | None = None) -> bool:
         """Poste allumé ? (« Power Status: 1 », relevé sur rigctld 4.7.2 avec un FTDX10.) ATTENTION : chez Yaesu, Hamlib
         répond « éteint » (0) quand le poste ne répond pas du tout : 0 veut dire « éteint OU muet », jamais une preuve
@@ -298,8 +317,21 @@ class RigctldClient:
     # ------------------------------------------------------------------ PTT (réservé)
 
     async def write_ptt(self, tx: bool) -> None:
-        """RÉSERVÉ à PttController. Ne jamais appeler ailleurs, ne jamais exposer à l'API."""
-        await self._command(f"T {1 if tx else 0}")
+        """RÉSERVÉ à PttController. Ne jamais appeler ailleurs, ne jamais exposer à l'API.
+        Retour en réception refusé par RPRT -20 (RIG_EPOWER) : rigctld se CROIT le poste éteint et refuse alors toute
+        commande, « T 0 » compris (Hamlib, tests/rigctl_parse.c) ; il ne relit l'alimentation que sur get_powerstat.
+        Poste rallumé à la main après une extinction par la station : on relit l'alimentation puis on renvoie « T 0 »
+        une fois (étape 401). Jamais pour « T 1 » : une prise d'émission refusée reste refusée."""
+        try:
+            await self._command(f"T {1 if tx else 0}")
+        except RigError as exc:
+            if tx or exc.code != RIG_EPOWER:
+                raise
+            try:
+                await self._command("\\get_powerstat")
+            except RigError:
+                pass                                      # lecture refusée : « T 0 » est renvoyé quand même
+            await self._command("T 0")
 
     # ------------------------------------------------------------------ écriture
 
