@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-param([Parameter(Mandatory)][string]$MotDePasse, [string]$Dossier = "C:\dev\cw-essai", [string]$Variante = "hold")
+param([Parameter(Mandatory)][string]$MotDePasse, [string]$Dossier = "C:\dev\cw-essai", [string]$Variante = "hold", [string]$Ecoute = "127.0.0.1")
 # Lance la station factice CW hors de la session SSH, journal dans $Dossier\station.log
 $py = "C:\dev\openRemoteTRX-tests\.venv\Scripts\python.exe"
+$sub = if ($Ecoute -eq '127.0.0.1') { 'station' } else { 'station-lan' }   # certificat propre à l'adresse
 $wav = "$Dossier\emis-$(Get-Date -Format HHmmss).wav"
-$cmd = "cmd /c `"`"$py`" `"$Dossier\station_cw.py`" --dossier `"$Dossier\station`" --mot-de-passe $MotDePasse --enregistrer `"$wav`" --variante $Variante > `"$Dossier\station.log`" 2>&1`""
+$cmd = "cmd /c `"`"$py`" `"$Dossier\station_cw.py`" --dossier `"$Dossier\$sub`" --mot-de-passe $MotDePasse --enregistrer `"$wav`" --variante $Variante --ecoute $Ecoute > `"$Dossier\station.log`" 2>&1`""
 $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd; CurrentDirectory = $Dossier }
 "pid $($r.ProcessId) code $($r.ReturnValue) wav $wav"
 Start-Sleep -Seconds 12

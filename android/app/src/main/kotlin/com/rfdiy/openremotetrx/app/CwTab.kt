@@ -145,10 +145,17 @@ internal fun RigScope.CwScreen(modifier: Modifier, tablet: Boolean, onQuit: () -
         CwSummary(cw, settings, wide = false)
         CwDecoded(cw, Modifier.padding(start = 14.dp, end = 14.dp, top = 8.dp).fillMaxWidth().height(34.dp), big = false)
         Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CwSettingsBlock(cw, settings, ::change)
+            CwSettingsBlock(cw, settings, ::change, showAlign = false)
+            // une seule ligne pour « caler la porteuse » et « Émission autorisée » : la place va aux palettes
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = settings.align, enabled = !cw.armed, onCheckedChange = { change(settings.copy(align = it)) })
+                    Text(Tr.t("cw.align_short"), fontSize = 12.sp, color = Page.TEXTE, maxLines = 2)
+                }
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { TxAllowedSwitch(short = true) }
+            }
             CwNotice(cw)
         }
-        Box(Modifier.padding(start = 14.dp, end = 14.dp, top = 6.dp)) { TxAllowedRow() }
         Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             PadSelector(settings, ::change)
@@ -186,9 +193,11 @@ private fun RigScope.CwSummary(cw: CwUi, settings: CwSettings, wide: Boolean) {
                  modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             ptt?.totSeconds?.let { Text(Tr.t("cw.tot", "time" to Format.duration(it)), fontSize = 12.sp, color = Page.TEXTE_2) }
         }
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(Format.frequency(carrier), fontSize = if (wide) 44.sp else 32.sp, fontWeight = FontWeight.SemiBold, color = Page.TEXTE)
-            Text(Tr.t("cw.carrier"), fontSize = 13.sp, color = Page.TEXTE_2, modifier = Modifier.weight(1f))
+        // fréquence seule sur sa ligne (un libellé à côté se coupait lettre par lettre sur un téléphone à grande police)
+        Text(Format.frequency(carrier), fontSize = if (wide) 44.sp else 30.sp, fontWeight = FontWeight.SemiBold, color = Page.TEXTE,
+             maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(Tr.t("cw.carrier"), fontSize = 12.sp, color = Page.TEXTE_2, modifier = Modifier.weight(1f))
             Text(Tr.t("cw.dial", "freq" to Format.frequency(r?.frequencyHz)), fontSize = 12.sp, color = Page.TEXTE_2)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -249,7 +258,7 @@ private fun CwStats(cw: CwUi) {
 }
 
 @Composable
-private fun ColumnScope.CwSettingsBlock(cw: CwUi, s: CwSettings, change: (CwSettings) -> Unit) {
+private fun ColumnScope.CwSettingsBlock(cw: CwUi, s: CwSettings, change: (CwSettings) -> Unit, showAlign: Boolean = true) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Setting(Tr.t("cw.s_wpm")) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
@@ -292,7 +301,7 @@ private fun ColumnScope.CwSettingsBlock(cw: CwUi, s: CwSettings, change: (CwSett
                 contentAlignment = Alignment.Center) { Text("·⇄–", color = Page.TEXTE, fontSize = 13.sp) }          // i18n-ok
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    if (showAlign) Row(verticalAlignment = Alignment.CenterVertically) {
         Checkbox(checked = s.align, enabled = !cw.armed, onCheckedChange = { change(s.copy(align = it)) })
         Text(Tr.t("cw.align"), fontSize = 12.sp, color = Page.TEXTE)
     }
@@ -353,11 +362,15 @@ private fun RigScope.ArmButton(cw: CwUi, modifier: Modifier) {
  *  comme pour le PTT ; la retirer désarme la CW. */
 @Composable
 private fun RigScope.TxAllowedRow() {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
-        Spacer(Modifier.width(8.dp))
-        Text(Tr.t("rigparts.armed"), color = Page.TEXTE, fontSize = 14.sp, modifier = Modifier.weight(1f))
-    }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) { TxAllowedSwitch(short = false) }
+}
+
+@Composable
+private fun RigScope.TxAllowedSwitch(short: Boolean) {          // dans une ligne : la ligne parente borne la largeur
+    AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
+    Spacer(Modifier.width(8.dp))
+    Text(Tr.t(if (short) "rigparts.armed_short" else "rigparts.armed"), color = Page.TEXTE, fontSize = if (short) 12.sp else 14.sp,
+         maxLines = 2)
 }
 
 @Composable

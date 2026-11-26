@@ -41,15 +41,15 @@ ptt_variant = "{variant}"
 """
 
 
-def build(folder: Path, password: str, account: str, sink: str, variant: str = "hold") -> Path:
+def build(folder: Path, password: str, account: str, sink: str, variant: str = "hold", bind: str = "127.0.0.1") -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     cert, key = folder / "station.crt", folder / "station.key"
     if not cert.exists():
-        generate_self_signed(["127.0.0.1", "10.0.2.2", "localhost"], cert, key)
+        generate_self_signed(["127.0.0.1", "10.0.2.2", "localhost"] + ([bind] if bind != "127.0.0.1" else []), cert, key)
     cfg = dummy_config()
     cfg.network.rigctld_port = RIGCTLD_PORT
     cfg.network.gateway_port = GATEWAY_PORT
-    cfg.network.gateway_bind = "127.0.0.1"
+    cfg.network.gateway_bind = bind
     cfg.network.tls_cert, cfg.network.tls_key = str(cert), str(key)
     cfg.network.ice_servers = []
     cfg.audio.capture_device = "tone:600"
@@ -81,9 +81,12 @@ def main() -> int:
     ap.add_argument("--compte", default="cw")
     ap.add_argument("--enregistrer", type=Path, required=True, help="WAV du son émis (tonalité CW recréée)")
     ap.add_argument("--variante", choices=("hold", "hang"), default="hold", help="PTT : V1 tenu (hold) ou V2 relâché (hang)")
+    ap.add_argument("--ecoute", default="127.0.0.1",
+                    help="127.0.0.1 (émulateur) ou l'adresse de la machine dans le réseau local (vrai téléphone)")
     args = ap.parse_args()
-    toml = build(args.dossier, args.mot_de_passe, args.compte, f"file:{args.enregistrer}", args.variante)
-    print(f"Station factice CW : https://10.0.2.2:{GATEWAY_PORT}, compte {args.compte}, PTT {args.variante}", flush=True)
+    toml = build(args.dossier, args.mot_de_passe, args.compte, f"file:{args.enregistrer}", args.variante, args.ecoute)
+    where = "10.0.2.2" if args.ecoute == "127.0.0.1" else args.ecoute
+    print(f"Station factice CW : https://{where}:{GATEWAY_PORT}, compte {args.compte}, PTT {args.variante}", flush=True)
     print(f"Empreinte : {certificate_fingerprint(args.dossier / 'station.crt')}", flush=True)
     env = dict(os.environ, PYTHONPATH=str(SRC))
     fake = subprocess.Popen([sys.executable, "-m", "trxstation.devtools.fake_rigctld", "--port", str(RIGCTLD_PORT)], env=env)
