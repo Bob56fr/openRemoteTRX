@@ -64,6 +64,7 @@ class RigError(Exception):
 
 class RigctldClient:
     def __init__(self, host: str = "127.0.0.1", port: int = 4532, timeout: float = 3.0):
+        self.mode_width = 0      # largeur envoyée avec un mode sans largeur choisie : 0 ou -1 (fiche du poste, étape 402)
         self.host, self.port, self.timeout = host, port, timeout
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
@@ -390,9 +391,12 @@ class RigctldClient:
         await self._command(f"U {name} {1 if on else 0}")
 
     async def set_mode(self, mode: str, passband_hz: int = 0) -> None:
-        """passband_hz = 0 : largeur par défaut du backend (cf. man rigctl)."""
+        """passband_hz = 0 : pas de largeur choisie, envoie `self.mode_width` (fiche du poste, posée par PttController :
+        0 = largeur « normale » du backend, -1 = largeur inchangée, Hamlib RIG_PASSBAND_NOCHANGE ; étape 402)."""
         if not isinstance(mode, str) or not MODE_RE.fullmatch(mode):
             raise ValueError(f"mode invalide : {mode!r}")
         if isinstance(passband_hz, bool) or not isinstance(passband_hz, int) or not 0 <= passband_hz <= 20_000:
             raise ValueError(f"largeur de filtre invalide : {passband_hz!r}")
+        if passband_hz == 0:
+            passband_hz = self.mode_width
         await self._command(f"M {mode} {passband_hz}")

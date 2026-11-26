@@ -228,11 +228,19 @@ data class RigSpecFilters(
     val steps: Map<String, List<Int>> = emptyMap(),
     /** Liste courte de l'appui bref sur FIL (steps), dans un mode dont les paliers la contiennent toute. */
     val quick: List<Int> = emptyList(),
+    /** Largeur envoyée avec un mode sans largeur choisie : 0 = normale (Hamlib), -1 = inchangée (station 0.291.0+). */
+    @SerialName("mode_width") val modeWidth: Int = 0,
 )
 
 /** `source` : estimate (repère comparé au S-mètre), busy (état « occupé » du poste), dcd (Hamlib). */
 @Serializable
-data class RigSpecSquelch(val source: String = "estimate")
+data class RigSpecSquelch(
+    val source: String = "estimate",
+    /** Source busy : lecture brute du poste (ex. « BY; »), expression à un groupe, valeur « ouvert » (station 0.291.0+). */
+    val query: String = "",
+    val reply: String = "",
+    @SerialName("open_value") val openValue: String = "",
+)
 
 /** `hello.updates` (étape 392) : version plus récente de la station, dernière APK publiée de l'application. */
 @Serializable

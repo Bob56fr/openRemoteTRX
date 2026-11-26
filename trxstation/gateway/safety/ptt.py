@@ -157,6 +157,10 @@ class PttController:
         self.local = LocalPresence(timing=self.spec.timing)   # poste utilisé sur place : PTT à distance refusé (local.py)
         if hasattr(link, "read_dcd"):      # état réel du squelch lu sur le poste si sa fiche le permet (étape 396)
             link.read_dcd = self.spec.squelch.source != "estimate"
+            sq = self.spec.squelch
+            link.dcd_raw = (sq.query, sq.reply, sq.open_value) if sq.query else None
+        if hasattr(getattr(link, "client", None), "mode_width"):   # mode sans largeur choisie (fiche, étape 402)
+            link.client.mode_width = self.spec.filters.mode_width
         self.thermal = ThermalGuard(config.safety.rig_temp_warn_c, config.safety.rig_temp_cut_c)   # thermal.py
         # Carte son du poste disponible ? (audio/rigcard.py) None = toujours (sources de test, fichiers) ; absente =
         # émission REFUSÉE (`audio_missing`) : une porteuse sans modulation n'a rien à faire sur l'air

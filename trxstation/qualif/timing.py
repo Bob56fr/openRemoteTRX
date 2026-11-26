@@ -175,6 +175,8 @@ def render_draft(spec: rigspec.RigSpec, model: int, name: str, timing: Timing) -
         lines.append(f"presets = {spec.filters.presets}")
     if spec.filters.quick:
         lines.append(f"quick = [{', '.join(str(w) for w in spec.filters.quick)}]")
+    if spec.filters.mode_width:
+        lines.append(f"mode_width = {spec.filters.mode_width}   # repris de la fiche (largeur inchangée avec un mode)")
     if timing.widths:
         lines.append("# largeurs demandées -> relues : " + ", ".join(f"{a} -> {b}" for a, b in timing.widths))
     if spec.filters.steps:
@@ -186,5 +188,10 @@ def render_draft(spec: rigspec.RigSpec, model: int, name: str, timing: Timing) -
         lines += ["", "[transmit]", f'side_query = "{t.side_query}"', f"side_reply = '{t.side_reply}'",
                   f'main_value = "{t.main_value}"', f'sub_value = "{t.sub_value}"', f'main_freq_query = "{t.main_freq_query}"',
                   f'sub_freq_query = "{t.sub_freq_query}"', f"freq_reply = '{t.freq_reply}'"]
-    lines += ["", "[squelch]", f'source = "{source}"' + ("   # mesuré : \\get_dcd lisible" if timing.dcd else "   # \\get_dcd refusé")]
+    sq = spec.squelch
+    if sq.query:                                   # lecture brute de la fiche (Yaesu « BY; ») : reprise telle quelle
+        lines += ["", "[squelch]", f'source = "{sq.source}"   # lecture brute de la fiche, pas mesurée par la valise',
+                  f'query = "{sq.query}"', f"reply = '{sq.reply}'", f'open_value = "{sq.open_value}"']
+    else:
+        lines += ["", "[squelch]", f'source = "{source}"' + ("   # mesuré : \\get_dcd lisible" if timing.dcd else "   # \\get_dcd refusé")]
     return "\n".join(lines) + "\n"

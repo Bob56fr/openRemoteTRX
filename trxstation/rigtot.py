@@ -44,6 +44,9 @@ RIG_TOT: dict[int, CivTot] = {
     # lues, poste éteint = délai dépassé, coupure seule du poste à 180,0 s). Le manuel : valable SEULEMENT pour une
     # émission lancée par une commande CI-V ou la touche TRANSMIT => PTT de la station par la CAT (« RIG »).
     3094: CivTot("Icom IC-7300MK2", 0xB6, b"\x00\x32", {0: 0, 1: 3, 2: 5, 3: 10, 4: 20, 5: 30}, ("RIG",), "2026-11-20"),
+    # Icom IC-705 (étape 402) : D'APRÈS le guide CI-V (IC-705 CI-V Reference Guide 2020-07-21, menu « 0043 Time-Out
+    # Timer », mêmes valeurs ; adresse d'usine A4h, comme Hamlib) ; PAS ENCORE MESURÉ sur le poste (TP0 à faire).
+    3085: CivTot("Icom IC-705", 0xA4, b"\x00\x43", {0: 0, 1: 3, 2: 5, 3: 10, 4: 20, 5: 30}, ("RIG",), ""),
 }
 
 _HEX = re.compile(r"\\0x([0-9A-Fa-f]{2})")

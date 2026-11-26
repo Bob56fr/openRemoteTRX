@@ -173,7 +173,9 @@ class FakeRigctld:
             if key == "m":
                 return f"get_mode:\n{self._out('Mode', self.mode)}{self._out('Passband', self.passband)}RPRT 0\n"
             if key == "M":
-                self.mode, self.passband = args[0], int(args[1])
+                self.mode = args[0]
+                if int(args[1]) != -1:                  # -1 = largeur inchangée (Hamlib RIG_PASSBAND_NOCHANGE)
+                    self.passband = int(args[1])
                 return f"set_mode: {args[0]} {args[1]}\nRPRT 0\n"
             if key == "l" and args[:1]:
                 if self.broken_strength and args[0] == "STRENGTH":

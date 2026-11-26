@@ -14,6 +14,7 @@ linked_changes = true   # mémoire par bande : une fréquence envoyée peut reme
 [filters]
 kind = "steps"          # largeur par paliers imposés (commande SH), sans préréglage FIL
 quick = [1800, 2400, 2800, 3000, 3500, 4000]    # appui bref : du DX à la HIFI (choix de l'utilisateur)
+mode_width = -1          # mode changé sans toucher à la largeur ni au filtre de toit (0 = 2400 Hz et RF02 chez Hamlib)
 
 [filters.steps]         # manuel CAT FTDX10 2308-F, tableau 3 (palier 00 = défaut du filtre de toit, jamais demandé)
 USB = [300, 400, 600, 850, 1100, 1200, 1500, 1650, 1800, 1950, 2100, 2250, 2400, 2450, 2500, 2600, 2700, 2800, 2900, 3000, 3200, 3500, 4000]
@@ -24,4 +25,7 @@ RTTY = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 800, 1200, 1400, 1
 RTTYR = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 800, 1200, 1400, 1700, 2000, 2400, 3000, 3200, 3500, 4000]
 
 [squelch]
-source = "busy"         # commande BY : récepteur occupé, lu sur le poste
+source = "busy"         # commande BY : récepteur occupé, lu sur le poste (Hamlib n'a pas get_dcd pour ce poste)
+query = "BY;"           # manuel FTDX10 CAT 2308-F : réponse « BY P1 P2; », P1 = 1 : RX BUSY ON (SQL OPEN), P2 = 0 fixe
+reply = 'BY([01])\d;'
+open_value = "1"
