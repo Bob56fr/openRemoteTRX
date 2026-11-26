@@ -134,8 +134,12 @@ Station -> client :
   réception, TOT restant) ; au milieu les commandes habituelles de la CW (vitesse, poids, tonalité, retour local,
   manipulateur, inversion point / trait, caler la porteuse, texte décodé de sa propre manipulation, état du rejeu) ;
   EN BAS le manipulateur tactile avec, juste au-dessus, le SÉLECTEUR « 1 palette » (pioche) / « 2 palettes »
-  (iambique A, B, simple levier) et « Armer CW » ; STOP toujours visible ; le PTT de l'application est remplacé
-  par « Armer CW » dans cet onglet. Onglet présent seulement si `hello.features` contient `cw`.
+  (iambique A, B, simple levier) et « Armer CW » ; le PTT de l'application est remplacé par « Armer CW » dans cet
+  onglet. Onglet présent seulement si `hello.features` contient `cw`.
+- SMARTPHONE (retour de l'utilisateur sur la maquette, même jour) : STOP et « Quitter » TOUT EN HAUT, au-dessus de
+  la synthèse du poste, loin des doigts qui manipulent ; « Quitter » désarme la CW et ferme l'onglet ; PAS de barre
+  d'onglets en bas (les doigts la heurteraient) : le manipulateur va jusqu'au bas de l'écran. TABLETTE validée telle
+  quelle (synthèse en haut, sélecteur, « Armer CW » et STOP à gauche des palettes, onglets sur le côté).
 - Bouton « Armer CW » (prise d'émission, affiche l'état renvoyé), zones tactiles inactives tant que non armé.
 - Interfaces : pioche, iambique A, iambique B, simple levier ; vitesse 5 à 40 mots/min, poids ; inversion
   point / trait ; zones tactiles seulement (multitouche pour l'iambique).
