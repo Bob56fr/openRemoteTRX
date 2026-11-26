@@ -197,5 +197,7 @@
   "coupure.cw_seq_overlap": "CW-Folge unterbrochen",
   "coupure.cw_stalled": "CW-Wiedergabe der Station verspätet",
   "coupure.cw_failed": "Fehler der CW-Tastung",
-  "coupure.cw_carrier_changed": "Frequenz oder Betriebsart beim Aktivieren von CW geändert"
+  "coupure.cw_carrier_changed": "Frequenz oder Betriebsart beim Aktivieren von CW geändert",
+  "coupure.cw_hang": "CW-Pause: Sendung freigegeben, beim nächsten Tastendruck fortgesetzt",
+  "coupure.cw_retake_refused": "CW-Sendung nach einer Pause nicht fortgesetzt (von der Station abgelehnt)"
 }

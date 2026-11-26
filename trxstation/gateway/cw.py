@@ -14,7 +14,12 @@ SÉCURITÉ (exception du cahier § 3, valable dans la branche seulement, essais 
 - STOP, TOT, battement perdu, déconnexion, toute coupure du PttController : tampon jeté (tonalité coupée net), le
   PttController envoie « T 0 » ; le module se désarme sans jamais reprendre l'émission ;
 - ce module ne peut QUE prendre une émission normale ou couper : aucun autre chemin vers le PTT.
-V1 seulement (PTT tenu pendant l'armement) ; V2 (« hang ») pas encore codée, refusée par config.py.
+V1 (`ptt_variant = "hold"`, défaut) : PTT tenu pendant tout l'armement.
+V2 (`"hang"`, cahier § 5.4) : après `hang_ms` de silence, PTT relâché (« T 0 », motif `cw_hang`), la CW reste armée et
+le rendu n'écrit plus RIEN vers le poste ; au front de fermeture suivant, émission reprise par le MÊME chemin que
+l'armement (mode, porteuse, bandes revérifiés, `key_without_audio` avec tous ses refus, anti-rebond `cooldown` attendu
+au plus RETAKE_MAX_S) ; refus = désarmement (`cw_retake_refused`). Toute coupure venue d'ailleurs pendant la pause
+(STOP, autre client, déconnexion) désarme pour de bon : jamais de reprise après elle.
 """
 from __future__ import annotations
 
@@ -38,6 +43,7 @@ LEAD_S = 0.06                    # avance d'écriture sur la lecture de la carte
 STALL_S = 0.25                   # rendu en retard de plus que cela : passerelle gênée, CW désarmée
 STATE_EVERY_S = 0.2              # cw_state envoyé au propriétaire pendant l'armement
 MAX_PACKETS_PER_S = 120          # canal cw : au-delà, paquets ignorés (le client en envoie 50)
+RETAKE_MAX_S = 3.0               # V2 : reprise de l'émission refusée pour anti-rebond attendue au plus ce temps
 STATS_MAX_BYTES = 2_000_000      # mesures du POC (§ 12) : fichier tourné au-delà
 
 
@@ -63,6 +69,10 @@ class CwKeyer:
         self._last_activity = 0.0
         self._arrivals: deque[float] = deque()
         self.ignored_packets = 0
+        self._phase = "tx"                       # "tx" (PTT tenu) ; V2 : "hang" (PTT relâché), "retake" (reprise en cours)
+        self._retake_task: asyncio.Task | None = None
+        self._release_task: asyncio.Task | None = None
+        self.retakes = 0
         ctrl.add_listener(self._on_ptt)
 
     # ------------------------------------------------------------------ état
@@ -78,7 +88,8 @@ class CwKeyer:
         p = self.player
         if not self.armed or p is None:
             return {"state": "idle"}
-        return {"state": "playing" if p.active else "armed", "seq": p.seq, "buffer_ms": round(p.buffer_ms),
+        state = "hang" if self._phase != "tx" else "playing" if p.active else "armed"
+        return {"state": state, "seq": p.seq, "buffer_ms": round(p.buffer_ms),
                 "late": p.late, "lease_cuts": p.lease_cuts, "carrier_hz": self.info.get("carrier_hz")}
 
     def _state_message(self, state: str | None = None, reason: str = "") -> dict:
@@ -105,6 +116,26 @@ class CwKeyer:
         delay = float(params.get("delay_ms", c.delay_ms))
         if not c.delay_min_ms <= delay <= c.delay_max_ms:
             raise Refused("invalid", f"delay_ms entre {c.delay_min_ms:g} et {c.delay_max_ms:g}")
+        carrier = await self._take(client_id, tone, align=bool(params.get("align")))
+        self.player = CwPlayer(CwParams(tone_hz=tone, edge_ms=c.edge_ms, delay_ms=delay, adaptive=c.adaptive,
+                                        delay_min_ms=c.delay_min_ms, delay_max_ms=c.delay_max_ms,
+                                        lease_grace_ms=c.lease_grace_ms, max_keydown_ms=c.max_keydown_ms,
+                                        seq_gap_ms=c.seq_gap_ms))
+        self.owner, self._send, self._epoch = client_id, send, self.ctrl.epoch
+        self._closing = ""
+        self._phase, self.retakes = "tx", 0
+        self._t0 = self._last_activity = self.clock()
+        self.info = {"carrier_hz": carrier, "tone_hz": tone, "delay_ms": delay, "mode": c.data_mode,
+                     "wpm": params.get("wpm"), "interface": params.get("interface", ""), "net": params.get("net", "")}
+        self._task = asyncio.get_running_loop().create_task(self._feed())
+        log.info("CW armée par %s : porteuse %.4f MHz, rejeu %.0f ms", client_id, carrier / 1e6, delay)
+        send(self._state_message("armed"))
+        return dict(self.info)
+
+    async def _take(self, client_id: str, tone: float, *, align: bool = False) -> int:
+        """Vérifications (mode, porteuse et fréquence affichée dans les bandes) puis prise d'émission NORMALE ; même
+        chemin à l'armement et à chaque reprise V2. Rend la porteuse ; Refused si impossible (rien n'émet)."""
+        c = self.cfg.cw
         client = self.ctrl.link.client
         try:
             mode, _ = await client.get_mode()
@@ -113,7 +144,7 @@ class CwKeyer:
         if mode != c.data_mode:
             raise Refused("cw_mode", f"poste en {mode} : {c.data_mode} attendu (la station ne change jamais le mode)")
         sign = carrier_sign(mode)
-        if params.get("align"):                  # caler la porteuse : QSY AVANT la prise seulement (refusé hors RX)
+        if align:                                # caler la porteuse : QSY AVANT la prise seulement (refusé hors RX)
             freq, _, _ = await self.ctrl.read_transmit_plan()
             await self.ctrl.set_frequency(int(round(freq - sign * tone)))
         freq, tx, plan = await self.ctrl.read_transmit_plan()
@@ -129,19 +160,7 @@ class CwKeyer:
         if got_freq != freq or got_plan != plan or (got_mode is not None and got_mode != c.data_mode):
             await self.ctrl.force_rx("cw_carrier_changed", by=client_id)
             raise Refused("cw_carrier_changed", "fréquence ou mode changés pendant l'armement")
-        self.player = CwPlayer(CwParams(tone_hz=tone, edge_ms=c.edge_ms, delay_ms=delay, adaptive=c.adaptive,
-                                        delay_min_ms=c.delay_min_ms, delay_max_ms=c.delay_max_ms,
-                                        lease_grace_ms=c.lease_grace_ms, max_keydown_ms=c.max_keydown_ms,
-                                        seq_gap_ms=c.seq_gap_ms))
-        self.owner, self._send, self._epoch = client_id, send, self.ctrl.epoch
-        self._closing = ""
-        self._t0 = self._last_activity = self.clock()
-        self.info = {"carrier_hz": carrier, "tone_hz": tone, "delay_ms": delay, "mode": c.data_mode,
-                     "wpm": params.get("wpm"), "interface": params.get("interface", ""), "net": params.get("net", "")}
-        self._task = asyncio.get_running_loop().create_task(self._feed())
-        log.info("CW armée par %s : porteuse %.4f MHz, rejeu %.0f ms", client_id, carrier / 1e6, delay)
-        send(self._state_message("armed"))
-        return dict(self.info)
+        return carrier
 
     async def disarm(self, client_id: str, reason: str = "cw_disarm") -> None:
         """Désarmement demandé par le propriétaire (ou toggle) : fermeture adoucie puis « T 0 »."""
@@ -198,17 +217,29 @@ class CwKeyer:
                     await self.sleep(wait)
                 if not self.armed or player is not self.player:
                     return
-                if not self._still_ours():
+                if self._phase == "tx":
+                    if not self._still_ours():
+                        self._stop_now(self.ctrl.last_cut_request or "cut")
+                        return
+                elif self.ctrl.epoch > self._epoch:
+                    # V2, PTT relâché : coupure venue d'ailleurs (STOP, autre client...) = désarmée, jamais reprise
                     self._stop_now(self.ctrl.last_cut_request or "cut")
                     return
                 if self.clock() - due > STALL_S:
                     self._begin_close("cw_stalled")
                     await self._cut("cw_stalled")
                     return
-                self.sink.write(to_pcm16(player.render(FRAME_SAMPLES)))
+                pcm = to_pcm16(player.render(FRAME_SAMPLES))
+                if self._phase == "tx":
+                    self.sink.write(pcm)                 # PTT relâché (V2) : rien n'est écrit vers le poste
                 frame += 1
                 for event in player.drain_events():
                     self._event(event)
+                if self.cfg.cw.ptt_variant == "hang" and not self._closing:
+                    if self._phase == "tx" and player.silent and player.idle_ms >= self.cfg.cw.hang_ms:
+                        self._begin_hang()
+                    elif self._phase == "hang" and player.wants_key and self._retake_task is None:
+                        self._retake_task = asyncio.get_running_loop().create_task(self._retake())
                 now = self.clock()
                 if not self._closing and not player.active and now - self._last_activity > self.cfg.cw.idle_disarm_s:
                     self._begin_close("cw_idle")
@@ -265,9 +296,58 @@ class CwKeyer:
                 self._event(event)
 
     async def _cut(self, reason: str) -> None:
-        owner = self.owner
+        owner, phase = self.owner, self._phase
         self._stop_now(reason)
-        await self.ctrl.force_rx(reason, by=owner or "manipulation CW")
+        if phase == "tx":
+            await self.ctrl.force_rx(reason, by=owner or "manipulation CW")
+        elif self._release_task is not None:
+            await asyncio.wait({self._release_task}, timeout=2.0)   # relâché V2 encore en cours : il se termine
+
+    # ------------------------------------------------------------------ V2 (« hang »)
+    def _begin_hang(self) -> None:
+        """Silence de `hang_ms` : PTT relâché par la passerelle, CW toujours armée, plus rien n'est écrit."""
+        assert self.player is not None
+        self._phase = "hang"
+        self.player.hold()
+        self._epoch = self.ctrl.epoch + 1        # force_rx l'augmente d'exactement 1 : au-delà, coupure venue d'ailleurs
+        self._release_task = asyncio.get_running_loop().create_task(
+            self.ctrl.force_rx("cw_hang", by=self.owner or "manipulation CW"))
+        self._send(self._state_message())
+
+    async def _retake(self) -> None:
+        """Front de fermeture pendant la pause V2 : émission reprise par le chemin de l'armement, sinon désarmée."""
+        owner, player = self.owner, self.player
+        try:
+            if self._release_task is not None:
+                await asyncio.wait({self._release_task}, timeout=2.0)
+            deadline = self.clock() + RETAKE_MAX_S
+            self._phase = "retake"
+            while True:
+                if self.owner != owner or self.player is not player or self._closing or self.ctrl.epoch > self._epoch:
+                    return                       # désarmée ou coupée entre-temps : la boucle du rendu a conclu
+                try:
+                    carrier = await self._take(owner, float(self.info.get("tone_hz", self.cfg.cw.tone_hz)))
+                    break
+                except Refused as exc:
+                    if exc.reason == "cooldown" and self.clock() < deadline:
+                        await self.sleep(0.05)   # anti-rebond du PttController (jamais baissé pour la CW)
+                        continue
+                    log.info("CW : émission non reprise après la pause (%s)", exc)
+                    self._send({"type": "cw_fault", "seq": player.seq if player else None, "reason": "retake_refused",
+                                "detail": exc.reason})
+                    self._stop_now("cw_retake_refused")
+                    return
+            if self.owner != owner or self.player is not player or self.ctrl.epoch > self._epoch:
+                await self.ctrl.force_rx("cw_disarm", by=owner)       # désarmée pendant la prise : on recoupe
+                return
+            self.retakes += 1
+            self.info["carrier_hz"] = carrier
+            self._phase = "tx"
+            player.resume()
+            self._send(self._state_message())
+        finally:
+            if self.player is player:
+                self._retake_task = None
 
     def _stop_now(self, reason: str) -> None:
         """Tonalité coupée net (tampon jeté), module désarmé ; n'émet JAMAIS rien."""
@@ -278,13 +358,16 @@ class CwKeyer:
         finally:
             send, owner = self._send, self.owner
             self.owner, self.player = None, None
-            task, self._task = self._task, None
-            if task is not None and task is not asyncio.current_task() and not task.done():
-                task.cancel()
+            self._phase = "tx"
+            for task in (self._task, self._retake_task):
+                if task is not None and task is not asyncio.current_task() and not task.done():
+                    task.cancel()
+            self._task = self._retake_task = None
             log.info("CW désarmée (%s, %s)", owner, reason)
             send({"type": "cw_state", "state": "idle", "reason": reason})
 
     def _on_ptt(self, snap) -> None:
-        """Écouteur synchrone du PttController : toute coupure (STOP, TOT, battement...) arrête le rendu AVANT « T 0 »."""
-        if self.armed and (snap.state != "TX" or snap.owner != self.owner or self.ctrl.epoch != self._epoch):
+        """Écouteur synchrone du PttController : toute coupure (STOP, TOT, battement...) arrête le rendu AVANT « T 0 ».
+        Pendant la pause V2 (PTT relâché ou reprise en cours), la boucle du rendu juge sur `epoch`."""
+        if self.armed and self._phase == "tx" and (snap.state != "TX" or snap.owner != self.owner or self.ctrl.epoch != self._epoch):
             self._stop_now(self.ctrl.last_cut_request or snap.event or "cut")

@@ -37,10 +37,11 @@ modes = ["A"]
 data_mode = "PKTUSB"
 tone_hz = 700
 delay_ms = 300
+ptt_variant = "{variant}"
 """
 
 
-def build(folder: Path, password: str, account: str, sink: str) -> Path:
+def build(folder: Path, password: str, account: str, sink: str, variant: str = "hold") -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     cert, key = folder / "station.crt", folder / "station.key"
     if not cert.exists():
@@ -58,7 +59,7 @@ def build(folder: Path, password: str, account: str, sink: str) -> Path:
     cfg.modules.bus_port = BUS_PORT
     cfg.clients = [ClientAuth(id=account, password_hash=hash_password(password))]
     path = folder / "station.toml"
-    path.write_text(cfgmod.render_toml(cfg) + CW_SECTION, encoding="utf-8")
+    path.write_text(cfgmod.render_toml(cfg) + CW_SECTION.format(variant=variant), encoding="utf-8")
     loaded = cfgmod.load(path)
     problems = cfgmod.validate(loaded)
     if problems or not loaded.cw.enabled:
@@ -79,9 +80,10 @@ def main() -> int:
     ap.add_argument("--mot-de-passe", required=True)
     ap.add_argument("--compte", default="cw")
     ap.add_argument("--enregistrer", type=Path, required=True, help="WAV du son émis (tonalité CW recréée)")
+    ap.add_argument("--variante", choices=("hold", "hang"), default="hold", help="PTT : V1 tenu (hold) ou V2 relâché (hang)")
     args = ap.parse_args()
-    toml = build(args.dossier, args.mot_de_passe, args.compte, f"file:{args.enregistrer}")
-    print(f"Station factice CW : https://10.0.2.2:{GATEWAY_PORT}, compte {args.compte}", flush=True)
+    toml = build(args.dossier, args.mot_de_passe, args.compte, f"file:{args.enregistrer}", args.variante)
+    print(f"Station factice CW : https://10.0.2.2:{GATEWAY_PORT}, compte {args.compte}, PTT {args.variante}", flush=True)
     print(f"Empreinte : {certificate_fingerprint(args.dossier / 'station.crt')}", flush=True)
     env = dict(os.environ, PYTHONPATH=str(SRC))
     fake = subprocess.Popen([sys.executable, "-m", "trxstation.devtools.fake_rigctld", "--port", str(RIGCTLD_PORT)], env=env)

@@ -115,7 +115,7 @@ Station -> client :
 - **V1 (défaut)** : PTT pris par `cw_arm` (chemin normal du PttController, `reserve` comme la mesure de TOS) et
   tenu jusqu'au désarmement. Désarmement automatique après `idle_disarm_s` (défaut 8 s) sans manipulation,
   pour rendre l'écoute. Simple et sans rafales de « T 1 ».
-- **V2 (essai)** : PTT relâché après `hang_ms` (600 ms) de silence, repris au front suivant par le chemin normal
+- **V2 (essai, FAIT le 2026-11-26 : `ptt_variant = "hang"`, motif `cw_hang`, refus de reprise `cw_retake_refused`)** : PTT relâché après `hang_ms` (600 ms) de silence, repris au front suivant par le chemin normal
   (refus compris) ; le délai de prise s'ajoute au ré-ancrage. L'anti-rebond `rekey_cooldown_s` (1 s) n'est PAS
   baissé pour la CW : une reprise dans la seconde attend. On mesure si V2 reste utilisable.
 
@@ -197,7 +197,7 @@ conservées à l'adoption seulement.
 |---|---|---|
 | CW-0 | FAIT (2026-11-26, § 14) : ordonnanceur + bail + générateur de tonalité en calculs purs ; banc pytest (gigue 0 à 200 ms, pertes 0 à 10 %, réordonnancement, coupures), analyse du son produit (durées, fronts, clics) | aucun |
 | CW-1 | FAIT (2026-11-26, V1 seule) : mode A dans la passerelle (`cw_arm` / `cw_disarm`, canal `cw`, porte audio, PttController), tests de panne (bail, connexion, gel de la passerelle, superviseur, STOP, TOT, QSY refusé, hors bande sur la porteuse) ; client d'essai Python (`devtools`) qui rejoue le banc par WebRTC | poste factice Hamlib n° 1 |
-| CW-2 | FAIT en code (2026-11-26), RÉUSSI dans l'émulateur contre une station factice (2026-11-26) ; vrai appareil À FAIRE : application Android (§ 7), essai dans l'émulateur puis sur une vraie tablette et le S25 contre une fausse station | aucun |
+| CW-2 | FAIT en code (2026-11-26), RÉUSSI dans l'émulateur contre une station factice (2026-11-26, iambique deux palettes et V2 compris) ; rejet de la paume et vrai appareil À FAIRE : application Android (§ 7), essai dans l'émulateur puis sur une vraie tablette et le S25 contre une fausse station | aucun |
 | CW-3 | Essai réel IC-7300MK2 sur charge fictive : porteuse mesurée, fronts écoutés sur un second récepteur, Wi-Fi puis 4G, V1 puis V2 | IC-7300MK2 |
 | CW-4 | Premiers QSO réels (Wi-Fi, 4G), notes de ressenti dans le journal | antenne |
 | CW-5 | Mode C (si CW-3 et CW-4 le justifient) | IC-7300MK2 |

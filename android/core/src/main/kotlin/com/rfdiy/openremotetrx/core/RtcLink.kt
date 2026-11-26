@@ -63,6 +63,7 @@ class RtcLink(
     private var sink: AudioTrackSink? = null                       // waterfall audio : gardée d'une connexion à l'autre
     private var stereo: AudioTrackSink? = null                     // spatialisation (SpatialHub) : idem
     private var muted = false
+    private var ducked = false                       // CW armée (branche exp/cw) : son reçu atténué de 20 dB
 
     init {
         PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context.applicationContext).createInitializationOptions())
@@ -124,7 +125,7 @@ class RtcLink(
                     remoteTrack = track
                     track.setEnabled(!muted)
                     sink?.let { track.addSink(it) }
-                    stereo?.let { track.addSink(it); track.setVolume(0.0) }
+                    stereo?.let { track.addSink(it); track.setVolume(0.0) } ?: track.setVolume(rxVolume())
                 }
             }
         }) ?: throw AttemptException("client_error", Tr.t("rtclink.webrtc_unavailable"))
@@ -231,9 +232,18 @@ class RtcLink(
         stereo = value
         remoteTrack?.let { t ->
             runCatching {
-                if (value != null) { t.addSink(value); t.setVolume(0.0) } else t.setVolume(1.0)
+                if (value != null) { t.addSink(value); t.setVolume(0.0) } else t.setVolume(rxVolume())
             }
         }
+    }
+
+    private fun rxVolume(): Double = if (ducked) DUCK_VOLUME else 1.0
+
+    /** CW armée (cahier exp/cw § 6) : son reçu atténué de 20 dB, jamais coupé ; le retour local reste à part. */
+    fun setDucked(value: Boolean) {
+        ducked = value
+        SpatialHub.setDucked(value)
+        remoteTrack?.let { t -> if (stereo == null) runCatching { t.setVolume(rxVolume()) } }
     }
 
     /** Sourdine de la réception (le volume se règle par les touches « média » du téléphone). */
@@ -310,6 +320,7 @@ class RtcLink(
     }
 
     private companion object {
+        const val DUCK_VOLUME = 0.1                  // -20 dB
         private var voiceFx: ExternalAudioProcessingFactory? = null
         private var voiceFxTried = false
 

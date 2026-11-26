@@ -389,6 +389,112 @@ def test_sequence_statistics_are_recorded_without_any_sound_or_text(tmp_path):
     run(scenario)
 
 
+# --------------------------------------------------------------------------- V2 (« hang », cahier § 5.4)
+DIT_GAP_DIT = [(0.0, True), (60.0, False), (1000.0, True), (1060.0, False)]   # même séquence, 940 ms de silence
+
+
+def test_v2_releases_after_the_silence_and_resumes_at_the_next_element(tmp_path):
+    async def scenario(fake):
+        prepare(fake)
+        async with station(fake) as st:
+            b = bench(st, tmp_path, ptt_variant="hang", hang_ms=400)
+            phone = await connect(st, "phone", cw=b.keyer)
+            stop = asyncio.Event()
+            beat = asyncio.create_task(heartbeats(phone, stop))
+            r = await armed(st, b, phone, delay_ms=200)
+            assert r["ok"] and fake.ptt == 1
+            sender = asyncio.create_task(send_packets(b.keyer, "phone", [sim.Sequence(0, 0.0, DIT_GAP_DIT, tail_ms=300)]))
+            await until(lambda: fake.ptt == 0 and st.ctrl.snapshot().last_cut_reason == "cw_hang", timeout=2.0)
+            assert b.keyer.armed and st.ctrl.snapshot().state == "RX"         # relâché pendant le silence, CW armée
+            assert any(m.get("type") == "cw_state" and m.get("state") == "hang" for m in phone.messages)
+            written = len(b.sink.frames)
+            await asyncio.sleep(0.15)
+            assert len(b.sink.frames) == written                             # PTT relâché : rien vers le poste
+            await until(lambda: fake.ptt == 1, timeout=2.0)                  # repris au point suivant
+            await sender
+            await asyncio.sleep(0.3)
+            await phone.say(cmd="cw_disarm", id=2)
+            stop.set()
+            await beat
+            assert fake.ptt == 0 and not b.keyer.armed and b.keyer.retakes == 1
+            found = an.detect_edges(b.audio(), FS, 700, 0.5)
+            marks = [(found[i + 1][0] - found[i][0]) * 1000 / FS for i in range(0, len(found) - 1, 2)]
+            assert len(marks) == 2 and all(abs(m - 60.0) < 1.0 for m in marks)   # les deux points, entiers
+    run(scenario)
+
+
+def test_v2_stop_during_the_pause_disarms_for_good(tmp_path):
+    async def scenario(fake):
+        prepare(fake)
+        async with station(fake) as st:
+            b = bench(st, tmp_path, ptt_variant="hang", hang_ms=400)
+            phone, car = await connect(st, "phone", cw=b.keyer), await connect(st, "car", cw=b.keyer)
+            stop = asyncio.Event()
+            beat = asyncio.create_task(heartbeats(phone, stop))
+            await armed(st, b, phone, delay_ms=200)
+            sender = asyncio.create_task(send_packets(b.keyer, "phone", [sim.Sequence(0, 0.0, DIT_GAP_DIT, tail_ms=300)]))
+            await until(lambda: fake.ptt == 0 and b.keyer._phase == "hang", timeout=2.0)
+            await car.say(cmd="stop", id=9)
+            await until(lambda: not b.keyer.armed, timeout=1.0)
+            await sender                                                     # le point suivant arrive : jamais repris
+            await asyncio.sleep(0.4)
+            stop.set()
+            await beat
+            assert fake.ptt == 0 and b.keyer.retakes == 0
+            assert {"type": "cw_state", "state": "idle", "reason": "stop"} in phone.messages
+    run(scenario)
+
+
+def test_v2_resume_is_refused_when_the_rig_changed_during_the_pause(tmp_path):
+    async def scenario(fake):
+        prepare(fake)
+        async with station(fake) as st:
+            b = bench(st, tmp_path, ptt_variant="hang", hang_ms=400)
+            phone = await connect(st, "phone", cw=b.keyer)
+            stop = asyncio.Event()
+            beat = asyncio.create_task(heartbeats(phone, stop))
+            await armed(st, b, phone, delay_ms=200)
+            sender = asyncio.create_task(send_packets(b.keyer, "phone", [sim.Sequence(0, 0.0, DIT_GAP_DIT, tail_ms=300)]))
+            await until(lambda: fake.ptt == 0 and b.keyer._phase == "hang", timeout=2.0)
+            fake.mode = "USB"                                                # poste changé pendant la pause
+            await until(lambda: not b.keyer.armed, timeout=2.0)
+            await sender
+            stop.set()
+            await beat
+            assert fake.ptt == 0 and b.keyer.retakes == 0
+            assert any(m.get("type") == "cw_fault" and m["reason"] == "retake_refused" for m in phone.messages)
+            assert {"type": "cw_state", "state": "idle", "reason": "cw_retake_refused"} in phone.messages
+    run(scenario)
+
+
+def test_v2_resume_waits_for_the_rekey_cooldown_and_never_lowers_it(tmp_path):
+    async def scenario(fake):
+        prepare(fake)
+        limits = PttLimits(tot_s=5, warn_before_s=1, heartbeat_timeout_s=1.0, tick_s=0.02, rekey_cooldown_s=0.8,
+                           unkey_retry_s=0.05, unkey_deadline_s=0.5)
+        async with station(fake, limits=limits) as st:
+            b = bench(st, tmp_path, ptt_variant="hang", hang_ms=300)
+            phone = await connect(st, "phone", cw=b.keyer)
+            stop = asyncio.Event()
+            beat = asyncio.create_task(heartbeats(phone, stop))
+            await armed(st, b, phone, delay_ms=200)
+            edges = [(0.0, True), (60.0, False), (500.0, True), (560.0, False)]   # point 440 ms après : dans l'anti-rebond
+            sender = asyncio.create_task(send_packets(b.keyer, "phone", [sim.Sequence(0, 0.0, edges, tail_ms=1500)]))
+            await until(lambda: fake.ptt == 0, timeout=2.0)
+            released = time.monotonic()
+            await until(lambda: fake.ptt == 1, timeout=3.0)
+            assert time.monotonic() - released >= 0.75                       # repris seulement après l'anti-rebond
+            await sender
+            await phone.say(cmd="cw_disarm", id=2)
+            stop.set()
+            await beat
+            found = an.detect_edges(b.audio(), FS, 700, 0.5)
+            marks = [(found[i + 1][0] - found[i][0]) * 1000 / FS for i in range(0, len(found) - 1, 2)]
+            assert len(marks) == 2 and all(abs(m - 60.0) < 1.0 for m in marks)   # point retardé mais entier
+            assert b.keyer.retakes == 1 and fake.ptt == 0
+    run(scenario)
+
+
 # --------------------------------------------------------------------------- configuration [cw]
 def test_cw_section_is_off_by_default_and_checked():
     from trxstation import config as cfgmod
@@ -401,7 +507,8 @@ def test_cw_section_is_off_by_default_and_checked():
     assert any("data_mode" in p for p in cfgmod.validate(cfg))
     cfg.rig.tx_modes = ["PKTUSB"]
     assert cfgmod.validate(cfg) == []
-    for key, value in (("max_keydown_ms", 6000), ("lease_grace_ms", 5), ("tone_hz", 2000), ("ptt_variant", "hang"),
+    for key, value in (("max_keydown_ms", 6000), ("lease_grace_ms", 5), ("tone_hz", 2000), ("ptt_variant", "pause"),
+                       ("hang_ms", 100), ("hang_ms", 5000),
                        ("modes", ["A", "C"]), ("delay_ms", 100), ("enabled", "oui")):
         bad = dummy_config()
         setattr(bad.cw, key, value)

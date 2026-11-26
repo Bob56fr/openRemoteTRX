@@ -130,6 +130,7 @@ class RigService : Service() {
     private fun startCwTicker() {
         if (cwTicker?.isActive == true || !session.cwActive) return
         CwSidetone.start()
+        rtc.setDucked(true)                                       // son reçu à -20 dB pendant l'armement (cahier § 6)
         cwTicker = scope.launch {
             try {
                 while (isActive && session.cwActive) {
@@ -140,6 +141,7 @@ class RigService : Service() {
             } finally {
                 CwSidetone.key(false)
                 CwSidetone.stop()
+                rtc.setDucked(false)
             }
         }
     }
@@ -374,7 +376,8 @@ class RigService : Service() {
         VoiceHub.setBreizhRoute(state.breizh?.effectsOff == true)          // voix par Breizh : égaliseur et effets coupés
         val mine = state.ptt?.let { it.mine && it.transmitting } ?: false
         // Micro du casque : bip de prise quand le micro s'ouvre vraiment (casque en mode appel ~1 s plus tard, headsetStep).
-        if (mine != wasMine && !(mine && headsetMic)) sounds.txBeep(mine)
+        // CW armée (branche exp/cw) : aucun bip aux pauses et reprises V2, il se mêlerait au retour local
+        if (mine != wasMine && !(mine && headsetMic) && !state.cw.armed) sounds.txBeep(mine)
         wasMine = mine
 
         updateNotification(state)

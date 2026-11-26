@@ -197,5 +197,7 @@
   "coupure.cw_seq_overlap": "séquence CW interrompue",
   "coupure.cw_stalled": "rendu CW de la station en retard",
   "coupure.cw_failed": "erreur de la manipulation CW",
-  "coupure.cw_carrier_changed": "fréquence ou mode changés pendant l'armement CW"
+  "coupure.cw_carrier_changed": "fréquence ou mode changés pendant l'armement CW",
+  "coupure.cw_hang": "pause de la CW : émission relâchée, reprise au prochain appui",
+  "coupure.cw_retake_refused": "émission CW non reprise après une pause (refus de la station)"
 }

@@ -102,3 +102,27 @@
   268 / 0 (2 nouveaux). Émulateur : ARM CW sans elle = refus expliqué, station en RX ; avec = TX ; retirée = RX en
   0,23 s (`cw_disarm`). Piège : le Python d'un venv relance l'interpréteur de base (deux processus par programme) :
   `stop-station.ps1` tue l'arbre (`taskkill /T`), sinon l'ancienne passerelle garde le port 18443.
+- 2026-11-26 : SUITE DU LOT CW-2 ET VARIANTE V2 (« hang ») CODÉE, préalables du lot CW-3.
+  IAMBIQUE À DEUX PALETTES PRESSÉES ENSEMBLE essayé dans l'émulateur (`squeeze.ps1` : événements multitouches par la
+  console de l'émulateur `adb emu event send`, l'image Google refusant `sendevent` sans root) : son de la station
+  « · – · – · » (alternance puis élément opposé au relâché, mode B), points 60,000 ms, traits 180,000 ms.
+  LATENCE DU RETOUR LOCAL affichée (« Retour local N ms », tampon de l'AudioTrack) avec les mesures du rejeu (tablette).
+  REJET DE LA PAUME pas fait : Compose ne donne pas la taille du contact et le seuil se règle sur un vrai écran
+  (essai S25 / tablette). V2 (`[cw] ptt_variant = "hang"`, `hang_ms` 600, 200 à 3000) : après `hang_ms` de silence la
+  passerelle relâche le PTT (`force_rx("cw_hang")`), la CW reste armée et RIEN n'est écrit vers le poste ;
+  l'ordonnanceur avance en silence sans jouer aucun front (`CwPlayer.hold`) ; au front de fermeture suivant, reprise
+  par le MÊME chemin que l'armement (`CwKeyer._take` : mode, porteuse, bandes, `key_without_audio` et tous ses refus,
+  anti-rebond `cooldown` attendu au plus 3 s, jamais baissé), le point en attente sort ENTIER, retardé (`resume`,
+  compté `hang_reanchors`, pas `late`) ; refus = `cw_fault retake_refused` puis désarmée (`cw_retake_refused`) ; toute
+  coupure venue d'ailleurs pendant la pause (STOP, autre client : `epoch` du PttController au-delà de celui du relâché)
+  désarme POUR DE BON. Application : `cw_state hang` = badge vert « RX · CW EN PAUSE », pas de bip de prise / fin
+  tant que la CW est armée, son reçu atténué de 20 dB pendant l'armement (cahier § 6 ; RtcLink et SpatialHub).
+  Textes `coupure.cw_hang`, `coupure.cw_retake_refused`, `cw.badge_hang`, `cw.st_sidetone` en 4 langues ;
+  `docs/protocole.md` § 22. Tests : 4 tests de panne V2 avec le poste factice (relâché puis repris, STOP pendant la
+  pause, poste changé pendant la pause, anti-rebond attendu), test de l'ordonnanceur, test Android de la pause ;
+  Android 269 / 0 ; Python 3076 réussis, 3 échecs CRLF connus. Émulateur en V2 (`v2.ps1`, station factice
+  `--variante hang`) : PTT relâché ~1 s après chaque point (rejeu 300 + 600), CW armée, point suivant = émission en
+  moins de 80 ms, les deux points de 60,000 ms, son écrit seulement pendant les émissions. Remarques : en V2 le TOT
+  compte par reprise ; un QSY redevient possible pendant la pause (la reprise revérifie mode, porteuse et bandes) ;
+  l'armement V2 émet ~600 ms sans son avant la première pause (aucune puissance en mode données sans audio).
+  Prochain : vrai téléphone (S25) et tablette (rejet de la paume à régler), puis CW-3 sur l'IC-7300MK2, V1 puis V2.

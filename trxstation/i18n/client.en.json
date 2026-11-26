@@ -197,5 +197,7 @@
   "coupure.cw_seq_overlap": "CW sequence interrupted",
   "coupure.cw_stalled": "station CW rendering late",
   "coupure.cw_failed": "CW keying error",
-  "coupure.cw_carrier_changed": "frequency or mode changed while arming CW"
+  "coupure.cw_carrier_changed": "frequency or mode changed while arming CW",
+  "coupure.cw_hang": "CW pause: transmission released, resumed at the next key press",
+  "coupure.cw_retake_refused": "CW transmission not resumed after a pause (refused by the station)"
 }

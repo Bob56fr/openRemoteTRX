@@ -315,6 +315,7 @@ data class CwUi(
     val requested: Boolean = false,        // armement demandé, réponse pas encore reçue
     val armed: Boolean = false,            // la station dit « armed » ou « playing »
     val playing: Boolean = false,
+    val hang: Boolean = false,              // V2 : PTT relâché par la station pendant un silence, repris au prochain appui
     val keyDown: Boolean = false,          // clé fermée sur le téléphone (retour local)
     val carrierHz: Long? = null,
     val delayMs: Int? = null,
@@ -394,7 +395,7 @@ class CwClient {
                     })
                     return
                 }
-                ui = ui.copy(armed = true, requested = false, playing = state == "playing",      // i18n-ok
+                ui = ui.copy(armed = true, requested = false, playing = state == "playing", hang = state == "hang",      // i18n-ok
                              bufferMs = num("buffer_ms")?.intOrNull ?: ui.bufferMs, late = num("late")?.intOrNull ?: ui.late,
                              leaseCuts = num("lease_cuts")?.intOrNull ?: ui.leaseCuts,
                              carrierHz = num("carrier_hz")?.longOrNull ?: ui.carrierHz)

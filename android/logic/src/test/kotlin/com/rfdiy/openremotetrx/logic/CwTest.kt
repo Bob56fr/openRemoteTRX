@@ -282,4 +282,18 @@ class CwTest {
         assertTrue(link.sent.last().contains("cw_disarm"))
         assertFalse(s.snapshot.cw.armed)
     }
+
+    @Test
+    fun `pause V2 - poste en reception, CW toujours armee, paquets toujours envoyes, micro ferme`() {
+        val (s, link) = armed()
+        s.onMessage(40, """{"type":"state","ptt":{"state":"RX","owner":null,"last_cut_reason":"cw_hang"},"rig":{"connected":true}}""")
+        s.onMessage(41, """{"type":"cw_state","state":"hang","seq":0,"buffer_ms":0,"late":0,"lease_cuts":0,"carrier_hz":7030700}""")
+        assertTrue(s.snapshot.cw.armed && s.snapshot.cw.hang)
+        val before = link.cw.size
+        s.cwPress(50, 50.0, Paddle.DOT, true); s.cwPoll(80, 80.0)
+        assertTrue(link.cw.size > before)                                   // la manipulation reprend l'émission
+        assertFalse(link.mic)
+        s.onMessage(90, """{"type":"cw_state","state":"playing","seq":0,"buffer_ms":250,"late":0,"lease_cuts":0,"carrier_hz":7030700}""")
+        assertFalse(s.snapshot.cw.hang)
+    }
 }

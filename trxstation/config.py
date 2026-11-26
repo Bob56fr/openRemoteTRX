@@ -162,8 +162,9 @@ class Cw:
     lease_grace_ms: float = 60.0        # marge du bail (20 à 200 ms)
     max_keydown_ms: float = 2000.0      # appui continu au plus (100 à 5000 ms, plafond 5 s)
     seq_gap_ms: float = 1500.0          # silence de fin de séquence
-    ptt_variant: str = "hold"           # « hold » (V1 : PTT tenu pendant l'armement) ; « hang » (V2) pas encore codée
-    idle_disarm_s: float = 8.0          # V1 : désarmement après ce temps sans manipulation (2 à 60 s)
+    ptt_variant: str = "hold"           # « hold » (V1 : PTT tenu pendant l'armement) ; « hang » (V2 : relâché après hang_ms)
+    idle_disarm_s: float = 8.0          # désarmement après ce temps sans manipulation (2 à 60 s)
+    hang_ms: float = 600.0              # V2 : silence avant de relâcher le PTT (200 à 3000 ms), repris au front suivant
 
 
 @dataclass
@@ -921,14 +922,15 @@ def _cw_problems(c: Cw, rig: Rig) -> list[str]:
         p.append(_t("bool", where="[cw]", name="adaptive"))
     if not isinstance(c.modes, list) or not c.modes or any(m not in ("A",) for m in c.modes):
         p.append(_t("cw.choice", name="modes", choices='["A"]'))
-    if c.ptt_variant not in ("hold",):
-        p.append(_t("cw.choice", name="ptt_variant", choices="hold"))
+    if c.ptt_variant not in ("hold", "hang"):
+        p.append(_t("cw.choice", name="ptt_variant", choices="hold, hang"))
     if not isinstance(c.data_mode, str) or not c.data_mode or \
             (c.enabled is True and rig.tx_modes and c.data_mode not in rig.tx_modes):
         p.append(_t("cw.data_mode", mode=str(c.data_mode)[:16], allowed=", ".join(rig.tx_modes) or "-"))
     for name, low, high in (("tone_hz", 300, 1200), ("edge_ms", 3, 8), ("delay_ms", 150, 500),
                             ("delay_min_ms", 150, 500), ("delay_max_ms", 150, 500), ("lease_grace_ms", 20, 200),
-                            ("max_keydown_ms", 100, 5000), ("seq_gap_ms", 500, 10000), ("idle_disarm_s", 2, 60)):
+                            ("max_keydown_ms", 100, 5000), ("seq_gap_ms", 500, 10000), ("idle_disarm_s", 2, 60),
+                            ("hang_ms", 200, 3000)):
         value = getattr(c, name)
         if not _number(value) or not low <= value <= high:
             p.append(_t("number_between", where="[cw]", name=name, low=low, high=high))

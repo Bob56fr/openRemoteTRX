@@ -81,6 +81,11 @@ class CwPlayer:
         self.closed_seq = -1                     # séquences terminées ou abandonnées : paquets ignorés
         self.active = False
         self.faulted = False
+        # Variante V2 (« hang », cahier § 5.4) : PTT relâché par la passerelle ; le rendu avance (silence) sans jouer
+        # aucun front, jusqu'à la reprise de l'émission ; le premier front de fermeture est alors ré-ancré tout de suite.
+        self.holding = False
+        self._resuming = False
+        self.hang_reanchors = 0
         # compteurs de la session
         self.packets = 0
         self.ignored = 0
@@ -131,6 +136,28 @@ class CwPlayer:
         if not self.active:
             return 0.0
         return (self.anchor + self._ms_to_samples(self.lease) - self.pos) * 1000.0 / self.fs
+
+    @property
+    def idle_ms(self) -> float:
+        """Silence depuis le dernier front joué, clé ouverte et rien en attente (0 sinon) : décide le relâché V2."""
+        if self.key_down or self._pending:
+            return 0.0
+        return (self.pos - self._last_edge_sample) * 1000.0 / self.fs
+
+    @property
+    def wants_key(self) -> bool:
+        """Un front de fermeture attend d'être joué (V2 : l'émission doit être reprise d'abord)."""
+        return self.active and any(down for _ts, _id, down in self._pending)
+
+    def hold(self) -> None:
+        """V2 : PTT relâché ; plus aucun front joué (clé ouverte), le rendu ne produit que du silence."""
+        self._close_key("hold")
+        self.holding = True
+
+    def resume(self) -> None:
+        """V2 : émission reprise ; le front de fermeture en attente se joue au prochain rendu, sans compter un retard."""
+        self.holding = False
+        self._resuming = True
 
     def next_delay_ms(self) -> float:
         if not self.p.adaptive:
@@ -212,6 +239,11 @@ class CwPlayer:
         best = (math.inf, "")
         if not self.active:
             return best  # type: ignore[return-value]
+        if self.holding:                         # V2 : rien ne se joue ; fin de séquence seulement sans front en attente
+            if self._pending:
+                return best  # type: ignore[return-value]
+            gap_end = self._last_edge_sample + round(self._ms_to_samples(self.p.seq_gap_ms))
+            return (max(gap_end, cur), "gap")  # type: ignore[return-value]
         if self._pending:
             ts, _id, down = self._pending[0]
             s = self._at(ts)
@@ -234,9 +266,14 @@ class CwPlayer:
         ts, eid, down = self._pending.pop(0)
         exact = self.anchor + self._ms_to_samples(ts)
         late = round(exact) < cur
+        resumed = self._resuming and down        # V2 : premier front après la reprise du PTT
+        if resumed:
+            self._resuming = False
         if late and down and not self.key_down:
             self.anchor += cur - round(exact)    # ré-ancrage : la suite est décalée d'autant
-        if late and down != self.key_down:
+        if resumed and late:
+            self.hang_reanchors += 1             # décalage dû à la reprise du PTT, pas un retard du réseau
+        elif late and down != self.key_down:
             self.late += 1
             self._seq_late += 1
         elif not late:

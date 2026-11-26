@@ -261,3 +261,21 @@ def test_a_new_sequence_after_the_client_gap_ends_the_previous_one_normally():
     r = sim.run([a, b], sim.Network(base_ms=30))
     assert [(e["type"], e["reason"]) for e in r.events] == [("seq_end", "end"), ("seq_end", "end")]
     assert r.player.lease_cuts == 0 and len([e for e in r.player.played if e.reason == ""]) == 4
+
+
+def test_hold_plays_nothing_and_resume_plays_the_waiting_element_whole():
+    """V2 (cahier § 5.4) : PTT relâché = aucun front joué ; à la reprise, le point en attente sort entier."""
+    p = CwPlayer(CwParams(delay_ms=200))
+    p.receive(parse_packet({"type": "cw", "seq": 0, "edges": [[1, 1, 0], [2, 0, 60]], "lease": 60}), 0.0)
+    out = p.render(48000)                                    # premier point, puis silence
+    assert p.idle_ms > 500 and not p.wants_key
+    p.hold()
+    p.receive(parse_packet({"type": "cw", "seq": 0, "edges": [[3, 1, 1000], [4, 0, 1060]], "lease": 1060}), 0.95)
+    held = p.render(48000)
+    assert np.max(np.abs(held)) == 0.0 and p.wants_key      # rien ne joue pendant la pause
+    p.resume()
+    after = p.render(9600)
+    found = an.detect_edges(np.concatenate([out, held, after]), 48000, 700, p.p.level)
+    marks = [(found[i + 1][0] - found[i][0]) / 48 for i in range(0, len(found) - 1, 2)]
+    assert len(marks) == 2 and all(abs(m - 60.0) < 0.5 for m in marks)
+    assert p.hang_reanchors == 1 and p.late == 0             # décalage de la reprise : pas un retard du réseau

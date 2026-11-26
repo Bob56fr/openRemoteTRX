@@ -520,11 +520,18 @@ Android seule (onglet CW) ; la page web ne s'en sert pas.
   toutes les 20 ms pendant la séquence, toutes les 200 ms en silence armé. Paquet mal formé, d'un autre client ou
   au-delà de 120 par seconde : ignoré. Battements (`heartbeat`) toujours exigés.
 - La station rejoue les fronts `delay_ms` plus tard, à l'échantillon près. Station -> client (canal `control`) :
-  `cw_state` (`state` `armed` / `playing` / `idle`, `seq`, `buffer_ms`, `late`, `lease_cuts`, `carrier_hz`, `reason`
-  à la fin), toutes les 200 ms pendant l'armement ; `cw_fault` (`seq`, `reason` : `lease_expired`,
-  `keydown_too_long`, `seq_overlap`, `disarm`…) ; `cw_stats` à chaque fin de séquence (`jitter_p95_ms`, `late`,
+  `cw_state` (`state` `armed` / `playing` / `hang` / `idle`, `seq`, `buffer_ms`, `late`, `lease_cuts`, `carrier_hz`,
+  `reason` à la fin), toutes les 200 ms pendant l'armement ; `cw_fault` (`seq`, `reason` : `lease_expired`,
+  `keydown_too_long`, `seq_overlap`, `retake_refused` avec `detail` = code du refus, `disarm`…) ; `cw_stats` à chaque fin de séquence (`jitter_p95_ms`, `late`,
   `lease_cuts`, `max_timing_err_ms`, `delay_ms`, `end`).
 - Fin d'émission (motif `last_cut_reason`) : `cw_disarm`, `cw_idle` (`[cw] idle_disarm_s` sans manipulation),
   `cw_lease_expired`, `cw_keydown_too_long`, `cw_seq_overlap`, `cw_stalled` (rendu de la station en retard),
-  `cw_failed`, `cw_carrier_changed`, et toutes les coupures habituelles (STOP, `tot`, `heartbeat`, déconnexion...).
+  `cw_failed`, `cw_carrier_changed`, `cw_retake_refused`, et toutes les coupures habituelles (STOP, `tot`,
+  `heartbeat`, déconnexion...).
+- Variante V2 (`[cw] ptt_variant = "hang"`, réglage de la station) : après `hang_ms` de silence, la station relâche
+  le PTT (`last_cut_reason` = `cw_hang`, aucun son de fin) et envoie `cw_state` `hang` : la CW RESTE armée, le client
+  continue d'envoyer ses paquets et ses battements. Au front de fermeture suivant, la station reprend l'émission par le
+  même chemin que `cw_arm` (anti-rebond attendu, refus = `cw_fault` `retake_refused` puis `cw_state` `idle`
+  `cw_retake_refused`) ; le premier élément repris est retardé d'autant, jamais raccourci. Une coupure venue d'ailleurs
+  pendant la pause (STOP, autre client) désarme pour de bon.
 

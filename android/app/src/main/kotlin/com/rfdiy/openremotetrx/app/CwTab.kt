@@ -167,6 +167,7 @@ private fun RigScope.CwSummary(cw: CwUi, settings: CwSettings, wide: Boolean) {
     val tx = ptt?.transmitting == true
     val badge = when {
         cw.armed && cw.keyDown -> Tr.t("cw.badge_tone")
+        cw.armed && cw.hang -> Tr.t("cw.badge_hang")
         cw.armed -> Tr.t("cw.badge_armed")
         tx -> Tr.t("cw.badge_tx")
         else -> Tr.t("cw.badge_rx")
@@ -177,8 +178,9 @@ private fun RigScope.CwSummary(cw: CwUi, settings: CwSettings, wide: Boolean) {
     Column(Modifier.fillMaxWidth().background(Page.INSTRUMENT).padding(horizontal = if (wide) 20.dp else 14.dp, vertical = 10.dp),
            verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(badge, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (tx || cw.armed) Color.White else Page.SUCCES,
-                 modifier = Modifier.background(if (tx || cw.armed) Page.TX else Color(0xFF1D3B2A), RoundedCornerShape(6.dp))
+            val red = tx || (cw.armed && !cw.hang)                         // pause V2 : le poste est en réception
+            Text(badge, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (red) Color.White else Page.SUCCES,
+                 modifier = Modifier.background(if (red) Page.TX else Color(0xFF1D3B2A), RoundedCornerShape(6.dp))
                      .padding(horizontal = 8.dp, vertical = 3.dp))
             Text(listOfNotNull(rig.hello?.capabilities?.modelName, r?.mode).joinToString(" · "), fontSize = 12.sp, color = Page.TEXTE_2,
                  modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -240,6 +242,9 @@ private fun CwStats(cw: CwUi) {
         Text(Tr.t("cw.st_jitter", "ms" to (cw.jitterP95Ms?.let { Format.decimal(it, 0) } ?: "—")), fontSize = 12.sp, color = Page.TEXTE_2)
         Text(Tr.t("cw.st_late", "n" to cw.late), fontSize = 12.sp, color = Page.TEXTE_2)
         Text(Tr.t("cw.st_cuts", "n" to cw.leaseCuts), fontSize = 12.sp, color = Page.TEXTE_2)
+        // latence de la sortie du retour local annoncée par Android (tampon de l'AudioTrack ; cahier § 6)
+        Text(Tr.t("cw.st_sidetone", "ms" to (com.rfdiy.openremotetrx.core.CwSidetone.latencyMs?.toString() ?: "—")),
+             fontSize = 12.sp, color = Page.TEXTE_2)
     }
 }
 

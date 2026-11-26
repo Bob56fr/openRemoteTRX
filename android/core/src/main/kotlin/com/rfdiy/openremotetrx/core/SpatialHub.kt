@@ -129,6 +129,8 @@ object SpatialHub {
         apply()
     }
     internal fun setMuted(on: Boolean) { muted = on }
+    @Volatile private var ducked = false
+    internal fun setDucked(on: Boolean) { ducked = on }          // CW armée : -20 dB (comme RtcLink)
     internal fun setCar(on: Boolean) { car = on; apply() }
     /** Sortie audio changée (casque branché, Bluetooth…). */
     fun outputChanged() = apply()
@@ -251,6 +253,7 @@ object SpatialHub {
                     mono[f] = sum / channels / 32768f
                 }
                 if (muted) mono.fill(0f, 0, frames)
+                else if (ducked) for (f in 0 until frames) mono[f] *= 0.1f
                 if (ReplayHub.ui.value.recording) ReplayHub.onRx(mono, frames, RATE)
                 for (f in 0 until frames) sumSq += mono[f] * mono[f]
                 sp.process(mono, frames, stereo)
