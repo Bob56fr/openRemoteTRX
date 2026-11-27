@@ -337,7 +337,7 @@ admin = true
 
 [menus.remote_console]
 role = "Pone <strong>openRemoteTRX Console en la red</strong>: los mismos menús en el navegador de cualquier PC, tableta o teléfono de la red local o del VPN, sin SSH ni acceso directo, en <code>https://&lt;station&gt;:8444/</code>. Conexión con una <strong>cuenta de operador marcada administradora</strong> (elegida aquí); la sesión se cierra tras 30 minutos sin acción; la contraseña sudo de la estación se sigue pidiendo una vez por sesión. 5 fallos bloquean la dirección 15 minutos y cada conexión envía una alerta ntfy. Nunca accesible desde Internet. Un administrador conectado a la página de control también encuentra allí el enlace."
-quand = "Para administrar la estación desde otro dispositivo, sin saber SSH."
+quand = "Para administrar la estación desde otro dispositivo, sin saber SSH. Mientras está desactivada, su dirección muestra una página «Consola web desactivada» que remite a este menú (en la red, con certificado), y la cabecera de la consola indica «activada pero no responde» si está activada pero no responde."
 modifie = "La configuración de la estación (<code>station.toml</code>: <code>[remote_console]</code> y la marca <code>admin</code> de las cuentas), con derechos de administrador; se guarda la versión anterior. En Debian se arranca o se para el servicio <code>trx-console-web@cuenta</code>; en Windows se reinicia la estación."
 admin = true
 

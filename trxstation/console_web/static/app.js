@@ -95,6 +95,15 @@
     a.title = ui("web.dashboard_open");
     a.hidden = false;
   }
+  // Console web sur le réseau désactivée (étape 405) : dit à côté des liens, un clic ouvre le menu 4.6. Jamais
+  // dans la console ouverte par le réseau (elle est donc activée).
+  function consoleOff() {
+    const b = $("#consoleoff"), c = state.webapp && state.webapp.console;
+    if (!c || c.enabled || state.network) { b.hidden = true; return; }
+    b.textContent = ui("web.console_off", { menu: c.menu });
+    b.onclick = () => openMenu(c.menu);
+    b.hidden = false;
+  }
   function header() {
     $("#title").textContent = ui("web.title");
     $("#sub").textContent = ui("web.version", { version: state.version });
@@ -129,6 +138,7 @@
       p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
     }
     webappLink();
+    consoleOff();
     const rig = state.rig || {};
     $("#freq").textContent = rig.frequency_hz ? fmtFreq(rig.frequency_hz) : "--.---.--";
     const meta = [];

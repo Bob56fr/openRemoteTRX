@@ -362,13 +362,30 @@ async def _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks):
     return audio
 
 
+_FALLBACK: list = []                        # page de secours gardée en vie tant que la passerelle tourne
+
+
+def _no_account_page(cfg: Config) -> None:
+    """Sans aucun compte, l'API ne démarre pas : une page explique pourquoi (menu 4.3 puis redémarrage). Port pris
+    ou certificat illisible : rien, comme avant."""
+    from ..fallback_page import FallbackServer
+    n = cfg.network
+    tls = bool(n.tls_cert and n.tls_key)
+    server = FallbackServer("no_account", n.gateway_bind, n.gateway_port, n.tls_cert if tls else "",
+                            n.tls_key if tls else "")
+    if server.start():
+        _FALLBACK.append(server)
+
+
 async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=None, access=None):
     """Démarre l'API WebRTC si des clients sont autorisés, si aiortc/aiohttp sont installés et si l'exposition est sûre.
     Retourne (manager, runner, registry), ou trois None."""
+    problem = exposure_problem(cfg)
     if not cfg.clients:
         emit_event(codes.ORT_9710, logger=log)
+        if not problem:                     # page « Aucun compte » à la place du silence (étape 405)
+            _no_account_page(cfg)
         return None, None, None
-    problem = exposure_problem(cfg)
     if problem:
         emit_event(codes.ORT_9711, logger=log, probleme=problem)   # on ne quitte pas : le superviseur redémarrerait la station
         return None, None, None

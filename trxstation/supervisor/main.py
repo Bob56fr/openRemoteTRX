@@ -29,6 +29,8 @@ from .rigctl import RigctlProbe
 from .runmark import RunMark
 from .sdnotify import sd_notify
 from .state import StateStore
+from .fallback import FallbackPages
+from ..fallback_page import port_answers
 
 log = logging.getLogger("trx-supervisor")
 MAX_CONSECUTIVE_FAILURES = 5
@@ -92,6 +94,23 @@ def _with_mark(tick: Callable[[], None], runmark: RunMark) -> Callable[[], None]
     return run
 
 
+def _fallback_first(fallback: FallbackPages, maintain: Callable[[], None]) -> Callable[[], None]:
+    """Pages de secours d'abord : un port libéré AVANT que le tour ne relance la passerelle (Windows)."""
+    def run() -> None:
+        fallback.sync()
+        maintain()
+    return run
+
+
+def _wait_fallback_released(cfg, timeout_s: float = 3.0) -> None:
+    """Après `--clear-safe-mode` : attendre que la page de secours libère le port de la passerelle (le fil du
+    superviseur la ferme en 0,25 s) ; passerelle arrêtée pendant la mise en sécurité, rien d'autre n'y répond."""
+    n = cfg.network
+    deadline = time.monotonic() + timeout_s
+    while port_answers(n.gateway_bind, n.gateway_port, timeout=0.2) and time.monotonic() < deadline:
+        time.sleep(0.2)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-supervisor", description="Superviseur autonome de la station TRX")
     ap.add_argument("--config", type=Path, default=default_config_path())
@@ -118,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     store = StateStore(cfg.supervisor.state_dir)
     if args.clear_safe_mode:
         store.clear_safe_mode()
+        _wait_fallback_released(cfg)                          # page de secours (étape 405) : port rendu à la passerelle
         print("Station réactivée (mise en sécurité levée). La passerelle peut être relancée : systemctl start", cfg.supervisor.gateway_unit)
         return 0
     if args.status:
@@ -166,6 +186,8 @@ def main(argv: list[str] | None = None) -> int:
         # Fail-safe (cahier du Microsoft Store § 4.1) : sans garde de fin, aucune station ; rien n'a été lancé.
         sup.actions.notifier.alert(codes.ORT_8026, raison=str(exc))
         return 5
+    fallback = FallbackPages(cfg, args.config, store.safe_mode)   # pages de secours (étape 405)
+    fallback.start()
     launcher = None
     try:
         launcher = build_launcher(cfg, alert=sup.actions.notifier.alert, config_path=args.config)   # [modules] run vide : None
@@ -175,13 +197,14 @@ def main(argv: list[str] | None = None) -> int:
         launcher = None
     try:
         return run_forever(sup, cfg.supervisor.poll_interval_s, stop=lambda: stopping or stop_file.exists(),
-                           tick=_with_mark(make_tick(backend.maintain, launcher), runmark))
+                           tick=_with_mark(make_tick(_fallback_first(fallback, backend.maintain), launcher), runmark))
     finally:
         if launcher is not None:
             try:
                 launcher.stop_all()
             except Exception:
                 emit_event(codes.ORT_8024, logger=log, trace=True, action="arrêt", erreur="voir la trace")
+        fallback.stop()
         backend.stop_all(force_rx=sup.actions.force_rx)       # no-op sous systemd ; « T 0 » avant d'arrêter rigctld
         stop_file.unlink(missing_ok=True)
         runmark.clean_stop()                                  # arrêt propre : témoin retiré

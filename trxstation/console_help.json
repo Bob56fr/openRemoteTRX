@@ -209,7 +209,7 @@
      "admin": true,
      "expert": "",
      "modifie": "Die Konfiguration der Station (station.toml: [remote_console] und die\nMarkierung admin der Konten), mit Administratorrechten; die vorherige\nFassung bleibt erhalten. Unter Debian wird der Dienst trx-console-web@konto\ngestartet oder gestoppt; unter Windows wird die Station neu gestartet.",
-     "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.",
+     "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.\nSolange sie deaktiviert ist, zeigt ihre Adresse eine Seite „Web-Konsole\ndeaktiviert“ mit Verweis auf dieses Menü (im Netzwerk, mit Zertifikat), und\nder Kopf der Konsole meldet „aktiviert, antwortet aber nicht“, wenn sie\naktiviert ist, aber nicht antwortet.",
      "role": "Stellt openRemoteTRX Console im Netzwerk bereit: dieselben Menüs im Browser\njedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder\nVerknüpfung, unter https://<station>:8444/. Anmeldung mit einem als\nAdministrator markierten Operatorkonto (hier gewählt); die Sitzung endet\nnach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin\neinmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten,\njede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar.\nEin auf der Bedienseite angemeldeter Administrator findet dort auch den\nLink."
     },
     "remote_power": {
@@ -528,7 +528,7 @@
      "admin": true,
      "expert": "",
      "modifie": "The station configuration (station.toml: [remote_console] and the admin mark\nof the accounts), with administrator rights; the previous version is kept.\nOn Debian, the trx-console-web@account service is started or stopped; on\nWindows, the station is restarted.",
-     "quand": "To administer the station from another device, without knowing SSH.",
+     "quand": "To administer the station from another device, without knowing SSH. While it\nis disabled, its address shows a “Web console disabled” page pointing to\nthis menu (on the network, with a certificate), and the console header says\n“enabled but not answering” if it is enabled but does not answer.",
      "role": "Puts openRemoteTRX Console on the network: the same menus in the browser of\nany PC, tablet or phone on the local network or VPN, without SSH or\nshortcut, at https://<station>:8444/. Login with an operator account marked\nadministrator (chosen here); the session closes after 30 minutes without\naction; the station sudo password is still asked once per session. 5\nfailures block the address for 15 minutes and every login sends an ntfy\nalert. Never reachable from the Internet. An administrator logged in to the\ncontrol page also finds the link there."
     },
     "remote_power": {
@@ -847,7 +847,7 @@
      "admin": true,
      "expert": "",
      "modifie": "La configuración de la estación (station.toml: [remote_console] y la marca\nadmin de las cuentas), con derechos de administrador; se guarda la versión\nanterior. En Debian se arranca o se para el servicio trx-console-web@cuenta;\nen Windows se reinicia la estación.",
-     "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH.",
+     "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH. Mientras\nestá desactivada, su dirección muestra una página «Consola web desactivada»\nque remite a este menú (en la red, con certificado), y la cabecera de la\nconsola indica «activada pero no responde» si está activada pero no\nresponde.",
      "role": "Pone openRemoteTRX Console en la red: los mismos menús en el navegador de\ncualquier PC, tableta o teléfono de la red local o del VPN, sin SSH ni\nacceso directo, en https://<station>:8444/. Conexión con una cuenta de\noperador marcada administradora (elegida aquí); la sesión se cierra tras 30\nminutos sin acción; la contraseña sudo de la estación se sigue pidiendo una\nvez por sesión. 5 fallos bloquean la dirección 15 minutos y cada conexión\nenvía una alerta ntfy. Nunca accesible desde Internet. Un administrador\nconectado a la página de control también encuentra allí el enlace."
     },
     "remote_power": {
@@ -1166,7 +1166,7 @@
      "admin": true,
      "expert": "",
      "modifie": "La configuration de la station (station.toml : [remote_console] et la marque\nadmin des comptes), avec les droits d'administration ; l'ancienne version\nest gardée. Sous Debian, le service trx-console-web@compte est mis en marche\nou arrêté ; sous Windows, la station est redémarrée.",
-     "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.",
+     "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.\nTant qu'elle est désactivée, son adresse affiche une page « Console Web\ndésactivée » qui renvoie à ce menu (sur le réseau, avec un certificat), et\nl'en-tête de la console dit « activée mais ne répond pas » si elle est\nactivée sans répondre.",
      "role": "Met openRemoteTRX Console sur le réseau : les mêmes menus dans le navigateur\nde n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans\nSSH ni raccourci, à l'adresse https://<station>:8444/. On s'y connecte avec\nun compte opérateur marqué administrateur (choisis ici) ; la session se\nferme après 30 minutes sans action ; le mot de passe sudo de la station\nreste demandé une fois par session. 5 échecs bloquent l'adresse 15 minutes\net chaque connexion envoie une alerte ntfy. Jamais joignable depuis\nInternet. Un administrateur connecté à la page de pilotage y trouve aussi le\nlien."
     },
     "remote_power": {

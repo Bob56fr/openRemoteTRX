@@ -41,6 +41,7 @@ from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
 from .answers import typed, yes_no
 from .i18n import ENV_LANG, LANGS, NAMES, Translator, load_lang, prefs_path, save_lang
 from .i18n import LEVELS, load_level, save_level
+from .fallback_page import port_answers
 from .paths import default_state_dir
 from . import profiles as prof
 from .station_id import read_station_id
@@ -282,8 +283,9 @@ def address_line(bind: str, port: int, tls: bool, addresses: list[str], t: Trans
 
 
 def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list[str],
-                 t: Translator | None = None) -> str:
-    """En-tête de la console : adresse(s) d'openRemoteTRX Console sur le réseau ([remote_console], menu 4.6)."""
+                 t: Translator | None = None, *, answers: Callable[[str, int], bool] | None = None) -> str:
+    """En-tête de la console : adresse(s) d'openRemoteTRX Console sur le réseau ([remote_console], menu 4.6).
+    `answers(adresse, port)` : sonde du port ; activée mais muette = « ne répond pas » (étape 405)."""
     t = t or Translator()
     menu = menu_number("remote_console")
     if not enabled or not tls or bind in ("", "127.0.0.1", "localhost", "::1"):
@@ -291,7 +293,10 @@ def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list
     hosts = addresses if bind in ("0.0.0.0", "::") else [bind]
     if not hosts:
         return "  " + t("head.console_unknown", port=port)
-    return "  " + t("head.console", urls=", ".join(console_url(host, port).rstrip("/") for host in hosts))
+    urls = ", ".join(console_url(host, port).rstrip("/") for host in hosts)
+    if answers is not None and not answers(bind, port):
+        return "  " + t("head.console_down", urls=urls, menu=menu)
+    return "  " + t("head.console", urls=urls)
 
 
 def dashboard_line(enabled: bool, listen: list[str], port: int, tls: bool, t: Translator | None = None) -> str | None:
@@ -450,6 +455,7 @@ class Console:
         self.app_dir = app_dir
         self.desktop = desktop
         self.addresses = addresses
+        self.port_probe: Callable[[str, int], bool] | None = None   # sonde des ports (None : la vraie, étape 405)
         # Langue : choisie par le menu 0 (fichier par compte), sinon celle du système, sinon le français. Les tests
         # passent `lang` (défaut "fr" quand `ask` n'est pas la saisie du terminal : sorties stables).
         self.lang_file = lang_file or prefs_path(home)
@@ -3498,7 +3504,8 @@ class Console:
                               self.t)
         return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found, self.t),
                 *([dash] if dash else []),
-                console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t),
+                console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t,
+                             answers=self.port_probe or port_answers),
                 rig_vitals_line(status.rig if status is not None else None, self.t)]
 
     def menu_label(self, key: str, label: str) -> str:

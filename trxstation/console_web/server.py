@@ -345,8 +345,11 @@ class WebConsole:
         dash_hosts = [a for a in _dashboard_listen(cfg) if a not in ("127.0.0.1", "localhost", "::1")]
         dashboard = {"scheme": "https" if n.tls_cert and dash_hosts else "http", "port": db.port,
                      "hosts": dash_hosts} if db.enabled is True else None
+        rc = cfg.remote_console               # console sur le réseau : désactivée = mention et menu 4.6 (étape 405)
+        console_on = bool(rc.enabled is True and n.tls_cert and n.gateway_bind not in ("", "127.0.0.1", "localhost", "::1"))
         return {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
-                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"), "dashboard": dashboard}
+                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"), "dashboard": dashboard,
+                "console": {"enabled": console_on, "menu": menu_number("remote_console")}}
 
     async def state(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request):
@@ -724,7 +727,7 @@ class WebConsole:
 
 
 UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.language", "web.open", "web.busy",
-           "web.running", "web.stopped", "web.not_configured", "web.safe_mode", "web.safe_mode_open", "web.tx", "web.rx", "web.update", "web.role",
+           "web.running", "web.stopped", "web.not_configured", "web.safe_mode", "web.safe_mode_open", "web.console_off", "web.tx", "web.rx", "web.update", "web.role",
            "web.when", "web.changes", "web.admin", "web.terminal", "web.hide", "web.show", "web.click_open",
            "web.tap_open", "web.no_rig", "web.first_use", "web.logout", "web.level", "level.basic", "level.normal",
            "level.expert", "level.basic.desc", "level.normal.desc", "level.expert.desc", "web.flow.close",

@@ -1,0 +1,14 @@
+{
+  "menu": "Menü {number} „{label}“",
+  "code": "Code:",
+  "note": "Diese Seite wird anstelle der angeforderten Seite angezeigt. Sie erlaubt keinen Befehl und verschwindet von selbst, sobald das Problem behoben ist.",
+  "safe_mode.title": "Station in Sicherheitsabschaltung",
+  "safe_mode.text": "Der Supervisor hat diese Station nach wiederholten Störungen in die Sicherheitsabschaltung versetzt: Das Funkgerät ist auf Empfang und der Fernzugang ist gesperrt. Die Bedienseite wird daher nicht angezeigt.",
+  "safe_mode.what": "Auf der Station, in openRemoteTRX Console: Suchen Sie die Ursache ({m_diagnostic}, {m_journal}), dann {m_clear_safe_mode}.",
+  "console_off.title": "Web-Konsole deaktiviert",
+  "console_off.text": "openRemoteTRX Console ist für diese Station nicht im Netzwerk geöffnet.",
+  "console_off.what": "Zum Öffnen: auf der Station, in openRemoteTRX Console, {m_remote_console} (Bedienerkonto mit Administratorrechten).",
+  "no_account.title": "Kein Konto auf dieser Station",
+  "no_account.text": "Die Station läuft, aber es wurde kein Bedienerkonto angelegt: Die Bedienseite kann nicht angezeigt werden.",
+  "no_account.what": "Auf der Station, in openRemoteTRX Console: {m_operators}, dann die Station neu starten ({m_stop}, dann {m_start})."
+}
