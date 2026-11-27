@@ -383,6 +383,27 @@ def test_language_menu_comes_first_in_yellow_and_the_station_state_is_coloured(t
     assert "\x1b[1;33mStation PAS ENCORE CONFIGURÉE" in con.header()
 
 
+def test_header_shows_a_red_banner_while_the_station_is_in_safety_lockout(tmp_path):
+    """Mise en sécurité par le superviseur : cadre rouge en tête (console texte et écran plein, même en-tête), avec la
+    cause et le menu 1.4 ; rien sans le fichier `safe_mode` (étape 404)."""
+    cfg = dummy_config()
+    cfg.supervisor.state_dir = str(tmp_path / "etat")
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    con, _, _ = console(tmp_path, running=False)
+    con.color = True
+    assert "MISE EN SÉCURITÉ" not in con.header()
+    (tmp_path / "etat").mkdir()
+    (tmp_path / "etat" / "safe_mode").write_text("ORT-8008 reprises épuisées (rigctld)", encoding="utf-8")
+    head = con.header()
+    assert "[1;97;41m* STATION MISE EN SÉCURITÉ" in head
+    assert "Cause : ORT-8008 reprises épuisées (rigctld)" in head
+    assert "menus 6.1 et 6.2" in head and "menu 1.4 « Réactiver la station »" in head
+    (tmp_path / "etat" / "safe_mode").write_text("x" * 200, encoding="utf-8")       # cause trop longue : coupée
+    assert "x" * 89 + "…" in con.header() and "x" * 90 not in con.header()
+    con.t = con.t.__class__("en")                                                    # dans la langue choisie
+    assert "STATION IN SAFETY LOCKOUT" in con.header() and "mode sûr" not in con.header()
+
+
 def test_certificate_menu_remakes_the_certificate_with_the_station_authority(tmp_path):
     from trxstation.setup_wizard import _make_certificate
     cfg = dummy_config()

@@ -173,7 +173,7 @@ expert = "<p>Sin el menú: <code>trx-console --rapport</code>. El archivo <code>
 
 [menus.clear_safe_mode]
 role = "<strong>Reactiva la estación</strong> tras un <strong>bloqueo de seguridad</strong>. El supervisor bloquea la estación tras fallos repetidos: parada sin peligro (transceptor en recepción, acceso cortado), espera una intervención."
-quand = "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2)."
+quand = "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2). Mientras la estación está en bloqueo de seguridad, un marco rojo lo recuerda en la parte superior de la consola, con la causa (pastilla roja «BLOQUEO DE SEGURIDAD» en la consola web: un clic abre este menú)."
 modifie = "Borra el bloqueo de seguridad memorizado y reinicia la estación."
 admin = true
 expert = "<p>El bloqueo de seguridad sobrevive a los reinicios y a las correcciones: hay que reactivar la estación explícitamente aquí.</p>"

@@ -318,6 +318,7 @@ class WebConsole:
         release = con.offered(con.update_state())
         return {"webapp": self.webapp(con), "version": __version__, "lang": t.lang, "configured": con.config.exists(),
                 "running": bool(con.config.exists() and con.station_running()),
+                "safe_mode": con.safe_mode_reason(), "safe_menu": menu_number("clear_safe_mode"),
                 "rig": {"connected": bool(rig.get("connected")), "frequency_hz": rig.get("frequency_hz"),
                         "mode": rig.get("mode"), "strength_db": rig.get("strength_db"), "vd": levels.get("VD_METER")},
                 "ptt": ptt.get("state") or "RX", "update": release.version if release is not None else None,
@@ -723,7 +724,7 @@ class WebConsole:
 
 
 UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.language", "web.open", "web.busy",
-           "web.running", "web.stopped", "web.not_configured", "web.tx", "web.rx", "web.update", "web.role",
+           "web.running", "web.stopped", "web.not_configured", "web.safe_mode", "web.safe_mode_open", "web.tx", "web.rx", "web.update", "web.role",
            "web.when", "web.changes", "web.admin", "web.terminal", "web.hide", "web.show", "web.click_open",
            "web.tap_open", "web.no_rig", "web.first_use", "web.logout", "web.level", "level.basic", "level.normal",
            "level.expert", "level.basic.desc", "level.normal.desc", "level.expert.desc", "web.flow.close",

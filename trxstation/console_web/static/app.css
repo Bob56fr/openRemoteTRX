@@ -41,6 +41,9 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
 .pill.warn .dot{background:#ffb340}
 .pill.tx{background:#b3261e;border-color:#ff6b5e}
 .pill.tx .dot{background:#fff;animation:pulse 1s infinite}
+.pill.safe{cursor:pointer;background:#b3261e;border-color:#ff6b5e;color:#fff}
+.pill.safe .dot{background:#fff}
+.pill.safe:hover,.pill.safe:focus-visible{background:#d0352b;outline:none}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 .vfo{text-align:right;display:grid;gap:2px}
 .freq{font:700 clamp(1.7rem,5vw,2.6rem)/1 var(--f-mono);color:var(--vfo-ink);text-shadow:0 0 14px rgba(83,243,216,.45);font-variant-numeric:tabular-nums}

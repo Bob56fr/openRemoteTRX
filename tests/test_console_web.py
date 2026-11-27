@@ -130,6 +130,21 @@ def test_state_gives_the_web_app_link_under_the_station_state(tmp_path):
     scenario(tmp_path, body)
 
 
+def test_state_tells_the_page_when_the_station_is_in_safety_lockout(tmp_path):
+    """Pastille rouge « MISE EN SÉCURITÉ » de la page : cause et menu 1.4 dans l'état (étape 404)."""
+    from trxstation.console import config_state_dir
+    async def body(wc, client):
+        await login(wc, client)
+        data = await (await client.get("/api/state")).json()
+        assert data["safe_mode"] is None and data["safe_menu"] == "1.4"
+        assert data["ui"]["web.safe_mode"] == "MISE EN SÉCURITÉ" and "{menu}" in data["ui"]["web.safe_mode_open"]
+        state_dir = config_state_dir(wc.config)
+        state_dir.mkdir(parents=True, exist_ok=True)
+        (state_dir / "safe_mode").write_text("ORT-8008 passerelle muette", encoding="utf-8")
+        assert (await (await client.get("/api/state")).json())["safe_mode"] == "ORT-8008 passerelle muette"
+    scenario(tmp_path, body)
+
+
 def test_open_types_the_menu_only_when_the_console_waits_at_the_menu(tmp_path):
     async def body(wc, client):
         origin = await login(wc, client)

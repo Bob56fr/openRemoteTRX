@@ -173,7 +173,7 @@ expert = "<p>Without the menu: <code>trx-console --rapport</code>. The report's 
 
 [menus.clear_safe_mode]
 role = "<strong>Reactivates the station</strong> after a <strong>safety lockout</strong>. The supervisor locks the station out after repeated failures: stopped in a safe state (transceiver in receive, access cut), it waits for an intervention."
-quand = "Only after finding and fixing the cause (menus 6.1 and 6.2)."
+quand = "Only after finding and fixing the cause (menus 6.1 and 6.2). While the station is in safety lockout, a red frame at the top of the console says so, with the cause (red “SAFETY LOCKOUT” pill in the web console: a click opens this menu)."
 modifie = "Clears the stored safety lockout and restarts the station."
 admin = true
 expert = "<p>The safety lockout survives restarts and fixes: the station must be reactivated explicitly here.</p>"

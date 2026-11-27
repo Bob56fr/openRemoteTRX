@@ -307,7 +307,7 @@ expert = "<p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code
 
 [menus.clear_safe_mode]
 role = "<strong>Réactive la station</strong> après une <strong>mise en sécurité</strong>. Le superviseur met la station en sécurité après des pannes répétées : arrêtée sans danger (poste en réception, accès coupé), elle attend une intervention."
-quand = "Seulement après avoir trouvé et corrigé la cause (menus 6.1 et 6.2)."
+quand = "Seulement après avoir trouvé et corrigé la cause (menus 6.1 et 6.2). Tant que la station est mise en sécurité, un cadre rouge le rappelle en tête de la console, avec la cause (pastille rouge « MISE EN SÉCURITÉ » dans la console web : un clic ouvre ce menu)."
 modifie = "Efface la mise en sécurité mémorisée et redémarre la station."
 admin = true
 expert = "<p>La mise en sécurité survit aux redémarrages et aux corrections : il faut réactiver la station explicitement ici.</p>"

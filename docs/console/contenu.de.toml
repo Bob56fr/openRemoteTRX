@@ -173,7 +173,7 @@ expert = "<p>Ohne Menü: <code>trx-console --rapport</code>. In der Datei <code>
 
 [menus.clear_safe_mode]
 role = "<strong>Nimmt die Station wieder in Betrieb</strong> nach einer <strong>Sicherheitsabschaltung</strong>. Der Supervisor schaltet die Station nach wiederholten Störungen sicher ab: gefahrloser Zustand (Transceiver auf Empfang, Zugang gesperrt), sie wartet auf einen Eingriff."
-quand = "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2)."
+quand = "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2). Solange die Station in Sicherheitsabschaltung ist, zeigt ein roter Rahmen oben in der Konsole dies mit der Ursache an (rote Plakette „SICHERHEITSABSCHALTUNG“ in der Web-Konsole: ein Klick öffnet dieses Menü)."
 modifie = "Löscht die gespeicherte Sicherheitsabschaltung und startet die Station neu."
 admin = true
 expert = "<p>Die Sicherheitsabschaltung überdauert Neustarts und Korrekturen: die Station muss hier ausdrücklich wieder in Betrieb genommen werden.</p>"

@@ -103,6 +103,16 @@
     const pill = (cls, text) => { const p = el("span", "pill " + cls); p.append(el("span", "dot"), document.createTextNode(text)); pills.append(p); };
     if (!state.configured) pill("warn", ui("web.not_configured"));
     else pill(state.running ? "on" : "off", ui(state.running ? "web.running" : "web.stopped"));
+    if (state.safe_mode) {                                // mise en sécurité par le superviseur : un clic ouvre le menu 1.4
+      pill("safe", ui("web.safe_mode"));
+      const p = pills.lastChild;
+      p.setAttribute("role", "button");
+      p.tabIndex = 0;
+      p.title = ui("web.safe_mode_open", { reason: state.safe_mode, menu: state.safe_menu });
+      const go = () => openMenu(state.safe_menu);
+      p.addEventListener("click", go);
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    }
     // Émission annoncée par la passerelle : toujours montrée. « Réception » seulement si le poste répond : poste éteint,
     // débranché ou passerelle muette = « poste : pas de nouvelles », jamais une réception supposée.
     const rigOk = !!(state.rig && state.rig.connected);

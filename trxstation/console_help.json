@@ -55,7 +55,7 @@
      "admin": true,
      "expert": "Die Sicherheitsabschaltung überdauert Neustarts und Korrekturen: die Station\nmuss hier ausdrücklich wieder in Betrieb genommen werden.",
      "modifie": "Löscht die gespeicherte Sicherheitsabschaltung und startet die Station neu.",
-     "quand": "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2).",
+     "quand": "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2).\nSolange die Station in Sicherheitsabschaltung ist, zeigt ein roter Rahmen\noben in der Konsole dies mit der Ursache an (rote Plakette\n„SICHERHEITSABSCHALTUNG“ in der Web-Konsole: ein Klick öffnet dieses Menü).",
      "role": "Nimmt die Station wieder in Betrieb nach einer Sicherheitsabschaltung. Der\nSupervisor schaltet die Station nach wiederholten Störungen sicher ab:\ngefahrloser Zustand (Transceiver auf Empfang, Zugang gesperrt), sie wartet\nauf einen Eingriff."
     },
     "cluster": {
@@ -374,7 +374,7 @@
      "admin": true,
      "expert": "The safety lockout survives restarts and fixes: the station must be\nreactivated explicitly here.",
      "modifie": "Clears the stored safety lockout and restarts the station.",
-     "quand": "Only after finding and fixing the cause (menus 6.1 and 6.2).",
+     "quand": "Only after finding and fixing the cause (menus 6.1 and 6.2). While the\nstation is in safety lockout, a red frame at the top of the console says so,\nwith the cause (red “SAFETY LOCKOUT” pill in the web console: a click opens\nthis menu).",
      "role": "Reactivates the station after a safety lockout. The supervisor locks the\nstation out after repeated failures: stopped in a safe state (transceiver in\nreceive, access cut), it waits for an intervention."
     },
     "cluster": {
@@ -693,7 +693,7 @@
      "admin": true,
      "expert": "El bloqueo de seguridad sobrevive a los reinicios y a las correcciones: hay\nque reactivar la estación explícitamente aquí.",
      "modifie": "Borra el bloqueo de seguridad memorizado y reinicia la estación.",
-     "quand": "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2).",
+     "quand": "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2).\nMientras la estación está en bloqueo de seguridad, un marco rojo lo recuerda\nen la parte superior de la consola, con la causa (pastilla roja «BLOQUEO DE\nSEGURIDAD» en la consola web: un clic abre este menú).",
      "role": "Reactiva la estación tras un bloqueo de seguridad. El supervisor bloquea la\nestación tras fallos repetidos: parada sin peligro (transceptor en\nrecepción, acceso cortado), espera una intervención."
     },
     "cluster": {
@@ -1012,7 +1012,7 @@
      "admin": true,
      "expert": "La mise en sécurité survit aux redémarrages et aux corrections : il faut\nréactiver la station explicitement ici.",
      "modifie": "Efface la mise en sécurité mémorisée et redémarre la station.",
-     "quand": "Seulement après avoir trouvé et corrigé la cause (menus 6.1 et 6.2).",
+     "quand": "Seulement après avoir trouvé et corrigé la cause (menus 6.1 et 6.2). Tant\nque la station est mise en sécurité, un cadre rouge le rappelle en tête de\nla console, avec la cause (pastille rouge « MISE EN SÉCURITÉ » dans la\nconsole web : un clic ouvre ce menu).",
      "role": "Réactive la station après une mise en sécurité. Le superviseur met la\nstation en sécurité après des pannes répétées : arrêtée sans danger (poste\nen réception, accès coupé), elle attend une intervention."
     },
     "cluster": {

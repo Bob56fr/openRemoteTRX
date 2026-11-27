@@ -473,10 +473,18 @@ class Console:
         return LEVELS.index(menu_level(method)) <= LEVELS.index(self.level)
 
     def in_safe_mode(self) -> bool:
+        return self.safe_mode_reason() is not None
+
+    def safe_mode_reason(self) -> str | None:
+        """Raison de la mise en sécurité (fichier `safe_mode` écrit par le superviseur), None sinon. Fichier
+        illisible = mise en sécurité (dans le doute). Jamais d'exception : en-tête et menus."""
         try:
-            return (config_state_dir(self.config) / "safe_mode").exists()
-        except Exception:                               # en-tête et menus : jamais d'exception pour un affichage
-            return False
+            if not self.config.exists():
+                return None
+            from .supervisor.state import StateStore
+            return StateStore(config_state_dir(self.config)).safe_mode()
+        except Exception:
+            return None
 
     def visible_themes(self) -> set[str]:
         return {theme for theme, _, methods in MENU_THEMES if any(self.visible(m) for m in methods)}
@@ -1351,12 +1359,13 @@ class Console:
                 if self.ask(self.t("show_changes.4")).strip().lower() in ("q", "quitter"):
                     return
 
-    def banner(self, lines: list[str]) -> str:
-        """Cadre bien visible (texte noir sur fond jaune dans un vrai terminal)."""
+    def banner(self, lines: list[str], alert: bool = False) -> str:
+        """Cadre bien visible (texte noir sur fond jaune dans un vrai terminal ; blanc sur rouge pour une alerte)."""
         width = max(len(line) for line in lines)
         body = ["*" * (width + 4)] + [f"* {line.ljust(width)} *" for line in lines] + ["*" * (width + 4)]
         if self.color:
-            body = [f"\033[1;30;43m{line}\033[0m" for line in body]
+            paint = "\033[1;97;41m" if alert else "\033[1;30;43m"
+            body = [f"{paint}{line}\033[0m" for line in body]
         return "\n" + "\n".join("  " + line for line in body)
 
     def rollback(self) -> None:
@@ -3444,6 +3453,12 @@ class Console:
         else:
             state = self.paint(t("head.stopped"), RED)
         line = f"\n=== {t('app.title', version=self.installed)} ===\n  {state}"
+        reason = self.safe_mode_reason()
+        if reason is not None:                          # mise en sécurité par le superviseur : jamais passée sous silence
+            reason = reason if len(reason) <= 90 else reason[:89] + "…"
+            line += self.banner([t("head.safe_mode"), t("head.safe_mode_reason", reason=reason),
+                                 t("head.safe_mode_menu", diag=menu_number("diagnostic"),
+                                   journal=menu_number("journal"), menu=menu_number("clear_safe_mode"))], alert=True)
         if self.config.exists():
             line += "".join("\n" + extra for extra in self.station_lines())
         line += "\n  " + t("head.station_id", id=self.station_id() or t("head.station_id_later"))
