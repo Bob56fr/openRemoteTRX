@@ -135,3 +135,6 @@
   la vitesse collé au chiffre. Restent : rejet de la paume, tablette, CW-3 sur l'IC-7300MK2.
 - 2026-11-28 (suite) : zone de décodage défilable vérifiée sur le S25 (36 lettres : ligne ramenée sur la dernière,
   retour au début au doigt), texte d'attente sur une ligne, − / + de la vitesse lisibles.
+- 2026-11-28 (suite) : banc du décodeur de sa manipulation (`CwDecoderBenchTest`, 18 poignets simulés, rapport et
+  retex dans `banc-decodeur.md`) : lecture parfaite d'un poignet propre ; limites = seuils fixes de la vitesse réglée,
+  espaces, prosignes absents. Pas de décodage de la réception (hors du cahier).
