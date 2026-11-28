@@ -531,5 +531,11 @@
   "updates.store_open": "Aktualisieren",
   "mobilefeatures.not_on_station": "Auf der Station nicht aktiviert: Menü {menu} der openRemoteTRX Console",
   "rigparts.console_admin_only": "Console nur für Administratoren",
-  "rigparts.console_no_browser": "Kein Browser, um {url} zu öffnen"
+  "rigparts.console_no_browser": "Kein Browser, um {url} zu öffnen",
+  "rigdialogs.recent_title": "Letzte Frequenzen",
+  "rigdialogs.recent_none": "Noch keine: Eine Frequenz wird hinzugefügt, wenn das Gerät 10 s darauf bleibt.",
+  "hfscopeview.country_button": "LAND: {view}",
+  "hfscopeview.country_view_0": "Rufz.",
+  "hfscopeview.country_view_1": "Land",
+  "hfscopeview.country_view_2": "Rufz.+Land"
 }

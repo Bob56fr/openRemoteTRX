@@ -213,6 +213,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val shownHz = pendingLive ?: radio?.frequencyHz
     val step = Radio.STEPS_HZ[stepIndex]
     val scope = RigScope(ui, prefs, onDisconnect, keepScreenOnS, keepTxS, drivingManualS, drivingAutoS, bigPttRequestedS, pendingHzS, pendingAtS, stepIndexS, entryS, showLogS, levelsDialogS, showWaterfallS, bandsPrefS, bandsDialogS, memoryDialogS, spotsDialogS, presenceDialogS, selcallDialogS, spatialDialogS, breizhDialogS, freedvDialogS, diffusionDialogS, hostDialogS, reportOpenS, swrOpenS, netOpenS, netDialogS, miniWfS, tabS, squelchDragS, offsetDragS)
+    scope.RecentFreqTracker()                                          // dernières fréquences (étape 410)
 
     fun go(hz: Long) {
         pendingHz = hz

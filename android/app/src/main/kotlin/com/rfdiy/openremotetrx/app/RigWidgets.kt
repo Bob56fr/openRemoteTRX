@@ -49,6 +49,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import com.rfdiy.openremotetrx.logic.BigPtt
 import com.rfdiy.openremotetrx.logic.BreizhLevel
 import androidx.compose.runtime.LaunchedEffect
@@ -131,9 +133,21 @@ internal fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, 
     val radio = rig.state?.rig
     val screenH = LocalConfiguration.current.screenHeightDp.dp
     Column(modifier.fillMaxSize().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(Radio.formatIcom(radio?.frequencyHz), fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-            Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleSmall)
+            // Mode (liste des modes du poste) et décalage de ±1 kHz (étape 410) ; réception seulement
+            Box {
+                var modeMenu by remember { mutableStateOf(false) }
+                CompactChip(Radio.modeLabel(radio?.mode) + " ▾", onClick = { modeMenu = true }, enabled = canSet) // i18n-ok
+                DropdownMenu(expanded = modeMenu, onDismissRequest = { modeMenu = false }) {
+                    for (m in Radio.orderModes(rig.hello?.capabilities?.modes.orEmpty())) {
+                        DropdownMenuItem(text = { Text(Radio.modeLabel(m), fontWeight = if (m == radio?.mode) FontWeight.Bold else null) },
+                            onClick = { modeMenu = false; if (m != radio?.mode) RigHub.setMode(m) })
+                    }
+                }
+            }
+            CompactChip("−1k", onClick = { radio?.frequencyHz?.let { onTune(Radio.nudge(it, 1000, -1)) } }, enabled = canSet && radio?.frequencyHz != null) // i18n-ok
+            CompactChip("+1k", onClick = { radio?.frequencyHz?.let { onTune(Radio.nudge(it, 1000, 1)) } }, enabled = canSet && radio?.frequencyHz != null) // i18n-ok
             Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.weight(1f))
             rig.reconnect?.let { Text(Tr.t("rigwidgets.link_lost"), color = TX_RED, fontWeight = FontWeight.Bold) }

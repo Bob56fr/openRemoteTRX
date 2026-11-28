@@ -150,6 +150,7 @@ fun HfScopeView(
     var cardId by remember { mutableStateOf<Long?>(null) }
     var listIds by remember { mutableStateOf<List<Long>?>(null) }
     var spotsOn by remember { mutableStateOf(prefs.getBoolean("spots_on", true)) }
+    var labelView by remember { mutableIntStateOf(prefs.getInt("spot_label", Spots.LABEL_CALL).coerceIn(0, 2)) }   // bouton PAYS
     var vfo by remember { mutableStateOf(false) }                  // accord au doigt (glisser), éteint par défaut comme la page
     var listAll by remember { mutableStateOf(false) }
     var sortByAge by remember { mutableStateOf(false) }
@@ -167,6 +168,8 @@ fun HfScopeView(
                 Box(Modifier.size(12.dp).background(HEALTH_COLORS[health] ?: Color.Gray, CircleShape))
                 CompactChip(Tr.t("hfscopeview.spots"), onClick = { spotsOn = !spotsOn; prefs.edit().putBoolean("spots_on", spotsOn).apply() }, selected = spotsOn)
                 CompactChip(Tr.t("hfscopeview.list"), onClick = { listAll = true })
+                CompactChip(Tr.t("hfscopeview.country_button", "view" to when (labelView) { Spots.LABEL_COUNTRY -> Tr.t("hfscopeview.country_view_1"); Spots.LABEL_BOTH -> Tr.t("hfscopeview.country_view_2"); else -> Tr.t("hfscopeview.country_view_0") }), selected = labelView != Spots.LABEL_CALL,
+                    onClick = { labelView = Spots.nextLabelView(labelView); prefs.edit().putInt("spot_label", labelView).apply() })
             }
             CompactChip("VFO", onClick = { vfo = !vfo }, selected = vfo)
         }
@@ -269,7 +272,7 @@ fun HfScopeView(
                     val charPx = labelPaint.measureText("M") * 0.8f
                     val rowPx = 18.dp.toPx()
                     val tagTop = 16.dp.toPx()
-                    for (label in Spots.layoutLabels(visible, f.lowHz, f.highHz, size.width, charPx = charPx, padPx = 12.dp.toPx())) {
+                    for (label in Spots.layoutLabels(visible, f.lowHz, f.highHz, size.width, charPx = charPx, padPx = 12.dp.toPx(), labelOf = { Spots.labelText(it, labelView) })) {
                         val first = visible.firstOrNull { it.id == label.ids.first() }
                         val w = labelPaint.measureText(label.text) + 10.dp.toPx()
                         val left = (label.x - w / 2).coerceIn(0f, size.width - w)

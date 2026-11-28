@@ -531,5 +531,11 @@
   "updates.store_open": "Update",
   "mobilefeatures.not_on_station": "Not enabled on the station: menu {menu} of openRemoteTRX Console",
   "rigparts.console_admin_only": "Console reserved for administrators",
-  "rigparts.console_no_browser": "No browser to open {url}"
+  "rigparts.console_no_browser": "No browser to open {url}",
+  "rigdialogs.recent_title": "Recent frequencies",
+  "rigdialogs.recent_none": "None yet: a frequency is added once the rig stays on it for 10 s.",
+  "hfscopeview.country_button": "COUNTRY: {view}",
+  "hfscopeview.country_view_0": "Call",
+  "hfscopeview.country_view_1": "Country",
+  "hfscopeview.country_view_2": "Call+Country"
 }
