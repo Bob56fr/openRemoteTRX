@@ -133,3 +133,5 @@
   (`cw_hang`), points 60,000 ms et trait 180,000 ms entiers après chaque reprise, -34 dB hors de ±150 Hz, STOP pendant
   la pause = CW désarmée « bouton STOP ». Détails à reprendre : texte « (votre manipulation décodée) » coupé, « + » de
   la vitesse collé au chiffre. Restent : rejet de la paume, tablette, CW-3 sur l'IC-7300MK2.
+- 2026-11-28 (suite) : zone de décodage défilable vérifiée sur le S25 (36 lettres : ligne ramenée sur la dernière,
+  retour au début au doigt), texte d'attente sur une ligne, − / + de la vitesse lisibles.
