@@ -999,15 +999,18 @@ class Console:
         from .update.check import REPO
         model = cfg.rig.model
         hamlib = hamlib_version(cfg.tools.hamlib_dir)
-        base = squelchcal.export_zip(model, cfg.dashboard.rig_name, points, hamlib)
         more: dict = {"calibration_points": extra.get("points", []),
                       "system": f"{platform.system()} {platform.release()} {platform.machine()}",
                       "python": platform.python_version()}
         try:
-            from .gateway.cat.capabilities import CapabilitiesError, _run_dump_caps, parse_dump_caps
+            from .gateway.cat.capabilities import _run_dump_caps, parse_dump_caps
             more["capabilities"] = parse_dump_caps(_run_dump_caps(model, cfg.tools.hamlib_dir), model).to_dict()
         except Exception as exc:                          # Hamlib absent ou illisible : l'export part quand même
             more["capabilities_error"] = clean_text(str(exc), 200, single_line=True)
+        # nom du poste : celui du tableau de bord, sinon celui de Hamlib (premier export reçu le 2026-11-28 : vide)
+        caps = more.get("capabilities") or {}
+        name = cfg.dashboard.rig_name or " ".join(x for x in (caps.get("manufacturer"), caps.get("model_name")) if x)
+        base = squelchcal.export_zip(model, name, points, hamlib)
         status = self._gateway_status()
         if status is not None:
             rig = status.rig

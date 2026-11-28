@@ -3,6 +3,18 @@
  "change": [
   {
    "date": "2026-11-28",
+   "version": "0.300.0",
+   "type": "nouveaute",
+   "postes": [
+    "3094"
+   ],
+   "fr": "Squelch étalonné d'origine pour l'IC-7300MK2 : le repère et la valeur (S5,4) suivent l'afficheur sans passer par le menu 2.10 ; application 0.95.1 : graduations du S-mètre à leur place (S1 décalé, trait pour S0).",
+   "en": "Squelch calibrated out of the box for the IC-7300MK2: the marker and value (S5.4) follow the display without menu 2.10; app 0.95.1: S-meter graduations in their place (S1 shifted, tick for S0).",
+   "de": "Squelch für den IC-7300MK2 ab Werk kalibriert: Markierung und Wert (S5,4) folgen der Anzeige ohne Menü 2.10; App 0.95.1: Teilstriche des S-Meters an ihrem Platz (S1 verschoben, Strich für S0).",
+   "es": "Squelch calibrado de origen para el IC-7300MK2: la marca y el valor (S5,4) siguen la pantalla sin el menú 2.10; aplicación 0.95.1: graduaciones del S-meter en su sitio (S1 desplazado, trazo para S0)."
+  },
+  {
+   "date": "2026-11-28",
    "version": "0.299.0",
    "type": "nouveaute",
    "postes": [
