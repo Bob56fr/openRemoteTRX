@@ -157,3 +157,6 @@
   dans le mode exigé ; un toucher = `set_mode` ORDINAIRE de l'opérateur (la station ne change toujours jamais le mode
   d'elle-même, ce n'est pas une action « sur place »). Python 3142 réussis (4 échecs CRLF connus), Android 275 / 0.
   À voir sur le S25 contre l'IC-7300MK2 : poste en USB = bouton « PASSER EN PKTUSB », toucher = « ARMER CW ».
+- 2026-11-28 (suite) : bouton vérifié sur le S25 contre l'IC-7300MK2 (poste en USB, 27,430 MHz) : page CW =
+  « PASSER EN PKTUSB » à la place de « ARMER CW », un toucher = poste relu en PKTUSB et « ARMER CW » revenu ; aucune
+  émission. Rappel : le code de la branche sur minix-bzh (`~/cw-essai/src`) se recopie à chaque essai.
