@@ -93,10 +93,14 @@ object Spots {
         return Spot(
             id = id, khz = f, hz = (f * 1000).roundToLong(), dx = dx, de = text(o, "de", 20), mode = text(o, "m", 10),
             modeGuessed = (o["mg"] as? JsonPrimitive)?.booleanOrNull == true || (o["mg"] as? JsonPrimitive)?.intOrNull == 1,
-            kind = kind, time = text(o, "t", 4), count = count, comment = text(o, "c", 80), country = text(o, "co", 40),
+            kind = kind, time = text(o, "t", 4), count = count, comment = text(o, "c", 80), country = text(o, "co", 40).ifEmpty { cbCountry(kind, f, dx) },
             continent = text(o, "ct", 2), qsyMode = text(o, "q", 10), age0 = age, receivedMs = nowMs,
         )
     }
+
+    /** Spot de cibiste sans pays (clusterdx.org, ou 11 m d'un autre cluster) : pays d'après le numéro de division. */
+    private fun cbCountry(kind: String, khz: Double, dx: String): String =
+        if (kind == "cb" || khz in 25_615.0..27_995.0) CbDivisions.country(dx) else ""
 
     /** Heure d'arrivée du spot (ms, horloge murale) : sa réception moins l'âge qu'il avait alors. */
     fun arrivalMs(spot: Spot): Long = spot.receivedMs - (spot.age0 * 1000).roundToLong()

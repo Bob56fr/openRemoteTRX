@@ -49,6 +49,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.lerp
 import com.rfdiy.openremotetrx.logic.RecentFreq
 import com.rfdiy.openremotetrx.logic.FreqHistory
 import androidx.compose.ui.window.DialogProperties
@@ -221,10 +222,15 @@ internal fun FrequencyDialog(
 ) {
     var text by remember { mutableStateOf("") }
     val parsed = Radio.parseFrequencyEntry(text)
+    // Fond un peu plus clair que les autres fenêtres, filet autour de la fenêtre, de l'affichage et des touches
+    val edge = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f))
+    val dialogShape = RoundedCornerShape(24.dp)
     AlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
-        modifier = Modifier.fillMaxWidth(0.94f),
+        shape = dialogShape,
+        containerColor = lerp(MaterialTheme.colorScheme.surfaceContainerHigh, Color.White, 0.12f),
+        modifier = Modifier.fillMaxWidth(0.94f).border(edge, dialogShape),
         title = { Text(Tr.t("rigdialogs.frequency")) },
         text = {
             BoxWithConstraints {
@@ -232,7 +238,7 @@ internal fun FrequencyDialog(
                 val keypad: @Composable (Modifier) -> Unit = { mod ->
                     Column(mod, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(Tr.t("rigdialogs.current", "frequency" to Radio.formatIcom(current)), style = MaterialTheme.typography.bodySmall)
-                        Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+                        Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surface, border = edge, modifier = Modifier.fillMaxWidth()) {
                             Text(text.ifEmpty { Tr.t("rigdialogs.frequency_hint") }, fontFamily = FontFamily.Monospace,
                                 fontSize = if (text.isEmpty()) 14.sp else 26.sp, textAlign = TextAlign.End,
                                 color = if (text.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -246,7 +252,7 @@ internal fun FrequencyDialog(
                         for (row in listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(".", "0", "⌫"))) { // i18n-ok
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 for (k in row) {
-                                    OutlinedButton(onClick = { text = FreqHistory.key(text, k) }, shape = RoundedCornerShape(8.dp),
+                                    OutlinedButton(onClick = { text = FreqHistory.key(text, k) }, shape = RoundedCornerShape(8.dp), border = edge,
                                         contentPadding = PaddingValues(0.dp), modifier = Modifier.weight(1f).height(46.dp)) {
                                         Text(k, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                                     }
@@ -254,7 +260,7 @@ internal fun FrequencyDialog(
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedButton(onClick = { text = "" }, modifier = Modifier.weight(1f).height(46.dp)) { Text("C", fontSize = 18.sp) } // i18n-ok
+                            OutlinedButton(onClick = { text = "" }, border = edge, modifier = Modifier.weight(1f).height(46.dp)) { Text("C", fontSize = 18.sp) } // i18n-ok
                             Button(onClick = { parsed?.let(onSet) }, enabled = parsed != null && enabled,
                                 modifier = Modifier.weight(2f).height(46.dp)) { Text(Tr.t("rigdialogs.go") + " ▶", fontWeight = FontWeight.Bold) } // i18n-ok
                         }
@@ -268,7 +274,7 @@ internal fun FrequencyDialog(
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 for (r in pair) {
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer, border = edge,
                                         modifier = Modifier.weight(1f).clickable(enabled = enabled) { onRecent(r) },
                                     ) {
                                         Text(Radio.formatIcom(r.hz) + "  " + Radio.modeLabel(r.mode.ifEmpty { null }), fontFamily = FontFamily.Monospace,

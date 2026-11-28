@@ -4,6 +4,7 @@ package com.rfdiy.openremotetrx.logic
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class FreqHistoryTest {
     @Test
@@ -51,5 +52,22 @@ class FreqHistoryTest {
         assertEquals("European Russ…", Spots.labelText(long, Spots.LABEL_COUNTRY))
         assertEquals("EA8ABC", Spots.labelText(s.copy(country = ""), Spots.LABEL_COUNTRY))
         assertEquals(listOf(1, 2, 0), listOf(0, 1, 2).map { Spots.nextLabelView(it) })
+    }
+
+    @Test
+    fun `pays des cibistes - numero de division`() {
+        assertEquals("France", CbDivisions.country("14LG56"))
+        assertEquals("Italy", CbDivisions.country("1AT/H688"))
+        assertEquals("Mexico", CbDivisions.country("10/108AT150"))
+        assertEquals("Spain", CbDivisions.country("30FD001"))
+        assertEquals("Poland", CbDivisions.country("161AT123"))
+        assertEquals("", CbDivisions.country("F4ABC"))
+        assertEquals("", CbDivisions.country("7XYZ1"))                   // division 7 absente de la liste
+        assertTrue(CbDivisions.table.size >= 340)
+        fun spot(json: String) = Spots.clean(kotlinx.serialization.json.Json.parseToJsonElement(json), 0L)!!
+        assertEquals("France", spot("""{"id":1,"f":27555.0,"dx":"14AT200","k":"cb"}""").country)
+        assertEquals("France", spot("""{"id":2,"f":27555.0,"dx":"14AT200"}""").country)      // 11 m d'un autre cluster
+        assertEquals("", spot("""{"id":3,"f":14205.0,"dx":"3DA0XX"}""").country)            // radioamateur : jamais
+        assertEquals("Japan", spot("""{"id":4,"f":27555.0,"dx":"14AT200","k":"cb","co":"Japan"}""").country)
     }
 }
