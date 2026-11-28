@@ -45,7 +45,7 @@
   "menu.swr_report": "Letzte SWR-Messung der Antenne (nur lesen)",
   "menu.expert": "Expertenmenü (automatische Tests der Software)",
   "menu.qualif": "Qualifizierung eines Transceivers (Experte: nie getesteter Transceiver)",
-  "menu.assistant": "Einrichtungsassistent für den Transceiver",
+  "menu.assistant": "Assistent für die vollständige Einrichtung (Transceiver, Ton, Netzwerk, Konten)",
   "menu.edit_config": "Konfiguration bearbeiten (station.toml)",
   "menu.profiles": "Transceiver-Profile (mehrere TRX: speichern, laden, löschen)",
   "menu.temperature": "Temperaturschwellen des Transceivers (Warnung, Abschaltung)",
@@ -944,5 +944,15 @@
   "screen_view.title_small": "FENSTER VERGRÖSSERN: mindestens {cols} × {rows} Zeichen, um den Bildschirm Ihres Freundes zu sehen",
   "screen_view.title_down": "Bildschirm Ihres Freundes: Relais nicht erreichbar, neuer Versuch…",
   "screen_view.quit": "Sie haben den Bildschirm Ihres Freundes verlassen (sein Teilen läuft weiter: Menü 6.7 Auswahl 2 zum Zurückkehren).",
-  "screen_view.bad_frames": "{n} unlesbare(s) Bild(er) ignoriert."
+  "screen_view.bad_frames": "{n} unlesbare(s) Bild(er) ignoriert.",
+  "menu.changes": "Änderungen für mein Gerät (Korrekturen und Neuerungen, Datum und Version)",
+  "changes.common": "Die für alle Geräte gemeinsamen Änderungen einbeziehen",
+  "changes.title": "\nÄnderungen von openRemoteTRX für das Gerät {model} ({count}, neueste zuerst; installierte Version: {installed}):\n  Datum       Version   Art         Änderung",
+  "changes.mine": "★ ",
+  "changes.type_correctif": "Korrektur",
+  "changes.type_nouveaute": "Neuerung",
+  "changes.type_securite": "Sicherheit",
+  "changes.none": "  Keine bekannte Änderung für dieses Gerät.",
+  "changes.no_rig": "Kein Gerät eingerichtet: nur die gemeinsamen Änderungen werden gezeigt (Menü {menu}).",
+  "changes.unreadable": "Liste der Änderungen nicht lesbar: {error}"
 }

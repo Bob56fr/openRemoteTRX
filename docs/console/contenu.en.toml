@@ -203,6 +203,12 @@ modifie = "Like menu 7.1: new version next to the old one, configuration kept. A
 admin = true
 expert = "<p>Dropping the zip is not enough: it must be installed here. Log: <code>/var/log/trx-remote-install.log</code>.</p>"
 
+[menus.changes]
+role = "Shows as a table the latest openRemoteTRX changes (fixes, new features, safety) that concern YOUR rig model, with the date and the version that brings them; optionally also those valid for all rigs. 50 lines at most; ★ = specific to your rig or its brand."
+quand = "To know what changed for your rig over the versions, before or after an update."
+modifie = "Nothing (read-only)."
+admin = false
+
 [menus.edit_config]
 role = "Edits <code>station.toml</code> in the nano editor, on a copy."
 quand = "For a specific setting without running the whole wizard again."
@@ -337,7 +343,7 @@ admin = true
 
 [menus.remote_console]
 role = "Puts <strong>openRemoteTRX Console on the network</strong>: the same menus in the browser of any PC, tablet or phone on the local network or VPN, without SSH or shortcut, at <code>https://&lt;station&gt;:8444/</code>. Login with an <strong>operator account marked administrator</strong> (chosen here); the session closes after 30 minutes without action; the station sudo password is still asked once per session. 5 failures block the address for 15 minutes and every login sends an ntfy alert. Never reachable from the Internet. An administrator logged in to the control page also finds the link there."
-quand = "To administer the station from another device, without knowing SSH. While it is disabled, its address shows a “Web console disabled” page pointing to this menu (on the network, with a certificate), and the console header says “enabled but not answering” if it is enabled but does not answer."
+quand = "To administer the station from another device, without knowing SSH. A new installation on the network already has it in service (wizard 2.1, first operator account as administrator): this menu stops it or chooses other accounts. While it is disabled, its address shows a “Web console disabled” page pointing to this menu (on the network, with a certificate), and the console header says “enabled but not answering” if it is enabled but does not answer."
 modifie = "The station configuration (<code>station.toml</code>: <code>[remote_console]</code> and the <code>admin</code> mark of the accounts), with administrator rights; the previous version is kept. On Debian, the <code>trx-console-web@account</code> service is started or stopped; on Windows, the station is restarted."
 admin = true
 

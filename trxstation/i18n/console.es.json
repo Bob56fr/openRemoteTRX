@@ -45,7 +45,7 @@
   "menu.swr_report": "Última medida de ROE de la antena (solo lectura)",
   "menu.expert": "Menú experto (pruebas automáticas del software)",
   "menu.qualif": "Cualificación de un transceptor (experto: transceptor nunca probado)",
-  "menu.assistant": "Asistente de configuración del transceptor",
+  "menu.assistant": "Asistente de configuración completa (transceptor, sonido, red, cuentas)",
   "menu.edit_config": "Modificar la configuración (station.toml)",
   "menu.profiles": "Perfiles de transceptor (varios TRX: guardar, cargar, eliminar)",
   "menu.temperature": "Umbrales de temperatura del transceptor (aviso, corte)",
@@ -944,5 +944,15 @@
   "screen_view.title_small": "AGRANDA TU VENTANA: al menos {cols} × {rows} caracteres para ver la pantalla de tu amigo",
   "screen_view.title_down": "Pantalla de tu amigo: relé inaccesible, nuevo intento…",
   "screen_view.quit": "Has salido de la pantalla de tu amigo (su compartición sigue: menú 6.7 opción 2 para volver).",
-  "screen_view.bad_frames": "{n} imagen(es) ilegible(s) ignorada(s)."
+  "screen_view.bad_frames": "{n} imagen(es) ilegible(s) ignorada(s).",
+  "menu.changes": "Cambios para mi equipo (correcciones y novedades, fecha y versión)",
+  "changes.common": "Incluir los cambios comunes a todos los equipos",
+  "changes.title": "\nCambios de openRemoteTRX para el equipo {model} ({count}, el más reciente primero; versión instalada: {installed}):\n  Fecha       Versión   Tipo        Cambio",
+  "changes.mine": "★ ",
+  "changes.type_correctif": "corrección",
+  "changes.type_nouveaute": "novedad",
+  "changes.type_securite": "seguridad",
+  "changes.none": "  Ningún cambio conocido para este equipo.",
+  "changes.no_rig": "Ningún equipo configurado: solo se muestran los cambios comunes (menú {menu}).",
+  "changes.unreadable": "Lista de cambios ilegible: {error}"
 }

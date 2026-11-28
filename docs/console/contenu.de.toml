@@ -203,6 +203,12 @@ modifie = "Wie Menü 7.1: neue Version neben der alten, Konfiguration bleibt erh
 admin = true
 expert = "<p>Das Zip abzulegen reicht nicht: es muss hier installiert werden. Bericht: <code>/var/log/trx-remote-install.log</code>.</p>"
 
+[menus.changes]
+role = "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen, Neuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der Version, die sie bringt; auf Wunsch auch die für alle Geräte geltenden. Höchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke."
+quand = "Um zu wissen, was sich für Ihr Gerät über die Versionen geändert hat, vor oder nach einer Aktualisierung."
+modifie = "Nichts (nur lesend)."
+admin = false
+
 [menus.edit_config]
 role = "Bearbeitet <code>station.toml</code> im Editor nano, an einer Kopie."
 quand = "Für eine gezielte Einstellung, ohne den ganzen Assistenten neu zu starten."
@@ -337,7 +343,7 @@ admin = true
 
 [menus.remote_console]
 role = "Stellt <strong>openRemoteTRX Console im Netzwerk</strong> bereit: dieselben Menüs im Browser jedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung, unter <code>https://&lt;station&gt;:8444/</code>. Anmeldung mit einem <strong>als Administrator markierten Operatorkonto</strong> (hier gewählt); die Sitzung endet nach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der Bedienseite angemeldeter Administrator findet dort auch den Link."
-quand = "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen. Solange sie deaktiviert ist, zeigt ihre Adresse eine Seite „Web-Konsole deaktiviert“ mit Verweis auf dieses Menü (im Netzwerk, mit Zertifikat), und der Kopf der Konsole meldet „aktiviert, antwortet aber nicht“, wenn sie aktiviert ist, aber nicht antwortet."
+quand = "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen. Eine neue Installation im Netzwerk hat sie bereits in Betrieb (Assistent 2.1, erstes Operator-Konto als Administrator): Dieses Menü schaltet sie ab oder wählt andere Konten. Solange sie deaktiviert ist, zeigt ihre Adresse eine Seite „Web-Konsole deaktiviert“ mit Verweis auf dieses Menü (im Netzwerk, mit Zertifikat), und der Kopf der Konsole meldet „aktiviert, antwortet aber nicht“, wenn sie aktiviert ist, aber nicht antwortet."
 modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>[remote_console]</code> und die Markierung <code>admin</code> der Konten), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Unter Debian wird der Dienst <code>trx-console-web@konto</code> gestartet oder gestoppt; unter Windows wird die Station neu gestartet."
 admin = true
 

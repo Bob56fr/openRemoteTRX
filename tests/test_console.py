@@ -247,7 +247,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     assert len(methods) == len(set(methods))
     assert len(set(module.OLD_NUMBERS.values())) == len(module.OLD_NUMBERS)
     # Menus nés APRÈS la renumérotation par thème (étape 169) : pas d'ancien numéro.
-    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators", "certificate", "sdr", "monitoring",
+    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"changes", "qualif", "operators", "certificate", "sdr", "monitoring",
                                                                  "rig", "sound", "hf_spectrum", "bands", "transmit", "access_network",
                                                                  "local_operator", "alerts", "features_switch",
                                                                  "remote_console", "diffusion", "remote_power", "rx_gain",

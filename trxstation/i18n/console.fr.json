@@ -45,7 +45,7 @@
   "menu.swr_report": "Dernière mesure de TOS de l'antenne (lecture seule)",
   "menu.expert": "Menu expert (tests automatiques du logiciel)",
   "menu.qualif": "Qualification d'un poste (expert : poste jamais essayé)",
-  "menu.assistant": "Assistant de configuration du poste",
+  "menu.assistant": "Assistant de configuration complète (poste, son, réseau, comptes)",
   "menu.edit_config": "Modifier la configuration (station.toml)",
   "menu.profiles": "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)",
   "menu.temperature": "Seuils de température du poste (avertissement, coupure)",
@@ -944,5 +944,15 @@
   "screen_view.title_small": "AGRANDIS TA FENÊTRE : {cols} × {rows} caractères au moins pour voir l'écran de ton ami",
   "screen_view.title_down": "Écran de ton ami : relais injoignable, nouvel essai…",
   "screen_view.quit": "Tu as quitté l'écran de ton ami (son partage continue : menu 6.7 choix 2 pour revenir).",
-  "screen_view.bad_frames": "{n} image(s) illisible(s) ignorée(s)."
+  "screen_view.bad_frames": "{n} image(s) illisible(s) ignorée(s).",
+  "menu.changes": "Changements pour mon poste (correctifs et nouveautés, date et version)",
+  "changes.common": "Inclure les changements communs à tous les postes",
+  "changes.title": "\nChangements d'openRemoteTRX pour le poste {model} ({count} au plus récent d'abord ; version installée : {installed}) :\n  Date        Version   Type        Changement",
+  "changes.mine": "★ ",
+  "changes.type_correctif": "correctif",
+  "changes.type_nouveaute": "nouveauté",
+  "changes.type_securite": "sécurité",
+  "changes.none": "  Aucun changement connu pour ce poste.",
+  "changes.no_rig": "Aucun poste configuré : seuls les changements communs sont montrés (menu {menu}).",
+  "changes.unreadable": "Liste des changements illisible : {error}"
 }

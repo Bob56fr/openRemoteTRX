@@ -78,7 +78,7 @@ MENU_THEMES = (
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
     ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer",
                                      "screen_share")),
-    ("7", "updates", ("update", "rollback", "install_zip")),
+    ("7", "updates", ("update", "rollback", "install_zip", "changes")),
     ("8", "expert", ("edit_config", "expert", "qualif", "indicator", "config_download")),
 )
 # Numéros d'avant la station 0.166.0 (deux niveaux, 0.126.0 à 0.165.0) -> méthode : rappelés dans l'en-tête
@@ -102,7 +102,7 @@ OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
 # Niveau de chaque menu (étape 234) : Basic = mettre en service, utiliser, demander de l'aide ; Expert = réglages fins et
 # outils de développement ; tout le reste = Normal. « 0 » (langue et niveau) est toujours montré.
 BASIC_MENUS = frozenset({"start", "stop", "monitor", "clear_safe_mode", "assistant", "hwtest", "pairing", "operators",
-                         "diagnostic", "report", "analyzer", "update", "screen_share"})
+                         "diagnostic", "report", "analyzer", "update", "screen_share", "changes"})
 EXPERT_MENUS = frozenset({"temperature", "edit_config", "expert", "qualif"})
 
 
@@ -675,14 +675,31 @@ class Console:
         if not self.config.exists() and imported.exists():
             self.say(self.t("assistant.1", imported=imported))
             cmd += ["--base", str(imported)]
+        was_on = self._web_console_on()
         code = self.runner.run(cmd, admin=True)
         if code != 0:
             self.say(self.t("assistant.2"))
             if stopped and self.config.exists():
                 self._start_station("start")
             return
+        # Nouvelle installation : l'assistant a mis la Console Web en service (étape 407) ; Debian / Pi : son service
+        # systemd (sous Windows, c'est le superviseur qui la lance).
+        account = self._web_console_on()
+        if account and not was_on and not IS_WINDOWS:
+            self._remote_console_service(True, account, "")
         if self.yes(self.t("assistant.3")):
             self.start()
+
+    def _web_console_on(self) -> str:
+        """Compte Linux de la Console Web si elle est en service dans station.toml (« - » sous Windows), sinon ""."""
+        from . import config as cfgmod
+        try:
+            v = cfgmod.load_unchecked(self.config)[0].remote_console if self.config.exists() else None
+        except (OSError, cfgmod.ConfigError):
+            return ""
+        if v is None or v.enabled is not True:
+            return ""
+        return v.account or ("-" if IS_WINDOWS else "")
 
     # ------------------------------------------------------------------ parties de l'assistant (étape 220)
 
@@ -1386,6 +1403,36 @@ class Console:
             return
         done = self.t(self.reopen_key("rollback.4"), previous=previous)       # page : jamais « Quitte (q) »
         self._apply(["rollback"], done)
+
+    def changes(self) -> None:
+        """Changements pour mon poste (étape 407) : tableau des derniers changements d'openRemoteTRX qui touchent le
+        modèle de station.toml (et, au choix, ceux de tous les postes), date et version. Lecture seule."""
+        from . import changes as chg
+        from . import config as cfgmod
+        try:
+            model = cfgmod.load_unchecked(self.config)[0].rig.model if self.config.exists() else 0
+        except (OSError, cfgmod.ConfigError):
+            model = 0
+        try:
+            known = chg.load()
+        except (OSError, ValueError) as exc:
+            self.say(self.t("changes.unreadable", error=exc))
+            return
+        if model <= 0:
+            wizard_menu = menu_number("assistant")
+            self.say(self.t("changes.no_rig", menu=wizard_menu))
+        common = self.yes(self.t("changes.common"), True)
+        rows = chg.for_model(known, model, common) if model > 0 else [c for c in known if c.common][:chg.LIMIT]
+        self.say(self.t("changes.title", model=model or "—", count=len(rows), installed=self.installed or "?"))
+        if not rows:
+            self.say(self.t("changes.none"))
+            return
+        lang = self.t.lang
+        kinds = {"correctif": self.t("changes.type_correctif"), "nouveaute": self.t("changes.type_nouveaute"),
+                 "securite": self.t("changes.type_securite")}
+        for c in rows:
+            mark = self.t("changes.mine") if not c.common else ""
+            self.say(f"  {c.date}  {c.version:<9} {kinds[c.type]:<11} {mark}{c.text(lang)}")
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""

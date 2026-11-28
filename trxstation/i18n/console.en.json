@@ -45,7 +45,7 @@
   "menu.swr_report": "Last antenna SWR measurement (read-only)",
   "menu.expert": "Expert menu (automatic software tests)",
   "menu.qualif": "Transceiver qualification (expert: never-tested transceiver)",
-  "menu.assistant": "Transceiver setup wizard",
+  "menu.assistant": "Complete setup wizard (transceiver, sound, network, accounts)",
   "menu.edit_config": "Edit the configuration (station.toml)",
   "menu.profiles": "Transceiver profiles (several rigs: save, load, delete)",
   "menu.temperature": "Transceiver temperature thresholds (warning, cut-off)",
@@ -944,5 +944,15 @@
   "screen_view.title_small": "ENLARGE YOUR WINDOW: at least {cols} × {rows} characters to see your friend's screen",
   "screen_view.title_down": "Your friend's screen: relay unreachable, retrying…",
   "screen_view.quit": "You left your friend's screen (their sharing goes on: menu 6.7 choice 2 to come back).",
-  "screen_view.bad_frames": "{n} unreadable frame(s) ignored."
+  "screen_view.bad_frames": "{n} unreadable frame(s) ignored.",
+  "menu.changes": "Changes for my rig (fixes and new features, date and version)",
+  "changes.common": "Include the changes common to all rigs",
+  "changes.title": "\nopenRemoteTRX changes for rig {model} ({count}, most recent first; installed version: {installed}):\n  Date        Version   Type        Change",
+  "changes.mine": "★ ",
+  "changes.type_correctif": "fix",
+  "changes.type_nouveaute": "new",
+  "changes.type_securite": "safety",
+  "changes.none": "  No known change for this rig.",
+  "changes.no_rig": "No rig configured: only the common changes are shown (menu {menu}).",
+  "changes.unreadable": "List of changes unreadable: {error}"
 }

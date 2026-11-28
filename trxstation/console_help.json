@@ -51,6 +51,13 @@
      "quand": "Einmal, damit der Browser nicht mehr warnt und das gespeicherte Passwort\nzurückkommt; um dem Zertifikat einen Namen oder eine Adresse (VPN, lokaler\nName) hinzuzufügen.",
      "role": "Zeigt das HTTPS-Zertifikat der Station (Namen und Adressen, Ablauf,\nHerkunft) und erstellt es neu, von der Zertifizierungsstelle der Station\nsigniert. Ist diese Zertifizierungsstelle auf einem Gerät (PC, Telefon)\ninstalliert, warnt der Browser nicht mehr und kann das Passwort speichern\n(Chrome speichert es bei einem nicht anerkannten Zertifikat nicht). Der\nDownload-Link der Zertifizierungsstelle wird angezeigt; die Seite bietet ihn\nebenfalls an."
     },
+    "changes": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nichts (nur lesend).",
+     "quand": "Um zu wissen, was sich für Ihr Gerät über die Versionen geändert hat, vor\noder nach einer Aktualisierung.",
+     "role": "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen,\nNeuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der\nVersion, die sie bringt; auf Wunsch auch die für alle Geräte geltenden.\nHöchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke."
+    },
     "clear_safe_mode": {
      "admin": true,
      "expert": "Die Sicherheitsabschaltung überdauert Neustarts und Korrekturen: die Station\nmuss hier ausdrücklich wieder in Betrieb genommen werden.",
@@ -209,7 +216,7 @@
      "admin": true,
      "expert": "",
      "modifie": "Die Konfiguration der Station (station.toml: [remote_console] und die\nMarkierung admin der Konten), mit Administratorrechten; die vorherige\nFassung bleibt erhalten. Unter Debian wird der Dienst trx-console-web@konto\ngestartet oder gestoppt; unter Windows wird die Station neu gestartet.",
-     "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.\nSolange sie deaktiviert ist, zeigt ihre Adresse eine Seite „Web-Konsole\ndeaktiviert“ mit Verweis auf dieses Menü (im Netzwerk, mit Zertifikat), und\nder Kopf der Konsole meldet „aktiviert, antwortet aber nicht“, wenn sie\naktiviert ist, aber nicht antwortet.",
+     "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.\nEine neue Installation im Netzwerk hat sie bereits in Betrieb (Assistent\n2.1, erstes Operator-Konto als Administrator): Dieses Menü schaltet sie ab\noder wählt andere Konten. Solange sie deaktiviert ist, zeigt ihre Adresse\neine Seite „Web-Konsole deaktiviert“ mit Verweis auf dieses Menü (im\nNetzwerk, mit Zertifikat), und der Kopf der Konsole meldet „aktiviert,\nantwortet aber nicht“, wenn sie aktiviert ist, aber nicht antwortet.",
      "role": "Stellt openRemoteTRX Console im Netzwerk bereit: dieselben Menüs im Browser\njedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder\nVerknüpfung, unter https://<station>:8444/. Anmeldung mit einem als\nAdministrator markierten Operatorkonto (hier gewählt); die Sitzung endet\nnach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin\neinmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten,\njede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar.\nEin auf der Bedienseite angemeldeter Administrator findet dort auch den\nLink."
     },
     "remote_power": {
@@ -370,6 +377,13 @@
      "quand": "Once, to stop the browser warning and get the saved password; to add a name\nor address (VPN, local name) to the certificate.",
      "role": "Shows the station's HTTPS certificate (names and addresses, expiry, origin)\nand remakes it signed by the station authority. Once this authority is\ninstalled on a device (PC, phone), the browser no longer warns and can\nremember the password (Chrome refuses to save it with an unrecognised\ncertificate). The download link of the authority is shown; the page offers\nit too."
     },
+    "changes": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nothing (read-only).",
+     "quand": "To know what changed for your rig over the versions, before or after an\nupdate.",
+     "role": "Shows as a table the latest openRemoteTRX changes (fixes, new features,\nsafety) that concern YOUR rig model, with the date and the version that\nbrings them; optionally also those valid for all rigs. 50 lines at most; ★ =\nspecific to your rig or its brand."
+    },
     "clear_safe_mode": {
      "admin": true,
      "expert": "The safety lockout survives restarts and fixes: the station must be\nreactivated explicitly here.",
@@ -528,7 +542,7 @@
      "admin": true,
      "expert": "",
      "modifie": "The station configuration (station.toml: [remote_console] and the admin mark\nof the accounts), with administrator rights; the previous version is kept.\nOn Debian, the trx-console-web@account service is started or stopped; on\nWindows, the station is restarted.",
-     "quand": "To administer the station from another device, without knowing SSH. While it\nis disabled, its address shows a “Web console disabled” page pointing to\nthis menu (on the network, with a certificate), and the console header says\n“enabled but not answering” if it is enabled but does not answer.",
+     "quand": "To administer the station from another device, without knowing SSH. A new\ninstallation on the network already has it in service (wizard 2.1, first\noperator account as administrator): this menu stops it or chooses other\naccounts. While it is disabled, its address shows a “Web console disabled”\npage pointing to this menu (on the network, with a certificate), and the\nconsole header says “enabled but not answering” if it is enabled but does\nnot answer.",
      "role": "Puts openRemoteTRX Console on the network: the same menus in the browser of\nany PC, tablet or phone on the local network or VPN, without SSH or\nshortcut, at https://<station>:8444/. Login with an operator account marked\nadministrator (chosen here); the session closes after 30 minutes without\naction; the station sudo password is still asked once per session. 5\nfailures block the address for 15 minutes and every login sends an ntfy\nalert. Never reachable from the Internet. An administrator logged in to the\ncontrol page also finds the link there."
     },
     "remote_power": {
@@ -689,6 +703,13 @@
      "quand": "Una vez, para que el navegador deje de avisar y recuperar la contraseña\nguardada; para añadir un nombre o una dirección (VPN, nombre local) al\ncertificado.",
      "role": "Muestra el certificado HTTPS de la estación (nombres y direcciones,\ncaducidad, origen) y lo rehace firmado por la autoridad de la estación. Una\nvez instalada esta autoridad en un dispositivo (PC, teléfono), el navegador\ndeja de avisar y puede recordar la contraseña (Chrome se niega a guardarla\ncon un certificado no reconocido). Se muestra el enlace de descarga de la\nautoridad; la página también lo ofrece."
     },
+    "changes": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Nada (solo lectura).",
+     "quand": "Para saber qué ha cambiado para tu equipo a lo largo de las versiones, antes\no después de una actualización.",
+     "role": "Muestra en una tabla los últimos cambios de openRemoteTRX (correcciones,\nnovedades, seguridad) que afectan a TU modelo de equipo, con la fecha y la\nversión que los trae; si quieres, también los que valen para todos los\nequipos. 50 líneas como máximo; ★ = propio de tu equipo o de su marca."
+    },
     "clear_safe_mode": {
      "admin": true,
      "expert": "El bloqueo de seguridad sobrevive a los reinicios y a las correcciones: hay\nque reactivar la estación explícitamente aquí.",
@@ -847,7 +868,7 @@
      "admin": true,
      "expert": "",
      "modifie": "La configuración de la estación (station.toml: [remote_console] y la marca\nadmin de las cuentas), con derechos de administrador; se guarda la versión\nanterior. En Debian se arranca o se para el servicio trx-console-web@cuenta;\nen Windows se reinicia la estación.",
-     "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH. Mientras\nestá desactivada, su dirección muestra una página «Consola web desactivada»\nque remite a este menú (en la red, con certificado), y la cabecera de la\nconsola indica «activada pero no responde» si está activada pero no\nresponde.",
+     "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH. Una\ninstalación nueva en la red ya la tiene en servicio (asistente 2.1, primera\ncuenta de operador como administradora): este menú la detiene o elige otras\ncuentas. Mientras está desactivada, su dirección muestra una página «Consola\nweb desactivada» que remite a este menú (en la red, con certificado), y la\ncabecera de la consola indica «activada pero no responde» si está activada\npero no responde.",
      "role": "Pone openRemoteTRX Console en la red: los mismos menús en el navegador de\ncualquier PC, tableta o teléfono de la red local o del VPN, sin SSH ni\nacceso directo, en https://<station>:8444/. Conexión con una cuenta de\noperador marcada administradora (elegida aquí); la sesión se cierra tras 30\nminutos sin acción; la contraseña sudo de la estación se sigue pidiendo una\nvez por sesión. 5 fallos bloquean la dirección 15 minutos y cada conexión\nenvía una alerta ntfy. Nunca accesible desde Internet. Un administrador\nconectado a la página de control también encuentra allí el enlace."
     },
     "remote_power": {
@@ -1008,6 +1029,13 @@
      "quand": "Une fois, pour ne plus voir l'avertissement du navigateur et retrouver le\nmot de passe enregistré ; pour ajouter un nom ou une adresse (VPN, nom\nlocal) au certificat.",
      "role": "Montre le certificat HTTPS de la station (noms et adresses, échéance,\norigine) et le refait signé par l'autorité de la station. Une fois cette\nautorité installée sur un appareil (PC, téléphone), le navigateur n'affiche\nplus d'avertissement et peut retenir le mot de passe (Chrome refuse de\nl'enregistrer sur un certificat non reconnu). Le lien de téléchargement de\nl'autorité est affiché ; la page le propose aussi."
     },
+    "changes": {
+     "admin": false,
+     "expert": "",
+     "modifie": "Rien (lecture seule).",
+     "quand": "Pour savoir ce qui a changé pour ton poste au fil des versions, avant ou\naprès une mise à jour.",
+     "role": "Montre en tableau les derniers changements d'openRemoteTRX (correctifs,\nnouveautés, sécurité) qui touchent TON modèle de poste, avec la date et la\nversion qui les apporte ; au choix, aussi ceux qui valent pour tous les\npostes. 50 lignes au plus ; ★ = propre à ton poste ou à sa marque."
+    },
     "clear_safe_mode": {
      "admin": true,
      "expert": "La mise en sécurité survit aux redémarrages et aux corrections : il faut\nréactiver la station explicitement ici.",
@@ -1166,7 +1194,7 @@
      "admin": true,
      "expert": "",
      "modifie": "La configuration de la station (station.toml : [remote_console] et la marque\nadmin des comptes), avec les droits d'administration ; l'ancienne version\nest gardée. Sous Debian, le service trx-console-web@compte est mis en marche\nou arrêté ; sous Windows, la station est redémarrée.",
-     "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.\nTant qu'elle est désactivée, son adresse affiche une page « Console Web\ndésactivée » qui renvoie à ce menu (sur le réseau, avec un certificat), et\nl'en-tête de la console dit « activée mais ne répond pas » si elle est\nactivée sans répondre.",
+     "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.\nUne installation neuve sur le réseau l'a déjà en service (assistant 2.1,\npremier compte opérateur administrateur) : ce menu sert à l'arrêter ou à\nchoisir d'autres comptes. Tant qu'elle est désactivée, son adresse affiche\nune page « Console Web désactivée » qui renvoie à ce menu (sur le réseau,\navec un certificat), et l'en-tête de la console dit « activée mais ne répond\npas » si elle est activée sans répondre.",
      "role": "Met openRemoteTRX Console sur le réseau : les mêmes menus dans le navigateur\nde n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans\nSSH ni raccourci, à l'adresse https://<station>:8444/. On s'y connecte avec\nun compte opérateur marqué administrateur (choisis ici) ; la session se\nferme après 30 minutes sans action ; le mot de passe sudo de la station\nreste demandé une fois par session. 5 échecs bloquent l'adresse 15 minutes\net chaque connexion envoie une alerte ntfy. Jamais joignable depuis\nInternet. Un administrateur connecté à la page de pilotage y trouve aussi le\nlien."
     },
     "remote_power": {

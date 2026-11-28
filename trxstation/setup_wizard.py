@@ -15,6 +15,7 @@ from .crashguard import guarded
 import argparse
 import copy
 import getpass
+import os
 import re
 import shutil
 import socket
@@ -440,7 +441,37 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
     ask_network(cfg, tls_dir)
     ask_accounts(cfg)
     ask_transmit(cfg)
+    if base is None:
+        enable_web_console(cfg)
     return cfg
+
+
+WEB_CONSOLE_MENU = "4.6"    # = console.menu_number("remote_console") (test) ; pas d'import de la console ici
+
+
+def enable_web_console(cfg: Config, account: str | None = None) -> bool:
+    """Nouvelle installation : Console Web en service PAR DÉFAUT (décision de l'utilisateur du 2026-11-28, étape 407 :
+    « elle est protégée par un mot de passe »), si la station est sur le réseau en HTTPS et qu'un compte opérateur existe.
+    Le premier compte opérateur devient administrateur ; sous Linux, la console tourne sous le compte qui a lancé
+    l'assistant (jamais root). Rend vrai si elle a été mise en service ; menu 4.6 pour l'arrêter ou changer les comptes."""
+    n, v = cfg.network, cfg.remote_console
+    operators = [c for c in cfg.clients if c.role == "operator" and c.password_hash]
+    if v.enabled or not operators or not (n.tls_cert and n.tls_key) or n.gateway_bind in ("", "127.0.0.1", "::1",
+                                                                                            "localhost"):
+        return False
+    if os.name != "nt":
+        account = account or os.environ.get("SUDO_USER") or getpass.getuser()
+        if not cfgmod.SSH_USER_RE.fullmatch(account or "") or account == "root":
+            print(_t("web_console.no_account", menu=WEB_CONSOLE_MENU))
+            return False
+        v.account = account
+    if not any(c.admin for c in operators):
+        operators[0].admin = True
+    v.enabled = True
+    admins = ", ".join(c.id for c in operators if c.admin)
+    hosts = local_addresses() or ["<station>"]
+    print(_t("web_console.enabled", admins=admins, urls="  ".join(f"https://{h}:{v.port}/" for h in hosts), menu=WEB_CONSOLE_MENU))
+    return True
 
 
 def interactive_part(part: str, base: Config, tls_dir: Path | None = None) -> Config:
