@@ -282,8 +282,17 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         scope.BigPttLayer(pttEnabled, debounce)
       }
 
-        scope.ControlBar(pttEnabled, voice, spatial, debounce, context)
-        TabBar(tab, phoneTabs(rig)) { tab = it }
+        // Tuile du bas (armement, PTT, STOP, onglets) bordée comme les cartes (demande de l'utilisateur du 2026-11-28)
+        androidx.compose.material3.Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp), color = Page.PANNEAU,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Page.CADRE),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).padding(bottom = 2.dp),
+        ) {
+            Column {
+                scope.ControlBar(pttEnabled, voice, spatial, debounce, context)
+                TabBar(tab, phoneTabs(rig)) { tab = it }
+            }
+        }
     }
 
     scope.RigDialogsHost()
