@@ -160,3 +160,6 @@
 - 2026-11-28 (suite) : bouton vérifié sur le S25 contre l'IC-7300MK2 (poste en USB, 27,430 MHz) : page CW =
   « PASSER EN PKTUSB » à la place de « ARMER CW », un toucher = poste relu en PKTUSB et « ARMER CW » revenu ; aucune
   émission. Rappel : le code de la branche sur minix-bzh (`~/cw-essai/src`) se recopie à chaque essai.
+- 2026-11-28 (suite) : texte de l'exception de sécurité pour l'adoption revu avec l'utilisateur (cahier § 3) : mode
+  jamais changé par la station, bouton « Passer en … », désarmement `cw_idle`, V2 par défaut ; TOT PAR REPRISE en V2
+  (choix 1 de l'utilisateur : l'opérateur est conscient de ce qu'il fait). Tablette plus tard.

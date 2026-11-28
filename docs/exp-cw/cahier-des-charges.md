@@ -31,14 +31,23 @@ Jamais : manipulation CW depuis la page web (décision 5), Android Auto, mode co
 
 ## 3. Exception de sécurité (texte à inscrire dans CLAUDE.md À L'ADOPTION)
 
-> MANIPULATION CW (décision de l'utilisateur, 2026-11-26, branche `exp/cw`) : « Armer CW » est une prise d'émission
-> NORMALE du client (mêmes refus que toggle, verrou mono-client, battements 500 ms / 2 s, TOT, opérateur sur place,
-> bandes vérifiées sur la fréquence PORTEUSE réelle). Pendant l'armement, seule la manipulation suit le doigt :
-> la porte audio ne laisse passer que la tonalité CW recréée par la station, jamais le micro ; appui continu
-> limité à `max_keydown_ms` (2 s, plafond 5 s) ; bail du rejeu dépassé, désarmement, coupure de connexion,
-> STOP ou toute coupure existante = tonalité coupée net puis « T 0 ». Désactivé par défaut (`[cw] enabled = false`).
-> Seulement depuis l'écran tactile de l'application Android ; jamais depuis la page web, Android Auto ni le mode
-> conduite.
+> MANIPULATION CW (décision de l'utilisateur, 2026-11-26, adoptée le AAAA-MM-JJ, étape N) : « Armer CW » (`cw_arm`)
+> est une prise d'émission NORMALE du client (mêmes refus que toggle, verrou mono-client, battements 500 ms / 2 s, TOT,
+> opérateur sur place, décalage relais, bandes vérifiées sur la fréquence PORTEUSE réelle). Le poste doit déjà être
+> dans le mode exigé (`[cw] data_mode`, PKTUSB par défaut), sinon refus `cw_mode` : la station ne change JAMAIS le mode
+> d'elle-même, la page CW propose seulement un bouton « Passer en … » (commande de mode ordinaire de l'opérateur).
+> Pendant l'armement, seule la manipulation suit le doigt : la porte audio ne laisse passer que la tonalité CW
+> recréée par la station, jamais le micro ; appui continu limité à `max_keydown_ms` (2 s, plafond 5 s) ; bail du
+> rejeu dépassé, désarmement, coupure de connexion, STOP ou toute coupure existante = tonalité coupée net puis
+> « T 0 » ; sans manipulation pendant `idle_disarm_s` (8 s), désarmement seul (`cw_idle`). VARIANTE V2 PAR DÉFAUT
+> (`ptt_variant = "hang"`, décision du 2026-11-28 après CW-3) : après `hang_ms` (600 ms) de silence, PTT relâché
+> (`cw_hang`), CW toujours armée ; le signe suivant reprend par le chemin NORMAL de la prise (tous les refus
+> revérifiés ; refus = désarmée, `cw_retake_refused`) ; toute coupure venue d'ailleurs pendant la pause (STOP, autre
+> client) désarme pour de bon. TOT PAR REPRISE en V2, comme un toggle relancé (décision de l'utilisateur du
+> 2026-11-28 : l'opérateur est conscient de ce qu'il fait ; ni TOT cumulé ni durée maximale d'armement). V1
+> (`"hold"`, PTT tenu pendant l'armement) reste un réglage de la station. Désactivé par défaut
+> (`[cw] enabled = false`). Seulement depuis l'écran tactile de l'application Android ; jamais depuis la page web,
+> Android Auto, le mode conduite ni par un visiteur.
 
 Tant que la branche n'est pas adoptée, cette exception ne vaut QUE dans la branche, essais sur charge fictive.
 
