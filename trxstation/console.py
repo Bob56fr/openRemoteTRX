@@ -1417,6 +1417,9 @@ class Console:
             return
         known = chg.merged(known, chg.load_cached(config_state_dir(self.config)))
         model = self._rig_model()
+        if self.ask(self.t("changes.view")).strip() == "2":            # second « onglet » : tickets GitHub du poste
+            self._rig_issues(model)
+            return
         if model <= 0:
             wizard_menu = menu_number("assistant")
             self.say(self.t("changes.no_rig", menu=wizard_menu))
@@ -1427,6 +1430,35 @@ class Console:
             self.say(self.t("changes.none"))
             return
         self._change_rows(rows)
+
+    def _rig_issues(self, model: int) -> None:
+        """Tickets GitHub du poste (étape 409) : relevé de trx-update-check, ou recherche immédiate (lecture seule,
+        rien n'est écrit) ; 50 au plus, ouverts et fermés, avec leur adresse."""
+        from .changes import issues as iss
+        from .update.check import CheckError, http_get
+        if model <= 0:
+            wizard_menu = menu_number("assistant")
+            self.say(self.t("changes.no_rig", menu=wizard_menu))
+            return
+        cached = iss.load_cached(config_state_dir(self.config), model)
+        found, when = cached if cached is not None else (None, 0.0)
+        if self.yes(self.t("changes.issues_fetch") if cached is None else self.t("changes.issues_refresh"), cached is None):
+            try:
+                found, when = iss.parse_api(http_get(iss.api_url(model))), time.time()
+            except (CheckError, ValueError) as exc:
+                self.say(self.t("changes.issues_failed", error=clean_text(str(exc), 200, single_line=True)))
+        if found is None:
+            return
+        opened = sum(1 for i in found if i.open)
+        self.say(self.t("changes.issues_title", model=model, opened=opened, closed=len(found) - opened,
+                        date=time.strftime("%Y-%m-%d %H:%M", time.localtime(when)) if when else "?"))
+        if not found:
+            self.say(self.t("changes.issues_none"))
+        for i in found:
+            state = self.t("changes.issue_open") if i.open else self.t("changes.issue_closed")
+            self.say(f"  #{i.number:<5} {state:<8} {i.created}  {i.title}")
+            self.say(f"         {i.url}")
+        self.say(self.t("changes.issues_all", url=iss.page_url(model)))
 
     def _rig_model(self) -> int:
         from . import config as cfgmod

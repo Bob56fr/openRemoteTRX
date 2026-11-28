@@ -956,5 +956,14 @@
   "changes.no_rig": "Aucun poste configuré : seuls les changements communs sont montrés (menu {menu}).",
   "changes.unreadable": "Liste des changements illisible : {error}",
   "changes.upcoming": "[à venir] ",
-  "changes.in_update": "\nCe que cette mise à jour change pour ton poste ({count}) — liste complète au menu {menu} :"
+  "changes.in_update": "\nCe que cette mise à jour change pour ton poste ({count}) — liste complète au menu {menu} :",
+  "changes.view": "1 = changements pour ce poste (Entrée), 2 = tickets GitHub de ce poste",
+  "changes.issues_fetch": "Aucun relevé des tickets pour ce poste : chercher maintenant sur GitHub",
+  "changes.issues_refresh": "Chercher de nouveau sur GitHub (sinon : dernier relevé)",
+  "changes.issues_failed": "GitHub n'a pas répondu : {error}",
+  "changes.issues_title": "\nTickets GitHub du poste {model} : {opened} ouvert(s), {closed} fermé(s) (relevé du {date}) :",
+  "changes.issues_none": "  Aucun ticket pour ce poste.",
+  "changes.issue_open": "ouvert",
+  "changes.issue_closed": "fermé",
+  "changes.issues_all": "Tous les tickets de ce poste, et en ouvrir un : {url}"
 }

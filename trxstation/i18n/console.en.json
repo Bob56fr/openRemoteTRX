@@ -956,5 +956,14 @@
   "changes.no_rig": "No rig configured: only the common changes are shown (menu {menu}).",
   "changes.unreadable": "List of changes unreadable: {error}",
   "changes.upcoming": "[coming] ",
-  "changes.in_update": "\nWhat this update changes for your rig ({count}) — full list in menu {menu}:"
+  "changes.in_update": "\nWhat this update changes for your rig ({count}) — full list in menu {menu}:",
+  "changes.view": "1 = changes for this rig (Enter), 2 = GitHub issues for this rig",
+  "changes.issues_fetch": "No issue list for this rig yet: search GitHub now",
+  "changes.issues_refresh": "Search GitHub again (otherwise: last list)",
+  "changes.issues_failed": "GitHub did not answer: {error}",
+  "changes.issues_title": "\nGitHub issues for rig {model}: {opened} open, {closed} closed (list of {date}):",
+  "changes.issues_none": "  No issue for this rig.",
+  "changes.issue_open": "open",
+  "changes.issue_closed": "closed",
+  "changes.issues_all": "All issues for this rig, and opening one: {url}"
 }

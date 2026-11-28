@@ -204,7 +204,7 @@ admin = true
 expert = "<p>Dropping the zip is not enough: it must be installed here. Log: <code>/var/log/trx-remote-install.log</code>.</p>"
 
 [menus.changes]
-role = "Shows as a table the latest openRemoteTRX changes (fixes, new features, safety) that concern YOUR rig model, with the date and the version that brings them; optionally also those valid for all rigs. 50 lines at most; ★ = specific to your rig or its brand. Changes of versions published but not yet installed (list downloaded with the update check) are marked [coming], and menu 7.1 shows them before installing."
+role = "Shows as a table the latest openRemoteTRX changes (fixes, new features, safety) that concern YOUR rig model, with the date and the version that brings them; optionally also those valid for all rigs. 50 lines at most; ★ = specific to your rig or its brand. Changes of versions published but not yet installed (list downloaded with the update check) are marked [coming], and menu 7.1 shows them before installing. Choice 2: the GitHub issues (open and closed) for your rig, from the label set by the “Transceiver model” list of the forms, with their address."
 quand = "To know what changed for your rig over the versions, before or after an update."
 modifie = "Nothing (read-only)."
 admin = false

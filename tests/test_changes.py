@@ -50,7 +50,7 @@ def test_menu_shows_the_table_for_the_rig_of_the_station(tmp_path):
     cfg = dummy_config()
     cfg.rig.model = 1042
     (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
-    con, _, out = console(tmp_path, answers=["n"])
+    con, _, out = console(tmp_path, answers=["", "n"])
     con.changes()
     text = "\n".join(out)
     assert "1042" in text and "★" in text and "0.285.0" in text and "Console Web" not in text
@@ -94,7 +94,7 @@ def test_menus_show_the_coming_changes_of_the_downloaded_list(tmp_path):
     cache.write_text(json.dumps(changes.to_public(parse({"change": [
         entry(version="99.0.0", date="2099-01-01", postes=["3094"], fr="nouveau filtre"),
         entry(version="99.0.0", date="2099-01-01", postes=["1042"], fr="autre poste")]}))), encoding="utf-8")
-    con, _, out = console(tmp_path, answers=["o"])
+    con, _, out = console(tmp_path, answers=["", "o"])
     con.changes()
     text = "\n".join(out)
     assert "[à venir] nouveau filtre" in text and "autre poste" not in text

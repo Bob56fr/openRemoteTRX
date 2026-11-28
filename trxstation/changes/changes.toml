@@ -11,6 +11,16 @@
 
 [[change]]
 date = "2026-11-28"
+version = "0.298.0"
+type = "nouveaute"
+postes = ["*"]
+fr = "Menu 7.4, choix 2 : tickets GitHub ouverts et fermés de votre poste ; les formulaires de tickets ont une liste des postes avec leur numéro Hamlib."
+en = "Menu 7.4, choice 2: open and closed GitHub issues for your rig; the issue forms have a list of rigs with their Hamlib number."
+de = "Menü 7.4, Auswahl 2: offene und geschlossene GitHub-Tickets Ihres Geräts; die Ticketformulare haben eine Geräteliste mit Hamlib-Nummer."
+es = "Menú 7.4, opción 2: tickets de GitHub abiertos y cerrados de su equipo; los formularios de tickets tienen una lista de equipos con su número Hamlib."
+
+[[change]]
+date = "2026-11-28"
 version = "0.297.0"
 type = "nouveaute"
 postes = ["*"]

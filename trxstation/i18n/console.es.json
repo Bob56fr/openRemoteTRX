@@ -956,5 +956,14 @@
   "changes.no_rig": "Ningún equipo configurado: solo se muestran los cambios comunes (menú {menu}).",
   "changes.unreadable": "Lista de cambios ilegible: {error}",
   "changes.upcoming": "[próximo] ",
-  "changes.in_update": "\nLo que esta actualización cambia para tu equipo ({count}) — lista completa en el menú {menu}:"
+  "changes.in_update": "\nLo que esta actualización cambia para tu equipo ({count}) — lista completa en el menú {menu}:",
+  "changes.view": "1 = cambios para este equipo (Intro), 2 = tickets de GitHub de este equipo",
+  "changes.issues_fetch": "Aún no hay lista de tickets para este equipo: buscar ahora en GitHub",
+  "changes.issues_refresh": "Buscar de nuevo en GitHub (si no: última lista)",
+  "changes.issues_failed": "GitHub no ha respondido: {error}",
+  "changes.issues_title": "\nTickets de GitHub del equipo {model}: {opened} abierto(s), {closed} cerrado(s) (lista del {date}):",
+  "changes.issues_none": "  Ningún ticket para este equipo.",
+  "changes.issue_open": "abierto",
+  "changes.issue_closed": "cerrado",
+  "changes.issues_all": "Todos los tickets de este equipo, y abrir uno: {url}"
 }

@@ -956,5 +956,14 @@
   "changes.no_rig": "Kein Gerät eingerichtet: nur die gemeinsamen Änderungen werden gezeigt (Menü {menu}).",
   "changes.unreadable": "Liste der Änderungen nicht lesbar: {error}",
   "changes.upcoming": "[kommt] ",
-  "changes.in_update": "\nWas diese Aktualisierung für Ihr Gerät ändert ({count}) — vollständige Liste in Menü {menu}:"
+  "changes.in_update": "\nWas diese Aktualisierung für Ihr Gerät ändert ({count}) — vollständige Liste in Menü {menu}:",
+  "changes.view": "1 = Änderungen für dieses Gerät (Eingabe), 2 = GitHub-Tickets für dieses Gerät",
+  "changes.issues_fetch": "Noch keine Ticketliste für dieses Gerät: jetzt auf GitHub suchen",
+  "changes.issues_refresh": "Erneut auf GitHub suchen (sonst: letzte Liste)",
+  "changes.issues_failed": "GitHub hat nicht geantwortet: {error}",
+  "changes.issues_title": "\nGitHub-Tickets für das Gerät {model}: {opened} offen, {closed} geschlossen (Stand {date}):",
+  "changes.issues_none": "  Kein Ticket für dieses Gerät.",
+  "changes.issue_open": "offen",
+  "changes.issue_closed": "zu",
+  "changes.issues_all": "Alle Tickets dieses Geräts, und ein neues eröffnen: {url}"
 }
