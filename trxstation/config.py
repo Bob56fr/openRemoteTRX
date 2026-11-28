@@ -162,7 +162,7 @@ class Cw:
     lease_grace_ms: float = 60.0        # marge du bail (20 à 200 ms)
     max_keydown_ms: float = 2000.0      # appui continu au plus (100 à 5000 ms, plafond 5 s)
     seq_gap_ms: float = 1500.0          # silence de fin de séquence
-    ptt_variant: str = "hold"           # « hold » (V1 : PTT tenu pendant l'armement) ; « hang » (V2 : relâché après hang_ms)
+    ptt_variant: str = "hang"           # « hang » (V2, défaut : relâché après hang_ms) ; « hold » (V1 : PTT tenu pendant l'armement)
     idle_disarm_s: float = 8.0          # désarmement après ce temps sans manipulation (2 à 60 s)
     hang_ms: float = 600.0              # V2 : silence avant de relâcher le PTT (200 à 3000 ms), repris au front suivant
 

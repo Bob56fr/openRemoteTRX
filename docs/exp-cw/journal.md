@@ -151,3 +151,9 @@
   `cw_hang` en 14 s, désarmée `cw_idle`, aucune autre coupure. 4G non faite (essai court voulu). À faire : bouton
   « Passer en PKTUSB » dans la page CW (commande de mode de l'opérateur, jamais automatique), choix de la variante
   par défaut.
+- 2026-11-28 (suite) : décisions de l'utilisateur après CW-3 : V2 PAR DÉFAUT (`[cw] ptt_variant = "hang"` ; banc
+  des tests resté en V1 sauf mention) et bouton « PASSER EN PKTUSB » : `hello.cw = {mode, variant}` (null sans
+  `[cw] enabled` et pour un visiteur), la page CW remplace « Armer CW » par ce bouton tant que le poste relu n'est pas
+  dans le mode exigé ; un toucher = `set_mode` ORDINAIRE de l'opérateur (la station ne change toujours jamais le mode
+  d'elle-même, ce n'est pas une action « sur place »). Python 3142 réussis (4 échecs CRLF connus), Android 275 / 0.
+  À voir sur le S25 contre l'IC-7300MK2 : poste en USB = bouton « PASSER EN PKTUSB », toucher = « ARMER CW ».

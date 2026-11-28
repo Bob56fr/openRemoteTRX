@@ -40,6 +40,7 @@ class Bench:
 def bench(st, tmp_path, *, clock=time.monotonic, **cw) -> Bench:
     cfg = st.ctrl.config
     cfg.cw.enabled = True
+    cw.setdefault("ptt_variant", "hold")                 # V1 par défaut dans ce banc ; la station est en V2 par défaut
     for key, value in cw.items():
         setattr(cfg.cw, key, value)
     sink = RecordingSink()
@@ -82,6 +83,11 @@ async def armed(st, b, phone, ident=1, **params):
 
 
 # --------------------------------------------------------------------------- annonce et refus (rien n'émet)
+def test_v2_is_the_default_variant():
+    from trxstation.config import Cw
+    assert Cw().ptt_variant == "hang"
+
+
 def test_cw_is_announced_only_when_enabled(tmp_path):
     async def scenario(fake):
         async with station(fake) as st:
@@ -89,13 +95,17 @@ def test_cw_is_announced_only_when_enabled(tmp_path):
             st.ctrl.config.cw.enabled = False
             off = await connect(st, "off", cw=b.keyer)
             assert "cw" not in off.of_type("hello")[0]["features"]
+            assert off.of_type("hello")[0]["cw"] is None
             await off.say(cmd="cw_arm", id=1)
             assert off.result(1)["reason"] == "cw_unavailable" and fake.ptt == 0
             st.ctrl.config.cw.enabled = True
             on = await connect(st, "on", cw=b.keyer)
             assert "cw" in on.of_type("hello")[0]["features"]
+            # mode exigé annoncé : la page CW propose d'y mettre le poste (commande de mode de l'opérateur)
+            assert on.of_type("hello")[0]["cw"] == {"mode": "PKTUSB", "variant": "hold"}
             listener = await connect(st, "visiteur", cw=b.keyer, role=LISTENER)
             assert "cw" not in listener.of_type("hello")[0]["features"]
+            assert listener.of_type("hello")[0]["cw"] is None
     run(scenario)
 
 

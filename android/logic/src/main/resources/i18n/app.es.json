@@ -574,6 +574,7 @@
   "cw.pads_one": "1 paleta",
   "cw.pads_other": "{n} paletas",
   "cw.arm": "ARMAR CW",
+  "cw.set_mode": "PASAR A {mode}",
   "cw.arm_first": "Activa primero «Transmisión permitida»: manipular en CW es transmitir.",
   "cw.arming": "Armando…",
   "cw.disarm": "CW ARMADA · desarmar",

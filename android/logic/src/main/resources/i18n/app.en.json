@@ -574,6 +574,7 @@
   "cw.pads_one": "1 paddle",
   "cw.pads_other": "{n} paddles",
   "cw.arm": "ARM CW",
+  "cw.set_mode": "SWITCH TO {mode}",
   "cw.arm_first": "Turn on “Transmit allowed” first: CW keying is a transmission.",
   "cw.arming": "Arming…",
   "cw.disarm": "CW ARMED · disarm",

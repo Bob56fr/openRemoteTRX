@@ -342,6 +342,9 @@ class ControlSession:
                    "rig_spec": spec.to_dict() if (spec := getattr(self.ctrl, "spec", None)) is not None else None,
                    # étalonnage du squelch (étape 411) : repère et valeur « S5,4 » des clients ; None = repère estimé
                    "squelch_cal": squelchcal.effective(self.ctrl.config, spec),
+                   # CW (branche exp/cw) : mode du poste exigé (la page CW propose de l'y mettre) et variante du PTT
+                   "cw": ({"mode": self.cw.cfg.cw.data_mode, "variant": self.cw.cfg.cw.ptt_variant}
+                          if self.cw is not None and self.cw.enabled and not self.listener else None),
                    "lang": self.lang,                                 # langue retenue pour les textes de ce client
                    "features": self.features()})
         if not self.listener:

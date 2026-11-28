@@ -188,7 +188,7 @@ delay_max_ms = 500
 lease_grace_ms = 60
 max_keydown_ms = 2000      # plafond 5000
 seq_gap_ms = 1500
-ptt_variant = "hold"       # "hold" (V1) ou "hang" (V2)
+ptt_variant = "hang"       # "hang" (V2, défaut décidé le 2026-11-28 après CW-3) ou "hold" (V1)
 idle_disarm_s = 8
 hang_ms = 600
 ```

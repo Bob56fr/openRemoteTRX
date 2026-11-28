@@ -359,6 +359,18 @@ private fun PadSelector(s: CwSettings, change: (CwSettings) -> Unit, modifier: M
 
 @Composable
 private fun RigScope.ArmButton(cw: CwUi, modifier: Modifier) {
+    // poste pas dans le mode exigé par la station : le bouton propose d'abord de l'y mettre (commande de mode ORDINAIRE
+    // de l'opérateur, la station ne change jamais le mode d'elle-même) ; « Armer » revient quand le poste l'a relu
+    val needed = CwPage.neededMode(rig)
+    if (needed != null && !cw.armed && !cw.requested) {
+        val usable = connected && rig.protocolOk && !listener && ptt?.transmitting != true
+        Box(modifier.background(Page.COMMANDE, RoundedCornerShape(12.dp)).border(1.dp, Page.ACCENT, RoundedCornerShape(12.dp))
+            .clickable(enabled = usable) { RigHub.setMode(needed) }, contentAlignment = Alignment.Center) {
+            Text(Tr.t("cw.set_mode", "mode" to needed), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Page.TEXTE,
+                 maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        return
+    }
     val (label, bg, fg) = when {
         cw.armed -> Triple(Tr.t("cw.disarm"), Page.TX, Color.White)
         cw.requested -> Triple(Tr.t("cw.arming"), Page.SELECTION, Page.TEXTE_2)
@@ -458,4 +470,10 @@ internal object CwPage {
      *  CW émet en mode données : seul accès à la page dans ce cas). */
     fun modes(rig: RigState, declared: List<String>): List<String> =
         if (rig.cw.offered && "CW" !in declared && "CWR" !in declared) declared + "CW" else declared   // i18n-ok
+
+    /** Mode que la station exige pour armer (`hello.cw.mode`) quand le poste n'y est pas (relu), sinon null. */
+    fun neededMode(rig: RigState): String? {
+        val now = rig.state?.rig?.mode ?: return null
+        return rig.hello?.cw?.mode?.takeIf { it.isNotEmpty() && it != now }
+    }
 }

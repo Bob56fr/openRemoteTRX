@@ -97,6 +97,7 @@ data class Hello(
     @SerialName("rig_spec") val rigSpec: RigSpecInfo? = null,
     /** Étalonnage du squelch (station 0.299.0+, menu 2.10) : repère et valeur « S5,4 » ; null = repère estimé. */
     @SerialName("squelch_cal") val squelchCal: SquelchCalInfo? = null,
+    val cw: CwInfo? = null,
     /** Langue retenue par la station pour ses textes (`detail`, `message`) ; vide sur une station antérieure à 0.236.0. */
     val lang: String = "",
     val features: List<String> = emptyList(),
@@ -243,6 +244,10 @@ data class RigSpecSquelch(
     val reply: String = "",
     @SerialName("open_value") val openValue: String = "",
 )
+
+/** `hello.cw` (branche exp/cw) : mode du poste exigé par la manipulation CW et variante du PTT (`hang`, `hold`). */
+@Serializable
+data class CwInfo(val mode: String = "", val variant: String = "")
 
 /** `hello.squelch_cal` (étape 411) : 10 valeurs SQL (0 à 1) quand le poste affiche 1… 9, 9+10 ; `source` = station ou model. */
 @Serializable
