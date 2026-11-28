@@ -539,7 +539,7 @@
   "cw.refused": "CW arming refused: {detail}",
   "cw.disarmed": "CW disarmed.",
   "cw.decoded_title": "Your keying, decoded (help)",
-  "cw.decoded_empty": "(your decoded keying shows here)",
+  "cw.decoded_empty": "(decoded keying)",
   "cw.quit": "✕ Close",
   "cw.badge_tone": "TX · TONE",
   "cw.badge_armed": "TX · CW ARMED",

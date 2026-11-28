@@ -539,7 +539,7 @@
   "cw.refused": "Armado CW rechazado: {detail}",
   "cw.disarmed": "CW desarmada.",
   "cw.decoded_title": "Tu manipulación, descodificada (ayuda)",
-  "cw.decoded_empty": "(aquí aparece tu manipulación descodificada)",
+  "cw.decoded_empty": "(texto descodificado)",
   "cw.quit": "✕ Salir",
   "cw.badge_tone": "TX · TONO",
   "cw.badge_armed": "TX · CW ARMADA",

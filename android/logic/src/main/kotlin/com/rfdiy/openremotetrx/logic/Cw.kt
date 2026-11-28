@@ -238,7 +238,7 @@ class CwPacketizer(private val seqGapMs: Double = SEQ_GAP_MS) {
 }
 
 /** Décodage de SA propre manipulation (aide et diagnostic, cahier § 7) : marques classées point / trait d'après la
- *  vitesse réglée, lettre close après 2 points de silence, espace entre mots après 5. 64 caractères gardés. */
+ *  vitesse réglée, lettre close après 2 points de silence, espace entre mots après 5. [KEEP] caractères gardés (zone défilable). */
 class CwDecoder(var wpm: Int = 20) {
     private val dot get() = 1200.0 / wpm
     private var downAt: Double? = null
@@ -281,10 +281,11 @@ class CwDecoder(var wpm: Int = 20) {
     private fun append(c: Char) {
         if (c != ' ') spaced = false
         text.append(c)
-        if (text.length > 64) text = StringBuilder(text.takeLast(64))
+        if (text.length > KEEP) text = StringBuilder(text.takeLast(KEEP))
     }
 
     companion object {
+        const val KEEP = 2000
         val MORSE: Map<String, Char> = mapOf(                    // i18n-ok
             ".-" to 'A', "-..." to 'B', "-.-." to 'C', "-.." to 'D', "." to 'E', "..-." to 'F', "--." to 'G',
             "...." to 'H', ".." to 'I', ".---" to 'J', "-.-" to 'K', ".-.." to 'L', "--" to 'M', "-." to 'N',

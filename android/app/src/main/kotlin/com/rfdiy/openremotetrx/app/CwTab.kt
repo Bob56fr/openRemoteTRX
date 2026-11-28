@@ -5,6 +5,10 @@ package com.rfdiy.openremotetrx.app
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -21,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
@@ -227,11 +232,18 @@ private fun RowScope.Meter(label: String, value: String?, fraction: Float?) {
 
 @Composable
 private fun CwDecoded(cw: CwUi, modifier: Modifier, big: Boolean) {
+    // zone défilable au doigt : téléphone = une ligne (défilement horizontal), tablette = plusieurs (vertical) ;
+    // ramenée sur la dernière lettre à chaque lettre décodée, l'historique reste consultable en revenant en arrière
+    val scroll = rememberScrollState()
+    LaunchedEffect(scroll) { snapshotFlow { scroll.maxValue }.collect { scroll.animateScrollTo(it) } }
+    val scrolled = if (big) Modifier.fillMaxSize().verticalScroll(scroll) else Modifier.horizontalScroll(scroll)
     Box(modifier.background(Page.CHAMP, RoundedCornerShape(8.dp)).border(1.dp, Page.LIGNE, RoundedCornerShape(8.dp))
         .padding(horizontal = 10.dp, vertical = 6.dp), contentAlignment = if (big) Alignment.TopStart else Alignment.CenterStart) {
-        Text(cw.decoded.ifEmpty { Tr.t("cw.decoded_empty") }, fontFamily = FontFamily.Monospace, fontSize = if (big) 18.sp else 15.sp,
-             color = if (cw.decoded.isEmpty()) Page.TEXTE_2 else Page.TEXTE, maxLines = if (big) 6 else 1,
-             overflow = TextOverflow.Clip)
+        Box(scrolled) {
+            Text(cw.decoded.ifEmpty { Tr.t("cw.decoded_empty") }, fontFamily = FontFamily.Monospace,
+                 fontSize = if (big) 18.sp else 15.sp, softWrap = big,
+                 color = if (cw.decoded.isEmpty()) Page.TEXTE_2 else Page.TEXTE)
+        }
     }
 }
 
@@ -263,9 +275,10 @@ private fun ColumnScope.CwSettingsBlock(cw: CwUi, s: CwSettings, change: (CwSett
         Setting(Tr.t("cw.s_wpm")) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()) {
-                SmallKey("−") { change(s.copy(wpm = (s.wpm - 1).coerceAtLeast(5))) }                              // i18n-ok
-                Text("${s.wpm}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Page.TEXTE)
-                SmallKey("+") { change(s.copy(wpm = (s.wpm + 1).coerceAtMost(40))) }                              // i18n-ok
+                SmallKey("−", Modifier.weight(1f)) { change(s.copy(wpm = (s.wpm - 1).coerceAtLeast(5))) }                              // i18n-ok
+                Text("${s.wpm}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Page.TEXTE,
+                     modifier = Modifier.padding(horizontal = 4.dp), maxLines = 1, softWrap = false)
+                SmallKey("+", Modifier.weight(1f)) { change(s.copy(wpm = (s.wpm + 1).coerceAtMost(40))) }                              // i18n-ok
             }
         }
         if (s.keyInterface != CwInterface.STRAIGHT) {
@@ -319,8 +332,9 @@ private fun RowScope.Setting(label: String, enabled: Boolean = true, onClick: ((
 }
 
 @Composable
-private fun SmallKey(text: String, onClick: () -> Unit) {
-    Box(Modifier.width(32.dp).height(32.dp).background(Page.COMMANDE, RoundedCornerShape(8.dp))
+private fun SmallKey(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // largeur partagée avec le chiffre (case étroite du téléphone : 32 dp fixes écrasaient le « + »)
+    Box(modifier.widthIn(max = 40.dp).height(32.dp).background(Page.COMMANDE, RoundedCornerShape(8.dp))
         .border(1.dp, Page.BORD, RoundedCornerShape(8.dp)).clickable { onClick() }, contentAlignment = Alignment.Center) {
         Text(text, fontSize = 18.sp, color = Page.TEXTE)
     }

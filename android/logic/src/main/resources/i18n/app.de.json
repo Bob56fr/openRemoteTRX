@@ -539,7 +539,7 @@
   "cw.refused": "CW-Aktivierung abgelehnt: {detail}",
   "cw.disarmed": "CW deaktiviert.",
   "cw.decoded_title": "Ihre Tastung, dekodiert (Hilfe)",
-  "cw.decoded_empty": "(Ihre dekodierte Tastung erscheint hier)",
+  "cw.decoded_empty": "(dekodierte Tastung)",
   "cw.quit": "✕ Schließen",
   "cw.badge_tone": "TX · TON",
   "cw.badge_armed": "TX · CW AKTIV",
