@@ -83,6 +83,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   background:transparent;border:0;border-radius:8px;padding:4px 8px;color:var(--ink);font:14px var(--f-body);cursor:pointer}
 .items button:hover,.items button.sel{background:var(--panel2)}
 .items .k{font:500 12px var(--f-mono);color:var(--c)}
+/* mise en sécurité : menu 1.4 en rouge qui clignote lentement (1 par seconde, jamais plus vite) ; tuile bordée de rouge */
+.items button.alarm{background:#b3261e;color:#fff;font-weight:600;animation:alarm 1s steps(1,end) infinite}
+.items button.alarm .k{color:#fff}
+.card.alarm{box-shadow:0 0 0 2px #ff6b5e}
+@keyframes alarm{50%{background:transparent;color:var(--ink)}}
 .card.closed .items{display:none}
 .items a{display:flex;align-items:baseline;gap:6px;padding:4px 8px;border-radius:8px;color:var(--ink);font:14px var(--f-body);text-decoration:none}
 .items a:hover,.items a:focus-visible{background:var(--panel2)}

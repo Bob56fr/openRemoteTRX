@@ -61,6 +61,7 @@
     if (state.lang !== lang || state.level !== level) {
       lang = state.lang; level = state.level; document.documentElement.lang = lang; texts(); tiles();
     }
+    markSafeMenu();
     $("#term-state").textContent = state.idle ? "" : "…";
   }
   // Lien vers l'application web (page de pilotage) sous l'état de la station : même nom de machine que celui par
@@ -97,6 +98,15 @@
   }
   // Console web sur le réseau désactivée (étape 405) : dit à côté des liens, un clic ouvre le menu 4.6. Jamais
   // dans la console ouverte par le réseau (elle est donc activée).
+  // Mise en sécurité : le menu 1.4 « Réactiver la station » clignote en rouge (et la tuile de son thème) tant qu'elle dure
+  // (demande de l'utilisateur, étape 406) ; mouvement réduit demandé par l'appareil : rouge fixe, sans clignotement.
+  function markSafeMenu() {
+    const on = !!state.safe_mode;
+    document.querySelectorAll(".items button[data-k]").forEach((b) => {
+      b.classList.toggle("alarm", on && b.dataset.k === state.safe_menu);
+    });
+    document.querySelectorAll(".card[data-t]").forEach((c) => c.classList.toggle("alarm", !!c.querySelector(".items button.alarm")));
+  }
   function consoleOff() {
     const b = $("#consoleoff"), c = state.webapp && state.webapp.console;
     if (!c || c.enabled || state.network) { b.hidden = true; return; }
