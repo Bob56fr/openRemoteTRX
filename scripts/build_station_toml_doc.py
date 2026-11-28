@@ -84,7 +84,7 @@ UI: dict[str, dict[str, str]] = {
 SECTIONS: list[tuple[str, type | None, bool]] = [
     ("rig", cfgmod.Rig, False), ("audio", cfgmod.Audio, False), ("network", cfgmod.Network, False),
     ("safety", cfgmod.Safety, False), ("bands", cfgmod.Band, True), ("clients", cfgmod.ClientAuth, True),
-    ("access", cfgmod.Access, False), ("swr", cfgmod.Swr, False), ("power", cfgmod.Power, False), ("breizh", cfgmod.Breizh, False), ("netprobe", cfgmod.Netprobe, False), ("presence", cfgmod.Presence, False), ("monitor_link", cfgmod.MonitorLink, False), ("diffusion", cfgmod.Diffusion, False), ("remote_console", cfgmod.RemoteConsole, False), ("dashboard", cfgmod.Dashboard, False), ("squelch_cal", cfgmod.SquelchCal, False), ("freedv", cfgmod.Freedv, False), ("sdr", cfgmod.Sdr, False),
+    ("access", cfgmod.Access, False), ("swr", cfgmod.Swr, False), ("cw", cfgmod.Cw, False), ("power", cfgmod.Power, False), ("breizh", cfgmod.Breizh, False), ("netprobe", cfgmod.Netprobe, False), ("presence", cfgmod.Presence, False), ("monitor_link", cfgmod.MonitorLink, False), ("diffusion", cfgmod.Diffusion, False), ("remote_console", cfgmod.RemoteConsole, False), ("dashboard", cfgmod.Dashboard, False), ("squelch_cal", cfgmod.SquelchCal, False), ("freedv", cfgmod.Freedv, False), ("sdr", cfgmod.Sdr, False),
     ("spectrum", cfgmod.Spectrum, False),
     ("selcall", cfgmod.Selcall, False), ("cluster", cfgmod.Cluster, False), ("cluster.source", cfgmod.ClusterSource, True),
     ("supervisor", cfgmod.Supervisor, False), ("modules", cfgmod.Modules, False), ("update", cfgmod.Update, False),

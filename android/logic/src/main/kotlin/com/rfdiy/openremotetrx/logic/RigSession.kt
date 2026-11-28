@@ -126,7 +126,7 @@ data class RigState(
     val stopHold: StopHoldChoices = StopHoldChoices(false, ""),
     val powerOffNotice: String = "",
     val powerCarTitle: String? = null,
-    /** Manipulation CW (branche exp/cw) : état montré par l'onglet CW ; `offered` faux = onglet absent. */
+    /** Manipulation CW (étape 413) : état montré par l'onglet CW ; `offered` faux = onglet absent. */
     val cw: CwUi = CwUi(),
 ) {
     /** Station connectée qui connaît `set_lang` (0.243.0+) : un changement de langue lui est annoncé aussitôt. */
@@ -281,7 +281,7 @@ class RigSession(
     private var lastForbiddenLog = Long.MIN_VALUE / 2
     private val watch = LinkWatch()
     private val arming = TxArming()
-    private val cw = CwClient()                          // manipulation CW (branche exp/cw)
+    private val cw = CwClient()                          // manipulation CW (étape 413)
     private var silenceAlerted = false
     private var hello: Hello? = null
     private var state: State? = null
@@ -754,7 +754,7 @@ class RigSession(
         link.setMicOpen(mineTx() && !cw.active)                 // micro ouvert seulement en TX confirmé de ce téléphone
     }
 
-    // ------------------------------------------------------------------ manipulation CW (branche exp/cw)
+    // ------------------------------------------------------------------ manipulation CW (étape 413)
 
     /** L'onglet CW a besoin d'un rappel fin (quelques ms) : armement en cours ou armé. */
     val cwActive: Boolean get() = cw.active

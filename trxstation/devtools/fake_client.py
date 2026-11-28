@@ -93,7 +93,7 @@ class FakeClient:
         self.pc.addTrack(self.track)
         self.channel = self.pc.createDataChannel("control")
         self.spectrum_channel = self.pc.createDataChannel("spectrum", ordered=False, maxRetransmits=0)
-        self.cw_channel = self.pc.createDataChannel("cw", ordered=False, maxRetransmits=0)   # branche exp/cw
+        self.cw_channel = self.pc.createDataChannel("cw", ordered=False, maxRetransmits=0)   # étape 413
 
         @self.spectrum_channel.on("message")
         def on_spectrum(raw) -> None:

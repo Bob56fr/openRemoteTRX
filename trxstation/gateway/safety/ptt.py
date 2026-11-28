@@ -652,7 +652,7 @@ class PttController:
             return self.snapshot("tx_started")
 
     async def read_transmit_plan(self) -> tuple[int, int, tuple]:
-        """LECTURE seule (laboratoire CW, branche exp/cw) : (fréquence affichée, fréquence d'émission, plan) lus à
+        """LECTURE seule (manipulation CW, étape 413) : (fréquence affichée, fréquence d'émission, plan) lus à
         l'instant, mêmes règles que la prise d'émission (split, ΔTX, côté d'émission). Refused si illisible."""
         client = self.link.client
         try:

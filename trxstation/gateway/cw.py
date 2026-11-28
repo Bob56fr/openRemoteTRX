@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Manipulation CW, mode A (laboratoire, branche exp/cw ; docs/exp-cw/cahier-des-charges.md § 3, § 4, § 5).
+"""Manipulation CW, mode A (étape 413 ; docs/exp-cw/cahier-des-charges.md § 3, § 4, § 5).
 
 SÉCURITÉ (exception du cahier § 3, valable dans la branche seulement, essais sur charge fictive) :
 - « Armer CW » = prise d'émission NORMALE du client (`PttController.key_without_audio` : mêmes refus que toggle,

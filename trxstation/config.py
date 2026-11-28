@@ -147,9 +147,9 @@ class Swr:
 
 @dataclass
 class Cw:
-    """Laboratoire CW (branche d'essai exp/cw, docs/exp-cw/cahier-des-charges.md § 10) : manipulation depuis l'écran
+    """Manipulation CW (étape 413, docs/exp-cw/cahier-des-charges.md § 10) : manipulation depuis l'écran
     tactile de l'application Android, tonalité recréée par la station (mode A). Réglages de la STATION seulement ;
-    notice de station.toml écrite à l'adoption de la branche seulement."""
+    désactivée par défaut, notice de station.toml (section [cw])."""
     enabled: bool = False               # désactivé par défaut (fonction « cw » non annoncée)
     modes: list[str] = field(default_factory=lambda: ["A"])   # A seulement dans le POC (C plus tard)
     data_mode: str = "PKTUSB"           # mode du poste EXIGÉ pour le mode A (un mode de tx_modes) ; jamais changé par la station
@@ -924,7 +924,7 @@ def _swr_problems(s: Swr) -> list[str]:
 
 
 def _cw_problems(c: Cw, rig: Rig) -> list[str]:
-    """[cw] (branche exp/cw). Toute incohérence est bloquante ; data_mode n'est confronté à tx_modes que fonction en
+    """[cw] (étape 413). Toute incohérence est bloquante ; data_mode n'est confronté à tx_modes que fonction en
     service (le défaut PKTUSB n'a pas à exister sur un poste où la CW est désactivée)."""
     p = []
     if not isinstance(c.enabled, bool):

@@ -28,7 +28,7 @@ private class CwLink : SessionLink {
     fun idOf(cmd: String): Int = Regex("\"cmd\":\"$cmd\",\"id\":(\\d+)").findAll(sent.joinToString("\n")).last().groupValues[1].toInt()
 }
 
-/** Manipulation CW de l'application (branche exp/cw) : manipulateur, paquets, décodage, session. */
+/** Manipulation CW de l'application (étape 413) : manipulateur, paquets, décodage, session. */
 class CwTest {
     private fun keyer(i: CwInterface, wpm: Int = 20) = CwKeyer(i, wpm)
 

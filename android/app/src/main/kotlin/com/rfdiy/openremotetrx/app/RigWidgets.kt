@@ -202,7 +202,7 @@ internal fun Banner(text: String, color: Color, big: Boolean = false, textColor:
 /** Onglets de l'écran de la station (choix de l'utilisateur, 2026-10-29). */
 internal enum class Tab(val symbol: String, private val key: String) {
     STATION("◉", "rigwidgets.tab_station"), SPECTRE("≋", "rigwidgets.tab_spectre"), MEMOIRES("★", "rigwidgets.tab_memories"),
-    /** Manipulation CW (branche exp/cw) : seulement quand la station l'annonce ; écran plein, sans barre d'onglets. */
+    /** Manipulation CW (étape 413) : seulement quand la station l'annonce ; écran plein, sans barre d'onglets. */
     CW("·–", "rigwidgets.tab_cw"),
     /** Présence de groupe : seulement quand la station fait partie d'un groupe (pictogramme dessiné : tête stylisée). */
     AMIS("", "rigwidgets.tab_friends"),

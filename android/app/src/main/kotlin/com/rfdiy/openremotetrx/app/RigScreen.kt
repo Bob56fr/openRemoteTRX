@@ -235,7 +235,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val config = LocalConfiguration.current
     val wide = ScreenLayouts.of(config.screenWidthDp, config.screenHeightDp) == ScreenLayout.WIDE   // tablette (lot A5)
-    // Onglet CW (branche exp/cw) : écran plein, AVANT le spectre en paysage (un téléphone tourné garde la CW à l'écran)
+    // Onglet CW (étape 413) : écran plein, AVANT le spectre en paysage (un téléphone tourné garde la CW à l'écran)
     if (tab == Tab.CW && !rig.cw.offered) tab = Tab.STATION
     if (tab == Tab.CW) {
         scope.CwScreen(modifier, tablet = wide, onQuit = { tab = Tab.STATION })
@@ -306,7 +306,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     scope.RigDialogsHost()
 }
 
-/** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. Page CW (branche exp/cw) :
+/** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. Page CW (étape 413) :
  *  jamais un onglet, ouverte par les modes CW / CWR ([CwPage.opens]). */
 internal fun phoneTabs(rig: RigState): List<Tab> =
     Tab.entries.filter { it != Tab.CW && (it != Tab.AMIS || friendsTab(rig)) }

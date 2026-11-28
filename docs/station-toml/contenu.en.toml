@@ -86,6 +86,12 @@ intro = "<p>The antenna SWR curve, started from the page or the app: a short FM 
 ou = "Menu 8.1."
 relu = "redemarrage"
 
+[sections.cw]
+titre = "CW keying [cw]"
+intro = "<p>Key CW from the touch screen of the Android app (paddles or straight key): the station itself rebuilds a clean tone, transmitted in data mode with the rig on PKTUSB. Off by default. Arming CW is a normal transmit request (TOT, heartbeats, bands, local operator); the station never changes the rig mode, the CW page only offers a « Switch to PKTUSB » button. Never from the web page, Android Auto or driving mode.</p>"
+ou = "Menu 8.1."
+relu = "redemarrage"
+
 [sections.power]
 titre = "Powering the transceiver on and off remotely [power]"
 intro = "<p>Power the transceiver on when an operator connects and power it off from the page or the app (STOP held for 3 s). Off by default. Only for a transceiver that allows it over CAT (Hamlib: “set / get Power Stat”) and keeps its USB powered once switched off. The station never transmits to power the transceiver on or off.</p>"
@@ -580,6 +586,101 @@ role = "Maximum transmit time for one point. The actual time is calibrated on fi
 niveau = "expert"
 bornes = "0.5 to 3 s."
 depuis = "0.90.0"
+
+# ---------------------------------------------------------------- cw
+
+[reglages."cw.enabled"]
+role = "true: the station offers CW keying to the operators of the Android app (« cw » feature)."
+niveau = "courant"
+securite = "Arming CW is a normal transmit request: same refusals and same cut-offs as the PTT."
+depuis = "0.301.0"
+
+[reglages."cw.modes"]
+role = "Keying modes offered. Only « A » exists: tone rebuilt by the station in data mode."
+niveau = "expert"
+bornes = "[\"A\"]."
+depuis = "0.301.0"
+
+[reglages."cw.data_mode"]
+role = "Rig mode required to arm CW (Hamlib mode). If the rig is in another mode, arming is refused and the CW page offers « Switch to … »."
+niveau = "courant"
+bornes = "A mode of <code>[rig] tx_modes</code> (CW enabled)."
+securite = "The station never changes the mode by itself."
+exemple = "<code>data_mode = \"PKTUSB\"</code>"
+depuis = "0.301.0"
+
+[reglages."cw.tone_hz"]
+role = "Frequency of the rebuilt tone: the carrier is at the displayed frequency plus this value."
+niveau = "courant"
+bornes = "300 to 1200 Hz."
+depuis = "0.301.0"
+
+[reglages."cw.edge_ms"]
+role = "Rise and fall time of the tone (raised cosine): avoids key clicks."
+niveau = "expert"
+bornes = "3 to 8 ms."
+depuis = "0.301.0"
+
+[reglages."cw.delay_ms"]
+role = "Replay delay: the station replays the keying with this delay to absorb network jitter."
+niveau = "expert"
+bornes = "150 to 500 ms, between <code>delay_min_ms</code> and <code>delay_max_ms</code>."
+depuis = "0.301.0"
+
+[reglages."cw.adaptive"]
+role = "true: the replay delay adapts between two sequences to the measured jitter (within the min / max bounds)."
+niveau = "expert"
+depuis = "0.301.0"
+
+[reglages."cw.delay_min_ms"]
+role = "Shortest replay delay allowed (adaptive mode)."
+niveau = "expert"
+bornes = "150 to 500 ms."
+depuis = "0.301.0"
+
+[reglages."cw.delay_max_ms"]
+role = "Longest replay delay allowed (adaptive mode)."
+niveau = "expert"
+bornes = "150 to 500 ms."
+depuis = "0.301.0"
+
+[reglages."cw.lease_grace_ms"]
+role = "Lease margin: the tone is cut at once if the rest of the keying does not arrive in time, after this margin."
+niveau = "expert"
+bornes = "20 to 200 ms."
+securite = "A lost link can never leave the tone on."
+depuis = "0.301.0"
+
+[reglages."cw.max_keydown_ms"]
+role = "Longest continuous key-down: beyond it, the tone is cut."
+niveau = "expert"
+bornes = "100 to 5000 ms."
+depuis = "0.301.0"
+
+[reglages."cw.seq_gap_ms"]
+role = "Silence that ends a keying sequence (statistics, adaptive delay)."
+niveau = "expert"
+bornes = "500 to 10000 ms."
+depuis = "0.301.0"
+
+[reglages."cw.ptt_variant"]
+role = "« hang »: the rig goes back to receive after <code>hang_ms</code> of silence and transmits again at the next sign (CW stays armed); « hold »: PTT held during the whole arming."
+niveau = "courant"
+bornes = "« hang » or « hold »."
+securite = "In « hang », each restart is a normal transmit request (all refusals checked again); the TOT counts per restart."
+depuis = "0.301.0"
+
+[reglages."cw.idle_disarm_s"]
+role = "CW disarms by itself after this time without keying."
+niveau = "expert"
+bornes = "2 to 60 s."
+depuis = "0.301.0"
+
+[reglages."cw.hang_ms"]
+role = "« hang » variant: silence before going back to receive."
+niveau = "expert"
+bornes = "200 to 3000 ms."
+depuis = "0.301.0"
 
 # ---------------------------------------------------------------- freedv
 

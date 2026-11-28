@@ -205,7 +205,7 @@ object RigHub {
 
     fun swrCancel() { service?.onRig { session, now -> session.swrCancel(now) } }
 
-    /** Manipulation CW (branche exp/cw) : armement (prise d'émission normale), désarmement, palettes, réglages. */
+    /** Manipulation CW (étape 413) : armement (prise d'émission normale), désarmement, palettes, réglages. */
     fun cwArm() { service?.cwArm() }
     fun cwDisarm() { service?.cwDisarm() }
     fun cwPress(paddle: com.rfdiy.openremotetrx.logic.Paddle, pressed: Boolean, atElapsedMs: Double) {

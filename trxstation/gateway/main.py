@@ -409,7 +409,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
     voices = VoiceProfileStore(Path(cfg.supervisor.state_dir) / "voice_profiles.json")   # profils d'égaliseur des opérateurs
     swr = SwrRunner(ctrl, cfg, SwrStore(Path(cfg.supervisor.state_dir) / "swr.json")) if cfg.swr.enabled else None
-    cw = CwKeyer(ctrl, pipeline.tx_sink, cfg, state_dir=cfg.supervisor.state_dir) if cfg.cw.enabled else None   # exp/cw
+    cw = CwKeyer(ctrl, pipeline.tx_sink, cfg, state_dir=cfg.supervisor.state_dir) if cfg.cw.enabled else None   # étape 413
     try:
         station_id = ensure_station_id(cfg.supervisor.state_dir)    # GUID de la station (créé une seule fois)
     except OSError as exc:                                           # jamais bloquant : la station marche sans

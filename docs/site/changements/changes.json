@@ -3,6 +3,18 @@
  "change": [
   {
    "date": "2026-11-28",
+   "version": "0.301.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Manipulation CW depuis l'écran tactile de l'application 0.96.0 (palettes ou pioche) : touchez le mode CW pour ouvrir la page CW ; la station recrée la tonalité en mode données (PKTUSB). Désactivée par défaut : section [cw] de station.toml (menu 8.1).",
+   "en": "CW keying from the touch screen of app 0.96.0 (paddles or straight key): tap the CW mode to open the CW page; the station rebuilds the tone in data mode (PKTUSB). Off by default: [cw] section of station.toml (menu 8.1).",
+   "de": "CW-Tastung über den Touchscreen der App 0.96.0 (Paddles oder Handtaste): Tippen Sie auf die Betriebsart CW, um die CW-Seite zu öffnen; die Station erzeugt den Ton im Datenmodus (PKTUSB). Standardmäßig aus: Abschnitt [cw] der station.toml (Menü 8.1).",
+   "es": "Manipulación CW desde la pantalla táctil de la aplicación 0.96.0 (paletas o manipulador vertical): toque el modo CW para abrir la página CW; la estación recrea el tono en modo datos (PKTUSB). Desactivada por defecto: sección [cw] de station.toml (menú 8.1)."
+  },
+  {
+   "date": "2026-11-28",
    "version": "0.300.0",
    "type": "nouveaute",
    "postes": [

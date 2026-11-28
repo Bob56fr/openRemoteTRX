@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Lot CW-1 (branche exp/cw) : manipulation CW, mode A, dans la passerelle, avec le poste factice (modèle Hamlib 1).
+"""Lot CW-1 (étape 413) : manipulation CW, mode A, dans la passerelle, avec le poste factice (modèle Hamlib 1).
 
 Tests de panne exigés par les règles d'émission (CLAUDE.md) et le cahier § 3 : bail dépassé, connexion fermée,
 battement perdu, STOP d'un autre client, TOT, passerelle gênée (rendu en retard), QSY refusé pendant l'armement,

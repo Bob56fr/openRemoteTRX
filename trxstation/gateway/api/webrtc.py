@@ -40,7 +40,7 @@ from ...errors.emit import by_machine, emit_event
 log = logging.getLogger(__name__)
 CONTROL_LABEL = "control"
 SPECTRUM_LABEL = "spectrum"
-CW_LABEL = "cw"                                  # fronts de la clé CW (branche exp/cw), client -> station seulement
+CW_LABEL = "cw"                                  # fronts de la clé CW (étape 413), client -> station seulement
 
 
 class PeerLimitError(Exception):
@@ -185,7 +185,7 @@ class PeerManager:
         self.layouts = layouts
         self.voices = voices                    # VoiceProfileStore : profils d'égaliseur de chaque opérateur
         self.swr = swr                          # SwrRunner : mesure de TOS (une seule à la fois, toutes sessions confondues)
-        self.cw = cw                            # CwKeyer (gateway/cw.py, branche exp/cw) ou None : [cw] enabled = false
+        self.cw = cw                            # CwKeyer (gateway/cw.py, étape 413) ou None : [cw] enabled = false
         self.netprobe = netprobe                # NetProbeHub : sonde de qualité réseau ([netprobe] enabled), sinon None
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s

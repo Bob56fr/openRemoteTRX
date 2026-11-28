@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Banc du décodeur de SA manipulation (branche exp/cw) : un message réaliste envoyé par des « poignets » simulés,
+ * Banc du décodeur de SA manipulation (étape 413) : un message réaliste envoyé par des « poignets » simulés,
  * plus ou moins réguliers, en pioche (rythme entièrement humain) et aux palettes (éléments calibrés par le
  * manipulateur iambique, erreurs humaines sur le lâcher des palettes et les espaces). Taux d'erreur par caractère
  * (distance d'édition) sur 40 tirages par scénario, graines fixes : rapport dans build/reports/cw-bench.md.

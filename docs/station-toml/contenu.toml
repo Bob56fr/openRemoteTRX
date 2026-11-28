@@ -86,6 +86,12 @@ intro = "<p>La courbe de TOS de l'antenne, lancée depuis la page ou l'applicati
 ou = "Menu 8.1."
 relu = "redemarrage"
 
+[sections.cw]
+titre = "Manipulation CW [cw]"
+intro = "<p>Manipuler en CW depuis l'écran tactile de l'application Android (palettes ou pioche) : la station recrée elle-même une tonalité propre, émise en mode données, poste sur PKTUSB. Désactivé par défaut. Armer la CW est une prise d'émission normale (TOT, battements, bandes, opérateur sur place) ; la station ne change jamais le mode du poste, la page CW propose seulement un bouton « Passer en PKTUSB ». Jamais depuis la page web, Android Auto ni le mode conduite.</p>"
+ou = "Menu 8.1."
+relu = "redemarrage"
+
 [sections.power]
 titre = "Allumage et extinction du poste à distance [power]"
 intro = "<p>Allumer le poste à la connexion d'un opérateur et l'éteindre depuis la page ou l'application (STOP maintenu 3 s). Hors service par défaut. Seulement pour un poste qui le permet par la CAT (Hamlib : « set / get Power Stat ») et qui garde son USB alimenté une fois éteint. La station n'émet jamais pour allumer ou éteindre le poste.</p>"
@@ -580,6 +586,101 @@ role = "Durée maximale de l'émission d'un point. Le temps réel est étalonné
 niveau = "expert"
 bornes = "0,5 à 3 s."
 depuis = "0.90.0"
+
+# ---------------------------------------------------------------- cw
+
+[reglages."cw.enabled"]
+role = "true : la station propose la manipulation CW aux opérateurs de l'application Android (fonction « cw »)."
+niveau = "courant"
+securite = "Armer la CW est une prise d'émission normale : mêmes refus et mêmes coupures que le PTT."
+depuis = "0.301.0"
+
+[reglages."cw.modes"]
+role = "Modes de manipulation proposés. Seul « A » existe : tonalité recréée par la station en mode données."
+niveau = "expert"
+bornes = "[\"A\"]."
+depuis = "0.301.0"
+
+[reglages."cw.data_mode"]
+role = "Mode du poste exigé pour armer la CW (mode Hamlib). Si le poste est dans un autre mode, l'armement est refusé et la page CW propose « Passer en … »."
+niveau = "courant"
+bornes = "Un mode de <code>[rig] tx_modes</code> (CW en service)."
+securite = "La station ne change jamais le mode d'elle-même."
+exemple = "<code>data_mode = \"PKTUSB\"</code>"
+depuis = "0.301.0"
+
+[reglages."cw.tone_hz"]
+role = "Fréquence de la tonalité recréée : la porteuse sort à la fréquence affichée plus cette valeur."
+niveau = "courant"
+bornes = "300 à 1200 Hz."
+depuis = "0.301.0"
+
+[reglages."cw.edge_ms"]
+role = "Durée des fronts de la tonalité (cosinus surélevé) : évite les claquements de manipulation."
+niveau = "expert"
+bornes = "3 à 8 ms."
+depuis = "0.301.0"
+
+[reglages."cw.delay_ms"]
+role = "Retard du rejeu : la station rejoue la manipulation avec ce retard pour absorber la gigue du réseau."
+niveau = "expert"
+bornes = "150 à 500 ms, entre <code>delay_min_ms</code> et <code>delay_max_ms</code>."
+depuis = "0.301.0"
+
+[reglages."cw.adaptive"]
+role = "true : le retard du rejeu s'adapte entre deux séquences à la gigue mesurée (dans les bornes min / max)."
+niveau = "expert"
+depuis = "0.301.0"
+
+[reglages."cw.delay_min_ms"]
+role = "Retard du rejeu le plus court permis (mode adaptatif)."
+niveau = "expert"
+bornes = "150 à 500 ms."
+depuis = "0.301.0"
+
+[reglages."cw.delay_max_ms"]
+role = "Retard du rejeu le plus long permis (mode adaptatif)."
+niveau = "expert"
+bornes = "150 à 500 ms."
+depuis = "0.301.0"
+
+[reglages."cw.lease_grace_ms"]
+role = "Marge du bail : la tonalité est coupée net si la suite de la manipulation n'arrive pas à temps, après cette marge."
+niveau = "expert"
+bornes = "20 à 200 ms."
+securite = "Une liaison coupée ne peut jamais laisser la tonalité en marche."
+depuis = "0.301.0"
+
+[reglages."cw.max_keydown_ms"]
+role = "Appui continu le plus long : au-delà, la tonalité est coupée."
+niveau = "expert"
+bornes = "100 à 5000 ms."
+depuis = "0.301.0"
+
+[reglages."cw.seq_gap_ms"]
+role = "Silence qui termine une séquence de manipulation (statistiques, retard adaptatif)."
+niveau = "expert"
+bornes = "500 à 10000 ms."
+depuis = "0.301.0"
+
+[reglages."cw.ptt_variant"]
+role = "« hang » : le poste repasse en réception après <code>hang_ms</code> de silence et reprend l'émission au signe suivant (la CW reste armée) ; « hold » : PTT tenu pendant tout l'armement."
+niveau = "courant"
+bornes = "« hang » ou « hold »."
+securite = "En « hang », chaque reprise est une prise d'émission normale (tous les refus revérifiés) ; le TOT compte par reprise."
+depuis = "0.301.0"
+
+[reglages."cw.idle_disarm_s"]
+role = "La CW se désarme seule après ce temps sans manipulation."
+niveau = "expert"
+bornes = "2 à 60 s."
+depuis = "0.301.0"
+
+[reglages."cw.hang_ms"]
+role = "Variante « hang » : silence avant le retour en réception."
+niveau = "expert"
+bornes = "200 à 3000 ms."
+depuis = "0.301.0"
 
 # ---------------------------------------------------------------- freedv
 

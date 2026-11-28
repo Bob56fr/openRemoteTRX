@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-openRemoteTRX version 0.300.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+openRemoteTRX version 0.301.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant d'openRemoteTRX Console et se modifie ensuite par openRemoteTRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -142,6 +142,30 @@ Se modifie : Menu 8.1. (au redémarrage).
 | `max_power_pct` | courant | `50` | Plafond de puissance de la mesure, en % de la puissance du poste. L'opérateur choisit la puissance (15 % par défaut) sous ce plafond. Valeurs : 5 à 50 %. **Sécurité** : Jamais au-dessus de 50 % : quelques watts suffisent pour mesurer. (depuis 0.90.0) |
 | `max_points` | expert | `50` | Nombre maximal de points d'une mesure. Valeurs : 2 à 200. (depuis 0.90.0) |
 | `point_tx_max_s` | expert | `2.0` | Durée maximale de l'émission d'un point. Le temps réel est étalonné au premier usage pour chaque modèle de poste, sans dépasser cette valeur. Valeurs : 0,5 à 3 s. (depuis 0.90.0) |
+
+## Manipulation CW [cw]
+
+Manipuler en CW depuis l'écran tactile de l'application Android (palettes ou pioche) : la station recrée elle-même une tonalité propre, émise en mode données, poste sur PKTUSB. Désactivé par défaut. Armer la CW est une prise d'émission normale (TOT, battements, bandes, opérateur sur place) ; la station ne change jamais le mode du poste, la page CW propose seulement un bouton « Passer en PKTUSB ». Jamais depuis la page web, Android Auto ni le mode conduite.
+
+Se modifie : Menu 8.1. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : la station propose la manipulation CW aux opérateurs de l'application Android (fonction « cw »). **Sécurité** : Armer la CW est une prise d'émission normale : mêmes refus et mêmes coupures que le PTT. (depuis 0.301.0) |
+| `modes` | expert | `["A"]` | Modes de manipulation proposés. Seul « A » existe : tonalité recréée par la station en mode données. Valeurs : ["A"]. (depuis 0.301.0) |
+| `data_mode` | courant | `"PKTUSB"` | Mode du poste exigé pour armer la CW (mode Hamlib). Si le poste est dans un autre mode, l'armement est refusé et la page CW propose « Passer en … ». Valeurs : Un mode de `[rig] tx_modes` (CW en service). **Sécurité** : La station ne change jamais le mode d'elle-même. Exemple : `data_mode = "PKTUSB"` (depuis 0.301.0) |
+| `tone_hz` | courant | `700.0` | Fréquence de la tonalité recréée : la porteuse sort à la fréquence affichée plus cette valeur. Valeurs : 300 à 1200 Hz. (depuis 0.301.0) |
+| `edge_ms` | expert | `5.0` | Durée des fronts de la tonalité (cosinus surélevé) : évite les claquements de manipulation. Valeurs : 3 à 8 ms. (depuis 0.301.0) |
+| `delay_ms` | expert | `300.0` | Retard du rejeu : la station rejoue la manipulation avec ce retard pour absorber la gigue du réseau. Valeurs : 150 à 500 ms, entre `delay_min_ms` et `delay_max_ms`. (depuis 0.301.0) |
+| `adaptive` | expert | `false` | true : le retard du rejeu s'adapte entre deux séquences à la gigue mesurée (dans les bornes min / max). (depuis 0.301.0) |
+| `delay_min_ms` | expert | `150.0` | Retard du rejeu le plus court permis (mode adaptatif). Valeurs : 150 à 500 ms. (depuis 0.301.0) |
+| `delay_max_ms` | expert | `500.0` | Retard du rejeu le plus long permis (mode adaptatif). Valeurs : 150 à 500 ms. (depuis 0.301.0) |
+| `lease_grace_ms` | expert | `60.0` | Marge du bail : la tonalité est coupée net si la suite de la manipulation n'arrive pas à temps, après cette marge. Valeurs : 20 à 200 ms. **Sécurité** : Une liaison coupée ne peut jamais laisser la tonalité en marche. (depuis 0.301.0) |
+| `max_keydown_ms` | expert | `2000.0` | Appui continu le plus long : au-delà, la tonalité est coupée. Valeurs : 100 à 5000 ms. (depuis 0.301.0) |
+| `seq_gap_ms` | expert | `1500.0` | Silence qui termine une séquence de manipulation (statistiques, retard adaptatif). Valeurs : 500 à 10000 ms. (depuis 0.301.0) |
+| `ptt_variant` | courant | `"hang"` | « hang » : le poste repasse en réception après `hang_ms` de silence et reprend l'émission au signe suivant (la CW reste armée) ; « hold » : PTT tenu pendant tout l'armement. Valeurs : « hang » ou « hold ». **Sécurité** : En « hang », chaque reprise est une prise d'émission normale (tous les refus revérifiés) ; le TOT compte par reprise. (depuis 0.301.0) |
+| `idle_disarm_s` | expert | `8.0` | La CW se désarme seule après ce temps sans manipulation. Valeurs : 2 à 60 s. (depuis 0.301.0) |
+| `hang_ms` | expert | `600.0` | Variante « hang » : silence avant le retour en réception. Valeurs : 200 à 3000 ms. (depuis 0.301.0) |
 
 ## Allumage et extinction du poste à distance [power]
 

@@ -92,7 +92,7 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             # langue des textes que la station envoie à CE client (refus, coupures, messages), changée en cours de
             # connexion (lot T5 bis) : lang dans la liste fermée ; tout compte, visiteurs compris ; n'agit pas sur le poste
             "set_lang",
-            # manipulation CW, mode A (laboratoire, branche exp/cw ; docs/exp-cw/cahier-des-charges.md) : OPÉRATEURS ;
+            # manipulation CW, mode A (étape 413 ; docs/exp-cw/cahier-des-charges.md) : OPÉRATEURS ;
             # cw_arm = prise d'émission NORMALE (mêmes refus que toggle, battements, TOT), micro FERMÉ, seule la tonalité
             # recréée par la station part ; fronts de la clé sur le canal « cw » ; cw_disarm (ou STOP) = retour RX
             "cw_arm", "cw_disarm")
@@ -117,7 +117,7 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "monitoring",                # monitoring inter-stations dans la page (0.164.0+, module monlink)
                      "diffusion",                 # diffusion en direct vers un serveur Icecast (0.189.0+, module diffusion)
                      "remote_console",            # lien vers openRemoteTRX Console sur le réseau (0.178.0+, opérateurs admin)
-                     "cw",                        # manipulation CW, mode A (branche exp/cw, [cw] enabled)
+                     "cw",                        # manipulation CW, mode A (étape 413, [cw] enabled)
                      "power")                     # allumage et extinction du poste à distance (0.222.0+, [power] enabled)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")

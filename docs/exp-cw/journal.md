@@ -163,3 +163,4 @@
 - 2026-11-28 (suite) : texte de l'exception de sécurité pour l'adoption revu avec l'utilisateur (cahier § 3) : mode
   jamais changé par la station, bouton « Passer en … », désarmement `cw_idle`, V2 par défaut ; TOT PAR REPRISE en V2
   (choix 1 de l'utilisateur : l'opérateur est conscient de ce qu'il fait). Tablette plus tard.
+- 2026-11-28 : BRANCHE ADOPTÉE dans `main` (étape 413, station 0.301.0, application 0.96.0) ; suite des travaux CW notée dans CLAUDE.md (« En attente »).

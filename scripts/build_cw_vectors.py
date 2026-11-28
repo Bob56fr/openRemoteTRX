@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Fabrique tests/protocol/cw_vectors.json (branche exp/cw) : paquets du canal cw attendus du client."""
+"""Fabrique tests/protocol/cw_vectors.json (étape 413) : paquets du canal cw attendus du client."""
 from __future__ import annotations
 
 import json

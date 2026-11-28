@@ -56,14 +56,14 @@ class RtcLink(
     private var pc: PeerConnection? = null
     private var dc: DataChannel? = null
     private var sc: DataChannel? = null
-    private var cwc: DataChannel? = null                          // manipulation CW (branche exp/cw) : vers la station seulement
+    private var cwc: DataChannel? = null                          // manipulation CW (étape 413) : vers la station seulement
     private var micSource: AudioSource? = null
     private var micTrack: AudioTrack? = null
     private var remoteTrack: AudioTrack? = null
     private var sink: AudioTrackSink? = null                       // waterfall audio : gardée d'une connexion à l'autre
     private var stereo: AudioTrackSink? = null                     // spatialisation (SpatialHub) : idem
     private var muted = false
-    private var ducked = false                       // CW armée (branche exp/cw) : son reçu atténué de 20 dB
+    private var ducked = false                       // CW armée (étape 413) : son reçu atténué de 20 dB
 
     init {
         PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context.applicationContext).createInitializationOptions())
@@ -183,7 +183,7 @@ class RtcLink(
             })
         }
 
-        // Manipulation CW (branche exp/cw) : non ordonné, sans renvoi (la station élimine les doublons de la fenêtre) ;
+        // Manipulation CW (étape 413) : non ordonné, sans renvoi (la station élimine les doublons de la fenêtre) ;
         // une station sans CW n'y lit rien
         cwc = peer.createDataChannel("cw", DataChannel.Init().apply { ordered = false; maxRetransmits = 0 })   // i18n-ok
 
@@ -239,7 +239,7 @@ class RtcLink(
 
     private fun rxVolume(): Double = if (ducked) DUCK_VOLUME else 1.0
 
-    /** CW armée (cahier exp/cw § 6) : son reçu atténué de 20 dB, jamais coupé ; le retour local reste à part. */
+    /** CW armée (cahier CW § 6) : son reçu atténué de 20 dB, jamais coupé ; le retour local reste à part. */
     fun setDucked(value: Boolean) {
         ducked = value
         SpatialHub.setDucked(value)

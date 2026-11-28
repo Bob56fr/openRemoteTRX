@@ -245,7 +245,7 @@ data class RigSpecSquelch(
     @SerialName("open_value") val openValue: String = "",
 )
 
-/** `hello.cw` (branche exp/cw) : mode du poste exigé par la manipulation CW et variante du PTT (`hang`, `hold`). */
+/** `hello.cw` (étape 413) : mode du poste exigé par la manipulation CW et variante du PTT (`hang`, `hold`). */
 @Serializable
 data class CwInfo(val mode: String = "", val variant: String = "")
 
@@ -466,7 +466,7 @@ data class Bye(val reason: String, val message: String) : ServerMessage
 data class PowerProgress(val step: String, val status: String, val detail: String, val ort: String,
                          val remainingS: Double?) : ServerMessage
 
-/** Manipulation CW (branche exp/cw, § 22) : `cw_state`, `cw_fault`, `cw_stats` de MA manipulation ; lus par logic/Cw. */
+/** Manipulation CW (étape 413, § 22) : `cw_state`, `cw_fault`, `cw_stats` de MA manipulation ; lus par logic/Cw. */
 data class CwMessage(val type: String, val raw: JsonObject) : ServerMessage
 
 /** Type inconnu de cette version de l'application : ignoré (une station plus récente peut en ajouter). */

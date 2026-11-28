@@ -95,7 +95,7 @@ class RigService : Service() {
 
     private fun now(): Long = SystemClock.elapsedRealtime()
 
-    // ------------------------------------------------------------------ manipulation CW (branche exp/cw)
+    // ------------------------------------------------------------------ manipulation CW (étape 413)
     private var cwTicker: Job? = null
 
     /** Type de réseau annoncé à la station pour les mesures du POC (liste fermée de la station). */
@@ -376,7 +376,7 @@ class RigService : Service() {
         VoiceHub.setBreizhRoute(state.breizh?.effectsOff == true)          // voix par Breizh : égaliseur et effets coupés
         val mine = state.ptt?.let { it.mine && it.transmitting } ?: false
         // Micro du casque : bip de prise quand le micro s'ouvre vraiment (casque en mode appel ~1 s plus tard, headsetStep).
-        // CW armée (branche exp/cw) : aucun bip aux pauses et reprises V2, il se mêlerait au retour local
+        // CW armée (étape 413) : aucun bip aux pauses et reprises V2, il se mêlerait au retour local
         if (mine != wasMine && !(mine && headsetMic) && !state.cw.armed) sounds.txBeep(mine)
         wasMine = mine
 

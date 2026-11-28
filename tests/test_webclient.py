@@ -55,7 +55,7 @@ def test_script_only_sends_commands_the_server_knows():
             | set(re.findall(r'cmd: "([a-z_]+)"', JS)) | set(re.findall(r'_selcallCommand\("([a-z_]+)"', JS)))
     # set_lang : la page change de langue HORS connexion (elle se recharge et annonce sa langue par /offer) ; seule
     # l'application change de langue pendant une connexion
-    # cw_arm / cw_disarm : la manipulation CW se fait SEULEMENT depuis l'application Android (branche exp/cw, décision
+    # cw_arm / cw_disarm : la manipulation CW se fait SEULEMENT depuis l'application Android (étape 413, décision
     # de l'utilisateur du 2026-11-26), jamais depuis la page
     page_never = {"set_lang", "cw_arm", "cw_disarm"}
     assert sent == set(COMMANDS) - page_never, (sent ^ (set(COMMANDS) - page_never))    # ni inconnue, ni oubliée

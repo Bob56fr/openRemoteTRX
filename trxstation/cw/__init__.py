@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Laboratoire CW (branche d'essai exp/cw, docs/exp-cw/cahier-des-charges.md).
+"""Laboratoire CW (étape 413, docs/exp-cw/cahier-des-charges.md).
 
 Lot CW-0 : calculs purs, sans réseau, sans poste, sans son réel.
 - `protocol` : validation des paquets du canal `cw` (§ 5.2) ;

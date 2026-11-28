@@ -273,7 +273,7 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("confirm", true) }
     }
 
-    /** Manipulation CW, mode A (branche exp/cw, fonction « cw », docs/protocole.md § 22) : prise d'émission NORMALE,
+    /** Manipulation CW, mode A (étape 413, fonction « cw », docs/protocole.md § 22) : prise d'émission NORMALE,
      *  micro fermé ; les fronts de la clé partent sur le canal « cw ». Champs absents = valeurs de la station. */
     data class CwArm(
         val wpm: Int? = null, val toneHz: Int? = null, val delayMs: Int? = null, val align: Boolean? = null,

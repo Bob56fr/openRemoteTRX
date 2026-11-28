@@ -86,6 +86,12 @@ intro = "<p>Die SWR-Kurve der Antenne, gestartet von der Webseite oder der App: 
 ou = "Menü 8.1."
 relu = "redemarrage"
 
+[sections.cw]
+titre = "CW-Tastung [cw]"
+intro = "<p>CW über den Touchscreen der Android-App tasten (Paddles oder Handtaste): die Station erzeugt selbst einen sauberen Ton, gesendet im Datenmodus, Funkgerät auf PKTUSB. Standardmäßig aus. Das Scharfschalten der CW ist eine normale Sendeanforderung (TOT, Herzschläge, Bänder, Bediener vor Ort); die Station ändert nie die Betriebsart des Funkgeräts, die CW-Seite bietet nur eine Schaltfläche « Auf PKTUSB umschalten ». Nie über die Webseite, Android Auto oder den Fahrmodus.</p>"
+ou = "Menü 8.1."
+relu = "redemarrage"
+
 [sections.power]
 titre = "Transceiver aus der Ferne ein- und ausschalten [power]"
 intro = "<p>Den Transceiver beim Verbinden eines Operators einschalten und ihn von der Webseite oder der App aus ausschalten (STOP 3 s gedrückt halten). Standardmäßig außer Betrieb. Nur für einen Transceiver, der dies über CAT erlaubt (Hamlib: „set / get Power Stat“) und dessen USB im ausgeschalteten Zustand versorgt bleibt. Die Station sendet niemals, um den Transceiver ein- oder auszuschalten.</p>"
@@ -580,6 +586,101 @@ role = "Maximale Sendedauer eines Messpunkts. Die tatsächliche Zeit wird bei de
 niveau = "expert"
 bornes = "0,5 bis 3 s."
 depuis = "0.90.0"
+
+# ---------------------------------------------------------------- cw
+
+[reglages."cw.enabled"]
+role = "true: die Station bietet den Bedienern der Android-App die CW-Tastung an (Funktion « cw »)."
+niveau = "courant"
+securite = "Das Scharfschalten der CW ist eine normale Sendeanforderung: dieselben Ablehnungen und Abschaltungen wie beim PTT."
+depuis = "0.301.0"
+
+[reglages."cw.modes"]
+role = "Angebotene Tastungsarten. Nur « A » existiert: von der Station erzeugter Ton im Datenmodus."
+niveau = "expert"
+bornes = "[\"A\"]."
+depuis = "0.301.0"
+
+[reglages."cw.data_mode"]
+role = "Für das Scharfschalten der CW verlangte Betriebsart (Hamlib-Betriebsart). Ist das Funkgerät in einer anderen Betriebsart, wird abgelehnt und die CW-Seite bietet « Auf … umschalten » an."
+niveau = "courant"
+bornes = "Eine Betriebsart aus <code>[rig] tx_modes</code> (CW aktiv)."
+securite = "Die Station ändert die Betriebsart nie von selbst."
+exemple = "<code>data_mode = \"PKTUSB\"</code>"
+depuis = "0.301.0"
+
+[reglages."cw.tone_hz"]
+role = "Frequenz des erzeugten Tons: der Träger liegt bei der angezeigten Frequenz plus diesem Wert."
+niveau = "courant"
+bornes = "300 bis 1200 Hz."
+depuis = "0.301.0"
+
+[reglages."cw.edge_ms"]
+role = "Anstiegs- und Abfallzeit des Tons (angehobener Kosinus): vermeidet Tastklicks."
+niveau = "expert"
+bornes = "3 bis 8 ms."
+depuis = "0.301.0"
+
+[reglages."cw.delay_ms"]
+role = "Wiedergabeverzögerung: die Station gibt die Tastung mit dieser Verzögerung wieder, um den Netzwerk-Jitter aufzufangen."
+niveau = "expert"
+bornes = "150 bis 500 ms, zwischen <code>delay_min_ms</code> und <code>delay_max_ms</code>."
+depuis = "0.301.0"
+
+[reglages."cw.adaptive"]
+role = "true: die Wiedergabeverzögerung passt sich zwischen zwei Sequenzen dem gemessenen Jitter an (innerhalb der Min-/Max-Grenzen)."
+niveau = "expert"
+depuis = "0.301.0"
+
+[reglages."cw.delay_min_ms"]
+role = "Kürzeste erlaubte Wiedergabeverzögerung (adaptiver Modus)."
+niveau = "expert"
+bornes = "150 bis 500 ms."
+depuis = "0.301.0"
+
+[reglages."cw.delay_max_ms"]
+role = "Längste erlaubte Wiedergabeverzögerung (adaptiver Modus)."
+niveau = "expert"
+bornes = "150 bis 500 ms."
+depuis = "0.301.0"
+
+[reglages."cw.lease_grace_ms"]
+role = "Spielraum der Freigabe: der Ton wird sofort abgeschaltet, wenn der Rest der Tastung nicht rechtzeitig ankommt, nach diesem Spielraum."
+niveau = "expert"
+bornes = "20 bis 200 ms."
+securite = "Eine unterbrochene Verbindung kann den Ton nie eingeschaltet lassen."
+depuis = "0.301.0"
+
+[reglages."cw.max_keydown_ms"]
+role = "Längster Dauerdruck: darüber hinaus wird der Ton abgeschaltet."
+niveau = "expert"
+bornes = "100 bis 5000 ms."
+depuis = "0.301.0"
+
+[reglages."cw.seq_gap_ms"]
+role = "Pause, die eine Tastsequenz beendet (Statistik, adaptive Verzögerung)."
+niveau = "expert"
+bornes = "500 bis 10000 ms."
+depuis = "0.301.0"
+
+[reglages."cw.ptt_variant"]
+role = "« hang »: das Funkgerät geht nach <code>hang_ms</code> Pause auf Empfang zurück und sendet beim nächsten Zeichen wieder (CW bleibt scharf); « hold »: PTT während des ganzen Scharfschaltens gehalten."
+niveau = "courant"
+bornes = "« hang » oder « hold »."
+securite = "Bei « hang » ist jede Wiederaufnahme eine normale Sendeanforderung (alle Ablehnungen erneut geprüft); der TOT zählt je Wiederaufnahme."
+depuis = "0.301.0"
+
+[reglages."cw.idle_disarm_s"]
+role = "Die CW wird nach dieser Zeit ohne Tastung von selbst entschärft."
+niveau = "expert"
+bornes = "2 bis 60 s."
+depuis = "0.301.0"
+
+[reglages."cw.hang_ms"]
+role = "Variante « hang »: Pause vor der Rückkehr auf Empfang."
+niveau = "expert"
+bornes = "200 bis 3000 ms."
+depuis = "0.301.0"
 
 # ---------------------------------------------------------------- freedv
 

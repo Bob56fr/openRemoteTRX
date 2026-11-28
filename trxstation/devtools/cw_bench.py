@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Banc du rejeu CW (lot CW-0 de la branche exp/cw) : tableau gigue x pertes, sans réseau ni poste.
+"""Banc du rejeu CW (lot CW-0 de la étape 413) : tableau gigue x pertes, sans réseau ni poste.
 
     python -m trxstation.devtools.cw_bench [--delay 300] [--wpm 20] [--seeds 5] [--adaptive]
 

@@ -13,7 +13,7 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 /*
- * Manipulation CW depuis l'écran tactile (branche d'essai exp/cw, docs/exp-cw/cahier-des-charges.md).
+ * Manipulation CW depuis l'écran tactile (étape 413, docs/exp-cw/cahier-des-charges.md).
  * Kotlin pur (compilé aussi par openRemoteTRX Lite) : le manipulateur, les paquets du canal « cw », le décodage de
  * SA propre manipulation et l'état montré. La station rejoue les fronts et ne garde la tonalité que tant que le bail
  * du client la couvre : l'application ne fait qu'aider, elle ne remplace jamais les coupures de la station.

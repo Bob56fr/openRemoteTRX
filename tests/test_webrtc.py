@@ -201,7 +201,7 @@ def test_web_client_page_is_served_with_strict_headers():
 
 
 def test_cw_channel_end_to_end():
-    """Branche exp/cw : armement par le canal de contrôle, fronts par le VRAI canal « cw » (aiortc, non ordonné, sans
+    """Manipulation CW (étape 413) : armement par le canal de contrôle, fronts par le VRAI canal « cw » (aiortc, non ordonné, sans
     renvoi), tonalité jouée au poste, micro jamais ouvert, STOP qui coupe ; un visiteur n'y a pas droit."""
     if not _available():
         return

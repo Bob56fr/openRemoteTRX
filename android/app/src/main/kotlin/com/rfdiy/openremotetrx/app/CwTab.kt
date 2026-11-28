@@ -57,7 +57,7 @@ import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.logic.Tr
 
 /*
- * Onglet CW (branche d'essai exp/cw, docs/exp-cw/cahier-des-charges.md § 7 ; maquette validée le 2026-11-26).
+ * Onglet CW (étape 413, docs/exp-cw/cahier-des-charges.md § 7 ; maquette validée le 2026-11-26).
  * Smartphone : STOP et « Quitter » TOUT EN HAUT, synthèse du poste, réglages, sélecteur 1 / 2 palettes et « Armer CW »,
  * manipulateur jusqu'en bas, AUCUNE barre d'onglets (les doigts la heurteraient). Tablette : synthèse en haut,
  * réglages et texte décodé au milieu, « Armer CW » et STOP à gauche des palettes, onglets sur le côté.
@@ -460,7 +460,7 @@ private fun Pad(paddle: Paddle, symbol: String, hint: String, armed: Boolean, mo
     }
 }
 
-/** Page CW (branche exp/cw) : ouverte en touchant le mode CW ou CWR quand la station propose la manipulation CW ;
+/** Page CW (étape 413) : ouverte en touchant le mode CW ou CWR quand la station propose la manipulation CW ;
  *  le poste ne change PAS de mode (la station recrée la tonalité en mode données à l'armement). Sinon (station sans
  *  CW, visiteur), le mode du poste change comme avant. */
 internal object CwPage {

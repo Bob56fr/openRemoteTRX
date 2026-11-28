@@ -10,7 +10,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Retour local de la manipulation CW (branche exp/cw, cahier § 6) : la tonalité suit la clé du TÉLÉPHONE, jamais le
+ * Retour local de la manipulation CW (étape 413, cahier § 6) : la tonalité suit la clé du TÉLÉPHONE, jamais le
  * son reçu de la station. Sortie à faible latence (AudioTrack PERFORMANCE_MODE_LOW_LATENCY, tampon minimal, blocs de
  * 2 ms), fronts de 5 ms sans clic. Ne sert qu'à l'oreille de l'opérateur : la station recrée sa propre tonalité.
  */

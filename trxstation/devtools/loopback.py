@@ -41,7 +41,7 @@ class Loopback:
         self._source, self._sink, self._limits = source, sink, limits
         self._access, self._listeners = access, listeners
         self._spectrum = spectrum            # objet du type SpectrumService (facultatif, essais du canal « spectrum »)
-        self._cw = cw                        # manipulation CW (branche exp/cw) : [cw] enabled et CwKeyer
+        self._cw = cw                        # manipulation CW (étape 413) : [cw] enabled et CwKeyer
         self.fake = FakeRigctld()
 
     async def __aenter__(self) -> "Loopback":
