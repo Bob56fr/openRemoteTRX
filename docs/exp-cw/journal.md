@@ -138,3 +138,7 @@
 - 2026-11-28 (suite) : banc du décodeur de sa manipulation (`CwDecoderBenchTest`, 18 poignets simulés, rapport et
   retex dans `banc-decodeur.md`) : lecture parfaite d'un poignet propre ; limites = seuils fixes de la vitesse réglée,
   espaces, prosignes absents. Pas de décodage de la réception (hors du cahier).
+- 2026-11-28 (suite) : essai à la main et à la paume RÉUSSI sur le S25 (utilisateur) ; tablette plus tard. Onglet
+  CW RETIRÉ (décision de l'utilisateur) : la page CW s'ouvre en touchant le mode CW ou CWR, sans changer le mode du
+  poste ; bouton « CW » ajouté aux modes quand la station propose la CW et que le poste ne l'annonce pas (station
+  factice sans Hamlib) ; vérifié sur le S25 (page ouverte, poste resté en PKTUSB, « Quitter » = onglet Station).

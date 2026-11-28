@@ -53,6 +53,7 @@ import com.rfdiy.openremotetrx.logic.CwSettings
 import com.rfdiy.openremotetrx.logic.CwUi
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.Paddle
+import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.logic.Tr
 
 /*
@@ -123,7 +124,7 @@ internal fun RigScope.CwScreen(modifier: Modifier, tablet: Boolean, onQuit: () -
             }
             Column(Modifier.width(84.dp).fillMaxHeight().background(Page.PANNEAU).padding(vertical = 10.dp),
                    verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (t in Tab.entries.filter { it != Tab.AMIS || friendsTab(rig) }) {
+                for (t in Tab.entries.filter { it != Tab.CW && (it != Tab.AMIS || friendsTab(rig)) }) {
                     val on = t == Tab.CW
                     Column(Modifier.fillMaxWidth().height(64.dp).background(if (on) Page.SELECTION else Color.Transparent)
                         .clickable { if (!on) onSection(t) },
@@ -445,4 +446,16 @@ private fun Pad(paddle: Paddle, symbol: String, hint: String, armed: Boolean, mo
             Text(hint, fontSize = 12.sp, color = Page.TEXTE_2)
         }
     }
+}
+
+/** Page CW (branche exp/cw) : ouverte en touchant le mode CW ou CWR quand la station propose la manipulation CW ;
+ *  le poste ne change PAS de mode (la station recrée la tonalité en mode données à l'armement). Sinon (station sans
+ *  CW, visiteur), le mode du poste change comme avant. */
+internal object CwPage {
+    fun opens(rig: RigState, mode: String): Boolean = rig.cw.offered && (mode == "CW" || mode == "CWR")   // i18n-ok
+
+    /** Modes montrés : ceux du poste, plus « CW » si la station propose la CW et que le poste ne l'annonce pas (la page
+     *  CW émet en mode données : seul accès à la page dans ce cas). */
+    fun modes(rig: RigState, declared: List<String>): List<String> =
+        if (rig.cw.offered && "CW" !in declared && "CWR" !in declared) declared + "CW" else declared   // i18n-ok
 }

@@ -127,7 +127,7 @@ internal class Debounce(private val ms: Long = 600) {
  * état de l'émission (celui de la station) et STOP. Pour émettre, revenir en portrait (PTT et « Émission autorisée »).
  */
 @Composable
-internal fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, modifier: Modifier) {
+internal fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, modifier: Modifier, onCw: () -> Unit = {}) {
     val rig = ui.rig
     val ptt = rig.ptt
     val radio = rig.state?.rig
@@ -140,9 +140,9 @@ internal fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, 
                 var modeMenu by remember { mutableStateOf(false) }
                 CompactChip(Radio.modeLabel(radio?.mode) + " ▾", onClick = { modeMenu = true }, enabled = canSet) // i18n-ok
                 DropdownMenu(expanded = modeMenu, onDismissRequest = { modeMenu = false }) {
-                    for (m in Radio.orderModes(rig.hello?.capabilities?.modes.orEmpty())) {
+                    for (m in Radio.orderModes(CwPage.modes(rig, rig.hello?.capabilities?.modes.orEmpty()))) {
                         DropdownMenuItem(text = { Text(Radio.modeLabel(m), fontWeight = if (m == radio?.mode) FontWeight.Bold else null) },
-                            onClick = { modeMenu = false; if (m != radio?.mode) RigHub.setMode(m) })
+                            onClick = { modeMenu = false; if (CwPage.opens(rig, m)) onCw() else if (m != radio?.mode) RigHub.setMode(m) })
                     }
                 }
             }

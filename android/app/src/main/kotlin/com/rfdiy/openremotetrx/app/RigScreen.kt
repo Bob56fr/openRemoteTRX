@@ -243,7 +243,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         return
     }
     if (landscape && !wide && HfScope.configured(hello) && rig.status != LinkStatus.DISCONNECTED) {
-        LandscapeScope(ui, canSet, onTune = { go(it) }, modifier)
+        LandscapeScope(ui, canSet, onTune = { go(it) }, modifier, onCw = { tab = Tab.CW })
         return
     }
 
@@ -306,9 +306,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     scope.RigDialogsHost()
 }
 
-/** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. */
+/** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. Page CW (branche exp/cw) :
+ *  jamais un onglet, ouverte par les modes CW / CWR ([CwPage.opens]). */
 internal fun phoneTabs(rig: RigState): List<Tab> =
-    Tab.entries.filter { (it != Tab.AMIS || friendsTab(rig)) && (it != Tab.CW || rig.cw.offered) }
+    Tab.entries.filter { it != Tab.CW && (it != Tab.AMIS || friendsTab(rig)) }
 
 /** Onglet « Amis » : station dans un groupe et fonction affichée (« Fonctionnalités mobiles », étape 300). */
 internal fun friendsTab(rig: RigState): Boolean =

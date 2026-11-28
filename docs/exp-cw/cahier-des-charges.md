@@ -136,6 +136,10 @@ Station -> client :
   EN BAS le manipulateur tactile avec, juste au-dessus, le SÉLECTEUR « 1 palette » (pioche) / « 2 palettes »
   (iambique A, B, simple levier) et « Armer CW » ; le PTT de l'application est remplacé par « Armer CW » dans cet
   onglet. Onglet présent seulement si `hello.features` contient `cw`.
+- ACCÈS PAR LES MODES (décision de l'utilisateur du 2026-11-28) : plus de bouton « CW » dans la barre d'onglets ni
+  dans le rail de la tablette ; la page CW s'ouvre en touchant le mode CW ou CWR (onglet Station, liste des modes du
+  paysage) quand `hello.features` contient `cw`, SANS changer le mode du poste ; station sans CW : le mode change
+  comme avant ; « Quitter » ramène à l'onglet Station.
 - SMARTPHONE (retour de l'utilisateur sur la maquette, même jour) : STOP et « Quitter » TOUT EN HAUT, au-dessus de
   la synthèse du poste, loin des doigts qui manipulent ; « Quitter » désarme la CW et ferme l'onglet ; PAS de barre
   d'onglets en bas (les doigts la heurteraient) : le manipulateur va jusqu'au bas de l'écran. TABLETTE validée telle

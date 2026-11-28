@@ -192,10 +192,6 @@ internal fun RigScope.TabletLayout(
                                 icon = { TabIcon(s, if (s == section) Page.MESURE else Page.TEXTE_2) },
                                 label = { Text(s.label) })
                         }
-                        if (rig.cw.offered) {                     // manipulation CW (branche exp/cw) : écran plein
-                            NavigationRailItem(selected = false, onClick = { tab = Tab.CW },
-                                icon = { TabIcon(Tab.CW, Page.TEXTE_2) }, label = { Text(Tab.CW.label) })
-                        }
                     }
                     Column(Modifier.weight(1f).fillMaxHeight()) {
                         if (expanded) TextButton(onClick = { expanded = false }, modifier = Modifier.align(Alignment.End)) { Text("▾ Replier") }

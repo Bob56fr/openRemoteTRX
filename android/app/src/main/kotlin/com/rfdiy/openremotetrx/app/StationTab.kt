@@ -278,11 +278,12 @@ internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
             }
             Panel {
             // Modes du poste (émission : seulement ceux de tx_modes s'ils sont imposés)
-            val modes = Radio.orderModes(hello?.capabilities?.modes.orEmpty())
+            val modes = Radio.orderModes(CwPage.modes(rig, hello?.capabilities?.modes.orEmpty()))
             if (modes.isNotEmpty()) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (mode in modes) {
-                        CompactChip(Radio.modeLabel(mode), onClick = { RigHub.setMode(mode) }, enabled = canSet, selected = mode == radio?.mode)
+                        CompactChip(Radio.modeLabel(mode), onClick = { if (CwPage.opens(rig, mode)) tab = Tab.CW else RigHub.setMode(mode) },
+                            enabled = canSet, selected = mode == radio?.mode)
                     }
                 }
                 if (hello?.txModes?.isNotEmpty() == true) {
