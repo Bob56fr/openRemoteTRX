@@ -126,3 +126,10 @@
   compte par reprise ; un QSY redevient possible pendant la pause (la reprise revérifie mode, porteuse et bandes) ;
   l'armement V2 émet ~600 ms sans son avant la première pause (aucune puissance en mode données sans audio).
   Prochain : vrai téléphone (S25) et tablette (rejet de la paume à régler), puis CW-3 sur l'IC-7300MK2, V1 puis V2.
+
+- 2026-11-28 : fusion de `main` (15 commits ; conflits d'ajouts seulement ; la CW hérite de la vérification du décalage
+  relais par `key_without_audio`). S25 contre la station factice V2 ouverte au réseau local : onglet CW refait
+  (fréquence seule sur sa ligne, palettes ~600 px), badge vert « RX · CW EN PAUSE » vu, quatre pauses / reprises
+  (`cw_hang`), points 60,000 ms et trait 180,000 ms entiers après chaque reprise, -34 dB hors de ±150 Hz, STOP pendant
+  la pause = CW désarmée « bouton STOP ». Détails à reprendre : texte « (votre manipulation décodée) » coupé, « + » de
+  la vitesse collé au chiffre. Restent : rejet de la paume, tablette, CW-3 sur l'IC-7300MK2.
