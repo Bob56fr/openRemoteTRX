@@ -142,3 +142,12 @@
   CW RETIRÉ (décision de l'utilisateur) : la page CW s'ouvre en touchant le mode CW ou CWR, sans changer le mode du
   poste ; bouton « CW » ajouté aux modes quand la station propose la CW et que le poste ne l'annonce pas (station
   factice sans Hamlib) ; vérifié sur le S25 (page ouverte, poste resté en PKTUSB, « Quitter » = onglet Station).
+- 2026-11-28 (suite) : CW-3 sur l'IC-7300MK2 (minix-bzh, station de la branche lancée par son superviseur en mode
+  géré dans `~/cw-essai`, station installée arrêtée ; charge fictive, 10 % de puissance, 7,030 MHz, S25 en Wi-Fi).
+  Premier armement REFUSÉ `cw_mode` (poste en USB : la station ne change jamais le mode) ; passage du poste en CW
+  puis PKTUSB = « poste utilisé sur place », main reprise (ORT-5007). V1 : armée 13:44:26, PTT tenu 47 s, puissance
+  ~0,11 à chaque élément et 0 entre eux, TOS 1,0, désarmée seule `cw_idle`, signes NETS au second récepteur ; ALC
+  souvent 0,9 à 1,0 (USB MOD Level fort pour une tonalité pure, sans claquement entendu). V2 : cinq pauses / reprises
+  `cw_hang` en 14 s, désarmée `cw_idle`, aucune autre coupure. 4G non faite (essai court voulu). À faire : bouton
+  « Passer en PKTUSB » dans la page CW (commande de mode de l'opérateur, jamais automatique), choix de la variante
+  par défaut.
