@@ -1,0 +1,14 @@
+{
+  "menu": "menu {number} « {label} »",
+  "code": "Code :",
+  "note": "Cette page est servie à la place de la page demandée. Elle ne permet aucune commande et s'effacera d'elle-même quand le problème sera réglé.",
+  "safe_mode.title": "Station mise en sécurité",
+  "safe_mode.text": "Le superviseur a mis cette station en sécurité après des pannes répétées : le poste est en réception et l'accès à distance est coupé. La page de pilotage n'est donc pas servie.",
+  "safe_mode.what": "Sur la station, dans openRemoteTRX Console : cherchez la cause ({m_diagnostic}, {m_journal}), puis {m_clear_safe_mode}.",
+  "console_off.title": "Console Web désactivée",
+  "console_off.text": "openRemoteTRX Console n'est pas ouverte sur le réseau pour cette station.",
+  "console_off.what": "Pour l'ouvrir : sur la station, dans openRemoteTRX Console, {m_remote_console} (compte opérateur administrateur).",
+  "no_account.title": "Aucun compte sur cette station",
+  "no_account.text": "La station tourne, mais aucun compte opérateur n'a été créé : la page de pilotage ne peut pas être servie.",
+  "no_account.what": "Sur la station, dans openRemoteTRX Console : {m_operators}, puis redémarrez la station ({m_stop} puis {m_start})."
+}

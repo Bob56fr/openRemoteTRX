@@ -48,3 +48,11 @@
    yourself (choice 10). On their side, they get an alert on their phone if your station stops giving
    news. **Away from your station**, everything can also be done in the web page, “Monitoring” section: button
    “Get help: I have a code”, comparison of the 6 digits, choice of what is sent, answer to requests, end.
+5. **Showing your screen to the person helping you** (shared screen, menu **6.7**, nothing to enable, works even
+   before the station is configured): in the text console (terminal or SSH, Debian or Raspberry Pi), choice 1. The
+   console shows a 10-character code: read it out, then press Enter. The person helping you opens menu 6.7, choice 2
+   (on their PC, Windows included) and types the code: they see your console live, encrypted end to end through the
+   rf-diy.com relay. They **cannot type anything**: you type what they tell you (by phone for example). **Ctrl+]**
+   stops sharing (your console goes on); quitting the console stops everything; 2 hours at most. Also from the command
+   line: `trx-console --partage` (you) and `trx-console --voir CODE` (them). Their window must be at least as large as
+   yours (their window title tells them).

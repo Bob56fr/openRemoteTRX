@@ -48,3 +48,11 @@
    tú mismo (opción 10). Por su parte, recibe una alerta en su teléfono si tu estación deja de dar
    noticias. **Lejos de tu estación**, todo se hace también en la página web, sección «Monitorización»: botón
    «Recibir ayuda: tengo un código», comparación de las 6 cifras, elección de lo que se envía, respuesta a las peticiones, fin.
+5. **Mostrar tu pantalla a la persona que te ayuda** (pantalla compartida, menú **6.7**, nada que activar, funciona
+   incluso antes de configurar la estación): en la consola de texto (terminal o SSH, Debian o Raspberry Pi), opción 1.
+   La consola muestra un código de 10 caracteres: díctalo y pulsa Intro. La persona que te ayuda abre el menú 6.7,
+   opción 2 (en su PC, Windows incluido) y escribe el código: ve tu consola en directo, cifrada de extremo a extremo
+   por el relé de rf-diy.com. **No puede escribir nada**: eres tú quien escribe lo que te dice (por teléfono, por
+   ejemplo). **Ctrl+]** detiene la compartición (tu consola sigue); salir de la consola lo detiene todo; 2 horas como
+   máximo. También en línea de órdenes: `trx-console --partage` (tú) y `trx-console --voir CÓDIGO` (ella). Su ventana
+   debe ser al menos tan grande como la tuya (el título de su ventana se lo indica).

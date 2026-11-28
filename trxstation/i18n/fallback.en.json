@@ -1,0 +1,14 @@
+{
+  "menu": "menu {number} “{label}”",
+  "code": "Code:",
+  "note": "This page is served instead of the requested page. It allows no command and will disappear by itself once the problem is solved.",
+  "safe_mode.title": "Station in safety lockout",
+  "safe_mode.text": "The supervisor put this station in safety lockout after repeated failures: the radio is receiving and remote access is cut off. The control page is therefore not served.",
+  "safe_mode.what": "On the station, in openRemoteTRX Console: look for the cause ({m_diagnostic}, {m_journal}), then {m_clear_safe_mode}.",
+  "console_off.title": "Web console disabled",
+  "console_off.text": "openRemoteTRX Console is not open on the network for this station.",
+  "console_off.what": "To open it: on the station, in openRemoteTRX Console, {m_remote_console} (administrator operator account).",
+  "no_account.title": "No account on this station",
+  "no_account.text": "The station is running, but no operator account has been created: the control page cannot be served.",
+  "no_account.what": "On the station, in openRemoteTRX Console: {m_operators}, then restart the station ({m_stop} then {m_start})."
+}

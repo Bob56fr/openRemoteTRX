@@ -1,0 +1,481 @@
+{
+ "schema": 1,
+ "change": [
+  {
+   "date": "2026-11-28",
+   "version": "0.300.0",
+   "type": "nouveaute",
+   "postes": [
+    "3094"
+   ],
+   "fr": "Squelch étalonné d'origine pour l'IC-7300MK2 : le repère et la valeur (S5,4) suivent l'afficheur sans passer par le menu 2.10 ; application 0.95.1 : graduations du S-mètre à leur place (S1 décalé, trait pour S0).",
+   "en": "Squelch calibrated out of the box for the IC-7300MK2: the marker and value (S5.4) follow the display without menu 2.10; app 0.95.1: S-meter graduations in their place (S1 shifted, tick for S0).",
+   "de": "Squelch für den IC-7300MK2 ab Werk kalibriert: Markierung und Wert (S5,4) folgen der Anzeige ohne Menü 2.10; App 0.95.1: Teilstriche des S-Meters an ihrem Platz (S1 verschoben, Strich für S0).",
+   "es": "Squelch calibrado de origen para el IC-7300MK2: la marca y el valor (S5,4) siguen la pantalla sin el menú 2.10; aplicación 0.95.1: graduaciones del S-meter en su sitio (S1 desplazado, trazo para S0)."
+  },
+  {
+   "date": "2026-11-28",
+   "version": "0.299.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Menu 2.10 « Étalonner le squelch » : le repère du squelch au-dessus du S-mètre et sa valeur (S5,4) suivent l'afficheur du poste, dans la page et l'application ; export à envoyer au développeur.",
+   "en": "Menu 2.10 “Calibrate the squelch”: the squelch marker above the S-meter and its value (S5.4) follow the rig's display, in the page and the app; export to send to the developer.",
+   "de": "Menü 2.10 „Squelch kalibrieren“: Die Squelch-Markierung über dem S-Meter und ihr Wert (S5,4) folgen der Anzeige des Geräts, in Seite und App; Export für den Entwickler.",
+   "es": "Menú 2.10 «Calibrar el squelch»: la marca del squelch sobre el S-meter y su valor (S5,4) siguen la pantalla del equipo, en la página y la aplicación; exportación para el desarrollador."
+  },
+  {
+   "date": "2026-11-28",
+   "version": "0.298.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Menu 7.4, choix 2 : tickets GitHub ouverts et fermés de votre poste ; les formulaires de tickets ont une liste des postes avec leur numéro Hamlib.",
+   "en": "Menu 7.4, choice 2: open and closed GitHub issues for your rig; the issue forms have a list of rigs with their Hamlib number.",
+   "de": "Menü 7.4, Auswahl 2: offene und geschlossene GitHub-Tickets Ihres Geräts; die Ticketformulare haben eine Geräteliste mit Hamlib-Nummer.",
+   "es": "Menú 7.4, opción 2: tickets de GitHub abiertos y cerrados de su equipo; los formularios de tickets tienen una lista de equipos con su número Hamlib."
+  },
+  {
+   "date": "2026-11-28",
+   "version": "0.297.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Les changements pour votre poste se voient AVANT la mise à jour : menu 7.1 et lignes « à venir » du menu 7.4.",
+   "en": "Changes for your rig are shown BEFORE the update: menu 7.1 and “coming” lines in menu 7.4.",
+   "de": "Die Änderungen für Ihr Gerät erscheinen VOR der Aktualisierung: Menü 7.1 und Zeilen „kommt“ in Menü 7.4.",
+   "es": "Los cambios para su equipo se ven ANTES de la actualización: menú 7.1 y líneas «próximo» del menú 7.4."
+  },
+  {
+   "date": "2026-11-28",
+   "version": "0.296.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Menu 7.4 « Changements pour mon poste » : les derniers correctifs et nouveautés qui touchent votre poste, avec la date et la version.",
+   "en": "Menu 7.4 “Changes for my rig”: the latest fixes and new features that concern your rig, with the date and the version.",
+   "de": "Menü 7.4 „Änderungen für mein Gerät“: die letzten Korrekturen und Neuerungen, die Ihr Gerät betreffen, mit Datum und Version.",
+   "es": "Menú 7.4 «Cambios para mi equipo»: las últimas correcciones y novedades que afectan a su equipo, con la fecha y la versión."
+  },
+  {
+   "date": "2026-11-28",
+   "version": "0.296.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Nouvelle installation : la Console Web est en service tout de suite (premier compte opérateur administrateur) ; menu 4.6 pour l'arrêter.",
+   "en": "New installation: the Web Console is in service right away (first operator account as administrator); menu 4.6 to stop it.",
+   "de": "Neue Installation: Die Web-Konsole ist sofort in Betrieb (erstes Operator-Konto als Administrator); Menü 4.6 zum Abschalten.",
+   "es": "Instalación nueva: la consola web está en servicio enseguida (primera cuenta de operador como administradora); menú 4.6 para detenerla."
+  },
+  {
+   "date": "2026-11-28",
+   "version": "0.295.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Console Web : le menu 1.4 « Réactiver la station » clignote en rouge pendant une mise en sécurité ; menus 2.1, 4.4 et 4.6 renommés.",
+   "en": "Web Console: menu 1.4 “Reactivate the station” blinks red during a safety lockout; menus 2.1, 4.4 and 4.6 renamed.",
+   "de": "Web-Konsole: Menü 1.4 „Station wieder in Betrieb nehmen“ blinkt rot während einer Sicherheitsabschaltung; Menüs 2.1, 4.4 und 4.6 umbenannt.",
+   "es": "Consola web: el menú 1.4 «Reactivar la estación» parpadea en rojo durante un bloqueo de seguridad; menús 2.1, 4.4 y 4.6 renombrados."
+  },
+  {
+   "date": "2026-11-27",
+   "version": "0.294.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Pages d'explication au lieu du silence : station mise en sécurité, Console Web désactivée, aucun compte créé.",
+   "en": "Explanation pages instead of silence: station in safety lockout, Web Console disabled, no account created.",
+   "de": "Erklärseiten statt Stille: Station in Sicherheitsabschaltung, Web-Konsole deaktiviert, kein Konto angelegt.",
+   "es": "Páginas de explicación en lugar del silencio: estación en bloqueo de seguridad, consola web desactivada, ninguna cuenta creada."
+  },
+  {
+   "date": "2026-11-27",
+   "version": "0.293.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "La mise en sécurité se voit en tête de la console (cadre rouge avec la cause) et dans la Console Web (pastille rouge).",
+   "en": "A safety lockout is shown at the top of the console (red frame with the cause) and in the Web Console (red badge).",
+   "de": "Eine Sicherheitsabschaltung erscheint oben in der Konsole (roter Rahmen mit Ursache) und in der Web-Konsole (rotes Symbol).",
+   "es": "El bloqueo de seguridad se ve en la cabecera de la consola (marco rojo con la causa) y en la consola web (pastilla roja)."
+  },
+  {
+   "date": "2026-11-26",
+   "version": "0.292.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Écran partagé (menu 6.7) : montrer sa console à un aidant, en lecture seule, avec un code dicté.",
+   "en": "Shared screen (menu 6.7): show your console to a helper, read-only, with a spoken code.",
+   "de": "Geteilter Bildschirm (Menü 6.7): Ihre Konsole einem Helfer zeigen, nur lesend, mit einem diktierten Code.",
+   "es": "Pantalla compartida (menú 6.7): mostrar la consola a quien ayuda, solo lectura, con un código dictado."
+  },
+  {
+   "date": "2026-11-26",
+   "version": "0.291.0",
+   "type": "correctif",
+   "postes": [
+    "yaesu"
+   ],
+   "fr": "Squelch lu sur le poste (voyant SQL) et changement de mode sans toucher à la largeur de filtre choisie.",
+   "en": "Squelch read from the rig (SQL indicator) and mode changes no longer touch the chosen filter width.",
+   "de": "Rauschsperre vom Gerät gelesen (SQL-Anzeige); ein Moduswechsel ändert die gewählte Filterbreite nicht mehr.",
+   "es": "Squelch leído en el equipo (indicador SQL) y el cambio de modo ya no toca el ancho de filtro elegido."
+  },
+  {
+   "date": "2026-11-26",
+   "version": "0.291.0",
+   "type": "correctif",
+   "postes": [
+    "3085"
+   ],
+   "fr": "TOT du poste lu au bon menu (00 43) : l'avertissement « TOT de votre poste désactivé » est juste ; fiche sans coupleur interne.",
+   "en": "Rig TOT read from the right menu (00 43): the “TOT of your rig disabled” warning is correct; sheet without internal tuner.",
+   "de": "TOT des Geräts aus dem richtigen Menü (00 43) gelesen: die Warnung „TOT Ihres Geräts deaktiviert“ stimmt; Datenblatt ohne internen Tuner.",
+   "es": "TOT del equipo leído en el menú correcto (00 43): el aviso «TOT de su equipo desactivado» es correcto; ficha sin acoplador interno."
+  },
+  {
+   "date": "2026-11-26",
+   "version": "0.290.0",
+   "type": "securite",
+   "postes": [
+    "*"
+   ],
+   "fr": "Décalage relais (DUP+ / DUP-) relu avant et pendant l'émission : la bande est vérifiée sur la vraie fréquence d'émission.",
+   "en": "Repeater shift (DUP+ / DUP-) read before and during transmission: the band is checked on the real transmit frequency.",
+   "de": "Relaisablage (DUP+ / DUP-) vor und während der Sendung gelesen: das Band wird auf der echten Sendefrequenz geprüft.",
+   "es": "Desplazamiento de repetidor (DUP+ / DUP-) leído antes y durante la emisión: la banda se comprueba en la frecuencia real de emisión."
+  },
+  {
+   "date": "2026-11-26",
+   "version": "0.290.0",
+   "type": "securite",
+   "postes": [
+    "*"
+   ],
+   "fr": "Poste rallumé à la main après une extinction par la station : l'ordre de retour en réception (T 0) passe de nouveau.",
+   "en": "Rig switched back on by hand after a shutdown by the station: the return-to-receive command (T 0) works again.",
+   "de": "Gerät nach Abschaltung durch die Station von Hand wieder eingeschaltet: der Befehl zum Zurückschalten auf Empfang (T 0) wirkt wieder.",
+   "es": "Equipo encendido a mano tras un apagado por la estación: la orden de vuelta a recepción (T 0) vuelve a funcionar."
+  },
+  {
+   "date": "2026-11-26",
+   "version": "0.289.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Fiche technique du poste affichée au menu 2.5 ; ligne « Squelch » au tableau de bord 1.3.",
+   "en": "Rig technical sheet shown in menu 2.5; “Squelch” line in dashboard 1.3.",
+   "de": "Technisches Datenblatt des Geräts in Menü 2.5; Zeile „Rauschsperre“ im Dashboard 1.3.",
+   "es": "Ficha técnica del equipo en el menú 2.5; línea «Squelch» en el panel 1.3."
+  },
+  {
+   "date": "2026-11-25",
+   "version": "0.287.0",
+   "type": "securite",
+   "postes": [
+    "1040",
+    "1044"
+   ],
+   "fr": "Émission par le récepteur SUB : la bande est vérifiée sur la fréquence du côté qui émet ; changement de côté pendant l'émission = coupure.",
+   "en": "Transmitting on the SUB receiver: the band is checked on the frequency of the transmitting side; side changed while transmitting = cut.",
+   "de": "Senden über den SUB-Empfänger: das Band wird auf der Frequenz der sendenden Seite geprüft; Seitenwechsel während der Sendung = Abbruch.",
+   "es": "Emisión por el receptor SUB: la banda se comprueba en la frecuencia del lado que emite; cambio de lado durante la emisión = corte."
+  },
+  {
+   "date": "2026-11-25",
+   "version": "0.286.0",
+   "type": "nouveaute",
+   "postes": [
+    "icom",
+    "yaesu"
+   ],
+   "fr": "Voyant « SQL » d'après le squelch réel du poste (page et application).",
+   "en": "“SQL” indicator from the rig's real squelch (page and app).",
+   "de": "„SQL“-Anzeige nach der echten Rauschsperre des Geräts (Seite und App).",
+   "es": "Indicador «SQL» según el squelch real del equipo (página y aplicación)."
+  },
+  {
+   "date": "2026-11-25",
+   "version": "0.285.0",
+   "type": "nouveaute",
+   "postes": [
+    "icom"
+   ],
+   "fr": "Appui long sur FIL : largeur des trois filtres réglable par curseurs (second port CI-V).",
+   "en": "Long press on FIL: width of the three filters adjustable with sliders (second CI-V port).",
+   "de": "Langes Drücken auf FIL: Breite der drei Filter per Schieberegler einstellbar (zweiter CI-V-Port).",
+   "es": "Pulsación larga en FIL: ancho de los tres filtros ajustable con cursores (segundo puerto CI-V)."
+  },
+  {
+   "date": "2026-11-25",
+   "version": "0.285.0",
+   "type": "nouveaute",
+   "postes": [
+    "1042"
+   ],
+   "fr": "Bouton FIL avec la largeur relue sur le poste ; appui bref = 1,8 / 2,4 / 2,8 / 3,0 / 3,5 / 4,0 kHz en boucle.",
+   "en": "FIL button with the width read from the rig; short press = 1.8 / 2.4 / 2.8 / 3.0 / 3.5 / 4.0 kHz in a loop.",
+   "de": "FIL-Taste mit der vom Gerät gelesenen Breite; kurzes Drücken = 1,8 / 2,4 / 2,8 / 3,0 / 3,5 / 4,0 kHz im Kreis.",
+   "es": "Botón FIL con el ancho leído en el equipo; pulsación breve = 1,8 / 2,4 / 2,8 / 3,0 / 3,5 / 4,0 kHz en bucle."
+  },
+  {
+   "date": "2026-11-25",
+   "version": "0.284.0",
+   "type": "correctif",
+   "postes": [
+    "3073",
+    "3094",
+    "3085",
+    "1042",
+    "1040",
+    "1044"
+   ],
+   "fr": "Plus de fausse alerte « poste utilisé sur place » après un changement de fréquence depuis la page (délais du poste pris en compte).",
+   "en": "No more false “rig used on site” alert after a frequency change from the page (rig delays taken into account).",
+   "de": "Kein falscher Alarm „Gerät vor Ort benutzt“ mehr nach einem Frequenzwechsel über die Seite (Verzögerungen des Geräts berücksichtigt).",
+   "es": "Sin falsa alerta «equipo usado en el lugar» tras un cambio de frecuencia desde la página (retardos del equipo tenidos en cuenta)."
+  },
+  {
+   "date": "2026-11-25",
+   "version": "0.283.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "STOP maintenu : compte à rebours 3-2-1 à l'écran ; nom de la station = lien vers la Console Web (administrateurs).",
+   "en": "STOP held: 3-2-1 countdown on screen; station name = link to the Web Console (administrators).",
+   "de": "STOP gehalten: Countdown 3-2-1 auf dem Bildschirm; Stationsname = Link zur Web-Konsole (Administratoren).",
+   "es": "STOP mantenido: cuenta atrás 3-2-1 en pantalla; nombre de la estación = enlace a la consola web (administradores)."
+  },
+  {
+   "date": "2026-11-24",
+   "version": "0.279.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Ligne « Ports USB » du tableau de bord et du diagnostic : bus USB saturé ou SDR sur le même hub que le poste.",
+   "en": "“USB ports” line in the dashboard and diagnostic: saturated USB bus or SDR on the same hub as the rig.",
+   "de": "Zeile „USB-Ports“ im Dashboard und in der Diagnose: überlasteter USB-Bus oder SDR am selben Hub wie das Gerät.",
+   "es": "Línea «Puertos USB» del panel y del diagnóstico: bus USB saturado o SDR en el mismo hub que el equipo."
+  },
+  {
+   "date": "2026-11-24",
+   "version": "0.278.0",
+   "type": "correctif",
+   "postes": [
+    "*"
+   ],
+   "fr": "Console Web : poste éteint ou débranché = « POSTE : PAS DE NOUVELLES », plus jamais « RÉCEPTION ».",
+   "en": "Web Console: rig off or unplugged = “RIG: NO NEWS”, never “RECEIVE” any more.",
+   "de": "Web-Konsole: Gerät aus oder abgesteckt = „GERÄT: KEINE NACHRICHT“, nie mehr „EMPFANG“.",
+   "es": "Consola web: equipo apagado o desconectado = «EQUIPO: SIN NOTICIAS», nunca más «RECEPCIÓN»."
+  },
+  {
+   "date": "2026-11-23",
+   "version": "0.277.0",
+   "type": "correctif",
+   "postes": [
+    "*"
+   ],
+   "fr": "Mise à jour (menu 7.3) possible quand le poste ne répond pas, après confirmation.",
+   "en": "Update (menu 7.3) possible when the rig does not answer, after confirmation.",
+   "de": "Aktualisierung (Menü 7.3) möglich, wenn das Gerät nicht antwortet, nach Bestätigung.",
+   "es": "Actualización (menú 7.3) posible cuando el equipo no responde, tras confirmación."
+  },
+  {
+   "date": "2026-11-23",
+   "version": "0.275.0",
+   "type": "correctif",
+   "postes": [
+    "*"
+   ],
+   "fr": "Alerte de chauffe seulement après 60 s au-dessus du seuil, avec les programmes en cause.",
+   "en": "Overheating alert only after 60 s above the threshold, with the programs involved.",
+   "de": "Überhitzungsalarm erst nach 60 s über der Schwelle, mit den beteiligten Programmen.",
+   "es": "Alerta de calentamiento solo tras 60 s por encima del umbral, con los programas implicados."
+  },
+  {
+   "date": "2026-11-20",
+   "version": "0.245.0",
+   "type": "securite",
+   "postes": [
+    "icom"
+   ],
+   "fr": "Avertissement à la connexion si le TOT du poste est sur OFF (une fois par jour).",
+   "en": "Warning at connection if the rig's TOT is set to OFF (once a day).",
+   "de": "Warnung bei der Verbindung, wenn der TOT des Geräts auf OFF steht (einmal pro Tag).",
+   "es": "Aviso al conectar si el TOT del equipo está en OFF (una vez al día)."
+  },
+  {
+   "date": "2026-11-20",
+   "version": "0.234.0",
+   "type": "correctif",
+   "postes": [
+    "*"
+   ],
+   "fr": "Poste débranché de l'USB : la passerelle figée est relancée seule, sans mise en sécurité.",
+   "en": "Rig unplugged from USB: a frozen gateway is restarted on its own, without a safety lockout.",
+   "de": "Gerät vom USB getrennt: ein eingefrorenes Gateway wird selbst neu gestartet, ohne Sicherheitsabschaltung.",
+   "es": "Equipo desconectado del USB: la pasarela bloqueada se reinicia sola, sin bloqueo de seguridad."
+  },
+  {
+   "date": "2026-11-19",
+   "version": "0.227.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Gain du son reçu réglable (menu 2.9) avec limiteur contre la saturation.",
+   "en": "Adjustable received audio gain (menu 2.9) with a limiter against clipping.",
+   "de": "Einstellbare Verstärkung des Empfangstons (Menü 2.9) mit Begrenzer gegen Übersteuerung.",
+   "es": "Ganancia del sonido recibido ajustable (menú 2.9) con limitador contra la saturación."
+  },
+  {
+   "date": "2026-11-19",
+   "version": "0.224.0",
+   "type": "correctif",
+   "postes": [
+    "3094"
+   ],
+   "fr": "Poste éteint par la station puis rallumé à distance sans erreur (le poste refuse la lecture quand il est éteint).",
+   "en": "Rig switched off by the station then back on remotely without error (the rig refuses the reading when off).",
+   "de": "Gerät von der Station ausgeschaltet und aus der Ferne ohne Fehler wieder eingeschaltet (das Gerät verweigert ausgeschaltet die Abfrage).",
+   "es": "Equipo apagado por la estación y encendido a distancia sin error (el equipo rechaza la lectura cuando está apagado)."
+  },
+  {
+   "date": "2026-11-19",
+   "version": "0.222.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Allumage et extinction du poste à distance (menu 2.8, hors service par défaut).",
+   "en": "Remote power on and off of the rig (menu 2.8, off by default).",
+   "de": "Gerät aus der Ferne ein- und ausschalten (Menü 2.8, standardmäßig aus).",
+   "es": "Encendido y apagado del equipo a distancia (menú 2.8, desactivado por defecto)."
+  },
+  {
+   "date": "2026-11-19",
+   "version": "0.221.0",
+   "type": "correctif",
+   "postes": [
+    "1042"
+   ],
+   "fr": "Qualification complète sur charge fictive ; lectures lentes du poste attendues sans couper la liaison.",
+   "en": "Complete qualification on a dummy load; slow rig readings waited for without dropping the link.",
+   "de": "Vollständige Qualifizierung an der Kunstantenne; langsame Abfragen des Geräts werden abgewartet, ohne die Verbindung zu trennen.",
+   "es": "Cualificación completa en carga artificial; lecturas lentas del equipo esperadas sin cortar el enlace."
+  },
+  {
+   "date": "2026-11-19",
+   "version": "0.220.0",
+   "type": "securite",
+   "postes": [
+    "*"
+   ],
+   "fr": "Carte son du poste absente : émission refusée, mais la page reste joignable ; câble retiré pendant l'émission = coupure.",
+   "en": "Rig sound card missing: transmission refused but the page stays reachable; cable pulled while transmitting = cut.",
+   "de": "Soundkarte des Geräts fehlt: Senden verweigert, die Seite bleibt erreichbar; Kabel während der Sendung gezogen = Abbruch.",
+   "es": "Tarjeta de sonido del equipo ausente: emisión rechazada pero la página sigue accesible; cable retirado durante la emisión = corte."
+  },
+  {
+   "date": "2026-11-18",
+   "version": "0.214.0",
+   "type": "nouveaute",
+   "postes": [
+    "icom"
+   ],
+   "fr": "Avis à la connexion si DATA MOD du poste est sur MIC (la voix de l'USB ne passerait pas).",
+   "en": "Notice at connection if the rig's DATA MOD is set to MIC (USB voice would not go through).",
+   "de": "Hinweis bei der Verbindung, wenn DATA MOD des Geräts auf MIC steht (USB-Sprache käme nicht durch).",
+   "es": "Aviso al conectar si DATA MOD del equipo está en MIC (la voz por USB no pasaría)."
+  },
+  {
+   "date": "2026-11-18",
+   "version": "0.212.0",
+   "type": "securite",
+   "postes": [
+    "*"
+   ],
+   "fr": "TOS élevé : alerte à celui qui émet (jamais de coupure).",
+   "en": "High SWR: alert to the person transmitting (never a cut).",
+   "de": "Hohes SWR: Alarm an den Sendenden (nie ein Abbruch).",
+   "es": "ROE elevada: alerta a quien emite (nunca un corte)."
+  },
+  {
+   "date": "2026-11-18",
+   "version": "0.211.0",
+   "type": "correctif",
+   "postes": [
+    "3073",
+    "3094"
+   ],
+   "fr": "Curseur NB de la page : dix crans tous acceptés par le poste.",
+   "en": "Page NB slider: ten steps, all accepted by the rig.",
+   "de": "NB-Schieberegler der Seite: zehn Stufen, alle vom Gerät angenommen.",
+   "es": "Cursor NB de la página: diez pasos, todos aceptados por el equipo."
+  },
+  {
+   "date": "2026-11-18",
+   "version": "0.210.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Avertissement si le coupleur d'antenne est mal réglé à la connexion.",
+   "en": "Warning at connection if the antenna tuner is badly set.",
+   "de": "Warnung bei der Verbindung, wenn der Antennentuner falsch eingestellt ist.",
+   "es": "Aviso al conectar si el acoplador de antena está mal ajustado."
+  },
+  {
+   "date": "2026-11-18",
+   "version": "0.208.0",
+   "type": "securite",
+   "postes": [
+    "*"
+   ],
+   "fr": "VOX du poste coupé à la connexion d'un opérateur ; la station ne le remet jamais en marche.",
+   "en": "Rig VOX switched off when an operator connects; the station never switches it back on.",
+   "de": "VOX des Geräts beim Verbinden eines Operators ausgeschaltet; die Station schaltet ihn nie wieder ein.",
+   "es": "VOX del equipo apagado al conectarse un operador; la estación nunca lo vuelve a encender."
+  },
+  {
+   "date": "2026-11-16",
+   "version": "0.153.0",
+   "type": "correctif",
+   "postes": [
+    "1042"
+   ],
+   "fr": "S-mètre fluide : la lecture lente du compresseur est abandonnée au lieu de couper la liaison.",
+   "en": "Smooth S-meter: the slow compressor reading is dropped instead of cutting the link.",
+   "de": "Flüssiges S-Meter: die langsame Abfrage des Kompressors wird aufgegeben, statt die Verbindung zu trennen.",
+   "es": "S-meter fluido: la lectura lenta del compresor se abandona en lugar de cortar el enlace."
+  },
+  {
+   "date": "2026-11-13",
+   "version": "0.134.0",
+   "type": "securite",
+   "postes": [
+    "*"
+   ],
+   "fr": "État d'émission toujours relu sur le poste, jamais pris dans la mémoire de Hamlib.",
+   "en": "Transmit state always read from the rig, never taken from Hamlib's cache.",
+   "de": "Sendezustand immer vom Gerät gelesen, nie aus dem Zwischenspeicher von Hamlib.",
+   "es": "Estado de emisión siempre releído en el equipo, nunca tomado de la memoria de Hamlib."
+  }
+ ]
+}

@@ -38,6 +38,7 @@
   // Une adresse https:// d'un message devient un lien (nouvel onglet), ex. l'analyseur des rapports (menu 6.6,
   // étape 352) ; tout le reste reste du texte (jamais de HTML venu de la console).
   const REPORT = /trx-remote-rapport-\d{8}-\d{4}\.zip/;
+  const SQUELCH_EXPORT = /squelch-\d{1,6}-\d{8}-\d{4}\.zip/;   // export de l'étalonnage du squelch, menu 2.10 (étape 411)
   const CONFIG_COPY = /station-\d{8}-\d{4}\.toml/;          // copie de station.toml du menu 8.5 (étape 399)
   const URL_RE = /(https:\/\/[^\s"<>«»]+[^\s"<>«».,;:!?)])/;
   function linked(cls, line) {
@@ -148,6 +149,13 @@
         const a = el("a", "btn download", "⬇ " + ui("web.config.download"));
         a.href = "/api/config/" + copy[0];
         a.download = copy[0];
+        box.append(document.createTextNode("\n"), a);
+      }
+      const squelch = SQUELCH_EXPORT.exec(text);
+      if (squelch) {
+        const a = el("a", "btn download", "⬇ " + ui("web.squelch.download"));
+        a.href = "/api/squelch/" + squelch[0];
+        a.download = squelch[0];
         box.append(document.createTextNode("\n"), a);
       }
       if (/ORT-\d{4}/.test(text)) box.classList.add("warn");

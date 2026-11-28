@@ -164,7 +164,10 @@ internal fun RigScope.StationDisplay() {
                     // Repère du squelch (page : barre orange sur le S-mètre) : petit triangle orange au-dessus de la barre,
                     // suit le curseur pendant le réglage ; absent si le squelch est ouvert (0)
                     // Squelch réel lu sur le poste (étape 396) : le repère estimé n'est plus montré (faux sur ces postes)
-                    val sqlMark = if (radio?.dcd != null) null else Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"))
+                    // Étalonnage du squelch (étape 411, menu 2.10) : repère toujours montré, comme l'afficheur du poste
+                    val sqlCal = Radio.squelchCal(hello?.squelchCal?.points)
+                    val sqlMark = if (radio?.dcd != null && sqlCal == null) null
+                        else Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"), sqlCal)
                     Box(Modifier.fillMaxWidth().height(15.dp)) {
                         LinearProgressIndicator(
                             progress = { Radio.sMeterFraction(radio?.strengthDb) },
@@ -180,11 +183,7 @@ internal fun RigScope.StationDisplay() {
                             }
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        for (label in listOf("S1", "3", "5", "7", "9", "+20", "+40", "+60")) {
-                            Text(label, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
+                    SMeterScale()
                     // Bargraphs POWER, SWR, ALC toujours visibles (comme sur un poste ; à zéro en réception)
                     for (m in Indicators.txMeters(rig.state)) {
                         MeterRow(m, warn = (m.key == "SWR" && m.fraction >= 0.5f) || (m.key == "ALC" && m.fraction >= 0.9f))
@@ -216,7 +215,7 @@ internal fun RigScope.StationDisplay() {
                                 modifier = Modifier.weight(1f),
                             )
                             val percent = (shown * 100).roundToInt()
-                            Text(if (percent == 0) Tr.t("stationtab.squelch_open") else "$percent %", style = MaterialTheme.typography.labelLarge,
+                            Text(if (percent == 0) Tr.t("stationtab.squelch_open") else Radio.squelchSText(shown.toDouble(), Radio.squelchCal(hello?.squelchCal?.points)) ?: "$percent %", style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
                         }
                     }
@@ -329,3 +328,36 @@ internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
 
             }
 }
+
+/**
+ * Graduations du S-mètre À LEUR PLACE sur la barre (étape 412, signalement de l'utilisateur du 2026-11-28 : réparties
+ * régulièrement, « S1 » tombait sur S0 et le repère étalonné de S1 / S2 semblait faux) : chaque libellé centré sur
+ * Radio.sMeterFraction de son niveau (S1 = -48 dB … +60), gardé dans la largeur ; S0 = petit trait vertical clair.
+ */
+@Composable
+private fun SMeterScale() {
+    val marks = listOf("S1" to -48.0, "3" to -36.0, "5" to -24.0, "7" to -12.0, "9" to 0.0,   // i18n-ok
+        "+20" to 20.0, "+40" to 40.0, "+60" to 60.0)                                          // i18n-ok
+    val tick = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+    Box(Modifier.fillMaxWidth()) {
+        Canvas(Modifier.matchParentSize()) {                                     // S0 : début de la barre
+            drawLine(tick, androidx.compose.ui.geometry.Offset(1.dp.toPx(), 2.dp.toPx()),
+                androidx.compose.ui.geometry.Offset(1.dp.toPx(), size.height - 2.dp.toPx()), strokeWidth = 1.5.dp.toPx())
+        }
+        androidx.compose.ui.layout.Layout(
+            content = { for ((label, _) in marks) Text(label, style = MaterialTheme.typography.labelSmall) },
+            modifier = Modifier.fillMaxWidth(),
+        ) { measurables, constraints ->
+            val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0)) }
+            val width = constraints.maxWidth
+            val height = placeables.maxOfOrNull { it.height } ?: 0
+            layout(width, height) {
+                for ((i, pl) in placeables.withIndex()) {
+                    val center = Radio.sMeterFraction(marks[i].second) * width
+                    pl.placeRelative((center - pl.width / 2f).toInt().coerceIn(0, maxOf(0, width - pl.width)), 0)
+                }
+            }
+        }
+    }
+}
+

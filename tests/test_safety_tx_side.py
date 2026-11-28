@@ -97,7 +97,7 @@ def test_rigs_without_a_transmit_side_never_send_raw_reads():
 
 
 def test_raw_reads_are_a_closed_list_of_reads():
-    assert rigspec.read_queries() == {"FT;", "FA;", "FB;"}
+    assert rigspec.read_queries() == {"FT;", "FA;", "FB;", "BY;"}   # BY : squelch des Yaesu (étape 402)
     client = RigctldClient("127.0.0.1", 1)
     for bad in ("FT1;", "FA014200000;", "TX1;", "EX030116;", "FT", "ft;"):
         with pytest.raises(ValueError):

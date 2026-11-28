@@ -61,6 +61,7 @@
     if (state.lang !== lang || state.level !== level) {
       lang = state.lang; level = state.level; document.documentElement.lang = lang; texts(); tiles();
     }
+    markSafeMenu();
     $("#term-state").textContent = state.idle ? "" : "…";
   }
   // Lien vers l'application web (page de pilotage) sous l'état de la station : même nom de machine que celui par
@@ -95,6 +96,24 @@
     a.title = ui("web.dashboard_open");
     a.hidden = false;
   }
+  // Console web sur le réseau désactivée (étape 405) : dit à côté des liens, un clic ouvre le menu 4.6. Jamais
+  // dans la console ouverte par le réseau (elle est donc activée).
+  // Mise en sécurité : le menu 1.4 « Réactiver la station » clignote en rouge (et la tuile de son thème) tant qu'elle dure
+  // (demande de l'utilisateur, étape 406) ; mouvement réduit demandé par l'appareil : rouge fixe, sans clignotement.
+  function markSafeMenu() {
+    const on = !!state.safe_mode;
+    document.querySelectorAll(".items button[data-k]").forEach((b) => {
+      b.classList.toggle("alarm", on && b.dataset.k === state.safe_menu);
+    });
+    document.querySelectorAll(".card[data-t]").forEach((c) => c.classList.toggle("alarm", !!c.querySelector(".items button.alarm")));
+  }
+  function consoleOff() {
+    const b = $("#consoleoff"), c = state.webapp && state.webapp.console;
+    if (!c || c.enabled || state.network) { b.hidden = true; return; }
+    b.textContent = ui("web.console_off", { menu: c.menu });
+    b.onclick = () => openMenu(c.menu);
+    b.hidden = false;
+  }
   function header() {
     $("#title").textContent = ui("web.title");
     $("#sub").textContent = ui("web.version", { version: state.version });
@@ -103,6 +122,16 @@
     const pill = (cls, text) => { const p = el("span", "pill " + cls); p.append(el("span", "dot"), document.createTextNode(text)); pills.append(p); };
     if (!state.configured) pill("warn", ui("web.not_configured"));
     else pill(state.running ? "on" : "off", ui(state.running ? "web.running" : "web.stopped"));
+    if (state.safe_mode) {                                // mise en sécurité par le superviseur : un clic ouvre le menu 1.4
+      pill("safe", ui("web.safe_mode"));
+      const p = pills.lastChild;
+      p.setAttribute("role", "button");
+      p.tabIndex = 0;
+      p.title = ui("web.safe_mode_open", { reason: state.safe_mode, menu: state.safe_menu });
+      const go = () => openMenu(state.safe_menu);
+      p.addEventListener("click", go);
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    }
     // Émission annoncée par la passerelle : toujours montrée. « Réception » seulement si le poste répond : poste éteint,
     // débranché ou passerelle muette = « poste : pas de nouvelles », jamais une réception supposée.
     const rigOk = !!(state.rig && state.rig.connected);
@@ -119,6 +148,7 @@
       p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
     }
     webappLink();
+    consoleOff();
     const rig = state.rig || {};
     $("#freq").textContent = rig.frequency_hz ? fmtFreq(rig.frequency_hz) : "--.---.--";
     const meta = [];

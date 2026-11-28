@@ -12,6 +12,10 @@ linked_changes = true   # prudence : un mode remis par la mémoire de bande n'es
 
 [filters]
 kind = "unknown"
+mode_width = 0
 
 [squelch]
 source = "estimate"
+query = ""
+reply = ""
+open_value = ""

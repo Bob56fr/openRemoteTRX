@@ -16,3 +16,6 @@ presets = 3
 
 [squelch]
 source = "dcd"          # Hamlib get_dcd (CI-V « 15 01 »), à vérifier sur le poste ; abandonné seul au premier refus
+# Étalonnage du squelch (étape 412) : SQL de Hamlib quand le poste affiche 1… 9, 9+10, relevé par le menu 2.10 sur un
+# vrai IC-7300MK2 (export du 2026-11-28, Hamlib 5.0.0~git, mode PKTUSB)
+calibration = [0.3650, 0.4000, 0.4310, 0.4670, 0.5060, 0.5450, 0.5880, 0.6310, 0.6550, 0.7330]

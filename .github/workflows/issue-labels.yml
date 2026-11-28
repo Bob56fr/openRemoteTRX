@@ -1,0 +1,35 @@
+# Étiquette `poste:<numéro Hamlib>` posée sur chaque ticket d'après la liste déroulante « Modèle de TRX » des
+# formulaires (« Icom IC-7300MK2 (Hamlib 3094) »), étape 409. Les stations lisent les tickets de LEUR poste par cette
+# étiquette (openRemoteTRX Console, menu 7.4). Le corps du ticket est une donnée NON FIABLE : passé par une variable
+# d'environnement, jamais recopié dans le script ; seul un numéro de 4 chiffres en sort.
+name: Étiquette du poste des tickets
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Étiquette poste:N
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          model=$(printf '%s' "$BODY" | grep -oE '\(Hamlib [0-9]{4}\)' | head -n 1 | grep -oE '[0-9]{4}' || true)
+          if [ -z "$model" ]; then
+            echo "Aucun poste de la liste dans le ticket #$NUMBER."
+            exit 0
+          fi
+          gh label create "poste:$model" --color 1d76db --description "Poste Hamlib $model" --force
+          gh issue edit "$NUMBER" --add-label "poste:$model"
+          # poste changé en modifiant le ticket : l'ancienne étiquette part
+          for old in $(gh issue view "$NUMBER" --json labels -q '.labels[].name' | grep -E '^poste:[0-9]{4}$' || true); do
+            [ "$old" = "poste:$model" ] || gh issue edit "$NUMBER" --remove-label "$old"
+          done

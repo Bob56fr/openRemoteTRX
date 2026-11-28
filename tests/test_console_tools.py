@@ -315,6 +315,12 @@ def test_header_lines_for_the_address_and_the_rig_vitals():
     assert console_line(False, "0.0.0.0", 8444, True, ["192.168.1.19"]) == "  Console Web : désactivée (menu 4.6)"
     assert console_line(True, "127.0.0.1", 8444, True, ["192.168.1.19"]).endswith("désactivée (menu 4.6)")
     assert console_line(True, "0.0.0.0", 8444, False, ["192.168.1.19"]).endswith("désactivée (menu 4.6)")
+    # activée mais muette (étape 405) : « ne répond pas », adresses gardées ; la sonde n'est appelée qu'activée
+    down = console_line(True, "0.0.0.0", 8444, True, ["192.168.1.19"], answers=lambda host, port: False)
+    assert down == "  Console Web : https://192.168.1.19:8444 — activée mais ne répond pas (station démarrée ? menu 4.6)"
+    assert console_line(True, "0.0.0.0", 8444, True, ["192.168.1.19"], answers=lambda h, p: True).endswith(":8444")
+    assert console_line(False, "0.0.0.0", 8444, True, ["192.168.1.19"],
+                        answers=lambda h, p: 1 / 0).endswith("désactivée (menu 4.6)")
     assert rig_vitals_line(None) == "  Poste : mesures indisponibles (station arrêtée)"
     assert "liaison CAT" in rig_vitals_line({"connected": False, "levels": {"VD_METER": 13.8}})
     assert rig_vitals_line({"connected": True, "levels": {"VD_METER": 13.84, "TEMP_METER": 41.6}}) ==         "  Poste : alimentation 13,8 V, température 42 °C"

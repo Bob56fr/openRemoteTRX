@@ -159,5 +159,7 @@
   "dashboard.rig_name": "[dashboard] rig_name : texte de 40 caractères au plus",
   "cw.choice": "[cw] {name} : valeur non permise (choix : {choices})",
   "cw.data_mode": "[cw] data_mode '{mode}' : un mode de [rig] tx_modes est exigé (autorisés : {allowed})",
-  "cw.delay_order": "[cw] il faut delay_min_ms <= delay_ms <= delay_max_ms"
+  "cw.delay_order": "[cw] il faut delay_min_ms <= delay_ms <= delay_max_ms",
+  "squelch_cal.model": "[squelch_cal] model : numéro Hamlib entier, 0 ou plus",
+  "squelch_cal.points": "[squelch_cal] points : 10 valeurs de 0 à 1, strictement croissantes (refaire le menu 2.10)"
 }

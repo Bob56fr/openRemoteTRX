@@ -40,6 +40,9 @@ data class Capabilities(
     @SerialName("level_ranges") val levelRanges: Map<String, List<Double>> = emptyMap(),
     /** Split lisible (« Can get Split VFO ») ; null = non déclaré. */
     @SerialName("can_get_split") val canGetSplit: Boolean? = null,
+    /** Décalage relais lisible (« Can get Repeater Duplex / Offset », station 0.290.0+) ; null = non déclaré. */
+    @SerialName("can_get_rptr_shift") val canGetRptrShift: Boolean? = null,
+    @SerialName("can_get_rptr_offs") val canGetRptrOffs: Boolean? = null,
     /** Décalages maximaux du clarifieur (Hz) ; 0 = inconnu. */
     @SerialName("max_rit_hz") val maxRitHz: Int = 0,
     @SerialName("max_xit_hz") val maxXitHz: Int = 0,
@@ -92,6 +95,8 @@ data class Hello(
     val updates: UpdatesInfo? = null,
     /** Fiche technique du poste (station 0.284.0+) : délais, filtres, source du squelch ; null sur une station ancienne. */
     @SerialName("rig_spec") val rigSpec: RigSpecInfo? = null,
+    /** Étalonnage du squelch (station 0.299.0+, menu 2.10) : repère et valeur « S5,4 » ; null = repère estimé. */
+    @SerialName("squelch_cal") val squelchCal: SquelchCalInfo? = null,
     /** Langue retenue par la station pour ses textes (`detail`, `message`) ; vide sur une station antérieure à 0.236.0. */
     val lang: String = "",
     val features: List<String> = emptyList(),
@@ -225,11 +230,27 @@ data class RigSpecFilters(
     val steps: Map<String, List<Int>> = emptyMap(),
     /** Liste courte de l'appui bref sur FIL (steps), dans un mode dont les paliers la contiennent toute. */
     val quick: List<Int> = emptyList(),
+    /** Largeur envoyée avec un mode sans largeur choisie : 0 = normale (Hamlib), -1 = inchangée (station 0.291.0+). */
+    @SerialName("mode_width") val modeWidth: Int = 0,
 )
 
 /** `source` : estimate (repère comparé au S-mètre), busy (état « occupé » du poste), dcd (Hamlib). */
 @Serializable
-data class RigSpecSquelch(val source: String = "estimate")
+data class RigSpecSquelch(
+    val source: String = "estimate",
+    /** Source busy : lecture brute du poste (ex. « BY; »), expression à un groupe, valeur « ouvert » (station 0.291.0+). */
+    val query: String = "",
+    val reply: String = "",
+    @SerialName("open_value") val openValue: String = "",
+)
+
+/** `hello.squelch_cal` (étape 411) : 10 valeurs SQL (0 à 1) quand le poste affiche 1… 9, 9+10 ; `source` = station ou model. */
+@Serializable
+data class SquelchCalInfo(
+    val points: List<Double> = emptyList(),
+    @SerialName("levels_db") val levelsDb: List<Int> = emptyList(),
+    val source: String = "",
+)
 
 /** `hello.updates` (étape 392) : version plus récente de la station, dernière APK publiée de l'application. */
 @Serializable

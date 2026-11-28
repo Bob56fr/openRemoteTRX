@@ -21,7 +21,7 @@ import time
 from collections import deque
 from collections.abc import Awaitable, Callable
 
-from ... import __version__
+from ... import __version__, squelchcal
 from ...errors import codes
 from ...errors.emit import by_machine
 from ...hostinfo import hamlib_version, host_details, shared_monitor
@@ -340,6 +340,8 @@ class ControlSession:
                    "updates": self._updates(),
                    # fiche technique du poste (étape 393) : délais, filtres, source du squelch, récepteurs
                    "rig_spec": spec.to_dict() if (spec := getattr(self.ctrl, "spec", None)) is not None else None,
+                   # étalonnage du squelch (étape 411) : repère et valeur « S5,4 » des clients ; None = repère estimé
+                   "squelch_cal": squelchcal.effective(self.ctrl.config, spec),
                    "lang": self.lang,                                 # langue retenue pour les textes de ce client
                    "features": self.features()})
         if not self.listener:

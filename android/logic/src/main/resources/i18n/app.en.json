@@ -582,5 +582,11 @@
   "cw.pad_dashes": "dashes",
   "cw.key": "KEY",
   "cw.key_hint": "hold = tone",
-  "cw.key_disarmed": "arm CW to key"
+  "cw.key_disarmed": "arm CW to key",
+  "rigdialogs.recent_title": "Recent frequencies",
+  "rigdialogs.recent_none": "None yet: a frequency is added once the rig stays on it for 10 s.",
+  "hfscopeview.country_button": "COUNTRY: {view}",
+  "hfscopeview.country_view_0": "Call",
+  "hfscopeview.country_view_1": "Country",
+  "hfscopeview.country_view_2": "Call+Country"
 }

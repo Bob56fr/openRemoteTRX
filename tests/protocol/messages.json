@@ -11,7 +11,7 @@
       "functions": ["NB", "NR", "COMP", "TUNER"], "levels": ["PREAMP", "AGC", "SQL", "STRENGTH", "SWR", "ALC"],
       "complete": true, "filters": {"USB": [3000, 2400, 1800], "PKTUSB": [3000, 1200, 500]},
       "preamps": [10, 20], "attenuators": [20], "level_ranges": {"NR": [0, 1, 0.0667]},
-      "can_get_split": true, "max_rit_hz": 500, "max_xit_hz": 9999,
+      "can_get_split": true, "can_get_rptr_shift": false, "can_get_rptr_offs": false, "max_rit_hz": 500, "max_xit_hz": 9999,
       "can_set_power": true, "can_get_power": true
     },
     "tx_modes": ["PKTUSB", "PKTLSB"], "max_power_w": 100,
@@ -30,7 +30,8 @@
                  "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "replay"],
     "replay": {"max_s": 85},
     "remote_console": null,
-    "rig_spec": {"model": 3094, "name": "Icom IC-7300MK2", "receivers": 1, "verified": false, "timing": {"read_delay_s": 0.0, "tuner_delay_s": 2.0, "linked_changes": false}, "filters": {"kind": "presets", "presets": 3, "steps": {}, "quick": []}, "squelch": {"source": "dcd"}, "transmit": {"side_query": "", "side_reply": "", "sub_value": "", "main_value": "", "main_freq_query": "", "sub_freq_query": "", "freq_reply": ""}},
+    "rig_spec": {"model": 3094, "name": "Icom IC-7300MK2", "receivers": 1, "verified": false, "timing": {"read_delay_s": 0.0, "tuner_delay_s": 2.0, "linked_changes": false}, "filters": {"kind": "presets", "presets": 3, "steps": {}, "quick": [], "mode_width": 0}, "squelch": {"source": "dcd", "query": "", "reply": "", "open_value": "", "calibration": []}, "transmit": {"side_query": "", "side_reply": "", "sub_value": "", "main_value": "", "main_freq_query": "", "sub_freq_query": "", "freq_reply": ""}},
+    "squelch_cal": {"points": [0.1176, 0.1608, 0.2039, 0.2471, 0.2902, 0.3333, 0.3765, 0.4196, 0.4706, 0.5373], "levels_db": [-48, -42, -36, -30, -24, -18, -12, -6, 0, 10], "source": "station"},
     "updates": {"station": {"version": "0.283.0", "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}, "app": {"version": "0.91.0", "code": 98, "page_url": "https://github.com/Bob56fr/openRemoteTRX/releases/tag/v0.283.0"}}
   },
   "state": {

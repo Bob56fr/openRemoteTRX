@@ -173,7 +173,7 @@ expert = "<p>Sin el menú: <code>trx-console --rapport</code>. El archivo <code>
 
 [menus.clear_safe_mode]
 role = "<strong>Reactiva la estación</strong> tras un <strong>bloqueo de seguridad</strong>. El supervisor bloquea la estación tras fallos repetidos: parada sin peligro (transceptor en recepción, acceso cortado), espera una intervención."
-quand = "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2)."
+quand = "Solo después de haber encontrado y corregido la causa (menús 6.1 y 6.2). Mientras la estación está en bloqueo de seguridad, un marco rojo lo recuerda en la parte superior de la consola, con la causa (pastilla roja «BLOQUEO DE SEGURIDAD» en la consola web: un clic abre este menú)."
 modifie = "Borra el bloqueo de seguridad memorizado y reinicia la estación."
 admin = true
 expert = "<p>El bloqueo de seguridad sobrevive a los reinicios y a las correcciones: hay que reactivar la estación explícitamente aquí.</p>"
@@ -202,6 +202,12 @@ quand = "Estación sin Internet, versión de prueba, o vuelta a una versión con
 modifie = "Como el menú 7.1: nueva versión junto a la anterior, configuración conservada. Un paquete sin firmar pide escribir <code>OUI</code> y luego el número de versión."
 admin = true
 expert = "<p>Dejar el zip no basta: hay que instalarlo aquí. Informe: <code>/var/log/trx-remote-install.log</code>.</p>"
+
+[menus.changes]
+role = "Muestra en una tabla los últimos cambios de openRemoteTRX (correcciones, novedades, seguridad) que afectan a TU modelo de equipo, con la fecha y la versión que los trae; si quieres, también los que valen para todos los equipos. 50 líneas como máximo; ★ = propio de tu equipo o de su marca. Los cambios de versiones publicadas pero aún no instaladas (lista descargada con la búsqueda de actualizaciones) se marcan [próximo], y el menú 7.1 los muestra antes de instalar. Opción 2: los tickets de GitHub (abiertos y cerrados) de tu equipo, según la etiqueta puesta por la lista «Modelo de transceptor» de los formularios, con su dirección."
+quand = "Para saber qué ha cambiado para tu equipo a lo largo de las versiones, antes o después de una actualización."
+modifie = "Nada (solo lectura)."
+admin = false
 
 [menus.edit_config]
 role = "Modifica <code>station.toml</code> en el editor nano, sobre una copia."
@@ -317,6 +323,12 @@ quand = "Cuando el audio recibido es demasiado débil o fuerte en todos los term
 modifie = "La configuración de la estación (<code>station.toml</code>: <code>rx_gain_db</code> y <code>rx_limiter</code> de la sección <code>[audio]</code>), con derechos de administrador; se guarda la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia a petición para tomar el cambio."
 admin = true
 
+[menus.squelch_cal]
+role = "<strong>Calibra el squelch</strong> para que la marca naranja sobre el S-meter (página y aplicación) y el valor mostrado («S5,4») sigan la pantalla del equipo, en todos los modos. Delante del equipo, pones el squelch en 1, 2… 9 y luego 9+10; cada vez la consola lee el ajuste SQL publicado por la estación (solo lectura: no se escribe nada en el equipo, ninguna emisión). Opción 2: <strong>exportación</strong> en zip para adjuntar a un ticket de GitHub (calibración, modo y estado del squelch en cada punto, capacidades declaradas por Hamlib, ajustes del momento, ficha técnica, versiones; ni número de serie ni dirección) para que una próxima versión conozca la tabla de este modelo. Opción 3: borrar."
+quand = "Cuando la marca del squelch no corresponde a la pantalla del equipo. Estación en marcha, equipo encendido."
+modifie = "La configuración de la estación (<code>station.toml</code>, sección <code>[squelch_cal]</code>), con derechos de administración; se conserva la versión anterior. Releída sin reiniciar: se aplica en la próxima conexión de la página y de la aplicación. La exportación se escribe en el Escritorio (botón de descarga en la consola web)."
+admin = true
+
 [menus.bands]
 role = "Decide quién impide emitir fuera de tus bandas: la estación (lista de bandas permitidas, puntos de partida de la región 1 IARU a comprobar según tu licencia) o el propio transceptor. <strong>Lista vacía = solo recepción.</strong> Las mismas preguntas que la parte correspondiente del asistente completo (menú 2.1), y solo esas: Intro conserva cada ajuste actual, el resto de la configuración no se toca."
 quand = "En la puesta en servicio, tras un cambio de licencia, o si la estación rechaza una emisión en una banda permitida."
@@ -337,7 +349,7 @@ admin = true
 
 [menus.remote_console]
 role = "Pone <strong>openRemoteTRX Console en la red</strong>: los mismos menús en el navegador de cualquier PC, tableta o teléfono de la red local o del VPN, sin SSH ni acceso directo, en <code>https://&lt;station&gt;:8444/</code>. Conexión con una <strong>cuenta de operador marcada administradora</strong> (elegida aquí); la sesión se cierra tras 30 minutos sin acción; la contraseña sudo de la estación se sigue pidiendo una vez por sesión. 5 fallos bloquean la dirección 15 minutos y cada conexión envía una alerta ntfy. Nunca accesible desde Internet. Un administrador conectado a la página de control también encuentra allí el enlace."
-quand = "Para administrar la estación desde otro dispositivo, sin saber SSH."
+quand = "Para administrar la estación desde otro dispositivo, sin saber SSH. Una instalación nueva en la red ya la tiene en servicio (asistente 2.1, primera cuenta de operador como administradora): este menú la detiene o elige otras cuentas. Mientras está desactivada, su dirección muestra una página «Consola web desactivada» que remite a este menú (en la red, con certificado), y la cabecera de la consola indica «activada pero no responde» si está activada pero no responde."
 modifie = "La configuración de la estación (<code>station.toml</code>: <code>[remote_console]</code> y la marca <code>admin</code> de las cuentas), con derechos de administrador; se guarda la versión anterior. En Debian se arranca o se para el servicio <code>trx-console-web@cuenta</code>; en Windows se reinicia la estación."
 admin = true
 
@@ -399,6 +411,12 @@ expert = "<p>La consola deja su solicitud para el módulo « monlink » (archivo
 role = "Da el enlace del <strong>analizador de los informes de diagnóstico</strong>: una página del sitio rf-diy.com donde se deposita el zip del menú 6.3 (o el recibido de un amigo por el monitoring, menú 6.5 opción 10). El análisis se hace <strong>en tu navegador</strong>: el informe no se envía a ninguna parte. La página está en francés."
 quand = "Después del menú 6.3, para ver los problemas encontrados antes de pedir ayuda, o cuando ayudas a alguien que te ha enviado su informe."
 modifie = "Nada: el menú solo muestra el enlace y los pasos a seguir."
+admin = false
+
+[menus.screen_share]
+role = "<strong>Pantalla compartida</strong>, solo lectura, a través del relé de rf-diy.com (cifrada de extremo a extremo). Opción 1 (Debian y Raspberry Pi): la consola da un código de 10 caracteres que dictas a la persona que te ayuda, y se reinicia; todo lo que se muestra lo ve ella en directo. Opción 2 (en todas partes, Windows incluido): escribes el código dictado por un amigo y ves su consola. Quien mira no puede <strong>escribir nada</strong>: el amigo escribe lo que le dicen (por teléfono, por ejemplo). <strong>Ctrl+]</strong> detiene la compartición (la consola sigue); salir de la consola lo detiene todo; 2 horas como máximo. También en línea de órdenes: <code>trx-console --partage</code> y <code>trx-console --voir CÓDIGO</code>."
+quand = "Cuando un amigo no consigue instalar o configurar su estación: comparte su pantalla y tú lo guías de viva voz viendo lo que ve. Funciona incluso antes de que exista station.toml. Solo en la consola de texto (terminal o SSH), no en la consola web; la ventana de quien mira debe ser al menos tan grande como la del amigo (el título de la ventana lo indica)."
+modifie = "Nada en la estación: la consola solo se reinicia bajo un pseudoterminal mientras dura la compartición, y su pantalla se envía al relé, que la borra al cabo de 10 minutos o al final de la compartición."
 admin = false
 
 [menus.config_download]

@@ -6932,6 +6932,7 @@ ORT-5017:
   - split_changed
   - xit_changed
   - tx_side_changed
+  - rptr_changed
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5017/
   depuis_version: 0.123.0
   en:
@@ -8623,6 +8624,53 @@ ORT-5117:
     - Enlace CAT perturbado
     preconisation: Comprueba en el equipo qué tecla TX está encendida (MAIN o SUB) y vuelve a intentarlo; si el fallo persiste,
       infórmalo con el registro.
+
+ORT-5118:
+  gravite: erreur
+  titre: 'Émission refusée : décalage relais illisible'
+  message: 'Le poste a un décalage relais (DUP+ / DUP-) qui ne se relit pas ({detail}) : la fréquence d''émission est
+    inconnue, émission refusée par sécurité.'
+  causes:
+  - Décalage relais en service mais écart relu à 0 (Hamlib Yaesu hors des bandes relais qu'il connaît)
+  - Réponse inattendue du poste à la lecture du décalage relais
+  - Liaison CAT perturbée
+  preconisation: Passer le poste en simplex (DUP OFF) ou vérifier l'écart du relais sur le poste, puis réessayer.
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - rptr_unreadable
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5118/
+  depuis_version: 0.290.0
+  en:
+    titre: 'Transmit refused: repeater shift unreadable'
+    message: 'The radio has a repeater shift (DUP+ / DUP-) that cannot be read back ({detail}): the transmit frequency is
+      unknown, transmit refused for safety.'
+    causes:
+    - Repeater shift on but its offset reads back as 0 (Hamlib Yaesu outside the repeater bands it knows)
+    - Unexpected reply from the radio to the repeater shift read
+    - Disturbed CAT link
+    preconisation: Switch the radio to simplex (DUP OFF) or check the repeater offset on the radio, then try again.
+  de:
+    titre: 'Senden abgelehnt: Relaisablage nicht lesbar'
+    message: 'Der Transceiver hat eine Relaisablage (DUP+ / DUP-), die sich nicht zurücklesen lässt ({detail}): Die
+      Sendefrequenz ist unbekannt, Senden aus Sicherheitsgründen abgelehnt.'
+    causes:
+    - Relaisablage eingeschaltet, aber ihr Abstand wird als 0 gelesen (Hamlib Yaesu außerhalb der ihm bekannten Relaisbänder)
+    - Unerwartete Antwort des Transceivers auf die Abfrage der Relaisablage
+    - CAT-Verbindung gestört
+    preconisation: Schalten Sie den Transceiver auf Simplex (DUP OFF) oder prüfen Sie den Relaisabstand am Transceiver und
+      versuchen Sie es erneut.
+  es:
+    titre: 'Transmisión rechazada: desplazamiento de repetidor ilegible'
+    message: 'El equipo tiene un desplazamiento de repetidor (DUP+ / DUP-) que no se puede releer ({detail}): la frecuencia
+      de transmisión es desconocida, transmisión rechazada por seguridad.'
+    causes:
+    - Desplazamiento de repetidor activo pero su separación se relee como 0 (Hamlib Yaesu fuera de las bandas de repetidor
+      que conoce)
+    - Respuesta inesperada del equipo a la lectura del desplazamiento de repetidor
+    - Enlace CAT perturbado
+    preconisation: Pasa el equipo a símplex (DUP OFF) o comprueba la separación del repetidor en el equipo y vuelve a intentarlo.
 
 ORT-5501:
   gravite: info
@@ -14298,6 +14346,85 @@ ORT-7054:
     - Informe imposible de generar (permisos, disco)
     - Informe demasiado grande o volumen diario superado en el relé
     preconisation: Genera el informe a mano (menú 6.3) y envíalo por otro medio.
+
+ORT-7060:
+  gravite: avertissement
+  titre: Écran partagé impossible (relais)
+  message: 'Écran partagé : relais {relais} injoignable ou en refus ({detail}).'
+  causes:
+  - Accès Internet de la station ou du PC de l'aidant coupé
+  - Relais en maintenance ou en pause
+  - Trop de partages ouverts depuis la même adresse (10 par heure)
+  - Horloge ou proxy qui coupe les connexions HTTPS
+  preconisation: Vérifier l'accès Internet, puis relancer le menu 6.7 quelques minutes plus tard (nouveau code).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7060/
+  depuis_version: 0.292.0
+  en:
+    titre: Shared screen not possible (relay)
+    message: 'Shared screen: relay {relais} unreachable or refusing ({detail}).'
+    causes:
+    - Internet access of the station or of the helper's PC down
+    - Relay under maintenance or paused
+    - Too many sharings opened from the same address (10 per hour)
+    - Clock or proxy cutting HTTPS connections
+    preconisation: Check the Internet access, then open menu 6.7 again a few minutes later (new code).
+  de:
+    titre: Geteilter Bildschirm nicht möglich (Relais)
+    message: 'Geteilter Bildschirm: Relais {relais} nicht erreichbar oder lehnt ab ({detail}).'
+    causes:
+    - Internetzugang der Station oder des PCs des Helfers unterbrochen
+    - Relais in Wartung oder pausiert
+    - Zu viele Freigaben von derselben Adresse (10 pro Stunde)
+    - Uhr oder Proxy, der HTTPS-Verbindungen unterbricht
+    preconisation: Prüfen Sie den Internetzugang und öffnen Sie Menü 6.7 einige Minuten später erneut (neuer Code).
+  es:
+    titre: Pantalla compartida imposible (relé)
+    message: 'Pantalla compartida: relé {relais} inaccesible o rechazando ({detail}).'
+    causes:
+    - Acceso a Internet de la estación o del PC de quien ayuda cortado
+    - Relé en mantenimiento o en pausa
+    - Demasiadas comparticiones abiertas desde la misma dirección (10 por hora)
+    - Reloj o proxy que corta las conexiones HTTPS
+    preconisation: Comprueba el acceso a Internet y vuelve al menú 6.7 unos minutos más tarde (código nuevo).
+
+ORT-7061:
+  gravite: info
+  titre: Écran partagé inconnu
+  message: 'Écran partagé : aucun partage avec ce code.'
+  causes:
+  - Code mal tapé ou mal dicté
+  - Partage annulé, arrêté ou terminé (2 heures au plus)
+  preconisation: Relire le code avec l'ami, ou lui demander de relancer le partage (menu 6.7, choix 1, nouveau code).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7061/
+  depuis_version: 0.292.0
+  en:
+    titre: Unknown shared screen
+    message: 'Shared screen: no sharing with this code.'
+    causes:
+    - Code mistyped or misread
+    - Sharing cancelled, stopped or over (2 hours at most)
+    preconisation: Read the code again with the friend, or ask them to start sharing again (menu 6.7, choice 1, new code).
+  de:
+    titre: Unbekannter geteilter Bildschirm
+    message: 'Geteilter Bildschirm: keine Freigabe mit diesem Code.'
+    causes:
+    - Code falsch getippt oder falsch genannt
+    - Teilen abgebrochen, beendet oder abgelaufen (höchstens 2 Stunden)
+    preconisation: Prüfen Sie den Code mit dem Freund oder bitten Sie ihn, das Teilen neu zu starten (Menü 6.7, Auswahl 1,
+      neuer Code).
+  es:
+    titre: Pantalla compartida desconocida
+    message: 'Pantalla compartida: ninguna compartición con este código.'
+    causes:
+    - Código mal escrito o mal dictado
+    - Compartición cancelada, detenida o terminada (2 horas como máximo)
+    preconisation: Vuelve a leer el código con tu amigo, o pídele que vuelva a compartir (menú 6.7, opción 1, código nuevo).
 
 # ====================================================================================================
 # 8000–8999 : Superviseur et processus

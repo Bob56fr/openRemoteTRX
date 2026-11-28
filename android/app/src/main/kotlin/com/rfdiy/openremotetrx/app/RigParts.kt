@@ -49,6 +49,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.delay
+import com.rfdiy.openremotetrx.logic.FreqHistory
 import com.rfdiy.openremotetrx.logic.BigPtt
 import com.rfdiy.openremotetrx.logic.BreizhLevel
 import com.rfdiy.openremotetrx.logic.FreeDvLevel
@@ -326,15 +328,40 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
         }
 }
 
+/**
+ * Dernières fréquences (étape 410) : le poste est resté 10 s sur la même fréquence et le même mode = fréquence
+ * « utilisée », gardée sur le téléphone pour cette station (quelle que soit l'origine du changement).
+ */
+@Composable
+internal fun RigScope.RecentFreqTracker() {
+    val hz = radio?.frequencyHz
+    val mode = radio?.mode.orEmpty()
+    val stationId = ui.station?.id
+    LaunchedEffect(stationId, hz, mode, connected) {
+        if (!connected || hz == null || stationId == null) return@LaunchedEffect
+        delay(FreqHistory.DWELL_MS)
+        val key = FreqHistory.prefKey(stationId)
+        val list = FreqHistory.add(FreqHistory.decode(prefs.getString(key, null)), hz, mode)
+        prefs.edit().putString(key, FreqHistory.encode(list)).apply()
+    }
+}
+
 /** Fenêtres de l'écran de la station (fréquence, niveaux, bandes, SELCALL, ST, visiteurs, Breizh, TOS, réseau, rapport…). */
 @Composable
 internal fun RigScope.RigDialogsHost() {
     PowerDialogs()                                                     // alimentation du poste (lot P3)
     RigTotDialog()                                                     // TOT du poste sur OFF (lot TP3)
     HelpDialog()                                                      // aide courte par appui long
-    if (entry) FrequencyDialog(shownHz, onDismiss = { entry = false }) { hz ->
-        entry = false
-        go(hz)
+    if (entry) {
+        val recents = remember { FreqHistory.decode(prefs.getString(FreqHistory.prefKey(ui.station?.id), null)) }
+        FrequencyDialog(shownHz, recents, canSet, onDismiss = { entry = false }, onRecent = { r ->
+            entry = false
+            go(r.hz)
+            if (r.mode.isNotEmpty() && r.mode != radio?.mode) RigHub.setMode(r.mode)
+        }) { hz ->
+            entry = false
+            go(hz)
+        }
     }
     if (levelsDialog) LevelsDialog(levelRanges(hello, radio?.levels), radio?.levels.orEmpty(), canSet) { levelsDialog = false }
     if (bandsDialog) BandsDialog(Radio.favoriteBands(bandsPref), onDismiss = { bandsDialog = false }) { chosen ->

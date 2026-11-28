@@ -582,5 +582,11 @@
   "cw.pad_dashes": "traits",
   "cw.key": "CLÉ",
   "cw.key_hint": "tenir = tonalité",
-  "cw.key_disarmed": "armer la CW pour manipuler"
+  "cw.key_disarmed": "armer la CW pour manipuler",
+  "rigdialogs.recent_title": "Dernières fréquences",
+  "rigdialogs.recent_none": "Aucune pour l'instant : une fréquence s'ajoute quand le poste y reste 10 s.",
+  "hfscopeview.country_button": "PAYS : {view}",
+  "hfscopeview.country_view_0": "Ind.",
+  "hfscopeview.country_view_1": "Pays",
+  "hfscopeview.country_view_2": "Ind.+Pays"
 }

@@ -27,7 +27,7 @@ Die zu verwendende Adresse wird oben in openRemoteTRX Console und von der Diagno
 
 ### Die Zertifizierungsstelle der Station installieren (einmal pro Gerät)
 
-1. Auf der Station, openRemoteTRX Console, Menü **4.4** „Zertifikat der Station“: Auswahl **1** (das Zertifikat neu
+1. Auf der Station, openRemoteTRX Console, Menü **4.4** „HTTPS-Zertifikat der Station“: Auswahl **1** (das Zertifikat neu
    erstellen, signiert von der Zertifizierungsstelle der Station), dann die Station neu starten, wenn die Konsole es
    vorschlägt. Der Fingerabdruck des Zertifikats ändert sich: **Koppeln Sie die Android-App neu** (Menü 4.1).
 2. Öffnen Sie auf dem Gerät die Seite der Station: Tippen Sie unter dem Passwort auf **„Zertifikat der Station

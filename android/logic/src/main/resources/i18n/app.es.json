@@ -582,5 +582,11 @@
   "cw.pad_dashes": "rayas",
   "cw.key": "LLAVE",
   "cw.key_hint": "mantener = tono",
-  "cw.key_disarmed": "arma la CW para manipular"
+  "cw.key_disarmed": "arma la CW para manipular",
+  "rigdialogs.recent_title": "Últimas frecuencias",
+  "rigdialogs.recent_none": "Ninguna por ahora: una frecuencia se añade cuando el equipo se queda 10 s en ella.",
+  "hfscopeview.country_button": "PAÍS: {view}",
+  "hfscopeview.country_view_0": "Ind.",
+  "hfscopeview.country_view_1": "País",
+  "hfscopeview.country_view_2": "Ind.+País"
 }

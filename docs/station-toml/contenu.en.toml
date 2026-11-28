@@ -135,6 +135,12 @@ ou = "Menu 8.1. Address shown in the openRemoteTRX Console header (“Web dashbo
 relu = "redemarrage"
 depuis = "0.280.0"
 
+[sections.squelch_cal]
+titre = "Squelch calibration [squelch_cal]"
+intro = "<p>Ten values of the Hamlib SQL setting read by menu 2.10 of the console when the rig shows a squelch of 1, 2… 9 then 9+10. The page and the app use them for the position of the orange marker above the S-meter and a decimal value (“S5.4”), like the rig's display. Without a calibration, the model table (spec sheet) is used if it exists, otherwise an estimated marker. Written by menu 2.10, not by hand.</p>"
+ou = "Menu 2.10 of the console (Calibrate the squelch)."
+relu = "chaud"
+
 [sections.spectrum]
 titre = "Transceiver HF spectrum [spectrum]"
 intro = "<p>The transceiver's HF spectrum and waterfall in the page and the app, through a second port of the transceiver (Icom) or through Hamlib.</p>"
@@ -864,6 +870,20 @@ niveau = "courant"
 bornes = "40 characters at most."
 exemple = "<code>rig_name = \"IC-7300MK2\"</code>"
 depuis = "0.280.0"
+
+[reglages."squelch_cal.model"]
+role = "Hamlib number of the calibrated rig. The calibration is ignored if it is no longer the number of <code>[rig] model</code> (rig changed). 0 = no calibration."
+niveau = "expert"
+bornes = "Integer, 0 or more."
+exemple = "<code>model = 3094</code>"
+depuis = "0.299.0"
+
+[reglages."squelch_cal.points"]
+role = "The 10 values of the SQL setting (0 to 1), in the order 1, 2… 9, 9+10. Empty = no calibration."
+niveau = "expert"
+bornes = "Exactly 10 values from 0 to 1, strictly increasing."
+exemple = "<code>points = [0.1176, 0.1608, 0.2039, 0.2471, 0.2902, 0.3333, 0.3765, 0.4196, 0.4706, 0.5373]</code>"
+depuis = "0.299.0"
 
 # ---------------------------------------------------------------- breizh
 

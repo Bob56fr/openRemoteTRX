@@ -1,0 +1,150 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fabriqué par scripts/build_errors_doc.py depuis trxstation/errors/catalog.json : ne pas modifier à la main. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORT-7060 : Écran partagé impossible (relais)</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .2rem}
+h2{font-size:1.3rem;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.05rem;margin:0}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent)}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;
+  overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.2rem 0}
+.version{color:var(--doux);font-size:.95rem;margin:0 0 1rem}
+.lecture{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
+  padding:.5rem 1rem;margin:1rem 0}
+.sommaire{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1.2rem 0}
+.sommaire h2{margin:.6rem 0 .5rem;border:0;padding:0}
+.sommaire ol,.sommaire ul{list-style:none;margin:0;padding:0}
+.sommaire a{text-decoration:none}
+.sommaire a:hover{text-decoration:underline}
+.toc-haut>li{margin:.5rem 0}
+.toc-haut>li>a{font-weight:600}
+.toc-themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:.6rem;margin:.5rem 0 .2rem!important}
+.toc-themes>li{border:1px solid var(--ligne);border-radius:.5rem;padding:.45rem .7rem;margin:0;background:var(--fond)}
+.toc-themes>li>a{display:flex;gap:.5rem;align-items:baseline;font-weight:600;color:var(--texte)}
+.toc-menus{margin:.3rem 0 0 .2rem!important;font-size:.92rem}
+.toc-menus li{margin:.1rem 0}
+.toc-menus .k{display:inline-block;min-width:2.1rem;color:var(--doux)}
+.theme-bloc,details{scroll-margin-top:1rem}
+.theme-texte{margin:.2rem 0 .4rem}
+.debut{border-left:.25rem solid var(--ok);padding:.1rem 0 .1rem .8rem;margin:.4rem 0 .8rem}
+.haut{text-align:right;font-size:.9rem;margin:.4rem 0 0}
+.etapes{list-style:none;margin:0;padding:0;counter-reset:e}
+.etapes>li{counter-increment:e;display:grid;grid-template-columns:2.2rem 1fr;gap:.8rem;background:var(--carte);
+  border:1px solid var(--ligne);border-radius:.6rem;padding:.8rem 1rem;margin:.7rem 0}
+.etapes>li::before{content:counter(e);width:2rem;height:2rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-weight:700;display:flex;align-items:center;justify-content:center}
+.etapes>li>div{min-width:0}
+details{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;margin:.55rem 0}
+summary{cursor:pointer;padding:.65rem 1rem;display:flex;gap:.7rem;align-items:baseline;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"\25B8";color:var(--doux);transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+.num{flex:none;min-width:2.1rem;text-align:center;font-weight:700;color:#fff;background:var(--accent);border-radius:.4rem;
+  padding:0 .3rem}
+.corps{padding:0 1rem .8rem 1rem}
+dl{display:grid;grid-template-columns:minmax(7rem,max-content) 1fr;gap:.35rem 1rem;margin:.2rem 0 .6rem}
+dt{color:var(--doux)}
+dd{margin:0;min-width:0}
+.sudo{color:var(--emission);font-weight:600}
+.libre{color:var(--ok);font-weight:600}
+.expert{border-top:1px dashed var(--ligne);margin-top:.5rem;padding-top:.4rem}
+.plus{display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;margin:0}
+.note-bulles{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--ok);
+  border-radius:.5rem;padding:.55rem .9rem;margin:.6rem 0 1rem}
+.note-bulles .exemple{border-bottom:1px dotted var(--accent)}
+.bulle .plus{display:inline-block;color:var(--accent);text-transform:none;letter-spacing:normal;margin-top:.35rem}
+.theme{margin:1.8rem 0 .3rem;font-size:1.15rem;display:flex;gap:.6rem;align-items:baseline}
+.langues{margin:0 0 1rem;color:var(--doux);font-size:.95rem}
+.bloc{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.6rem 1rem;margin:.7rem 0}
+footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+@media (max-width:30rem){dl{grid-template-columns:1fr}dt{margin-top:.3rem}}[hidden]{display:none !important}
+.g{display:inline-block;border-radius:1rem;padding:0 .55rem;font-size:.8rem;font-weight:600;vertical-align:middle}
+.g-info{background:#1c2f45;color:#9cc8f2}.g-avertissement{background:#3d3418;color:#f2d06b}
+.g-erreur{background:#45261c;color:#ffb08a}.g-critique{background:#5a1c1a;color:#ffb4ad}
+.code{font-family:ui-monospace,Consolas,monospace;font-weight:700;white-space:nowrap}
+.liste{list-style:none;margin:.3rem 0 1rem;padding:0}
+.liste li{display:grid;grid-template-columns:6.2rem 1fr auto;gap:.6rem;align-items:baseline;padding:.3rem .6rem;
+  border-bottom:1px solid var(--ligne)}
+.liste a{text-decoration:none}.liste .t{min-width:0}
+.vieux{opacity:.55;text-decoration:line-through}
+.recherche{width:100%;padding:.55rem .8rem;border-radius:.5rem;border:1px solid var(--ligne);background:var(--carte);
+  color:var(--texte);font:inherit;margin:.6rem 0}
+.choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
+section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
+.note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
+@media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
+</head>
+<body>
+<main>
+<h1><span class="code">ORT-7060</span></h1>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
+<section class="langue" lang="fr" id="fr">
+<h2>Écran partagé impossible (relais) <span class="g g-avertissement">avertissement</span></h2>
+<dl><dt>Message</dt><dd>Écran partagé : relais <code>{relais}</code> injoignable ou en refus (<code>{detail}</code>).</dd><dt>Causes possibles</dt><dd><ul><li>Accès Internet de la station ou du PC de l&#x27;aidant coupé</li><li>Relais en maintenance ou en pause</li><li>Trop de partages ouverts depuis la même adresse (10 par heure)</li><li>Horloge ou proxy qui coupe les connexions HTTPS</li></ul></dd><dt>Que faire</dt><dd>Vérifier l&#x27;accès Internet, puis relancer le menu 6.7 quelques minutes plus tard (nouveau code).</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Depuis la version</dt><dd>0.292.0</dd></dl>
+</section>
+<section class="langue" lang="en" id="en">
+<h2>Shared screen not possible (relay) <span class="g g-avertissement">warning</span></h2>
+<dl><dt>Message</dt><dd>Shared screen: relay <code>{relais}</code> unreachable or refusing (<code>{detail}</code>).</dd><dt>Possible causes</dt><dd><ul><li>Internet access of the station or of the helper&#x27;s PC down</li><li>Relay under maintenance or paused</li><li>Too many sharings opened from the same address (10 per hour)</li><li>Clock or proxy cutting HTTPS connections</li></ul></dd><dt>What to do</dt><dd>Check the Internet access, then open menu 6.7 again a few minutes later (new code).</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Since version</dt><dd>0.292.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Geteilter Bildschirm nicht möglich (Relais) <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Geteilter Bildschirm: Relais <code>{relais}</code> nicht erreichbar oder lehnt ab (<code>{detail}</code>).</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Internetzugang der Station oder des PCs des Helfers unterbrochen</li><li>Relais in Wartung oder pausiert</li><li>Zu viele Freigaben von derselben Adresse (10 pro Stunde)</li><li>Uhr oder Proxy, der HTTPS-Verbindungen unterbricht</li></ul></dd><dt>Was zu tun ist</dt><dd>Prüfen Sie den Internetzugang und öffnen Sie Menü 6.7 einige Minuten später erneut (neuer Code).</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Seit Version</dt><dd>0.292.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Pantalla compartida imposible (relé) <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Pantalla compartida: relé <code>{relais}</code> inaccesible o rechazando (<code>{detail}</code>).</dd><dt>Causas posibles</dt><dd><ul><li>Acceso a Internet de la estación o del PC de quien ayuda cortado</li><li>Relé en mantenimiento o en pausa</li><li>Demasiadas comparticiones abiertas desde la misma dirección (10 por hora)</li><li>Reloj o proxy que corta las conexiones HTTPS</li></ul></dd><dt>Qué hacer</dt><dd>Comprueba el acceso a Internet y vuelve al menú 6.7 unos minutos más tarde (código nuevo).</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Desde la versión</dt><dd>0.292.0</dd></dl>
+</section>
+<footer>
+<p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">openRemoteTRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>
+</footer>
+</main>
+<script>(function () {
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  document.addEventListener("toggle", send, true);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();
+// Lien vers un thème ou un menu (#menu-2-5, ?menu=2.5, ?theme=2) : menu ouvert, puis position donnée au site.
+(function () {
+  function target() {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var q = new URLSearchParams(location.search), m = q.get("menu"), t = q.get("theme");
+    if (!id && m) id = "menu-" + m.replace(".", "-");
+    if (!id && t) id = "theme-" + t;
+    if (!/^[a-z0-9-]{1,40}$/.test(id)) return;
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === "DETAILS") el.open = true;
+    el.scrollIntoView();
+    if (window.parent !== window)
+      window.parent.postMessage({ type: "trx-doc-scroll", top: Math.round(el.getBoundingClientRect().top + window.scrollY) }, "*");
+  }
+  window.addEventListener("load", target);
+  window.addEventListener("hashchange", target);
+})();</script>
+</body>
+</html>

@@ -200,5 +200,7 @@
   "transmit.tuner_settings": "  Remotely, tuning must start by itself when transmitting on a new frequency. Set on the rig (tuner menu): {settings}. The station will check them at every connection and warn if they are wrong (it never changes them). Outside amateur bands, tuning on PTT is not guaranteed by the rig.",
   "transmit.tuner_generic": "  Remotely, tuning must start by itself when transmitting on a new frequency: set the rig accordingly (on an Icom: tuning on PTT, « PTT Start », on). This model's settings are not yet known to the station: it will not be able to check them.",
   "rig_tot.known": "  Rig TOT: the station will read it at each operator connection and warn if it is OFF. Set it in the rig menu (3 min recommended): it is the last safety if the station fails during a transmission.",
-  "rig_tot.unknown": "  IMPORTANT: set the TOT (transmit time-out timer) in your rig menu, 3 min recommended. The station cannot read it on this rig: if it is OFF and the station, the network or the PC fails during a transmission, the rig may keep transmitting until someone intervenes on site."
+  "rig_tot.unknown": "  IMPORTANT: set the TOT (transmit time-out timer) in your rig menu, 3 min recommended. The station cannot read it on this rig: if it is OFF and the station, the network or the PC fails during a transmission, the rig may keep transmitting until someone intervenes on site.",
+  "web_console.enabled": "\nWeb Console in service (protected by the account password): {urls}\n  Administrator account: {admins}. To stop it or choose other accounts: openRemoteTRX Console, menu {menu}.",
+  "web_console.no_account": "\nWeb Console not put in service (computer account not found): openRemoteTRX Console, menu {menu}."
 }

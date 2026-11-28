@@ -1224,7 +1224,10 @@
       });
     }
 
-    const squelchLabel = (percent) => (percent === 0 ? I18N.t("stationtab.squelch_open") : percent + " %");
+    // Valeur du squelch : « S5,4 » avec un étalonnage (étape 411), sinon le pourcentage du réglage
+    let squelchPoints = null;
+    const squelchLabel = (percent) => (percent === 0 ? I18N.t("stationtab.squelch_open")
+      : (squelchPoints && web.squelchSText(percent / 100, squelchPoints)) || percent + " %");
 
     // ---- visiteurs (docs/visiteurs-cahier-des-charges.md) : 🎧 N, liste, bandeaux, mode visiteur
     let presenceOpen = false, lastPresence = null;
@@ -2121,6 +2124,7 @@
         renderControlDialog(v);                                                      // fenêtre NR/NB/Notch : valeurs relues, verrou en émission
         renderFilterDialog();                                                        // fenêtre FIL : largeurs relues
         const mark = $("sql-marker");
+        squelchPoints = v.squelchCal;
         mark.hidden = v.squelchMark === null;
         if (v.squelchMark !== null) mark.style.left = (v.squelchMark * 100).toFixed(1) + "%";   // repère du squelch sur l'échelle du S-mètre
         $("swr-text").textContent = v.swr ? v.swr.text : "—"; $("swr-mask").style.width = percentLeft(v.swr ? v.swr.fraction : 0);
@@ -4664,6 +4668,11 @@
     $("squelch").addEventListener("input", (ev) => {
       const percent = Number(ev.target.value);
       $("squelch-text").textContent = squelchLabel(percent);
+      if (squelchPoints) {                                                             // repère étalonné : suit le doigt
+        const f = web.squelchMarkerFraction(percent / 100, squelchPoints), mark = $("sql-marker");
+        mark.hidden = f === null;
+        if (f !== null) mark.style.left = (f * 100).toFixed(1) + "%";
+      }
       squelchTouched = performance.now();
       window.clearTimeout(squelchTimer);
       squelchTimer = window.setTimeout(() => client.setSquelch(percent / 100).catch(fail), 150);   // une commande à la fin du geste, pas une par pixel

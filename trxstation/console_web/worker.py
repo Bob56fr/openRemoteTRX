@@ -48,7 +48,8 @@ ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 # reconnus par leur clé de traduction : même résultat dans les quatre langues (étape 235). Une clé ajoutée ici doit
 # exister (test).
 REFUSED_KEYS = frozenset({
-    "loop.unknown", "config_download.unreadable", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
+    "squelch_cal.no_station", "squelch_cal.unreadable", "squelch_cal.not_higher", "squelch_cal.nothing_to_export",
+    "loop.unknown", "config_download.unreadable", "screen_share.terminal_only", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
     "report.1", "update.3", "edit_config.2", "edit_config.3", "edit_config.6", "pairing.2",
     "save_profile.1", "save_profile.4", "load_profile.2", "load_profile.3", "load_profile.4",
     "save_config.5", "save_config.6", "save_config.7", "visitors.2", "visitors.4",
@@ -65,6 +66,7 @@ REFUSED_KEYS = frozenset({
 })
 # Réussites (vert) : ce qui vient d'être enregistré, installé ou envoyé.
 DONE_KEYS = frozenset({
+    "squelch_cal.saved", "squelch_cal.exported",
     "lang.saved", "config_download.done", "save_config.8", "save_profile.7", "delete_profile.3", "friends_pseudo.2", "friends_share.3",
     "friends_leave.2", "breizh_new_key.4", "run_tests.10", "monitoring.pseudo.done", "alerts.test_sent",
     "update.18", "update.18.page", "update.18.local", "install_zip.14", "install_zip.14.page", "install_zip.14.local",
@@ -72,6 +74,7 @@ DONE_KEYS = frozenset({
     "diffusion.started", "diffusion.stopped", "diffusion.new_password", "diffusion.secrets_saved",
 })
 UNCHANGED_KEYS = frozenset({
+    "squelch_cal.abandoned",
     "hwtest.5", "qualif.4", "update.17", "install_zip.6", "install_zip.11", "install_zip.13", "edit_config.5",
     "edit_config.8", "choose_profile.2", "save_profile.3", "save_profile.6", "delete_profile.2", "save_config.4",
     "save_accounts.1", "temperature.6", "apply_rig_silent.cancel",

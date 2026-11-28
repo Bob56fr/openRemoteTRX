@@ -1,0 +1,14 @@
+{
+  "menu": "menú {number} «{label}»",
+  "code": "Código:",
+  "note": "Esta página se muestra en lugar de la página solicitada. No permite ningún mando y desaparecerá por sí sola cuando se resuelva el problema.",
+  "safe_mode.title": "Estación en bloqueo de seguridad",
+  "safe_mode.text": "El supervisor ha puesto esta estación en bloqueo de seguridad tras fallos repetidos: el equipo está en recepción y el acceso remoto está cortado. Por eso la página de control no se muestra.",
+  "safe_mode.what": "En la estación, en openRemoteTRX Console: busca la causa ({m_diagnostic}, {m_journal}) y luego {m_clear_safe_mode}.",
+  "console_off.title": "Consola web desactivada",
+  "console_off.text": "openRemoteTRX Console no está abierta en la red para esta estación.",
+  "console_off.what": "Para abrirla: en la estación, en openRemoteTRX Console, {m_remote_console} (cuenta de operador administrador).",
+  "no_account.title": "Ninguna cuenta en esta estación",
+  "no_account.text": "La estación funciona, pero no se ha creado ninguna cuenta de operador: la página de control no puede mostrarse.",
+  "no_account.what": "En la estación, en openRemoteTRX Console: {m_operators} y luego reinicia la estación ({m_stop} y después {m_start})."
+}

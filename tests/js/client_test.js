@@ -985,6 +985,31 @@ test("étiquette du filtre et repère de squelch sur l'échelle du S-mètre", ()
   assert.equal(web.squelchMarkerFraction(-0.5), null); assert.equal(web.squelchMarkerFraction(2), 1);
 });
 
+test("étalonnage du squelch (étape 411) : interpolation, « S5,4 », repère montré même avec l'état réel du poste", async () => {
+  const P = [0.12, 0.16, 0.20, 0.25, 0.29, 0.33, 0.38, 0.42, 0.47, 0.54];
+  assert.deepEqual(web.squelchCal({ points: P }), P);
+  assert.equal(web.squelchCal({ points: P.slice(0, 9) }), null);
+  assert.equal(web.squelchCal({ points: [...P.slice(0, 9), 0.4] }), null);                 // pas croissant
+  assert.equal(web.squelchCal(null), null);
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  assert.ok(near(web.squelchCalDb(0.12, P), -48) && near(web.squelchCalDb(0.47, P), 0) && near(web.squelchCalDb(0.54, P), 10));
+  assert.ok(near(web.squelchCalDb(0.06, P), -51) && near(web.squelchCalDb(0.18, P), -39) && near(web.squelchCalDb(1, P), 60));
+  assert.equal(web.squelchCalDb(0, P), null);
+  assert.equal(web.squelchSText(0.47, P), "S9,0");                                        // décimale de la langue (fr)
+  assert.equal(web.squelchSText(0.18, P), "S2,5");
+  assert.equal(web.squelchSText(0.54, P), "S9+10");
+  assert.equal(web.squelchSText(0.47, null), null);
+  assert.ok(near(web.squelchMarkerFraction(0.47, P), 54 / 114));                            // S9
+  const w = makeWorld();
+  await w.connected();
+  w.hello({ squelch_cal: { points: P, levels_db: [-48, -42, -36, -30, -24, -18, -12, -6, 0, 10], source: "station" } });
+  w.state({}, { levels: { SQL: 0.47 }, dcd: false });
+  const v = w.ui.views.at(-1);
+  assert.ok(near(v.squelchMark, 54 / 114));                                                  // montré malgré dcd
+  assert.equal(v.squelchText, "S9,0");
+  assert.deepEqual(v.squelchCal, P);
+});
+
 test("repère de squelch : seulement quand le squelch est activé", async () => {
   const w = makeWorld();
   await w.connected();

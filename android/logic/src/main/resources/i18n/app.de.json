@@ -582,5 +582,11 @@
   "cw.pad_dashes": "Striche",
   "cw.key": "TASTE",
   "cw.key_hint": "halten = Ton",
-  "cw.key_disarmed": "CW aktivieren, um zu tasten"
+  "cw.key_disarmed": "CW aktivieren, um zu tasten",
+  "rigdialogs.recent_title": "Letzte Frequenzen",
+  "rigdialogs.recent_none": "Noch keine: Eine Frequenz wird hinzugefügt, wenn das Gerät 10 s darauf bleibt.",
+  "hfscopeview.country_button": "LAND: {view}",
+  "hfscopeview.country_view_0": "Rufz.",
+  "hfscopeview.country_view_1": "Land",
+  "hfscopeview.country_view_2": "Rufz.+Land"
 }

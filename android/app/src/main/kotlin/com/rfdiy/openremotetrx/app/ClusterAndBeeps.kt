@@ -72,7 +72,7 @@ fun RecentSpotsDialog(recentSpots: List<Spot>, bandSpots: List<Spot>, hasSpectru
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(HOUR.format(Instant.ofEpochMilli(Spots.arrivalMs(s))), fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
-                        Text(s.dx, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text(s.dx + s.country.takeIf { it.isNotEmpty() }?.let { " ($it)" }.orEmpty(), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                         Text(String.format(Locale.ROOT, "%.1f", s.khz), fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                     }
                     Text(

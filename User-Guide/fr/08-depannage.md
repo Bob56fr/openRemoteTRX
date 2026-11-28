@@ -48,3 +48,11 @@
    toi-même (choix 10). De son côté, elle reçoit une alerte sur son téléphone si ta station ne donne plus
    de nouvelles. **Loin de ta station**, tout se fait aussi dans la page web, rubrique « Monitoring » : bouton
    « Être aidé : j'ai un code », comparaison des 6 chiffres, choix de ce qui part, réponse aux demandes, fin.
+5. **Montrer ton écran à la personne qui t'aide** (écran partagé, menu **6.7**, rien à activer, marche même avant
+   que la station soit configurée) : dans la console texte (terminal ou SSH, Debian ou Raspberry Pi), choix 1. La
+   console affiche un code de 10 caractères : dicte-le, puis appuie sur Entrée. La personne qui t'aide ouvre le menu
+   6.7, choix 2 (sur son PC, Windows compris) et tape le code : elle voit ta console en direct, chiffrée de bout en
+   bout par le relais de rf-diy.com. Elle ne peut **rien taper** : c'est toi qui tapes ce qu'elle te dit (au téléphone
+   par exemple). **Ctrl+]** arrête le partage (ta console continue) ; quitter la console arrête tout ; 2 heures au
+   plus. Aussi en ligne de commande : `trx-console --partage` (toi) et `trx-console --voir CODE` (elle). Sa fenêtre
+   doit être au moins aussi grande que la tienne (le titre de sa fenêtre le lui dit).

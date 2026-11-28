@@ -13,6 +13,8 @@ Les actions qui touchent au système passent par `sudo` : le mot de passe de ses
     trx-console               menu
     trx-console --diagnostic  diagnostic complet puis sortie (code 1 si une erreur bloquante)
     trx-console --rapport     crée le rapport de dépannage (zip sur le Bureau)
+    trx-console --partage     écran partagé : montre la console à un aidant, en lecture seule (Debian / Pi)
+    trx-console --voir CODE   écran partagé : voit la console d'un ami
 """
 from __future__ import annotations
 
@@ -39,6 +41,7 @@ from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
 from .answers import typed, yes_no
 from .i18n import ENV_LANG, LANGS, NAMES, Translator, load_lang, prefs_path, save_lang
 from .i18n import LEVELS, load_level, save_level
+from .fallback_page import port_answers
 from .paths import default_state_dir
 from . import profiles as prof
 from .station_id import read_station_id
@@ -69,12 +72,13 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
     ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum", "remote_power",
-                               "rx_gain")),
+                               "rx_gain", "squelch_cal")),
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
-    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer")),
-    ("7", "updates", ("update", "rollback", "install_zip")),
+    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring", "analyzer",
+                                     "screen_share")),
+    ("7", "updates", ("update", "rollback", "install_zip", "changes")),
     ("8", "expert", ("edit_config", "expert", "qualif", "indicator", "config_download")),
 )
 # Numéros d'avant la station 0.166.0 (deux niveaux, 0.126.0 à 0.165.0) -> méthode : rappelés dans l'en-tête
@@ -83,6 +87,7 @@ RENUMBERED_IN = "0.166.0"
 RENUMBER_NOTICE_UNTIL = (0, 180, 0)
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
 # avec un message ; 1 à 9 ouvrent désormais un thème.
+SCREEN_SHARED_ENV = "TRX_SCREEN_SHARED"   # console lancée par l'écran partagé (screenshare/share.py, ENV_SHARED)
 RX_TARGET_DBFS = -20       # menu 2.9 : niveau reçu visé (voix ou bruit de bande sur antenne)
 RX_FLOOR_DBFS = -85        # en dessous : pas de son mesurable (station arrêtée, poste muet), aucune proposition
 RX_GAIN_LOW, RX_GAIN_HIGH = -40, 20     # bornes de [audio] rx_gain_db (config.validate)
@@ -97,7 +102,7 @@ OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
 # Niveau de chaque menu (étape 234) : Basic = mettre en service, utiliser, demander de l'aide ; Expert = réglages fins et
 # outils de développement ; tout le reste = Normal. « 0 » (langue et niveau) est toujours montré.
 BASIC_MENUS = frozenset({"start", "stop", "monitor", "clear_safe_mode", "assistant", "hwtest", "pairing", "operators",
-                         "diagnostic", "report", "analyzer", "update"})
+                         "diagnostic", "report", "analyzer", "update", "screen_share", "changes"})
 EXPERT_MENUS = frozenset({"temperature", "edit_config", "expert", "qualif"})
 
 
@@ -278,8 +283,9 @@ def address_line(bind: str, port: int, tls: bool, addresses: list[str], t: Trans
 
 
 def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list[str],
-                 t: Translator | None = None) -> str:
-    """En-tête de la console : adresse(s) d'openRemoteTRX Console sur le réseau ([remote_console], menu 4.6)."""
+                 t: Translator | None = None, *, answers: Callable[[str, int], bool] | None = None) -> str:
+    """En-tête de la console : adresse(s) d'openRemoteTRX Console sur le réseau ([remote_console], menu 4.6).
+    `answers(adresse, port)` : sonde du port ; activée mais muette = « ne répond pas » (étape 405)."""
     t = t or Translator()
     menu = menu_number("remote_console")
     if not enabled or not tls or bind in ("", "127.0.0.1", "localhost", "::1"):
@@ -287,7 +293,10 @@ def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list
     hosts = addresses if bind in ("0.0.0.0", "::") else [bind]
     if not hosts:
         return "  " + t("head.console_unknown", port=port)
-    return "  " + t("head.console", urls=", ".join(console_url(host, port).rstrip("/") for host in hosts))
+    urls = ", ".join(console_url(host, port).rstrip("/") for host in hosts)
+    if answers is not None and not answers(bind, port):
+        return "  " + t("head.console_down", urls=urls, menu=menu)
+    return "  " + t("head.console", urls=urls)
 
 
 def dashboard_line(enabled: bool, listen: list[str], port: int, tls: bool, t: Translator | None = None) -> str | None:
@@ -446,6 +455,7 @@ class Console:
         self.app_dir = app_dir
         self.desktop = desktop
         self.addresses = addresses
+        self.port_probe: Callable[[str, int], bool] | None = None   # sonde des ports (None : la vraie, étape 405)
         # Langue : choisie par le menu 0 (fichier par compte), sinon celle du système, sinon le français. Les tests
         # passent `lang` (défaut "fr" quand `ask` n'est pas la saisie du terminal : sorties stables).
         self.lang_file = lang_file or prefs_path(home)
@@ -459,6 +469,8 @@ class Console:
         self.level = level if level in LEVELS else "normal"
         # Nature de la PROCHAINE question (étape 235) : lue par la console web en formulaires, ignorée au terminal.
         self.hint: dict | None = None
+        # Vrai terminal (écran partagé, étape 403) : jamais dans la console web ni dans les tests.
+        self.tty = ask is input and sys.stdin.isatty() and sys.stdout.isatty()
 
     def visible(self, method: str) -> bool:
         """Menu montré au niveau choisi ? « Sortir du mode sûr » n'encombre le niveau Basic que si la station y est."""
@@ -467,10 +479,18 @@ class Console:
         return LEVELS.index(menu_level(method)) <= LEVELS.index(self.level)
 
     def in_safe_mode(self) -> bool:
+        return self.safe_mode_reason() is not None
+
+    def safe_mode_reason(self) -> str | None:
+        """Raison de la mise en sécurité (fichier `safe_mode` écrit par le superviseur), None sinon. Fichier
+        illisible = mise en sécurité (dans le doute). Jamais d'exception : en-tête et menus."""
         try:
-            return (config_state_dir(self.config) / "safe_mode").exists()
-        except Exception:                               # en-tête et menus : jamais d'exception pour un affichage
-            return False
+            if not self.config.exists():
+                return None
+            from .supervisor.state import StateStore
+            return StateStore(config_state_dir(self.config)).safe_mode()
+        except Exception:
+            return None
 
     def visible_themes(self) -> set[str]:
         return {theme for theme, _, methods in MENU_THEMES if any(self.visible(m) for m in methods)}
@@ -655,14 +675,31 @@ class Console:
         if not self.config.exists() and imported.exists():
             self.say(self.t("assistant.1", imported=imported))
             cmd += ["--base", str(imported)]
+        was_on = self._web_console_on()
         code = self.runner.run(cmd, admin=True)
         if code != 0:
             self.say(self.t("assistant.2"))
             if stopped and self.config.exists():
                 self._start_station("start")
             return
+        # Nouvelle installation : l'assistant a mis la Console Web en service (étape 407) ; Debian / Pi : son service
+        # systemd (sous Windows, c'est le superviseur qui la lance).
+        account = self._web_console_on()
+        if account and not was_on and not IS_WINDOWS:
+            self._remote_console_service(True, account, "")
         if self.yes(self.t("assistant.3")):
             self.start()
+
+    def _web_console_on(self) -> str:
+        """Compte Linux de la Console Web si elle est en service dans station.toml (« - » sous Windows), sinon ""."""
+        from . import config as cfgmod
+        try:
+            v = cfgmod.load_unchecked(self.config)[0].remote_console if self.config.exists() else None
+        except (OSError, cfgmod.ConfigError):
+            return ""
+        if v is None or v.enabled is not True:
+            return ""
+        return v.account or ("-" if IS_WINDOWS else "")
 
     # ------------------------------------------------------------------ parties de l'assistant (étape 220)
 
@@ -850,6 +887,151 @@ class Console:
         if not a.rx_limiter:
             self.say(self.t("rx_gain.warning"))
         self._save_accounts(original, cfg, live=False)
+
+    def squelch_cal(self) -> None:
+        """Étalonnage du squelch (étape 411, demande de l'utilisateur du 2026-11-28) : l'opérateur, devant son poste, met
+        le squelch sur 1, 2… 9, 9+10 (valeur affichée par le poste) ; la console lit à chaque fois le réglage SQL
+        publié par la passerelle (fichier d'état, LECTURE seule : rien n'est écrit au poste, aucune émission). Les 10
+        valeurs vont dans `[squelch_cal]` de station.toml (relu sans redémarrer, pris à la prochaine connexion des
+        terminaux). Export zip pour le développeur (ticket GitHub) : table du modèle dans sa fiche technique."""
+        from . import config as cfgmod
+        from . import squelchcal
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        original, cfg = loaded
+        model = cfg.rig.model
+        own = cfg.squelch_cal
+        self.say(self.t("squelch_cal.1"))
+        if own.points and own.model == model:
+            self.say(self.t("squelch_cal.current", values=" | ".join(
+                f"{lab} {v:.3f}" for lab, v in zip(squelchcal.LABELS, own.points))))
+        elif own.points:
+            self.say(self.t("squelch_cal.other_rig", model=own.model, current=model))
+        else:
+            self.say(self.t("squelch_cal.none"))
+        choice = self.ask(self.t("squelch_cal.choose")).strip()
+        if choice == "2":
+            if own.points and own.model == model:
+                self._squelch_export(cfg, list(own.points), {})
+            else:
+                self.say(self.t("squelch_cal.nothing_to_export"))
+            return
+        if choice == "3":
+            if not own.points:
+                self.say(self.t("save_accounts.1"))
+                return
+            cfg.squelch_cal = cfgmod.SquelchCal()
+            self._save_accounts(original, cfg, live=True)
+            return
+        if choice != "1":
+            return
+        status = self._gateway_status()
+        if status is None or not isinstance(status.rig.get("levels"), dict) or "SQL" not in status.rig["levels"]:
+            start_menu = menu_number("start")
+            self.say(self.t("squelch_cal.no_station", menu=start_menu))
+            return
+        self.say(self.t("squelch_cal.how"))
+        points: list[float] = []
+        seen: list[dict] = []
+        i = 0
+        while i < squelchcal.POINTS:
+            label = squelchcal.LABELS[i]
+            answer = self.ask(self.t("squelch_cal.step", n=i + 1, total=squelchcal.POINTS, label=label)).strip().lower()
+            if answer == "q":
+                self.say(self.t("squelch_cal.abandoned"))
+                return
+            if answer == "r":
+                if points:
+                    points.pop()
+                    seen.pop()
+                    i -= 1
+                continue
+            value, snap = self._read_squelch(points[-1] if points else None)
+            if value is None:
+                self.say(self.t("squelch_cal.unreadable"))
+                continue
+            if points and value <= points[-1]:
+                self.say(self.t("squelch_cal.not_higher", value=f"{value:.3f}", previous=f"{points[-1]:.3f}"))
+                continue
+            points.append(value)
+            seen.append(snap)
+            self.say(self.t("squelch_cal.read", label=label, value=f"{value:.3f}"))
+            i += 1
+        self.say("  " + " | ".join(f"{lab} {v:.3f}" for lab, v in zip(squelchcal.LABELS, points)))
+        cfg.squelch_cal = cfgmod.SquelchCal(model=model, points=[round(v, 4) for v in points])
+        if self._save_accounts(original, cfg, live=True):
+            self.say(self.t("squelch_cal.saved"))
+        if self.yes(self.t("squelch_cal.export_now"), True):
+            self._squelch_export(cfg, points, {"points": seen})
+
+    def _read_squelch(self, previous: float | None) -> tuple[float | None, dict]:
+        """Réglage SQL lu dans le fichier d'état : la passerelle le relit à son rythme, on attend une valeur STABLE
+        (deux lectures égales à 1,5 s d'écart) et, après le premier point, différente du point précédent (15 s au
+        plus). Retourne (valeur, relevé du moment : mode, état réel du squelch, S-mètre)."""
+        deadline = time.monotonic() + 15.0
+        last: float | None = None
+        while time.monotonic() < deadline:
+            status = self._gateway_status()
+            levels = status.rig.get("levels") if status is not None else None
+            value = levels.get("SQL") if isinstance(levels, dict) else None
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                value = float(value)
+                if value == last and (previous is None or value != previous):
+                    rig = status.rig
+                    return value, {"sql": value, "mode": rig.get("mode"), "dcd": rig.get("dcd"),
+                                   "strength_db": rig.get("strength_db"), "frequency_hz": rig.get("frequency_hz")}
+                last = value
+            time.sleep(1.5)
+        return (last, {}) if last is not None and previous is None else (None, {})
+
+    def _squelch_export(self, cfg, points: list[float], extra: dict) -> None:
+        """Zip sur le Bureau, à joindre à un ticket GitHub : étalonnage, mode et état du squelch à chaque point,
+        capacités déclarées par Hamlib, réglages du poste à l'instant, fiche technique en service, versions. Ni
+        numéro de série, ni adresse, ni nom de machine."""
+        import io
+        import json
+        import platform
+        import zipfile
+        from . import rigspec, squelchcal
+        from .hostinfo import hamlib_version
+        from .report import desktop_dir
+        from .update.check import REPO
+        model = cfg.rig.model
+        hamlib = hamlib_version(cfg.tools.hamlib_dir)
+        more: dict = {"calibration_points": extra.get("points", []),
+                      "system": f"{platform.system()} {platform.release()} {platform.machine()}",
+                      "python": platform.python_version()}
+        try:
+            from .gateway.cat.capabilities import _run_dump_caps, parse_dump_caps
+            more["capabilities"] = parse_dump_caps(_run_dump_caps(model, cfg.tools.hamlib_dir), model).to_dict()
+        except Exception as exc:                          # Hamlib absent ou illisible : l'export part quand même
+            more["capabilities_error"] = clean_text(str(exc), 200, single_line=True)
+        # nom du poste : celui du tableau de bord, sinon celui de Hamlib (premier export reçu le 2026-11-28 : vide)
+        caps = more.get("capabilities") or {}
+        name = cfg.dashboard.rig_name or " ".join(x for x in (caps.get("manufacturer"), caps.get("model_name")) if x)
+        base = squelchcal.export_zip(model, name, points, hamlib)
+        status = self._gateway_status()
+        if status is not None:
+            rig = status.rig
+            more["rig_now"] = {k: rig.get(k) for k in ("mode", "passband_hz", "levels", "functions", "dcd", "vfo")}
+        try:
+            more["rigspec"] = rigspec.load(model).to_dict()
+        except Exception as exc:
+            more["rigspec_error"] = clean_text(str(exc), 200, single_line=True)
+        buf = io.BytesIO(base)
+        with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("poste.json", json.dumps(more, ensure_ascii=False, indent=1, default=str) + "\n")
+        folder = desktop_dir()
+        path = folder / time.strftime(f"squelch-{model}-%Y%m%d-%H%M.zip")
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(buf.getvalue())
+        except OSError as exc:
+            self.say(self.t("config_download.unreadable", path=str(path), error=exc.strerror or str(exc)))
+            return
+        issues = f"https://github.com/{REPO}/issues/new/choose"
+        self.say(self.t("squelch_cal.exported", path=str(path), url=issues))
 
     def _power_declared(self, model: int, hamlib_dir: str) -> bool | None:
         """« set / get Power Stat » déclarés par Hamlib pour ce modèle ? None = rigctl illisible (Hamlib absent)."""
@@ -1195,6 +1377,54 @@ class Console:
         """Lien de l'analyseur des rapports (menu 6.3 ou rapport reçu par le monitoring) : rien n'est lancé ni envoyé."""
         self.say(self.t("analyzer.1", url=ANALYZER_URL, report=REPORT_MENU, monitoring=MONITORING_MENU))
 
+    def screen_share(self) -> None:
+        """Écran partagé (étape 403, docs/protocole-ecran.md) : l'opérateur aidé montre sa console texte à un aidant, en
+        LECTURE SEULE, par le relais (code de 10 caractères dicté de vive voix) ; ou l'aidant regarde celui d'un ami.
+        Terminal seulement (la console web n'a pas de terminal à partager) ; partager : Debian / Pi seulement."""
+        if not self.tty:
+            self.say(self.t("screen_share.terminal_only"))
+            return
+        self.say(self.t("screen_share.intro"))
+        choice = self.ask(self.t("screen_share.menu")).strip()
+        if choice == "1":
+            if IS_WINDOWS:
+                self.say(self.t("screen_share.linux_only"))
+            elif os.environ.get(SCREEN_SHARED_ENV):
+                self.say(self.t("screen_share.already"))
+            else:
+                self.share_screen(self.shared_console_argv())
+        elif choice == "2":
+            code = self.ask(self.t("screen_share.ask_code")).strip()
+            if code:
+                self.view_screen(code)
+        elif choice:
+            self.say(self.t("loop.unknown"))
+
+    def shared_console_argv(self, text: bool = False) -> list[str]:
+        """La console relancée dans le pseudo-terminal du partage (même station.toml)."""
+        return [self.python, "-m", "trxstation.console", "--config", str(self.config), *(["--texte"] if text else [])]
+
+    def screen_relay_url(self) -> str:
+        """Relais du monitoring de station.toml (même relais), sinon celui de rf-diy.com : une station en cours
+        d'installation n'a pas encore de station.toml. TRX_SCREEN_RELAY : essais seulement."""
+        from . import config as cfgmod
+        url = os.environ.get("TRX_SCREEN_RELAY")
+        if url:
+            return url
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            return cfg.monitor_link.relay_url or cfgmod.PRESENCE_DEFAULT_RELAY
+        except (cfgmod.ConfigError, OSError, AttributeError):
+            return cfgmod.PRESENCE_DEFAULT_RELAY
+
+    def share_screen(self, child_argv: list[str]) -> int:
+        from .screenshare.share import run_share
+        return run_share(child_argv, t=self.t, relay_url=self.screen_relay_url(), version=self.installed)
+
+    def view_screen(self, code: str) -> int:
+        from .screenshare.view import run_view
+        return run_view(code, t=self.t, relay_url=self.screen_relay_url(), version=self.installed)
+
     def config_download(self) -> None:
         """Copie de station.toml sur le Bureau du compte de la console (étape 399, demande de l'utilisateur du 2026-11-25) ;
         la console web en propose le téléchargement (lien sous le message). Le fichier contient les empreintes des mots
@@ -1256,6 +1486,7 @@ class Console:
         published = clean_text(release.published_at, 40, single_line=True)[:10]
         self.say(self.banner([self.t("update.9", version=release.version, v=self.t("update.10") if release.prerelease else '', installed=self.installed),
                               clean_text(release.name, 120, single_line=True) + (f" ({published})" if published else "")]))
+        self._update_rig_changes(release.version)
         if len(changes) > 1:
             self.say(self.t("update.11", len=len(changes))
                      + ", ".join(c.version for c in reversed(changes)) + self.t("update.12"))
@@ -1297,12 +1528,13 @@ class Console:
                 if self.ask(self.t("show_changes.4")).strip().lower() in ("q", "quitter"):
                     return
 
-    def banner(self, lines: list[str]) -> str:
-        """Cadre bien visible (texte noir sur fond jaune dans un vrai terminal)."""
+    def banner(self, lines: list[str], alert: bool = False) -> str:
+        """Cadre bien visible (texte noir sur fond jaune dans un vrai terminal ; blanc sur rouge pour une alerte)."""
         width = max(len(line) for line in lines)
         body = ["*" * (width + 4)] + [f"* {line.ljust(width)} *" for line in lines] + ["*" * (width + 4)]
         if self.color:
-            body = [f"\033[1;30;43m{line}\033[0m" for line in body]
+            paint = "\033[1;97;41m" if alert else "\033[1;30;43m"
+            body = [f"{paint}{line}\033[0m" for line in body]
         return "\n" + "\n".join("  " + line for line in body)
 
     def rollback(self) -> None:
@@ -1317,6 +1549,97 @@ class Console:
             return
         done = self.t(self.reopen_key("rollback.4"), previous=previous)       # page : jamais « Quitte (q) »
         self._apply(["rollback"], done)
+
+    def changes(self) -> None:
+        """Changements pour mon poste (étapes 407-408) : tableau des derniers changements d'openRemoteTRX qui touchent le
+        modèle de station.toml (et, au choix, ceux de tous les postes), date et version ; liste livrée + liste téléchargée
+        par trx-update-check (changements des versions pas encore installées, marqués « à venir »). Lecture seule."""
+        from . import changes as chg
+        try:
+            known = chg.load()
+        except (OSError, ValueError) as exc:
+            self.say(self.t("changes.unreadable", error=exc))
+            return
+        known = chg.merged(known, chg.load_cached(config_state_dir(self.config)))
+        model = self._rig_model()
+        if self.ask(self.t("changes.view")).strip() == "2":            # second « onglet » : tickets GitHub du poste
+            self._rig_issues(model)
+            return
+        if model <= 0:
+            wizard_menu = menu_number("assistant")
+            self.say(self.t("changes.no_rig", menu=wizard_menu))
+        common = self.yes(self.t("changes.common"), True)
+        rows = chg.for_model(known, model, common) if model > 0 else [c for c in known if c.common][:chg.LIMIT]
+        self.say(self.t("changes.title", model=model or "—", count=len(rows), installed=self.installed or "?"))
+        if not rows:
+            self.say(self.t("changes.none"))
+            return
+        self._change_rows(rows)
+
+    def _rig_issues(self, model: int) -> None:
+        """Tickets GitHub du poste (étape 409) : relevé de trx-update-check, ou recherche immédiate (lecture seule,
+        rien n'est écrit) ; 50 au plus, ouverts et fermés, avec leur adresse."""
+        from .changes import issues as iss
+        from .update.check import CheckError, http_get
+        if model <= 0:
+            wizard_menu = menu_number("assistant")
+            self.say(self.t("changes.no_rig", menu=wizard_menu))
+            return
+        cached = iss.load_cached(config_state_dir(self.config), model)
+        found, when = cached if cached is not None else (None, 0.0)
+        if self.yes(self.t("changes.issues_fetch") if cached is None else self.t("changes.issues_refresh"), cached is None):
+            try:
+                found, when = iss.parse_api(http_get(iss.api_url(model))), time.time()
+            except (CheckError, ValueError) as exc:
+                self.say(self.t("changes.issues_failed", error=clean_text(str(exc), 200, single_line=True)))
+        if found is None:
+            return
+        opened = sum(1 for i in found if i.open)
+        self.say(self.t("changes.issues_title", model=model, opened=opened, closed=len(found) - opened,
+                        date=time.strftime("%Y-%m-%d %H:%M", time.localtime(when)) if when else "?"))
+        if not found:
+            self.say(self.t("changes.issues_none"))
+        for i in found:
+            state = self.t("changes.issue_open") if i.open else self.t("changes.issue_closed")
+            self.say(f"  #{i.number:<5} {state:<8} {i.created}  {i.title}")
+            self.say(f"         {i.url}")
+        self.say(self.t("changes.issues_all", url=iss.page_url(model)))
+
+    def _rig_model(self) -> int:
+        from . import config as cfgmod
+        try:
+            return cfgmod.load_unchecked(self.config)[0].rig.model if self.config.exists() else 0
+        except (OSError, cfgmod.ConfigError):
+            return 0
+
+    def _change_rows(self, rows) -> None:
+        """Lignes du tableau des changements ; ★ = propre au poste ou à sa marque, « à venir » = pas encore installé."""
+        from . import changes as chg
+        lang = self.t.lang
+        kinds = {"correctif": self.t("changes.type_correctif"), "nouveaute": self.t("changes.type_nouveaute"),
+                 "securite": self.t("changes.type_securite")}
+        here = chg.version_key(self.installed) if parse_version(self.installed or "") else None
+        for c in rows:
+            mark = self.t("changes.mine") if not c.common else ""
+            later = self.t("changes.upcoming") if here is not None and chg.version_key(c.version) > here else ""
+            self.say(f"  {c.date}  {c.version:<9} {kinds[c.type]:<11} {mark}{later}{c.text(lang)}")
+
+    def _update_rig_changes(self, offered: str) -> None:
+        """Menu 7.1 (étape 408) : ce que la mise à jour proposée change pour le poste de la station, d'après la liste
+        téléchargée ; rien si elle ne dit rien de ces versions."""
+        from . import changes as chg
+        if not parse_version(self.installed or ""):
+            return
+        try:
+            known = chg.merged(chg.load(), chg.load_cached(config_state_dir(self.config)))
+        except (OSError, ValueError):
+            return
+        model = self._rig_model()
+        rows = chg.for_model(chg.between(known, self.installed, offered), model) if model > 0 else []
+        if rows:
+            changes_menu = menu_number("changes")
+            self.say(self.t("changes.in_update", count=len(rows), menu=changes_menu))
+            self._change_rows(rows)
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
@@ -3390,6 +3713,12 @@ class Console:
         else:
             state = self.paint(t("head.stopped"), RED)
         line = f"\n=== {t('app.title', version=self.installed)} ===\n  {state}"
+        reason = self.safe_mode_reason()
+        if reason is not None:                          # mise en sécurité par le superviseur : jamais passée sous silence
+            reason = reason if len(reason) <= 90 else reason[:89] + "…"
+            line += self.banner([t("head.safe_mode"), t("head.safe_mode_reason", reason=reason),
+                                 t("head.safe_mode_menu", diag=menu_number("diagnostic"),
+                                   journal=menu_number("journal"), menu=menu_number("clear_safe_mode"))], alert=True)
         if self.config.exists():
             line += "".join("\n" + extra for extra in self.station_lines())
         line += "\n  " + t("head.station_id", id=self.station_id() or t("head.station_id_later"))
@@ -3398,6 +3727,8 @@ class Console:
             line += self.banner([t("head.new_version", version=release.version, installed=self.installed),
                                  t("head.new_version_menu", menu=UPDATE_MENU)])
         line += "\n  " + t("head.level", level=t(f"level.{self.level}"))
+        if os.environ.get(SCREEN_SHARED_ENV):
+            line += "\n  " + self.paint(t("head.screen_shared"), YELLOW)
         if (parse_version(self.installed) or (0,)) < RENUMBER_NOTICE_UNTIL:
             line += "\n  " + self.paint(t("head.renumbered", version=RENUMBERED_IN, update=UPDATE_MENU,
                                           zip=menu_number("install_zip"), diag=menu_number("diagnostic")), YELLOW)
@@ -3427,7 +3758,8 @@ class Console:
                               self.t)
         return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found, self.t),
                 *([dash] if dash else []),
-                console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t),
+                console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t,
+                             answers=self.port_probe or port_answers),
                 rig_vitals_line(status.rig if status is not None else None, self.t)]
 
     def menu_label(self, key: str, label: str) -> str:
@@ -3638,7 +3970,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
     ap.add_argument("--reseau", action="store_true",
                     help="openRemoteTRX Console sur le réseau (service : HTTPS, comptes administrateurs, [remote_console])")
+    ap.add_argument("--partage", action="store_true",
+                    help="écran partagé : montrer cette console à un aidant, en lecture seule (Debian / Pi ; menu 6.7)")
+    ap.add_argument("--voir", nargs="?", const="", metavar="CODE",
+                    help="écran partagé : voir la console d'un ami avec le code qu'il a dicté (menu 6.7)")
     args = ap.parse_args(argv)
+    if args.partage or args.voir is not None:
+        console = Console(args.config)
+        if args.voir is not None:
+            code = args.voir or input(console.t("screen_share.ask_code")).strip()
+            return console.view_screen(code) if code else 1
+        if IS_WINDOWS:
+            print(console.t("screen_share.linux_only"))
+            return 1
+        return console.share_screen(console.shared_console_argv(text=args.texte))
     if args.web:
         from .console_web.server import run
         return run(args.config, args.port)

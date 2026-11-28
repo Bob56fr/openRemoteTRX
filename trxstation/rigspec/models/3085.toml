@@ -1,4 +1,7 @@
 # Icom IC-705 : d'après le manuel CI-V et l'usage de la station ; délais à mesurer par la qualification (étape 393).
+# Étape 402 (lecture du code de Hamlib, docs/hamlib-5-analyse.md) : PAS de second port CI-V (le port B de l'USB ne fait
+# que RTTY / DV / météo : ni spectre ni FIL par le port B) ; coupleur EXTERNE (AH-705) que la CAT ne lit pas ;
+# 10 W sur 13,8 V, 5 W sur batterie ; décalage relais (DUP+ / DUP-) lu par la station avant chaque émission (étape 401).
 format = 1
 model = 3085
 name = "Icom IC-705"
@@ -7,7 +10,7 @@ verified = false
 
 [timing]
 read_delay_s = 0.0
-tuner_delay_s = 2.0
+tuner_delay_s = 0.0      # pas de coupleur interne : TUNER déclaré par Hamlib mais refusé (RPRT -9, mesuré)
 linked_changes = false  # une fréquence envoyée par la CAT ne change pas le mode
 
 [filters]

@@ -27,7 +27,7 @@ L'adresse à utiliser est affichée en tête d'openRemoteTRX Console et par le d
 
 ### Installer l'autorité de la station (une fois par appareil)
 
-1. Sur la station, openRemoteTRX Console, menu **4.4** « Certificat de la station » : choix **1** (refaire le certificat, signé
+1. Sur la station, openRemoteTRX Console, menu **4.4** « Certificat HTTPS de la station » : choix **1** (refaire le certificat, signé
    par l'autorité de la station), puis redémarrer la station quand la console le propose. L'empreinte du certificat
    change : **appaire de nouveau l'application Android** (menu 4.1).
 2. Sur l'appareil, ouvre la page de la station : sous le mot de passe, touche **« Installer le certificat de la

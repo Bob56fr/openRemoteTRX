@@ -310,7 +310,9 @@ def test_superviseur_attend_la_cle_de_la_passerelle_puis_lance(tmp_path):
 
 def test_le_superviseur_branche_les_modules():
     source = (ROOT / "trxstation" / "supervisor" / "main.py").read_text(encoding="utf-8")
-    assert "make_tick(backend.maintain, launcher)" in source and "launcher.stop_all()" in source
+    # étape 405 : pages de secours synchronisées avant chaque tour (`_fallback_first`), modules toujours branchés
+    assert "make_tick(_fallback_first(fallback, backend.maintain), launcher)" in source
+    assert "launcher.stop_all()" in source
 
 
 # ------------------------------------------------------------------ bout en bout

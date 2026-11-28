@@ -53,6 +53,10 @@ class Filters:
     # Appui BREF sur FIL (steps) : liste courte parcourue en boucle (décision de l'utilisateur du 2026-11-25 : 1.8 à
     # 4.0 k, du DX à la HIFI), seulement dans les modes dont les paliers la contiennent toute
     quick: tuple = ()
+    # Largeur envoyée avec un mode quand la station n'en choisit pas (étape 402) : 0 = largeur « normale » de Hamlib
+    # (Icom : préréglage FIL, comportement validé sur l'IC-7300MK2) ; -1 = largeur INCHANGÉE (Hamlib
+    # RIG_PASSBAND_NOCHANGE : chez Yaesu newcat, 0 deviendrait 2400 Hz et réécrirait le filtre de toit, lu dans le code)
+    mode_width: int = 0
 
 
 @dataclass(frozen=True)
@@ -60,6 +64,15 @@ class Squelch:
     # estimate = repère du squelch comparé au S-mètre (approximatif) ; busy = état « occupé » lu sur le poste
     # (Yaesu `BY`) ; dcd = détection de porteuse de Hamlib (`get_dcd`)
     source: str = "estimate"
+    # Source « busy » : LECTURE brute de la fiche (étape 402 ; Hamlib n'a pas get_dcd pour les Yaesu newcat, lu dans
+    # son code) : `query` (deux lettres et « ; », ex. « BY; »), `reply` (expression, UN groupe), `open_value` (valeur
+    # du groupe quand le squelch est ouvert). Vides pour les autres sources.
+    query: str = ""
+    reply: str = ""
+    open_value: str = ""
+    # Étalonnage du squelch du MODÈLE (étape 411) : 10 valeurs SQL de Hamlib (0 à 1) quand le poste affiche 1 à 9 puis
+    # 9+10, d'après les exports du menu 2.10 envoyés par les opérateurs ; vide = aucune table (trxstation/squelchcal.py)
+    calibration: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -123,7 +136,10 @@ def parse(text: str, where: str = "fiche") -> RigSpec:
         if isinstance(raw_filters.get("quick"), list):
             raw_filters["quick"] = tuple(raw_filters["quick"])
     filters = _section(Filters, raw_filters, f"{where} [filters]")
-    squelch = _section(Squelch, data.pop("squelch", {}), f"{where} [squelch]")
+    raw_squelch = data.pop("squelch", {})
+    if isinstance(raw_squelch, dict) and isinstance(raw_squelch.get("calibration"), list):
+        raw_squelch = {**raw_squelch, "calibration": tuple(raw_squelch["calibration"])}
+    squelch = _section(Squelch, raw_squelch, f"{where} [squelch]")
     transmit = _section(Transmit, data.pop("transmit", {}), f"{where} [transmit]")
     spec = _section(RigSpec, data, where)
     spec = RigSpec(model=spec.model, name=spec.name, receivers=spec.receivers, verified=spec.verified,
@@ -167,8 +183,28 @@ def check(spec: RigSpec) -> str | None:
                 return f"[transmit] : expression illisible « {pattern} »"
         if t.sub_value == t.main_value or spec.receivers != 2:
             return "[transmit] : valeurs MAIN et SUB distinctes, seulement pour receivers = 2"
+    if spec.filters.mode_width not in (0, -1):
+        return "filters.mode_width : 0 (largeur normale) ou -1 (inchangée)"
     if spec.squelch.source not in SQUELCH_SOURCES:
         return f"squelch.source parmi {SQUELCH_SOURCES}"
+    s = spec.squelch
+    raw_read = (s.query, s.reply, s.open_value)
+    if s.source == "busy":
+        if not all(raw_read):
+            return "[squelch] source = busy : query, reply et open_value exigés"
+        if not READ_QUERY_RE.fullmatch(s.query):
+            return f"[squelch] : « {s.query} » n'est pas une lecture (deux lettres et « ; »)"
+        try:
+            if re.compile(s.reply).groups != 1:
+                return f"[squelch] : « {s.reply} » doit avoir un seul groupe"
+        except re.error:
+            return f"[squelch] : expression illisible « {s.reply} »"
+    elif any(raw_read):
+        return "[squelch] : query, reply et open_value seulement pour source = busy"
+    if s.calibration:
+        from ..squelchcal import problem as cal_problem
+        if (bad := cal_problem(list(s.calibration))) is not None:
+            return f"[squelch] calibration : {bad}"
     return None
 
 
@@ -188,8 +224,9 @@ def read_queries() -> frozenset[str]:
     """Liste FERMÉE des lectures brutes que la station peut envoyer : celles des fiches livrées."""
     out: set[str] = set()
     for path in sorted((FOLDER / "models").glob("*.toml")):
-        t = parse(path.read_text(encoding="utf-8"), path.name).transmit
-        out.update(q for q in (t.side_query, t.main_freq_query, t.sub_freq_query) if q)
+        spec = parse(path.read_text(encoding="utf-8"), path.name)
+        t = spec.transmit
+        out.update(q for q in (t.side_query, t.main_freq_query, t.sub_freq_query, spec.squelch.query) if q)
     return frozenset(out)
 
 

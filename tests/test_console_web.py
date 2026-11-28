@@ -122,11 +122,27 @@ def test_state_gives_the_web_app_link_under_the_station_state(tmp_path):
         dash = {"scheme": "http", "port": cfg.dashboard.port, "hosts": []} if cfg.dashboard.enabled else None
         assert data["webapp"] == {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
                                   "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"),
-                                  "dashboard": dash}                # tableau de bord (étape 385), 127.0.0.1 par défaut
+                                  "dashboard": dash,                # tableau de bord (étape 385), 127.0.0.1 par défaut
+                                  "console": {"enabled": False, "menu": "4.6"}}   # console réseau désactivée (étape 405)
         assert data["ui"]["web.webapp"] == "Application Web : {url}" and data["ui"]["web.webapp_open"]
         assert data["ui"]["web.dashboard"] == "Tableau de bord Web : {url}" and data["ui"]["web.dashboard_open"]
         wc.config.unlink()                                                  # station pas encore configurée
         assert (await (await client.get("/api/state")).json())["webapp"] is None
+    scenario(tmp_path, body)
+
+
+def test_state_tells_the_page_when_the_station_is_in_safety_lockout(tmp_path):
+    """Pastille rouge « MISE EN SÉCURITÉ » de la page : cause et menu 1.4 dans l'état (étape 404)."""
+    from trxstation.console import config_state_dir
+    async def body(wc, client):
+        await login(wc, client)
+        data = await (await client.get("/api/state")).json()
+        assert data["safe_mode"] is None and data["safe_menu"] == "1.4"
+        assert data["ui"]["web.safe_mode"] == "MISE EN SÉCURITÉ" and "{menu}" in data["ui"]["web.safe_mode_open"]
+        state_dir = config_state_dir(wc.config)
+        state_dir.mkdir(parents=True, exist_ok=True)
+        (state_dir / "safe_mode").write_text("ORT-8008 passerelle muette", encoding="utf-8")
+        assert (await (await client.get("/api/state")).json())["safe_mode"] == "ORT-8008 passerelle muette"
     scenario(tmp_path, body)
 
 

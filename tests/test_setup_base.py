@@ -173,3 +173,22 @@ def test_first_installation_asks_the_first_account_directly(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt="": (prompts.append(prompt), "")[1])
     sw.ask_accounts(cfg)
     assert len(prompts) == 1 and prompts[0].startswith("Identifiant du client")
+
+
+def test_a_new_installation_on_the_network_gets_the_web_console_with_the_first_operator_as_admin(monkeypatch, capsys):
+    from trxstation.console import menu_number
+    assert sw.WEB_CONSOLE_MENU == menu_number("remote_console")
+    monkeypatch.setattr(sw, "local_addresses", lambda *a, **k: ["192.0.2.10"])
+    cfg = sw.dummy_config()
+    cfg.clients = [ClientAuth(id="pc", password_hash=hash_password("un mot de passe solide 42")),
+                   ClientAuth(id="phone", password_hash=hash_password("un mot de passe solide 43"))]
+    assert not sw.enable_web_console(cfg, account="bob")                 # machine seule : rien
+    cfg.network.gateway_bind, cfg.network.tls_cert, cfg.network.tls_key = "0.0.0.0", "c.pem", "k.pem"
+    assert not sw.enable_web_console(sw.dummy_config(), account="bob")    # aucun compte : rien
+    if os.name != "nt":
+        assert not sw.enable_web_console(cfg, account="root") and not cfg.remote_console.enabled
+    assert sw.enable_web_console(cfg, account="bob")
+    assert cfg.remote_console.enabled and [c.id for c in cfg.clients if c.admin] == ["pc"]
+    assert cfg.remote_console.account == ("" if os.name == "nt" else "bob")
+    assert "https://192.0.2.10:8444/" in capsys.readouterr().out and cfgmod.validate(cfg) == []
+    assert not sw.enable_web_console(cfg, account="bob")                  # déjà en service : rien de refait

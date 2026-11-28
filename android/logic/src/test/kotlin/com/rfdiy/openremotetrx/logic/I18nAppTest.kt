@@ -47,6 +47,7 @@ class I18nAppTest {
         "Format.kt",
         "FreeDv.kt",
         "FreeDvActivity.kt",
+        "FreqHistory.kt",
         "Friends.kt",
         "HeadsetMic.kt",
         "Help.kt",

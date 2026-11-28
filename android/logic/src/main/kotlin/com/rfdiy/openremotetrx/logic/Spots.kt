@@ -93,10 +93,14 @@ object Spots {
         return Spot(
             id = id, khz = f, hz = (f * 1000).roundToLong(), dx = dx, de = text(o, "de", 20), mode = text(o, "m", 10),
             modeGuessed = (o["mg"] as? JsonPrimitive)?.booleanOrNull == true || (o["mg"] as? JsonPrimitive)?.intOrNull == 1,
-            kind = kind, time = text(o, "t", 4), count = count, comment = text(o, "c", 80), country = text(o, "co", 40),
+            kind = kind, time = text(o, "t", 4), count = count, comment = text(o, "c", 80), country = text(o, "co", 40).ifEmpty { cbCountry(kind, f, dx) },
             continent = text(o, "ct", 2), qsyMode = text(o, "q", 10), age0 = age, receivedMs = nowMs,
         )
     }
+
+    /** Spot de cibiste sans pays (clusterdx.org, ou 11 m d'un autre cluster) : pays d'après le numéro de division. */
+    private fun cbCountry(kind: String, khz: Double, dx: String): String =
+        if (kind == "cb" || khz in 25_615.0..27_995.0) CbDivisions.country(dx) else ""
 
     /** Heure d'arrivée du spot (ms, horloge murale) : sa réception moins l'âge qu'il avait alors. */
     fun arrivalMs(spot: Spot): Long = spot.receivedMs - (spot.age0 * 1000).roundToLong()
@@ -157,6 +161,24 @@ object Spots {
     fun qsyTarget(spot: Spot, adapt: (String) -> String?): Pair<Long, String?> =
         spot.hz to spot.qsyMode.takeIf { it.isNotEmpty() }?.let(adapt)
 
+    /** Texte des étiquettes (bouton PAYS, étape 410) : indicatif, pays, ou les deux. */
+    const val LABEL_CALL = 0
+    const val LABEL_COUNTRY = 1
+    const val LABEL_BOTH = 2
+    const val COUNTRY_MAX = 14
+
+    fun nextLabelView(view: Int): Int = (view + 1).mod(3)
+
+    /** Pays coupé à [COUNTRY_MAX] caractères (« … ») ; spot sans pays connu = indicatif seul. */
+    fun labelText(spot: Spot, view: Int): String {
+        val country = spot.country.trim().let { if (it.length > COUNTRY_MAX) it.take(COUNTRY_MAX - 1).trimEnd() + "…" else it }
+        return when {
+            country.isEmpty() || view == LABEL_CALL -> spot.dx
+            view == LABEL_COUNTRY -> country
+            else -> spot.dx + " " + country
+        }
+    }
+
     /**
      * Étiquettes rangées l'une sous l'autre quand elles se chevauchent (3 rangées), puis regroupées en « +N » sur une
      * rangée de plus (page : layoutLabels). `spots` triés par fréquence.
@@ -164,6 +186,7 @@ object Spots {
     fun layoutLabels(
         spots: List<Spot>, lowHz: Long, highHz: Long, widthPx: Float,
         rows: Int = 3, charPx: Float = 7f, padPx: Float = 10f, gapPx: Float = 4f,
+        labelOf: (Spot) -> String = { it.dx },
     ): List<SpotLabel> {
         val span = (highHz - lowHz).toDouble()
         if (span <= 0 || widthPx <= 0) return emptyList()
@@ -173,11 +196,12 @@ object Spots {
         val left = mutableListOf<Pair<Spot, Float>>()
         for (s in spots) {
             val x = ((s.hz - lowHz) / span * widthPx).toFloat()
-            val w = width(s.dx)
+            val text = labelOf(s)
+            val w = width(text)
             val row = (0 until rows).firstOrNull { x - w / 2 >= right[it] + gapPx }
             if (row == null) { left += s to x; continue }
             right[row] = x + w / 2
-            placed += SpotLabel(x, row, s.dx, listOf(s.id), false)
+            placed += SpotLabel(x, row, text, listOf(s.id), false)
         }
         class Group(val x0: Float, var x1: Float, val ids: MutableList<Long>)
         val groups = mutableListOf<Group>()

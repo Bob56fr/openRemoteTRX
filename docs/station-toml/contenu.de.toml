@@ -135,6 +135,12 @@ ou = "Menü 8.1. Adresse in der Kopfzeile der openRemoteTRX Console angezeigt (�
 relu = "redemarrage"
 depuis = "0.280.0"
 
+[sections.squelch_cal]
+titre = "Squelch-Kalibrierung [squelch_cal]"
+intro = "<p>Zehn Werte der Hamlib-SQL-Einstellung, vom Menü 2.10 der Konsole gelesen, wenn das Gerät einen Squelch von 1, 2… 9, dann 9+10 anzeigt. Seite und App bestimmen daraus die Position der orangen Markierung über dem S-Meter und einen Dezimalwert („S5,4“), wie die Anzeige des Geräts. Ohne Kalibrierung gilt die Tabelle des Modells (Datenblatt), falls vorhanden, sonst eine geschätzte Markierung. Vom Menü 2.10 geschrieben, nicht von Hand.</p>"
+ou = "Menü 2.10 der Konsole (Squelch kalibrieren)."
+relu = "chaud"
+
 [sections.spectrum]
 titre = "HF-Spektrum des Transceivers [spectrum]"
 intro = "<p>Das HF-Spektrum und der Wasserfall des Transceivers in der Webseite und der App, über einen zweiten Port des Transceivers (Icom) oder über Hamlib.</p>"
@@ -864,6 +870,20 @@ niveau = "courant"
 bornes = "Höchstens 40 Zeichen."
 exemple = "<code>rig_name = \"IC-7300MK2\"</code>"
 depuis = "0.280.0"
+
+[reglages."squelch_cal.model"]
+role = "Hamlib-Nummer des kalibrierten Geräts. Die Kalibrierung wird ignoriert, wenn dies nicht mehr die Nummer von <code>[rig] model</code> ist (Gerät gewechselt). 0 = keine Kalibrierung."
+niveau = "expert"
+bornes = "Ganzzahl, 0 oder mehr."
+exemple = "<code>model = 3094</code>"
+depuis = "0.299.0"
+
+[reglages."squelch_cal.points"]
+role = "Die 10 Werte der SQL-Einstellung (0 bis 1), in der Reihenfolge 1, 2… 9, 9+10. Leer = keine Kalibrierung."
+niveau = "expert"
+bornes = "Genau 10 Werte von 0 bis 1, streng steigend."
+exemple = "<code>points = [0.1176, 0.1608, 0.2039, 0.2471, 0.2902, 0.3333, 0.3765, 0.4196, 0.4706, 0.5373]</code>"
+depuis = "0.299.0"
 
 # ---------------------------------------------------------------- breizh
 

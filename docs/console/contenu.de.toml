@@ -173,7 +173,7 @@ expert = "<p>Ohne Menü: <code>trx-console --rapport</code>. In der Datei <code>
 
 [menus.clear_safe_mode]
 role = "<strong>Nimmt die Station wieder in Betrieb</strong> nach einer <strong>Sicherheitsabschaltung</strong>. Der Supervisor schaltet die Station nach wiederholten Störungen sicher ab: gefahrloser Zustand (Transceiver auf Empfang, Zugang gesperrt), sie wartet auf einen Eingriff."
-quand = "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2)."
+quand = "Erst nachdem du die Ursache gefunden und behoben hast (Menüs 6.1 und 6.2). Solange die Station in Sicherheitsabschaltung ist, zeigt ein roter Rahmen oben in der Konsole dies mit der Ursache an (rote Plakette „SICHERHEITSABSCHALTUNG“ in der Web-Konsole: ein Klick öffnet dieses Menü)."
 modifie = "Löscht die gespeicherte Sicherheitsabschaltung und startet die Station neu."
 admin = true
 expert = "<p>Die Sicherheitsabschaltung überdauert Neustarts und Korrekturen: die Station muss hier ausdrücklich wieder in Betrieb genommen werden.</p>"
@@ -202,6 +202,12 @@ quand = "Station ohne Internet, Testversion oder Rückkehr zu einer bestimmten V
 modifie = "Wie Menü 7.1: neue Version neben der alten, Konfiguration bleibt erhalten. Bei einem nicht signierten Paket musst du <code>OUI</code> und dann die Versionsnummer tippen."
 admin = true
 expert = "<p>Das Zip abzulegen reicht nicht: es muss hier installiert werden. Bericht: <code>/var/log/trx-remote-install.log</code>.</p>"
+
+[menus.changes]
+role = "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen, Neuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der Version, die sie bringt; auf Wunsch auch die für alle Geräte geltenden. Höchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke. Änderungen veröffentlichter, aber noch nicht installierter Versionen (mit der Suche nach Aktualisierungen geladene Liste) sind mit [kommt] markiert, und Menü 7.1 zeigt sie vor der Installation. Auswahl 2: die GitHub-Tickets (offen und geschlossen) Ihres Geräts, nach der Kennzeichnung durch die Liste „Funkgerät (Modell)“ der Formulare, mit ihrer Adresse."
+quand = "Um zu wissen, was sich für Ihr Gerät über die Versionen geändert hat, vor oder nach einer Aktualisierung."
+modifie = "Nichts (nur lesend)."
+admin = false
 
 [menus.edit_config]
 role = "Bearbeitet <code>station.toml</code> im Editor nano, an einer Kopie."
@@ -317,6 +323,12 @@ quand = "Wenn der Empfangston auf allen Endgeräten zu leise oder zu laut ist, z
 modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>rx_gain_db</code> und <code>rx_limiter</code> im Abschnitt <code>[audio]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten (<code>station.toml.bak</code>). Nichts wird geschrieben, wenn du abbrichst. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
 admin = true
 
+[menus.squelch_cal]
+role = "<strong>Kalibriert den Squelch</strong>, damit die orange Markierung über dem S-Meter (Seite und App) und der angezeigte Wert („S5,4“) der Anzeige des Geräts folgen, in allen Betriebsarten. Am Gerät stellen Sie den Squelch auf 1, 2… 9, dann 9+10; jedes Mal liest die Konsole die von der Station veröffentlichte SQL-Einstellung (nur Lesen: nichts wird an das Gerät geschrieben, keine Aussendung). Auswahl 2: <strong>Export</strong> als Zip für ein GitHub-Ticket (Kalibrierung, Betriebsart und Squelch-Zustand an jedem Punkt, von Hamlib gemeldete Fähigkeiten, aktuelle Einstellungen, Datenblatt, Versionen; keine Seriennummer, keine Adresse), damit eine spätere Version die Tabelle dieses Modells kennt. Auswahl 3: löschen."
+quand = "Wenn die Squelch-Markierung nicht der Anzeige des Geräts entspricht. Station gestartet, Gerät eingeschaltet."
+modifie = "Die Konfiguration der Station (<code>station.toml</code>, Abschnitt <code>[squelch_cal]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Ohne Neustart gelesen: gilt ab der nächsten Verbindung der Seite und der App. Der Export wird auf den Desktop geschrieben (Download-Schaltfläche in der Web-Konsole)."
+admin = true
+
 [menus.bands]
 role = "Legt fest, wer das Senden außerhalb deiner Bänder verhindert: die Station (Liste erlaubter Bänder, Ausgangswerte IARU-Region 1, gemäß deiner Lizenz zu prüfen) oder der Transceiver selbst. <strong>Leere Liste = nur Empfang.</strong> Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
 quand = "Bei der Inbetriebnahme, nach einer Lizenzänderung oder wenn die Station eine Sendung in einem erlaubten Band ablehnt."
@@ -337,7 +349,7 @@ admin = true
 
 [menus.remote_console]
 role = "Stellt <strong>openRemoteTRX Console im Netzwerk</strong> bereit: dieselben Menüs im Browser jedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung, unter <code>https://&lt;station&gt;:8444/</code>. Anmeldung mit einem <strong>als Administrator markierten Operatorkonto</strong> (hier gewählt); die Sitzung endet nach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der Bedienseite angemeldeter Administrator findet dort auch den Link."
-quand = "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen."
+quand = "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen. Eine neue Installation im Netzwerk hat sie bereits in Betrieb (Assistent 2.1, erstes Operator-Konto als Administrator): Dieses Menü schaltet sie ab oder wählt andere Konten. Solange sie deaktiviert ist, zeigt ihre Adresse eine Seite „Web-Konsole deaktiviert“ mit Verweis auf dieses Menü (im Netzwerk, mit Zertifikat), und der Kopf der Konsole meldet „aktiviert, antwortet aber nicht“, wenn sie aktiviert ist, aber nicht antwortet."
 modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>[remote_console]</code> und die Markierung <code>admin</code> der Konten), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Unter Debian wird der Dienst <code>trx-console-web@konto</code> gestartet oder gestoppt; unter Windows wird die Station neu gestartet."
 admin = true
 
@@ -399,6 +411,12 @@ expert = "<p>Die Konsole legt ihre Anfrage für das Modul „monlink“ ab (Date
 role = "Gibt den Link der <strong>Analyse der Fehlerberichte</strong>: eine Seite der Website rf-diy.com, auf der man das Zip aus Menü 6.3 ablegt (oder das von einem Freund über das Monitoring erhaltene, Menü 6.5 Auswahl 10). Die Analyse läuft <strong>in deinem Browser</strong>: der Bericht wird nirgendwohin gesendet. Die Seite ist auf Französisch."
 quand = "Nach Menü 6.3, um die gefundenen Probleme zu sehen, bevor du um Hilfe bittest, oder wenn du jemandem hilfst, der dir seinen Bericht geschickt hat."
 modifie = "Nichts: das Menü zeigt nur den Link und die Schritte."
+admin = false
+
+[menus.screen_share]
+role = "<strong>Geteilter Bildschirm</strong>, nur ansehen, über das Relais von rf-diy.com (Ende-zu-Ende verschlüsselt). Auswahl 1 (Debian und Raspberry Pi): Die Konsole gibt einen 10-stelligen Code, den Sie der Person nennen, die Ihnen hilft, und startet neu; alles Angezeigte sieht diese Person live. Auswahl 2 (überall, auch Windows): Sie tippen den Code eines Freundes und sehen seine Konsole. Wer zusieht, kann <strong>nichts tippen</strong>: Der Freund tippt selbst, was man ihm sagt (zum Beispiel am Telefon). <strong>Strg+]</strong> beendet das Teilen (die Konsole läuft weiter); das Beenden der Konsole beendet alles; höchstens 2 Stunden. Auch auf der Kommandozeile: <code>trx-console --partage</code> und <code>trx-console --voir CODE</code>."
+quand = "Wenn ein Freund seine Station nicht installieren oder einrichten kann: Er teilt seinen Bildschirm, Sie führen ihn mündlich und sehen, was er sieht. Funktioniert sogar, bevor station.toml existiert. Nur in der Textkonsole (Terminal oder SSH), nicht in der Webkonsole; das Fenster des Zusehenden muss mindestens so groß sein wie das des Freundes (der Fenstertitel weist darauf hin)."
+modifie = "Nichts an der Station: Die Konsole wird nur für die Dauer des Teilens in einem Pseudo-Terminal neu gestartet und ihr Bildschirm an das Relais gesendet, das ihn nach 10 Minuten oder am Ende des Teilens löscht."
 admin = false
 
 [menus.config_download]

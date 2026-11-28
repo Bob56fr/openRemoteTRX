@@ -173,7 +173,7 @@ expert = "<p>Without the menu: <code>trx-console --rapport</code>. The report's 
 
 [menus.clear_safe_mode]
 role = "<strong>Reactivates the station</strong> after a <strong>safety lockout</strong>. The supervisor locks the station out after repeated failures: stopped in a safe state (transceiver in receive, access cut), it waits for an intervention."
-quand = "Only after finding and fixing the cause (menus 6.1 and 6.2)."
+quand = "Only after finding and fixing the cause (menus 6.1 and 6.2). While the station is in safety lockout, a red frame at the top of the console says so, with the cause (red “SAFETY LOCKOUT” pill in the web console: a click opens this menu)."
 modifie = "Clears the stored safety lockout and restarts the station."
 admin = true
 expert = "<p>The safety lockout survives restarts and fixes: the station must be reactivated explicitly here.</p>"
@@ -202,6 +202,12 @@ quand = "Station without Internet, test version, or going back to a specific ver
 modifie = "Like menu 7.1: new version next to the old one, configuration kept. An unsigned package asks you to type <code>OUI</code> then the version number."
 admin = true
 expert = "<p>Dropping the zip is not enough: it must be installed here. Log: <code>/var/log/trx-remote-install.log</code>.</p>"
+
+[menus.changes]
+role = "Shows as a table the latest openRemoteTRX changes (fixes, new features, safety) that concern YOUR rig model, with the date and the version that brings them; optionally also those valid for all rigs. 50 lines at most; ★ = specific to your rig or its brand. Changes of versions published but not yet installed (list downloaded with the update check) are marked [coming], and menu 7.1 shows them before installing. Choice 2: the GitHub issues (open and closed) for your rig, from the label set by the “Transceiver model” list of the forms, with their address."
+quand = "To know what changed for your rig over the versions, before or after an update."
+modifie = "Nothing (read-only)."
+admin = false
 
 [menus.edit_config]
 role = "Edits <code>station.toml</code> in the nano editor, on a copy."
@@ -317,6 +323,12 @@ quand = "When received audio is too weak or too loud on every terminal, for inst
 modifie = "The station configuration (<code>station.toml</code>: <code>rx_gain_db</code> and <code>rx_limiter</code> in the <code>[audio]</code> section), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
 admin = true
 
+[menus.squelch_cal]
+role = "<strong>Calibrates the squelch</strong> so that the orange marker above the S-meter (page and app) and the value shown (“S5.4”) follow the rig's display, in every mode. At the rig, you set the squelch to 1, 2… 9 then 9+10; each time the console reads the SQL setting published by the station (read only: nothing is written to the rig, no transmission). Choice 2: <strong>export</strong> a zip to attach to a GitHub issue (calibration, mode and squelch state at each point, capabilities declared by Hamlib, current settings, spec sheet, versions; no serial number or address) so that a later version knows this model's table. Choice 3: erase."
+quand = "When the squelch marker does not match the rig's display. Station running, rig on."
+modifie = "The station configuration (<code>station.toml</code>, section <code>[squelch_cal]</code>), with administrator rights; the previous version is kept. Re-read without a restart: used at the next connection of the page and the app. The export is written to the Desktop (download button in the web console)."
+admin = true
+
 [menus.bands]
 role = "Decides who prevents transmitting outside your bands: the station (list of allowed bands, IARU region 1 starting points to check against your licence) or the transceiver itself. <strong>Empty list = receive only.</strong> The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
 quand = "At commissioning, after a licence change, or if the station refuses a transmission in an allowed band."
@@ -337,7 +349,7 @@ admin = true
 
 [menus.remote_console]
 role = "Puts <strong>openRemoteTRX Console on the network</strong>: the same menus in the browser of any PC, tablet or phone on the local network or VPN, without SSH or shortcut, at <code>https://&lt;station&gt;:8444/</code>. Login with an <strong>operator account marked administrator</strong> (chosen here); the session closes after 30 minutes without action; the station sudo password is still asked once per session. 5 failures block the address for 15 minutes and every login sends an ntfy alert. Never reachable from the Internet. An administrator logged in to the control page also finds the link there."
-quand = "To administer the station from another device, without knowing SSH."
+quand = "To administer the station from another device, without knowing SSH. A new installation on the network already has it in service (wizard 2.1, first operator account as administrator): this menu stops it or chooses other accounts. While it is disabled, its address shows a “Web console disabled” page pointing to this menu (on the network, with a certificate), and the console header says “enabled but not answering” if it is enabled but does not answer."
 modifie = "The station configuration (<code>station.toml</code>: <code>[remote_console]</code> and the <code>admin</code> mark of the accounts), with administrator rights; the previous version is kept. On Debian, the <code>trx-console-web@account</code> service is started or stopped; on Windows, the station is restarted."
 admin = true
 
@@ -399,6 +411,12 @@ expert = "<p>The console leaves its request for the \"monlink\" module (file <co
 role = "Gives the link of the <strong>troubleshooting report analyser</strong>: a page of the rf-diy.com site where you drop the zip of menu 6.3 (or the one received from a friend through monitoring, menu 6.5 choice 10). The analysis runs <strong>in your browser</strong>: the report is sent nowhere. The page is in French."
 quand = "After menu 6.3, to see the problems found before asking for help, or when you help someone who sent you their report."
 modifie = "Nothing: the menu only shows the link and the steps to follow."
+admin = false
+
+[menus.screen_share]
+role = "<strong>Shared screen</strong>, view only, through the rf-diy.com relay (end-to-end encrypted). Choice 1 (Debian and Raspberry Pi): the console gives a 10-character code to read out to the person helping you, then restarts; everything displayed is seen by them live. Choice 2 (everywhere, Windows included): you type the code given by a friend and see their console. The viewer cannot <strong>type anything</strong>: the friend types what they are told (by phone for example). <strong>Ctrl+]</strong> stops sharing (the console goes on); quitting the console stops everything; 2 hours at most. Also from the command line: <code>trx-console --partage</code> and <code>trx-console --voir CODE</code>."
+quand = "When a friend cannot install or set up their station: they share their screen, you guide them by voice while seeing what they see. Works even before station.toml exists. In the text console only (terminal or SSH), not in the web console; the viewer's window must be at least as large as the friend's (the window title says so)."
+modifie = "Nothing on the station: the console is only restarted under a pseudo-terminal while sharing, and its screen sent to the relay, which erases it after 10 minutes or at the end of the sharing."
 admin = false
 
 [menus.config_download]

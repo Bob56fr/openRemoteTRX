@@ -135,6 +135,12 @@ ou = "Menu 8.1. Adresse affichée dans l'en-tête d'openRemoteTRX Console (« Ta
 relu = "redemarrage"
 depuis = "0.280.0"
 
+[sections.squelch_cal]
+titre = "Étalonnage du squelch [squelch_cal]"
+intro = "<p>Dix valeurs du réglage SQL de Hamlib relevées par le menu 2.10 de la console quand le poste affiche un squelch sur 1, 2… 9 puis 9+10. La page et l'application en tirent la position du repère orange au-dessus du S-mètre et une valeur décimale (« S5,4 »), comme l'afficheur du poste. Sans étalonnage, la table du modèle (fiche technique) sert si elle existe, sinon un repère estimé. Écrit par le menu 2.10, pas à la main.</p>"
+ou = "Menu 2.10 de la console (Étalonner le squelch)."
+relu = "chaud"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -864,6 +870,20 @@ niveau = "courant"
 bornes = "40 caractères au plus."
 exemple = "<code>rig_name = \"IC-7300MK2\"</code>"
 depuis = "0.280.0"
+
+[reglages."squelch_cal.model"]
+role = "Numéro Hamlib du poste étalonné. L'étalonnage est ignoré si ce n'est plus le numéro de <code>[rig] model</code> (poste changé). 0 = aucun étalonnage."
+niveau = "expert"
+bornes = "Entier, 0 ou plus."
+exemple = "<code>model = 3094</code>"
+depuis = "0.299.0"
+
+[reglages."squelch_cal.points"]
+role = "Les 10 valeurs du réglage SQL (0 à 1), dans l'ordre 1, 2… 9, 9+10. Vide = aucun étalonnage."
+niveau = "expert"
+bornes = "Exactement 10 valeurs de 0 à 1, strictement croissantes."
+exemple = "<code>points = [0.1176, 0.1608, 0.2039, 0.2471, 0.2902, 0.3333, 0.3765, 0.4196, 0.4706, 0.5373]</code>"
+depuis = "0.299.0"
 
 # ---------------------------------------------------------------- breizh
 

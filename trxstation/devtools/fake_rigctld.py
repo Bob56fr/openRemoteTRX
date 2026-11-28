@@ -47,6 +47,13 @@ class FakeRigctld:
         self.vfo = "VFOA"         # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
         self.ascii: dict[str, str] = {}   # réponses aux lectures brutes « w » (ex. {"FT;": "FT0;"}) ; absente = RPRT -5
         self.dcd: bool | None = None   # squelch ouvert (« \get_dcd ») ; None = poste qui ne le dit pas (RPRT -11)
+        # Décalage relais (« Repeater Shift: None / + / - », « Repeater Offset: 600000 », relevés sur rigctld 4.7.2,
+        # 2026-11-26) ; None = poste qui ne le connaît pas (RPRT -4, comme un backend sans get_rptr_shift), étape 401
+        self.rptr_shift: str | None = None
+        self.rptr_offs: int | None = None
+        # Vrai rigctld (tests/rigctl_parse.c) : tant qu'il se CROIT le poste éteint, il refuse toute commande sauf
+        # l'alimentation par RPRT -20, « T 0 » compris ; \get_powerstat d'un poste allumé le détrompe (étape 401)
+        self.believes_off = False
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
         self.delay_s = 0.0
@@ -133,10 +140,14 @@ class FakeRigctld:
         key, args = parts[0], parts[1:]
         if key in self.errors:
             return f"RPRT {self.errors[key]}\n"
+        if self.believes_off and key not in ("\\get_powerstat", "\\set_powerstat", "\\set_cache", "\\get_cache"):
+            return "RPRT -20\n"
         if key == "\\get_powerstat":
             if not self.power_supported:
                 return "RPRT -4\n"
             on = self.powered and time.monotonic() >= self._booting_until
+            if on:
+                self.believes_off = False
             if not on and self.off_refuses:
                 return "RPRT -9\n"             # Icom éteint (IC-7300MK2, 2026-11-19) : lecture refusée, pas « 0 »
             return f"get_powerstat:\n{self._out('Power Status', 1 if on else 0)}RPRT 0\n"
@@ -162,7 +173,9 @@ class FakeRigctld:
             if key == "m":
                 return f"get_mode:\n{self._out('Mode', self.mode)}{self._out('Passband', self.passband)}RPRT 0\n"
             if key == "M":
-                self.mode, self.passband = args[0], int(args[1])
+                self.mode = args[0]
+                if int(args[1]) != -1:                  # -1 = largeur inchangée (Hamlib RIG_PASSBAND_NOCHANGE)
+                    self.passband = int(args[1])
                 return f"set_mode: {args[0]} {args[1]}\nRPRT 0\n"
             if key == "l" and args[:1]:
                 if self.broken_strength and args[0] == "STRENGTH":
@@ -208,6 +221,14 @@ class FakeRigctld:
             if key == "Z" and args:
                 self.xit = int(args[0])
                 return f"set_xit: {args[0]}\nRPRT 0\n"
+            if key == "r":
+                if self.rptr_shift is None:
+                    return "RPRT -4\n"
+                return f"get_rptr_shift:\n{self._out('Repeater Shift', self.rptr_shift)}RPRT 0\n"
+            if key == "o":
+                if self.rptr_offs is None:
+                    return "RPRT -4\n"
+                return f"get_rptr_offs:\n{self._out('Repeater Offset', self.rptr_offs)}RPRT 0\n"
             if key == "\\get_dcd":                  # détection de porteuse (squelch ouvert), étape 396
                 if self.dcd is None:
                     return "RPRT -11\n"

@@ -32,12 +32,43 @@ body:
         - Android Auto
     validations:
       required: true
-  - type: input
+  - type: dropdown
     id: trx
     attributes:
       label: Transceiver model
-      description: "Make and model, and if possible the Hamlib number (trx-setup wizard)."
-      placeholder: "Icom IC-7300MK2 (Hamlib 3094)"
+      description: "Choose your transceiver. Not in the list: “Other transceiver”, and give make, model and Hamlib number in the description."
+      options:
+        - "Icom IC-705 (Hamlib 3085)"
+        - "Icom IC-905 (Hamlib 3090)"
+        - "Icom IC-7100 (Hamlib 3070)"
+        - "Icom IC-7200 (Hamlib 3061)"
+        - "Icom IC-7300 (Hamlib 3073)"
+        - "Icom IC-7300MK2 (Hamlib 3094)"
+        - "Icom IC-7410 (Hamlib 3067)"
+        - "Icom IC-7600 (Hamlib 3063)"
+        - "Icom IC-7610 (Hamlib 3078)"
+        - "Icom IC-7760 (Hamlib 3092)"
+        - "Icom IC-7850 / IC-7851 (Hamlib 3075)"
+        - "Icom IC-9100 (Hamlib 3068)"
+        - "Icom IC-9700 (Hamlib 3081)"
+        - "Icom IC-R8600 (Hamlib 3079)"
+        - "Yaesu FT-710 (Hamlib 1049)"
+        - "Yaesu FT-991 / FT-991A (Hamlib 1035)"
+        - "Yaesu FTDX10 (Hamlib 1042)"
+        - "Yaesu FTDX101D (Hamlib 1040)"
+        - "Yaesu FTDX101MP (Hamlib 1044)"
+        - "Yaesu FTX-1 (Hamlib 1051)"
+        - "Kenwood TS-590S (Hamlib 2031)"
+        - "Kenwood TS-590SG (Hamlib 2037)"
+        - "Kenwood TS-890S (Hamlib 2041)"
+        - "Kenwood TS-990S (Hamlib 2039)"
+        - "Elecraft K3 (Hamlib 2029)"
+        - "Elecraft K3S (Hamlib 2043)"
+        - "Elecraft K4 (Hamlib 2047)"
+        - "Xiegu X6100 (Hamlib 3087)"
+        - "Xiegu X6200 (Hamlib 3091)"
+        - "QRP Labs QMX (Hamlib 2057)"
+        - "Other transceiver (give it in the description)"
     validations:
       required: true
   - type: input

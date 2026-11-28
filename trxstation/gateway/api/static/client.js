@@ -801,10 +801,45 @@
     return (hz >= 0 ? "+" : "") + Math.round(hz / 10) * 10 + " Hz";
   }
 
-  function squelchMarkerFraction(sql) {
-    /* Position du repère de squelch sur l'échelle du S-mètre. Le squelch (0 à 1) correspond à l'échelle 0-255 du poste, qui est aussi
-       celle du S-mètre (120 = S9, 241 = S9+60 dB). 0 = squelch ouvert : pas de repère. Repère INDICATIF. */
+  // ---- étalonnage du squelch (étape 411, hello.squelch_cal) : 10 valeurs SQL quand le poste affiche 1… 9, 9+10 ;
+  // même calcul que trxstation/squelchcal.py (to_db) et Radio.kt (vecteurs de tests/js et RadioTest)
+  const SQUELCH_LEVELS_DB = [-48, -42, -36, -30, -24, -18, -12, -6, 0, 10];
+
+  function squelchCal(raw) {
+    /* hello.squelch_cal -> tableau de 10 valeurs strictement croissantes de 0 à 1, sinon null. */
+    const pts = raw && Array.isArray(raw.points) ? raw.points : null;
+    if (!pts || pts.length !== SQUELCH_LEVELS_DB.length) return null;
+    for (let i = 0; i < pts.length; i++) {
+      if (typeof pts[i] !== "number" || !(pts[i] >= 0 && pts[i] <= 1) || (i > 0 && !(pts[i] > pts[i - 1]))) return null;
+    }
+    return pts.slice();
+  }
+
+  function squelchCalDb(sql, points) {
+    /* Niveau (dB / S9) du repère : interpolation entre les points (S0 = -54 dB pour SQL = 0), dernière pente au-delà de
+       9+10, plafond S9+60. null si le squelch est ouvert. */
+    if (sql === null || sql === undefined || !(sql > 0) || !points) return null;
+    const pts = [0].concat(points), lv = [-54].concat(SQUELCH_LEVELS_DB);
+    for (let i = 1; i < pts.length; i++) {
+      if (sql <= pts[i]) return lv[i - 1] + (sql - pts[i - 1]) * (lv[i] - lv[i - 1]) / (pts[i] - pts[i - 1]);
+    }
+    const n = pts.length - 1, slope = (lv[n] - lv[n - 1]) / (pts[n] - pts[n - 1]);
+    return Math.min(60, lv[n] + (sql - pts[n]) * slope);
+  }
+
+  function squelchSText(sql, points) {
+    /* « S5,4 » (décimale de la langue) ou « S9+6 » ; null si ouvert ou sans étalonnage. */
+    const db = squelchCalDb(sql, points);
+    if (db === null) return null;
+    return db <= 0 ? "S" + I18N.decimal(Math.max(0, 9 + db / 6), 1) : "S9+" + Math.round(db);
+  }
+
+  function squelchMarkerFraction(sql, points) {
+    /* Position du repère de squelch sur l'échelle du S-mètre. Avec un étalonnage (étape 411) : interpolation sur les 10
+       points. Sans : le squelch (0 à 1) correspond à l'échelle 0-255 du poste, qui est aussi celle du S-mètre (120 = S9,
+       241 = S9+60 dB), repère INDICATIF. 0 = squelch ouvert : pas de repère. */
     if (sql === null || sql === undefined || !(sql > 0)) return null;
+    if (points) return sMeterFraction(squelchCalDb(sql, points));
     const raw = Math.min(1, sql) * 255;
     return sMeterFraction(raw <= 120 ? -54 + raw * 54 / 120 : (raw - 120) * 60 / 121);
   }
@@ -1882,11 +1917,14 @@
         controls: controls, controlsLocked: state !== "RX", instruments: instruments, power: power, swr: swr, alc: alc,
         local: localView(p), temp: tempView(p),
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
-        // Squelch (étape 396) : état RÉEL lu sur le poste (rig.dcd) quand la fiche du poste le permet ; le repère estimé sur
-        // le S-mètre n'est alors plus montré (il ne correspond pas au poste : IC-7300, IC-705, FTDX10)
+        // Squelch (étape 396) : état RÉEL lu sur le poste (rig.dcd) quand la fiche du poste le permet ; le repère ESTIMÉ sur
+        // le S-mètre n'est alors pas montré (il ne correspond pas au poste). Repère ÉTALONNÉ (étape 411, hello.squelch_cal) :
+        // toujours montré, avec la valeur « S5,4 » comme l'afficheur du poste
         squelch: "SQL" in lv ? lv.SQL : null,
         squelchOpen: typeof rig.dcd === "boolean" ? rig.dcd : null,
-        squelchMark: "SQL" in lv && typeof rig.dcd !== "boolean" ? squelchMarkerFraction(lv.SQL) : null,
+        squelchCal: this._squelchCal(),
+        squelchMark: "SQL" in lv && (this._squelchCal() || typeof rig.dcd !== "boolean") ? squelchMarkerFraction(lv.SQL, this._squelchCal()) : null,
+        squelchText: "SQL" in lv ? squelchSText(lv.SQL, this._squelchCal()) : null,
         clarifier: clarifierView(fn, rig, this._caps()),
         indicators: indicatorsView(fn, lv, rig, this._caps()),
         host: this.isListener() ? null : hostView(this.state && this.state.host),
@@ -2163,6 +2201,10 @@
       /* Station avec port B (Icom) : la largeur par Hamlib RÉÉCRIRAIT les largeurs des préréglages du poste ; pas
          d'ancien bouton tant que le préréglage n'est pas lisible (port B en panne ou en pause). i18n-ok */
       return !!(this.hello && this.hello.spectrum && this.hello.spectrum.source === "civ_port");
+    }
+
+    _squelchCal() {                     // étalonnage du squelch annoncé par la station (étape 411), validé
+      return squelchCal(this.hello && this.hello.squelch_cal);
     }
 
     _rigSpec() {
@@ -2780,7 +2822,7 @@
                 get CLUSTER_TITLES() { return clusterTitles(); },
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, get MODE_LABELS() { return modeLabels(); },
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
-                squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE, filterSteps, quickWidths, nextWidth, nearestStep,
+                squelchMarkerFraction, squelchCal, squelchCalDb, squelchSText, formatWidth, filterLabel, nearestIndex, AGC_CYCLE, filterSteps, quickWidths, nextWidth, nearestStep,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, get LOSS_REASONS() { return lossReasons(); }, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,

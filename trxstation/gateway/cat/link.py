@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
@@ -88,6 +89,9 @@ class CatLink:
         self._strength_supported = True
         self._disabled: set[str] = set()                # lectures facultatives abandonnées (non gérées par ce poste)
         self.read_dcd = False                           # squelch réel lu sur le poste (fiche du poste, posé par PttController)
+        # Lecture BRUTE du squelch de la fiche (query, expression à un groupe, valeur « ouvert ») ; None = \get_dcd de
+        # Hamlib (étape 402 : Yaesu FTDX10 / FTDX101, « BY; », Hamlib n'a pas get_dcd pour ces postes)
+        self.dcd_raw: tuple[str, str, str] | None = None
         self._failures: dict[str, int] = {}
         self._extra_index = self._tx_index = 0
         self.ptt_cache_ok: bool | None = None           # cache du PTT de rigctld coupé ? (voir _disable_cache)
@@ -334,7 +338,15 @@ class CatLink:
                 self._update(dcd=None)
             return
         try:
-            value = await self.client.get_dcd()
+            if self.dcd_raw:
+                query, reply, open_value = self.dcd_raw
+                raw = await self.client.read_ascii(query)
+                found = re.fullmatch(reply, raw)
+                if not found:
+                    raise CatProtocolError(f"réponse {raw!r} à {query}")
+                value = found.group(1) == open_value
+            else:
+                value = await self.client.get_dcd()
         except RigError as exc:
             if exc.code in PERMANENT_ERRORS and time.monotonic() >= self._settle_until and not self.paused:
                 self._disable("s", "DCD", f"RPRT {exc.code}")

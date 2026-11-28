@@ -32,6 +32,7 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
 .sub{color:#9cc2bb;font-size:13px;overflow-wrap:anywhere}
 .webapp{justify-self:start;color:#7fe0d0;font-size:13px;text-decoration:none;border-bottom:1px dotted currentColor;overflow-wrap:anywhere}
 .webapp:hover,.webapp:focus-visible{color:#fff;outline:none;border-bottom-style:solid}
+.consoleoff{background:none;border:0;border-bottom:1px dotted currentColor;padding:0;font:inherit;font-size:13px;color:#ffb340;cursor:pointer;text-align:left}
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .pill{display:inline-flex;align-items:center;gap:7px;font:600 12px var(--f-display);letter-spacing:.07em;text-transform:uppercase;
   padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
@@ -41,6 +42,9 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
 .pill.warn .dot{background:#ffb340}
 .pill.tx{background:#b3261e;border-color:#ff6b5e}
 .pill.tx .dot{background:#fff;animation:pulse 1s infinite}
+.pill.safe{cursor:pointer;background:#b3261e;border-color:#ff6b5e;color:#fff}
+.pill.safe .dot{background:#fff}
+.pill.safe:hover,.pill.safe:focus-visible{background:#d0352b;outline:none}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 .vfo{text-align:right;display:grid;gap:2px}
 .freq{font:700 clamp(1.7rem,5vw,2.6rem)/1 var(--f-mono);color:var(--vfo-ink);text-shadow:0 0 14px rgba(83,243,216,.45);font-variant-numeric:tabular-nums}
@@ -79,6 +83,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   background:transparent;border:0;border-radius:8px;padding:4px 8px;color:var(--ink);font:14px var(--f-body);cursor:pointer}
 .items button:hover,.items button.sel{background:var(--panel2)}
 .items .k{font:500 12px var(--f-mono);color:var(--c)}
+/* mise en sécurité : menu 1.4 en rouge qui clignote lentement (1 par seconde, jamais plus vite) ; tuile bordée de rouge */
+.items button.alarm{background:#b3261e;color:#fff;font-weight:600;animation:alarm 1s steps(1,end) infinite}
+.items button.alarm .k{color:#fff}
+.card.alarm{box-shadow:0 0 0 2px #ff6b5e}
+@keyframes alarm{50%{background:transparent;color:var(--ink)}}
 .card.closed .items{display:none}
 .items a{display:flex;align-items:baseline;gap:6px;padding:4px 8px;border-radius:8px;color:var(--ink);font:14px var(--f-body);text-decoration:none}
 .items a:hover,.items a:focus-visible{background:var(--panel2)}

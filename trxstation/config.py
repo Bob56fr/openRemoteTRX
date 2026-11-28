@@ -291,6 +291,15 @@ class Dashboard:
 
 
 @dataclass
+class SquelchCal:
+    """Étalonnage du squelch de CE poste (étape 411, menu 2.10) : 10 valeurs du réglage SQL de Hamlib (0 à 1) relevées
+    quand le poste affiche un squelch sur 1, 2… 9, 9+10. Sert au repère du squelch de la page et de l'application
+    (trxstation/squelchcal.py). Ignoré si `model` n'est pas le numéro Hamlib de [rig] (poste changé)."""
+    model: int = 0                    # numéro Hamlib du poste étalonné ; 0 = aucun étalonnage
+    points: list[float] = field(default_factory=list)
+
+
+@dataclass
 class Freedv:
     """FreeDV RADE V1 en RÉCEPTION (lot F1, cahier des charges FreeDV) : deux décodeurs en processus enfants de la
     passerelle (trxstation/freedv/). Le choix du mode FreeDV (voix décodée à la place du son du poste) se fait depuis
@@ -631,6 +640,7 @@ class Config:
     diffusion: Diffusion = field(default_factory=Diffusion)
     remote_console: RemoteConsole = field(default_factory=RemoteConsole)
     dashboard: Dashboard = field(default_factory=Dashboard)
+    squelch_cal: SquelchCal = field(default_factory=SquelchCal)
     freedv: Freedv = field(default_factory=Freedv)
     sdr: Sdr = field(default_factory=Sdr)
     bands: list[Band] = field(default_factory=list)
@@ -697,6 +707,7 @@ def validate(cfg: Config) -> list[str]:
     p += _diffusion_problems(cfg.diffusion, cfg.modules, cfg.sdr)
     p += _remote_console_problems(cfg)
     p += _dashboard_problems(cfg)
+    p += _squelch_cal_problems(cfg)
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
@@ -1173,6 +1184,17 @@ def _remote_console_problems(cfg: Config) -> list[str]:
     return p
 
 
+def _squelch_cal_problems(cfg: Config) -> list[str]:
+    from .squelchcal import problem
+    c = cfg.squelch_cal
+    if isinstance(c.model, bool) or not isinstance(c.model, int) or c.model < 0:
+        return [_t("squelch_cal.model")]
+    if not c.points:
+        return []
+    bad = problem(c.points)
+    return [_t("squelch_cal.points")] if bad else []
+
+
 def _dashboard_problems(cfg: Config) -> list[str]:
     db, p = cfg.dashboard, []
     if not isinstance(db.enabled, bool):
@@ -1312,7 +1334,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "cw", "power", "breizh",
-                 "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "dashboard", "freedv", "sdr", "bands",
+                 "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "dashboard", "squelch_cal", "freedv", "sdr", "bands",
                  "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(_t("unknown_root_key", key=key))
@@ -1342,6 +1364,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             diffusion=_build(Diffusion, d.get("diffusion", {}), "diffusion", problems),
             remote_console=_build(RemoteConsole, _remote_console_compat(d), "remote_console", problems),
             dashboard=_build(Dashboard, d.get("dashboard", {}), "dashboard", problems),
+            squelch_cal=_build(SquelchCal, d.get("squelch_cal", {}), "squelch_cal", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
@@ -1629,6 +1652,10 @@ def render_toml(cfg: Config) -> str:
         f"port = {cfg.dashboard.port}",
         f"listen = {_list(cfg.dashboard.listen)}   # vide = automatique (comme la page de pilotage) ; sinon adresses exactes",
         f"rig_name = {_s(cfg.dashboard.rig_name)}   # nom du poste affiché",
+        "",
+        "[squelch_cal]   # étalonnage du squelch (menu 2.10) : SQL de Hamlib quand le poste affiche 1 à 9 puis 9+10",
+        f"model = {cfg.squelch_cal.model}   # numéro Hamlib du poste étalonné (ignoré si ce n'est plus celui de [rig])",
+        f"points = [{', '.join(f'{float(v):.4f}' for v in cfg.squelch_cal.points)}]",
         "",
         "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",
         f"enabled = {str(cfg.freedv.enabled).lower()}",

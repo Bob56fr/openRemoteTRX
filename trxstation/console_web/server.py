@@ -120,6 +120,7 @@ class WebConsole:
         app.router.add_post("/api/stop_tx", self.stop_tx)
         app.router.add_get("/api/report/{name}", self.report_download)
         app.router.add_get("/api/config/{name}", self.config_download)
+        app.router.add_get("/api/squelch/{name}", self.squelch_download)
         app.router.add_get("/ws", self.websocket)
         if self.network:
             app.router.add_post("/api/login", self.login)
@@ -318,6 +319,7 @@ class WebConsole:
         release = con.offered(con.update_state())
         return {"webapp": self.webapp(con), "version": __version__, "lang": t.lang, "configured": con.config.exists(),
                 "running": bool(con.config.exists() and con.station_running()),
+                "safe_mode": con.safe_mode_reason(), "safe_menu": menu_number("clear_safe_mode"),
                 "rig": {"connected": bool(rig.get("connected")), "frequency_hz": rig.get("frequency_hz"),
                         "mode": rig.get("mode"), "strength_db": rig.get("strength_db"), "vd": levels.get("VD_METER")},
                 "ptt": ptt.get("state") or "RX", "update": release.version if release is not None else None,
@@ -344,8 +346,11 @@ class WebConsole:
         dash_hosts = [a for a in _dashboard_listen(cfg) if a not in ("127.0.0.1", "localhost", "::1")]
         dashboard = {"scheme": "https" if n.tls_cert and dash_hosts else "http", "port": db.port,
                      "hosts": dash_hosts} if db.enabled is True else None
+        rc = cfg.remote_console               # console sur le réseau : désactivée = mention et menu 4.6 (étape 405)
+        console_on = bool(rc.enabled is True and n.tls_cert and n.gateway_bind not in ("", "127.0.0.1", "localhost", "::1"))
         return {"scheme": "https" if n.tls_cert else "http", "port": n.gateway_port,
-                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"), "dashboard": dashboard}
+                "local": n.gateway_bind in ("", "127.0.0.1", "localhost", "::1"), "dashboard": dashboard,
+                "console": {"enabled": console_on, "menu": menu_number("remote_console")}}
 
     async def state(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request):
@@ -508,6 +513,26 @@ class WebConsole:
             raise web.HTTPNotFound() from None
         self.touch()
         return web.FileResponse(path, headers={"Content-Type": "application/toml; charset=utf-8",
+                                               "Content-Disposition": f'attachment; filename="{name}"'})
+
+    async def squelch_download(self, request: web.Request) -> web.StreamResponse:
+        """Export de l'étalonnage du squelch du menu 2.10 (étape 411) : session exigée, NOM au format de l'export
+        seulement (`squelch-<modèle>-AAAAMMJJ-HHMM.zip`), et seulement sur le Bureau du compte de la console."""
+        if not self.has_session(request):
+            raise web.HTTPForbidden()
+        name = request.match_info["name"]
+        if not SQUELCH_EXPORT_NAME.fullmatch(name):
+            raise web.HTTPNotFound()
+        from ..report import desktop_dir
+        folder = desktop_dir()
+        path = folder / name
+        try:
+            if path.resolve().parent != folder.resolve() or not path.is_file():
+                raise web.HTTPNotFound()
+        except OSError:
+            raise web.HTTPNotFound() from None
+        self.touch()
+        return web.FileResponse(path, headers={"Content-Type": "application/zip",
                                                "Content-Disposition": f'attachment; filename="{name}"'})
 
     async def stop_tx(self, request: web.Request) -> web.StreamResponse:
@@ -723,7 +748,7 @@ class WebConsole:
 
 
 UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.language", "web.open", "web.busy",
-           "web.running", "web.stopped", "web.not_configured", "web.tx", "web.rx", "web.update", "web.role",
+           "web.running", "web.stopped", "web.not_configured", "web.safe_mode", "web.safe_mode_open", "web.console_off", "web.tx", "web.rx", "web.update", "web.role",
            "web.when", "web.changes", "web.admin", "web.terminal", "web.hide", "web.show", "web.click_open",
            "web.tap_open", "web.no_rig", "web.first_use", "web.logout", "web.level", "level.basic", "level.normal",
            "level.expert", "level.basic.desc", "level.normal.desc", "level.expert.desc", "web.flow.close",
@@ -781,6 +806,7 @@ def _dummy_hash() -> str:
 
 REPORT_NAME = re.compile(r"trx-remote-rapport-\d{8}-\d{4}\.zip")    # rapport du menu 6.3 (report.py)
 CONFIG_COPY_NAME = re.compile(r"station-\d{8}-\d{4}\.toml")              # copie de station.toml du menu 8.5
+SQUELCH_EXPORT_NAME = re.compile(r"squelch-\d{1,6}-\d{8}-\d{4}\.zip")   # export du menu 2.10 (étape 411)
 
 
 def private_source(remote: str | None) -> bool:
