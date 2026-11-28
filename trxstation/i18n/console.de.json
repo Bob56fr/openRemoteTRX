@@ -702,6 +702,8 @@
   "web.webapp_open": "Steuerseite der Station in einem neuen Tab öffnen",
   "web.dashboard": "Web-Dashboard: {url}",
   "web.dashboard_open": "Dashboard der Vitalwerte der Station in einem neuen Tab öffnen",
+  "web.discussions": "Fehler & Funktionswünsche über GitHub",
+  "web.discord": "Chat auf dem openRemoteTRX-Discord",
   "web.not_configured": "Station nicht eingerichtet",
   "web.tx": "SENDEN",
   "web.rx": "Empfang",

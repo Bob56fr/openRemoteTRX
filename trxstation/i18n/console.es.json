@@ -702,6 +702,8 @@
   "web.webapp_open": "Abrir la página de control de la estación en una pestaña nueva",
   "web.dashboard": "Panel de control web: {url}",
   "web.dashboard_open": "Abrir el panel de constantes vitales de la estación en una pestaña nueva",
+  "web.discussions": "Errores y peticiones de funciones en GitHub",
+  "web.discord": "Charla en el Discord de openRemoteTRX",
   "web.not_configured": "Estación sin configurar",
   "web.tx": "EMISIÓN",
   "web.rx": "Recepción",

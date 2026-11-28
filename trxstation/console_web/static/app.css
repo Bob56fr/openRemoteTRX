@@ -31,6 +31,7 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
 .brand h1{margin:0;font:700 1.5rem/1.15 var(--f-display);letter-spacing:.03em}
 .sub{color:#9cc2bb;font-size:13px;overflow-wrap:anywhere}
 .webapp{justify-self:start;color:#7fe0d0;font-size:13px;text-decoration:none;border-bottom:1px dotted currentColor;overflow-wrap:anywhere}
+.community{color:#b9c7ff}
 .webapp:hover,.webapp:focus-visible{color:#fff;outline:none;border-bottom-style:solid}
 .consoleoff{background:none;border:0;border-bottom:1px dotted currentColor;padding:0;font:inherit;font-size:13px;color:#ffb340;cursor:pointer;text-align:left}
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}

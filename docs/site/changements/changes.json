@@ -3,6 +3,18 @@
  "change": [
   {
    "date": "2026-11-28",
+   "version": "0.302.0",
+   "type": "nouveaute",
+   "postes": [
+    "*"
+   ],
+   "fr": "Console web : liens « Bug & demande de fonctionnalité via GitHub » (Discussions) et « Chat et papote sur le Discord openRemoteTRX » sous ceux de l'application et du tableau de bord.",
+   "en": "Web console: links “Bugs & feature requests on GitHub” (Discussions) and “Chat on the openRemoteTRX Discord” under the web app and dashboard links.",
+   "de": "Webkonsole: Links „Fehler & Funktionswünsche über GitHub“ (Discussions) und „Chat auf dem openRemoteTRX-Discord“ unter denen der Web-App und des Dashboards.",
+   "es": "Consola web: enlaces «Errores y peticiones de funciones en GitHub» (Discussions) y «Charla en el Discord de openRemoteTRX» bajo los de la aplicación y del panel."
+  },
+  {
+   "date": "2026-11-28",
    "version": "0.301.0",
    "type": "nouveaute",
    "postes": [

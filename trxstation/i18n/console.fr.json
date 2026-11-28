@@ -702,6 +702,8 @@
   "web.webapp_open": "Ouvrir la page de pilotage de la station dans un nouvel onglet",
   "web.dashboard": "Tableau de bord Web : {url}",
   "web.dashboard_open": "Ouvrir le tableau de bord des signes vitaux de la station dans un nouvel onglet",
+  "web.discussions": "Bug & demande de fonctionnalité via GitHub",
+  "web.discord": "Chat et papote sur le Discord openRemoteTRX",
   "web.not_configured": "Station non configurée",
   "web.tx": "ÉMISSION",
   "web.rx": "Réception",

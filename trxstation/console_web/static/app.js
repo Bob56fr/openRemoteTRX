@@ -117,6 +117,9 @@
   function header() {
     $("#title").textContent = ui("web.title");
     $("#sub").textContent = ui("web.version", { version: state.version });
+    // Liens de la communauté (demande de l'utilisateur, étape 414) : toujours montrés, adresses fixes dans index.html
+    $("#discussions").textContent = ui("web.discussions");
+    $("#discord").textContent = ui("web.discord");
     const pills = $("#pills");
     pills.replaceChildren();
     const pill = (cls, text) => { const p = el("span", "pill " + cls); p.append(el("span", "dot"), document.createTextNode(text)); pills.append(p); };
