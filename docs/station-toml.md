@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-openRemoteTRX version 0.298.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+openRemoteTRX version 0.299.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant d'openRemoteTRX Console et se modifie ensuite par openRemoteTRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -269,6 +269,17 @@ Se modifie : Menu 8.1. Adresse affichée dans l'en-tête d'openRemoteTRX Console
 | `port` | expert | `8450` | Port du tableau de bord. Valeurs : 1024 à 65535, différent du port de la page de pilotage, de rigctld et d'openRemoteTRX Console. (depuis 0.280.0) |
 | `listen` | expert | `[]` | Adresses écoutées. VIDE (défaut depuis 0.281.0) : automatique, comme la page de pilotage : `127.0.0.1` (écran de la station), plus l'adresse de la page (`[network] gateway_bind`) ou, si elle écoute partout, les adresses privées de la station (réseau local, VPN), en HTTPS avec le certificat de `[network]` ; une adresse apparue après le démarrage (VPN, DHCP) est prise dans la minute. Rempli : seulement ces adresses (par exemple `["127.0.0.1"]` pour l'écran de la station seul). Valeurs : Liste vide, ou adresses IP exactes ; jamais 0.0.0.0 ni ::. Une adresse du réseau exige `[network] tls_cert` et `tls_key`, ou `allow_insecure_http = true` dans un VPN (en automatique, sans eux : 127.0.0.1 seulement). **Sécurité** : Pas de mot de passe : toute personne qui joint ces adresses voit l'état de la station (aucune commande possible). Jamais une adresse d'Internet, même en automatique. Exemple : `listen = []` (automatique) ou `listen = ["127.0.0.1"]` (depuis 0.280.0) |
 | `rig_name` | courant | `""` | Nom du poste affiché dans le tableau de bord (la station ne connaît que son numéro Hamlib). Vide : aucun nom affiché. Valeurs : 40 caractères au plus. Exemple : `rig_name = "IC-7300MK2"` (depuis 0.280.0) |
+
+## Étalonnage du squelch [squelch_cal]
+
+Dix valeurs du réglage SQL de Hamlib relevées par le menu 2.10 de la console quand le poste affiche un squelch sur 1, 2… 9 puis 9+10. La page et l'application en tirent la position du repère orange au-dessus du S-mètre et une valeur décimale (« S5,4 »), comme l'afficheur du poste. Sans étalonnage, la table du modèle (fiche technique) sert si elle existe, sinon un repère estimé. Écrit par le menu 2.10, pas à la main.
+
+Se modifie : Menu 2.10 de la console (Étalonner le squelch). (relu sans redémarrer).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `model` | expert | `0` | Numéro Hamlib du poste étalonné. L'étalonnage est ignoré si ce n'est plus le numéro de `[rig] model` (poste changé). 0 = aucun étalonnage. Valeurs : Entier, 0 ou plus. Exemple : `model = 3094` (depuis 0.299.0) |
+| `points` | expert | `[]` | Les 10 valeurs du réglage SQL (0 à 1), dans l'ordre 1, 2… 9, 9+10. Vide = aucun étalonnage. Valeurs : Exactement 10 valeurs de 0 à 1, strictement croissantes. Exemple : `points = [0.1176, 0.1608, 0.2039, 0.2471, 0.2902, 0.3333, 0.3765, 0.4196, 0.4706, 0.5373]` (depuis 0.299.0) |
 
 ## FreeDV en réception [freedv]
 

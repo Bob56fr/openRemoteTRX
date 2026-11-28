@@ -11,6 +11,16 @@
 
 [[change]]
 date = "2026-11-28"
+version = "0.299.0"
+type = "nouveaute"
+postes = ["*"]
+fr = "Menu 2.10 « Étalonner le squelch » : le repère du squelch au-dessus du S-mètre et sa valeur (S5,4) suivent l'afficheur du poste, dans la page et l'application ; export à envoyer au développeur."
+en = "Menu 2.10 “Calibrate the squelch”: the squelch marker above the S-meter and its value (S5.4) follow the rig's display, in the page and the app; export to send to the developer."
+de = "Menü 2.10 „Squelch kalibrieren“: Die Squelch-Markierung über dem S-Meter und ihr Wert (S5,4) folgen der Anzeige des Geräts, in Seite und App; Export für den Entwickler."
+es = "Menú 2.10 «Calibrar el squelch»: la marca del squelch sobre el S-meter y su valor (S5,4) siguen la pantalla del equipo, en la página y la aplicación; exportación para el desarrollador."
+
+[[change]]
+date = "2026-11-28"
 version = "0.298.0"
 type = "nouveaute"
 postes = ["*"]

@@ -164,7 +164,10 @@ internal fun RigScope.StationDisplay() {
                     // Repère du squelch (page : barre orange sur le S-mètre) : petit triangle orange au-dessus de la barre,
                     // suit le curseur pendant le réglage ; absent si le squelch est ouvert (0)
                     // Squelch réel lu sur le poste (étape 396) : le repère estimé n'est plus montré (faux sur ces postes)
-                    val sqlMark = if (radio?.dcd != null) null else Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"))
+                    // Étalonnage du squelch (étape 411, menu 2.10) : repère toujours montré, comme l'afficheur du poste
+                    val sqlCal = Radio.squelchCal(hello?.squelchCal?.points)
+                    val sqlMark = if (radio?.dcd != null && sqlCal == null) null
+                        else Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"), sqlCal)
                     Box(Modifier.fillMaxWidth().height(15.dp)) {
                         LinearProgressIndicator(
                             progress = { Radio.sMeterFraction(radio?.strengthDb) },
@@ -216,7 +219,7 @@ internal fun RigScope.StationDisplay() {
                                 modifier = Modifier.weight(1f),
                             )
                             val percent = (shown * 100).roundToInt()
-                            Text(if (percent == 0) Tr.t("stationtab.squelch_open") else "$percent %", style = MaterialTheme.typography.labelLarge,
+                            Text(if (percent == 0) Tr.t("stationtab.squelch_open") else Radio.squelchSText(shown.toDouble(), Radio.squelchCal(hello?.squelchCal?.points)) ?: "$percent %", style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
                         }
                     }

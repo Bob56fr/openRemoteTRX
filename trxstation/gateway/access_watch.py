@@ -75,6 +75,7 @@ class AccessWatcher:
             # redémarrage de la station (signalement de l'utilisateur du 2026-11-25, application, S25)
             self.live_config.clients = cfg.clients
             self.live_config.remote_console = cfg.remote_console
+            self.live_config.squelch_cal = cfg.squelch_cal          # menu 2.10 : pris à la prochaine connexion
         if self.access.guard is not None:                 # seuils de surcharge relus aussi
             from .api.overload import Limits
             a = cfg.access

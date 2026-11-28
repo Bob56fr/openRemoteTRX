@@ -156,5 +156,7 @@
   "dashboard.listen": "[dashboard] listen: Liste von IP-Adressen erwartet (gelesen: {address})",
   "dashboard.listen_any": "[dashboard] listen: {address} würde auf allen Adressen lauschen; geben Sie 127.0.0.1 und die gewünschte Netzwerkadresse an",
   "dashboard.tls": "[dashboard] listen: {address} liegt im Netzwerk, HTTPS ist erforderlich ([network] tls_cert und tls_key) oder allow_insecure_http = true in einem VPN",
-  "dashboard.rig_name": "[dashboard] rig_name: Text mit höchstens 40 Zeichen"
+  "dashboard.rig_name": "[dashboard] rig_name: Text mit höchstens 40 Zeichen",
+  "squelch_cal.model": "[squelch_cal] model: ganzzahlige Hamlib-Nummer, 0 oder mehr",
+  "squelch_cal.points": "[squelch_cal] points: 10 Werte von 0 bis 1, streng steigend (Menü 2.10 erneut ausführen)"
 }

@@ -70,6 +70,9 @@ class Squelch:
     query: str = ""
     reply: str = ""
     open_value: str = ""
+    # Étalonnage du squelch du MODÈLE (étape 411) : 10 valeurs SQL de Hamlib (0 à 1) quand le poste affiche 1 à 9 puis
+    # 9+10, d'après les exports du menu 2.10 envoyés par les opérateurs ; vide = aucune table (trxstation/squelchcal.py)
+    calibration: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -133,7 +136,10 @@ def parse(text: str, where: str = "fiche") -> RigSpec:
         if isinstance(raw_filters.get("quick"), list):
             raw_filters["quick"] = tuple(raw_filters["quick"])
     filters = _section(Filters, raw_filters, f"{where} [filters]")
-    squelch = _section(Squelch, data.pop("squelch", {}), f"{where} [squelch]")
+    raw_squelch = data.pop("squelch", {})
+    if isinstance(raw_squelch, dict) and isinstance(raw_squelch.get("calibration"), list):
+        raw_squelch = {**raw_squelch, "calibration": tuple(raw_squelch["calibration"])}
+    squelch = _section(Squelch, raw_squelch, f"{where} [squelch]")
     transmit = _section(Transmit, data.pop("transmit", {}), f"{where} [transmit]")
     spec = _section(RigSpec, data, where)
     spec = RigSpec(model=spec.model, name=spec.name, receivers=spec.receivers, verified=spec.verified,
@@ -195,6 +201,10 @@ def check(spec: RigSpec) -> str | None:
             return f"[squelch] : expression illisible « {s.reply} »"
     elif any(raw_read):
         return "[squelch] : query, reply et open_value seulement pour source = busy"
+    if s.calibration:
+        from ..squelchcal import problem as cal_problem
+        if (bad := cal_problem(list(s.calibration))) is not None:
+            return f"[squelch] calibration : {bad}"
     return None
 
 

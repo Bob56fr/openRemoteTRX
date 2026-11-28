@@ -457,6 +457,12 @@ quand = "Quand le son reçu est trop faible ou trop fort sur tous les terminaux,
 modifie = "La configuration de la station (<code>station.toml</code> : <code>rx_gain_db</code> et <code>rx_limiter</code> de la section <code>[audio]</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
 admin = true
 
+[menus.squelch_cal]
+role = "<strong>Étalonne le squelch</strong> pour que le repère orange au-dessus du S-mètre (page et application) et la valeur affichée (« S5,4 ») suivent l'afficheur du poste, dans tous les modes. Devant le poste, tu mets le squelch sur 1, 2… 9 puis 9+10 ; à chaque fois la console lit le réglage SQL publié par la station (lecture seule : rien n'est écrit au poste, aucune émission). Choix 2 : <strong>export</strong> zip à joindre à un ticket GitHub (étalonnage, mode et état du squelch à chaque point, capacités déclarées par Hamlib, réglages du moment, fiche technique, versions ; ni numéro de série ni adresse) pour qu'une prochaine version connaisse la table de ce modèle. Choix 3 : effacer."
+quand = "Quand le repère du squelch ne correspond pas à l'afficheur du poste. Station démarrée, poste allumé."
+modifie = "La configuration de la station (<code>station.toml</code>, section <code>[squelch_cal]</code>), avec les droits d'administration ; l'ancienne version est gardée. Relu sans redémarrer : pris à la prochaine connexion de la page et de l'application. L'export est écrit sur le Bureau (bouton de téléchargement dans la console web)."
+admin = true
+
 [menus.bands]
 role = "Décide qui empêche d'émettre hors de tes bandes : la station (liste des bandes autorisées, points de départ région 1 IARU à vérifier selon ta licence) ou le poste lui-même. <strong>Liste vide = réception seule.</strong> Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
 quand = "À la mise en service, après un changement de licence, ou si la station refuse une émission dans une bande permise."

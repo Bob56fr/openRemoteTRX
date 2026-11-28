@@ -95,6 +95,8 @@ data class Hello(
     val updates: UpdatesInfo? = null,
     /** Fiche technique du poste (station 0.284.0+) : délais, filtres, source du squelch ; null sur une station ancienne. */
     @SerialName("rig_spec") val rigSpec: RigSpecInfo? = null,
+    /** Étalonnage du squelch (station 0.299.0+, menu 2.10) : repère et valeur « S5,4 » ; null = repère estimé. */
+    @SerialName("squelch_cal") val squelchCal: SquelchCalInfo? = null,
     /** Langue retenue par la station pour ses textes (`detail`, `message`) ; vide sur une station antérieure à 0.236.0. */
     val lang: String = "",
     val features: List<String> = emptyList(),
@@ -240,6 +242,14 @@ data class RigSpecSquelch(
     val query: String = "",
     val reply: String = "",
     @SerialName("open_value") val openValue: String = "",
+)
+
+/** `hello.squelch_cal` (étape 411) : 10 valeurs SQL (0 à 1) quand le poste affiche 1… 9, 9+10 ; `source` = station ou model. */
+@Serializable
+data class SquelchCalInfo(
+    val points: List<Double> = emptyList(),
+    @SerialName("levels_db") val levelsDb: List<Int> = emptyList(),
+    val source: String = "",
 )
 
 /** `hello.updates` (étape 392) : version plus récente de la station, dernière APK publiée de l'application. */

@@ -251,7 +251,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
                                                                  "rig", "sound", "hf_spectrum", "bands", "transmit", "access_network",
                                                                  "local_operator", "alerts", "features_switch",
                                                                  "remote_console", "diffusion", "remote_power", "rx_gain",
-                                                                 "analyzer", "config_download", "screen_share"}
+                                                                 "analyzer", "config_download", "screen_share", "squelch_cal"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "7.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:

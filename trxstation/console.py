@@ -72,7 +72,7 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
     ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum", "remote_power",
-                               "rx_gain")),
+                               "rx_gain", "squelch_cal")),
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
@@ -887,6 +887,148 @@ class Console:
         if not a.rx_limiter:
             self.say(self.t("rx_gain.warning"))
         self._save_accounts(original, cfg, live=False)
+
+    def squelch_cal(self) -> None:
+        """Étalonnage du squelch (étape 411, demande de l'utilisateur du 2026-11-28) : l'opérateur, devant son poste, met
+        le squelch sur 1, 2… 9, 9+10 (valeur affichée par le poste) ; la console lit à chaque fois le réglage SQL
+        publié par la passerelle (fichier d'état, LECTURE seule : rien n'est écrit au poste, aucune émission). Les 10
+        valeurs vont dans `[squelch_cal]` de station.toml (relu sans redémarrer, pris à la prochaine connexion des
+        terminaux). Export zip pour le développeur (ticket GitHub) : table du modèle dans sa fiche technique."""
+        from . import config as cfgmod
+        from . import squelchcal
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        original, cfg = loaded
+        model = cfg.rig.model
+        own = cfg.squelch_cal
+        self.say(self.t("squelch_cal.1"))
+        if own.points and own.model == model:
+            self.say(self.t("squelch_cal.current", values=" | ".join(
+                f"{lab} {v:.3f}" for lab, v in zip(squelchcal.LABELS, own.points))))
+        elif own.points:
+            self.say(self.t("squelch_cal.other_rig", model=own.model, current=model))
+        else:
+            self.say(self.t("squelch_cal.none"))
+        choice = self.ask(self.t("squelch_cal.choose")).strip()
+        if choice == "2":
+            if own.points and own.model == model:
+                self._squelch_export(cfg, list(own.points), {})
+            else:
+                self.say(self.t("squelch_cal.nothing_to_export"))
+            return
+        if choice == "3":
+            if not own.points:
+                self.say(self.t("save_accounts.1"))
+                return
+            cfg.squelch_cal = cfgmod.SquelchCal()
+            self._save_accounts(original, cfg, live=True)
+            return
+        if choice != "1":
+            return
+        status = self._gateway_status()
+        if status is None or not isinstance(status.rig.get("levels"), dict) or "SQL" not in status.rig["levels"]:
+            start_menu = menu_number("start")
+            self.say(self.t("squelch_cal.no_station", menu=start_menu))
+            return
+        self.say(self.t("squelch_cal.how"))
+        points: list[float] = []
+        seen: list[dict] = []
+        i = 0
+        while i < squelchcal.POINTS:
+            label = squelchcal.LABELS[i]
+            answer = self.ask(self.t("squelch_cal.step", n=i + 1, total=squelchcal.POINTS, label=label)).strip().lower()
+            if answer == "q":
+                self.say(self.t("squelch_cal.abandoned"))
+                return
+            if answer == "r":
+                if points:
+                    points.pop()
+                    seen.pop()
+                    i -= 1
+                continue
+            value, snap = self._read_squelch(points[-1] if points else None)
+            if value is None:
+                self.say(self.t("squelch_cal.unreadable"))
+                continue
+            if points and value <= points[-1]:
+                self.say(self.t("squelch_cal.not_higher", value=f"{value:.3f}", previous=f"{points[-1]:.3f}"))
+                continue
+            points.append(value)
+            seen.append(snap)
+            self.say(self.t("squelch_cal.read", label=label, value=f"{value:.3f}"))
+            i += 1
+        self.say("  " + " | ".join(f"{lab} {v:.3f}" for lab, v in zip(squelchcal.LABELS, points)))
+        cfg.squelch_cal = cfgmod.SquelchCal(model=model, points=[round(v, 4) for v in points])
+        if self._save_accounts(original, cfg, live=True):
+            self.say(self.t("squelch_cal.saved"))
+        if self.yes(self.t("squelch_cal.export_now"), True):
+            self._squelch_export(cfg, points, {"points": seen})
+
+    def _read_squelch(self, previous: float | None) -> tuple[float | None, dict]:
+        """Réglage SQL lu dans le fichier d'état : la passerelle le relit à son rythme, on attend une valeur STABLE
+        (deux lectures égales à 1,5 s d'écart) et, après le premier point, différente du point précédent (15 s au
+        plus). Retourne (valeur, relevé du moment : mode, état réel du squelch, S-mètre)."""
+        deadline = time.monotonic() + 15.0
+        last: float | None = None
+        while time.monotonic() < deadline:
+            status = self._gateway_status()
+            levels = status.rig.get("levels") if status is not None else None
+            value = levels.get("SQL") if isinstance(levels, dict) else None
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                value = float(value)
+                if value == last and (previous is None or value != previous):
+                    rig = status.rig
+                    return value, {"sql": value, "mode": rig.get("mode"), "dcd": rig.get("dcd"),
+                                   "strength_db": rig.get("strength_db"), "frequency_hz": rig.get("frequency_hz")}
+                last = value
+            time.sleep(1.5)
+        return (last, {}) if last is not None and previous is None else (None, {})
+
+    def _squelch_export(self, cfg, points: list[float], extra: dict) -> None:
+        """Zip sur le Bureau, à joindre à un ticket GitHub : étalonnage, mode et état du squelch à chaque point,
+        capacités déclarées par Hamlib, réglages du poste à l'instant, fiche technique en service, versions. Ni
+        numéro de série, ni adresse, ni nom de machine."""
+        import io
+        import json
+        import platform
+        import zipfile
+        from . import rigspec, squelchcal
+        from .hostinfo import hamlib_version
+        from .report import desktop_dir
+        from .update.check import REPO
+        model = cfg.rig.model
+        hamlib = hamlib_version(cfg.tools.hamlib_dir)
+        base = squelchcal.export_zip(model, cfg.dashboard.rig_name, points, hamlib)
+        more: dict = {"calibration_points": extra.get("points", []),
+                      "system": f"{platform.system()} {platform.release()} {platform.machine()}",
+                      "python": platform.python_version()}
+        try:
+            from .gateway.cat.capabilities import CapabilitiesError, _run_dump_caps, parse_dump_caps
+            more["capabilities"] = parse_dump_caps(_run_dump_caps(model, cfg.tools.hamlib_dir), model).to_dict()
+        except Exception as exc:                          # Hamlib absent ou illisible : l'export part quand même
+            more["capabilities_error"] = clean_text(str(exc), 200, single_line=True)
+        status = self._gateway_status()
+        if status is not None:
+            rig = status.rig
+            more["rig_now"] = {k: rig.get(k) for k in ("mode", "passband_hz", "levels", "functions", "dcd", "vfo")}
+        try:
+            more["rigspec"] = rigspec.load(model).to_dict()
+        except Exception as exc:
+            more["rigspec_error"] = clean_text(str(exc), 200, single_line=True)
+        buf = io.BytesIO(base)
+        with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("poste.json", json.dumps(more, ensure_ascii=False, indent=1, default=str) + "\n")
+        folder = desktop_dir()
+        path = folder / time.strftime(f"squelch-{model}-%Y%m%d-%H%M.zip")
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(buf.getvalue())
+        except OSError as exc:
+            self.say(self.t("config_download.unreadable", path=str(path), error=exc.strerror or str(exc)))
+            return
+        issues = f"https://github.com/{REPO}/issues/new/choose"
+        self.say(self.t("squelch_cal.exported", path=str(path), url=issues))
 
     def _power_declared(self, model: int, hamlib_dir: str) -> bool | None:
         """« set / get Power Stat » déclarés par Hamlib pour ce modèle ? None = rigctl illisible (Hamlib absent)."""

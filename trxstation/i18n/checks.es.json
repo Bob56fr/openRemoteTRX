@@ -156,5 +156,7 @@
   "dashboard.listen": "[dashboard] listen: se espera una lista de direcciones IP (leído: {address})",
   "dashboard.listen_any": "[dashboard] listen: {address} escucharía en todas las direcciones; indica 127.0.0.1 y la dirección de red deseada",
   "dashboard.tls": "[dashboard] listen: {address} está en la red, hace falta HTTPS ([network] tls_cert y tls_key) o allow_insecure_http = true dentro de una VPN",
-  "dashboard.rig_name": "[dashboard] rig_name: texto de 40 caracteres como máximo"
+  "dashboard.rig_name": "[dashboard] rig_name: texto de 40 caracteres como máximo",
+  "squelch_cal.model": "[squelch_cal] model: número Hamlib entero, 0 o más",
+  "squelch_cal.points": "[squelch_cal] points: 10 valores de 0 a 1, estrictamente crecientes (repita el menú 2.10)"
 }

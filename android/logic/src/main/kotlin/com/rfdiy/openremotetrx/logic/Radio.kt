@@ -125,10 +125,44 @@ object Radio {
      * Repère du squelch sur l'échelle du S-mètre (page : squelchMarkerFraction) : le squelch (0 à 1) correspond à
      * l'échelle 0-255 du poste, qui est aussi celle du S-mètre (120 = S9, 241 = S9+60 dB). 0 = ouvert : null. INDICATIF.
      */
-    fun squelchMarkerFraction(sql: Double?): Float? {
+    fun squelchMarkerFraction(sql: Double?, points: List<Double>? = null): Float? {
         if (sql == null || sql <= 0) return null
+        if (points != null) return sMeterFraction(squelchCalDb(sql, points))
         val raw = minOf(1.0, sql) * 255
         return sMeterFraction(if (raw <= 120) -54 + raw * 54 / 120 else (raw - 120) * 60 / 121)
+    }
+
+    /** Niveaux du poste pour les 10 points de l'étalonnage du squelch (1… 9, 9+10), en dB par rapport à S9. */
+    val SQUELCH_LEVELS_DB = listOf(-48, -42, -36, -30, -24, -18, -12, -6, 0, 10)
+
+    /** `hello.squelch_cal.points` (étape 411) validés : 10 valeurs strictement croissantes de 0 à 1, sinon null. */
+    fun squelchCal(points: List<Double>?): List<Double>? {
+        if (points == null || points.size != SQUELCH_LEVELS_DB.size) return null
+        if (points.any { it.isNaN() || it < 0.0 || it > 1.0 }) return null
+        if (points.zipWithNext().any { (a, b) -> b <= a }) return null
+        return points
+    }
+
+    /**
+     * Niveau (dB / S9) du repère étalonné (page : squelchCalDb, station : squelchcal.to_db) : interpolation entre les
+     * points (S0 = -54 dB pour SQL = 0), dernière pente au-delà de 9+10, plafond S9+60 ; null si le squelch est ouvert.
+     */
+    fun squelchCalDb(sql: Double?, points: List<Double>?): Double? {
+        if (sql == null || sql <= 0 || points == null) return null
+        val pts = listOf(0.0) + points
+        val lv = listOf(-54.0) + SQUELCH_LEVELS_DB.map { it.toDouble() }
+        for (i in 1 until pts.size) {
+            if (sql <= pts[i]) return lv[i - 1] + (sql - pts[i - 1]) * (lv[i] - lv[i - 1]) / (pts[i] - pts[i - 1])
+        }
+        val n = pts.size - 1
+        val slope = (lv[n] - lv[n - 1]) / (pts[n] - pts[n - 1])
+        return minOf(60.0, lv[n] + (sql - pts[n]) * slope)
+    }
+
+    /** « S5,4 » (décimale de la langue) ou « S9+6 » ; null si ouvert ou sans étalonnage. */
+    fun squelchSText(sql: Double?, points: List<Double>?): String? {
+        val db = squelchCalDb(sql, points) ?: return null
+        return if (db <= 0) "S" + Format.decimal(maxOf(0.0, 9 + db / 6), 1) else "S9+" + Math.round(db)  // i18n-ok
     }
 
     /**

@@ -323,6 +323,12 @@ quand = "Wenn der Empfangston auf allen Endgeräten zu leise oder zu laut ist, z
 modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>rx_gain_db</code> und <code>rx_limiter</code> im Abschnitt <code>[audio]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten (<code>station.toml.bak</code>). Nichts wird geschrieben, wenn du abbrichst. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
 admin = true
 
+[menus.squelch_cal]
+role = "<strong>Kalibriert den Squelch</strong>, damit die orange Markierung über dem S-Meter (Seite und App) und der angezeigte Wert („S5,4“) der Anzeige des Geräts folgen, in allen Betriebsarten. Am Gerät stellen Sie den Squelch auf 1, 2… 9, dann 9+10; jedes Mal liest die Konsole die von der Station veröffentlichte SQL-Einstellung (nur Lesen: nichts wird an das Gerät geschrieben, keine Aussendung). Auswahl 2: <strong>Export</strong> als Zip für ein GitHub-Ticket (Kalibrierung, Betriebsart und Squelch-Zustand an jedem Punkt, von Hamlib gemeldete Fähigkeiten, aktuelle Einstellungen, Datenblatt, Versionen; keine Seriennummer, keine Adresse), damit eine spätere Version die Tabelle dieses Modells kennt. Auswahl 3: löschen."
+quand = "Wenn die Squelch-Markierung nicht der Anzeige des Geräts entspricht. Station gestartet, Gerät eingeschaltet."
+modifie = "Die Konfiguration der Station (<code>station.toml</code>, Abschnitt <code>[squelch_cal]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Ohne Neustart gelesen: gilt ab der nächsten Verbindung der Seite und der App. Der Export wird auf den Desktop geschrieben (Download-Schaltfläche in der Web-Konsole)."
+admin = true
+
 [menus.bands]
 role = "Legt fest, wer das Senden außerhalb deiner Bänder verhindert: die Station (Liste erlaubter Bänder, Ausgangswerte IARU-Region 1, gemäß deiner Lizenz zu prüfen) oder der Transceiver selbst. <strong>Leere Liste = nur Empfang.</strong> Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
 quand = "Bei der Inbetriebnahme, nach einer Lizenzänderung oder wenn die Station eine Sendung in einem erlaubten Band ablehnt."

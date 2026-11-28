@@ -275,6 +275,13 @@
      "quand": "Kein empfangener Ton, Stimme geht nicht hinaus, Soundkarte gewechselt oder\nan einer anderen Buchse.",
      "role": "Wählt die Soundkarten: die den Ton vom Transceiver empfängt und die die\nStimme zum Transceiver sendet. Die Station ist während der Fragen gestoppt:\neine belegte Karte erscheint nicht in der Liste. Dieselben Fragen wie im\nentsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese:\nEingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt\nunberührt."
     },
+    "squelch_cal": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Die Konfiguration der Station (station.toml, Abschnitt [squelch_cal]), mit\nAdministratorrechten; die vorherige Fassung bleibt erhalten. Ohne Neustart\ngelesen: gilt ab der nächsten Verbindung der Seite und der App. Der Export\nwird auf den Desktop geschrieben (Download-Schaltfläche in der Web-Konsole).",
+     "quand": "Wenn die Squelch-Markierung nicht der Anzeige des Geräts entspricht. Station\ngestartet, Gerät eingeschaltet.",
+     "role": "Kalibriert den Squelch, damit die orange Markierung über dem S-Meter (Seite\nund App) und der angezeigte Wert („S5,4“) der Anzeige des Geräts folgen, in\nallen Betriebsarten. Am Gerät stellen Sie den Squelch auf 1, 2… 9, dann\n9+10; jedes Mal liest die Konsole die von der Station veröffentlichte\nSQL-Einstellung (nur Lesen: nichts wird an das Gerät geschrieben, keine\nAussendung). Auswahl 2: Export als Zip für ein GitHub-Ticket (Kalibrierung,\nBetriebsart und Squelch-Zustand an jedem Punkt, von Hamlib gemeldete\nFähigkeiten, aktuelle Einstellungen, Datenblatt, Versionen; keine\nSeriennummer, keine Adresse), damit eine spätere Version die Tabelle dieses\nModells kennt. Auswahl 3: löschen."
+    },
     "start": {
      "admin": true,
      "expert": "",
@@ -600,6 +607,13 @@
      "modifie": "The station configuration (station.toml), with administrator rights; the\nprevious version is kept (station.toml.bak). Nothing is written if you give\nup. The station is restarted on request to take the change.",
      "quand": "No received audio, voice not going out, sound card changed or plugged into\nanother socket.",
      "role": "Chooses the sound cards: the one receiving the audio from the transceiver\nand the one sending the voice to it. The station is stopped during the\nquestions: a busy card does not show in the list. The same questions as the\nmatching part of the full wizard (menu 2.1), and only those: Enter keeps\neach current setting, the rest of the configuration is not touched."
+    },
+    "squelch_cal": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The station configuration (station.toml, section [squelch_cal]), with\nadministrator rights; the previous version is kept. Re-read without a\nrestart: used at the next connection of the page and the app. The export is\nwritten to the Desktop (download button in the web console).",
+     "quand": "When the squelch marker does not match the rig's display. Station running,\nrig on.",
+     "role": "Calibrates the squelch so that the orange marker above the S-meter (page and\napp) and the value shown (“S5.4”) follow the rig's display, in every mode.\nAt the rig, you set the squelch to 1, 2… 9 then 9+10; each time the console\nreads the SQL setting published by the station (read only: nothing is\nwritten to the rig, no transmission). Choice 2: export a zip to attach to a\nGitHub issue (calibration, mode and squelch state at each point,\ncapabilities declared by Hamlib, current settings, spec sheet, versions; no\nserial number or address) so that a later version knows this model's table.\nChoice 3: erase."
     },
     "start": {
      "admin": true,
@@ -927,6 +941,13 @@
      "quand": "Sin audio recibido, voz que no sale, tarjeta de sonido cambiada o conectada\nen otra toma.",
      "role": "Elige las tarjetas de sonido: la que recibe el audio del transceptor y la\nque envía la voz hacia él. La estación se detiene durante las preguntas: una\ntarjeta ocupada no aparece en la lista. Las mismas preguntas que la parte\ncorrespondiente del asistente completo (menú 2.1), y solo esas: Intro\nconserva cada ajuste actual, el resto de la configuración no se toca."
     },
+    "squelch_cal": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuración de la estación (station.toml, sección [squelch_cal]), con\nderechos de administración; se conserva la versión anterior. Releída sin\nreiniciar: se aplica en la próxima conexión de la página y de la aplicación.\nLa exportación se escribe en el Escritorio (botón de descarga en la consola\nweb).",
+     "quand": "Cuando la marca del squelch no corresponde a la pantalla del equipo.\nEstación en marcha, equipo encendido.",
+     "role": "Calibra el squelch para que la marca naranja sobre el S-meter (página y\naplicación) y el valor mostrado («S5,4») sigan la pantalla del equipo, en\ntodos los modos. Delante del equipo, pones el squelch en 1, 2… 9 y luego\n9+10; cada vez la consola lee el ajuste SQL publicado por la estación (solo\nlectura: no se escribe nada en el equipo, ninguna emisión). Opción 2:\nexportación en zip para adjuntar a un ticket de GitHub (calibración, modo y\nestado del squelch en cada punto, capacidades declaradas por Hamlib, ajustes\ndel momento, ficha técnica, versiones; ni número de serie ni dirección) para\nque una próxima versión conozca la tabla de este modelo. Opción 3: borrar."
+    },
     "start": {
      "admin": true,
      "expert": "",
@@ -1252,6 +1273,13 @@
      "modifie": "La configuration de la station (station.toml), avec les droits\nd'administration ; l'ancienne version est gardée (station.toml.bak). Rien\nn'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour\nprendre le changement.",
      "quand": "Pas de son reçu, voix qui ne part pas, carte son changée ou rebranchée sur\nune autre prise.",
      "role": "Choisit les cartes son : celle qui reçoit le son du poste et celle qui\nenvoie la voix vers le poste. La station est arrêtée pendant les questions :\nune carte occupée n'apparaît pas dans la liste. Les mêmes questions que la\npartie correspondante de l'assistant complet (menu 2.1), et seulement\nelles : Entrée garde chaque réglage actuel, le reste de la configuration\nn'est pas touché."
+    },
+    "squelch_cal": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuration de la station (station.toml, section [squelch_cal]), avec\nles droits d'administration ; l'ancienne version est gardée. Relu sans\nredémarrer : pris à la prochaine connexion de la page et de l'application.\nL'export est écrit sur le Bureau (bouton de téléchargement dans la console\nweb).",
+     "quand": "Quand le repère du squelch ne correspond pas à l'afficheur du poste. Station\ndémarrée, poste allumé.",
+     "role": "Étalonne le squelch pour que le repère orange au-dessus du S-mètre (page et\napplication) et la valeur affichée (« S5,4 ») suivent l'afficheur du poste,\ndans tous les modes. Devant le poste, tu mets le squelch sur 1, 2… 9 puis\n9+10 ; à chaque fois la console lit le réglage SQL publié par la station\n(lecture seule : rien n'est écrit au poste, aucune émission). Choix 2 :\nexport zip à joindre à un ticket GitHub (étalonnage, mode et état du squelch\nà chaque point, capacités déclarées par Hamlib, réglages du moment, fiche\ntechnique, versions ; ni numéro de série ni adresse) pour qu'une prochaine\nversion connaisse la table de ce modèle. Choix 3 : effacer."
     },
     "start": {
      "admin": true,

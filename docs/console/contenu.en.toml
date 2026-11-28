@@ -323,6 +323,12 @@ quand = "When received audio is too weak or too loud on every terminal, for inst
 modifie = "The station configuration (<code>station.toml</code>: <code>rx_gain_db</code> and <code>rx_limiter</code> in the <code>[audio]</code> section), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
 admin = true
 
+[menus.squelch_cal]
+role = "<strong>Calibrates the squelch</strong> so that the orange marker above the S-meter (page and app) and the value shown (“S5.4”) follow the rig's display, in every mode. At the rig, you set the squelch to 1, 2… 9 then 9+10; each time the console reads the SQL setting published by the station (read only: nothing is written to the rig, no transmission). Choice 2: <strong>export</strong> a zip to attach to a GitHub issue (calibration, mode and squelch state at each point, capabilities declared by Hamlib, current settings, spec sheet, versions; no serial number or address) so that a later version knows this model's table. Choice 3: erase."
+quand = "When the squelch marker does not match the rig's display. Station running, rig on."
+modifie = "The station configuration (<code>station.toml</code>, section <code>[squelch_cal]</code>), with administrator rights; the previous version is kept. Re-read without a restart: used at the next connection of the page and the app. The export is written to the Desktop (download button in the web console)."
+admin = true
+
 [menus.bands]
 role = "Decides who prevents transmitting outside your bands: the station (list of allowed bands, IARU region 1 starting points to check against your licence) or the transceiver itself. <strong>Empty list = receive only.</strong> The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
 quand = "At commissioning, after a licence change, or if the station refuses a transmission in an allowed band."
