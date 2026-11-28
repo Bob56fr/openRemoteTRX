@@ -349,7 +349,7 @@ fun HfScopeView(
                     if (band.isEmpty()) Text(Tr.t("hfscopeview.no_spot"))
                     for (s in Spots.sortList(band, sortByAge, System.currentTimeMillis())) {
                         Text(
-                            String.format(Locale.ROOT, "%.1f", s.khz) + "  " + s.dx + "  " + s.mode.ifEmpty { "?" } + "  " +
+                            String.format(Locale.ROOT, "%.1f", s.khz) + "  " + s.dx + s.country.takeIf { it.isNotEmpty() }?.let { " ($it)" }.orEmpty() + "  " + s.mode.ifEmpty { "?" } + "  " +
                                 Spots.ageLabel(Spots.ageSeconds(s, System.currentTimeMillis())) +
                                 if (s.kind != "cluster") "  [" + Spots.kindLabel(s.kind) + "]" else "",
                             modifier = Modifier.fillMaxWidth().clickable { listAll = false; cardId = s.id }.padding(vertical = 8.dp),
@@ -368,7 +368,7 @@ fun HfScopeView(
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     for (s in spots.filter { it.id in ids }) {
                         Text(
-                            s.dx + "   " + String.format(Locale.ROOT, "%.1f", s.khz) + "   " + Spots.modeLabel(s),
+                            s.dx + s.country.takeIf { it.isNotEmpty() }?.let { " ($it)" }.orEmpty() + "   " + String.format(Locale.ROOT, "%.1f", s.khz) + "   " + Spots.modeLabel(s),
                             modifier = Modifier.fillMaxWidth().clickable { listIds = null; cardId = s.id }.padding(vertical = 8.dp),
                         )
                     }

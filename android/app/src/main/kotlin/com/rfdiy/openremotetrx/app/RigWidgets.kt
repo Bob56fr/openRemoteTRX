@@ -214,11 +214,23 @@ internal enum class Tab(val symbol: String, private val key: String) {
  *  de l'utilisateur ; dessinée (et non un emoji en couleur) pour suivre la couleur de l'onglet. */
 @Composable
 internal fun TabIcon(tab: Tab, color: Color) {
-    if (tab != Tab.AMIS) {
-        Text(tab.symbol, fontSize = 16.sp, color = color)
-        return
+    // Case fixe de 20 dp, symbole centré sans marge de police : ★ et le dessin d'« Amis » (autres métriques de police)
+    // restent alignés sur ◉ ≋ ♫ ⚙
+    Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+        if (tab != Tab.AMIS) {
+            Text(tab.symbol, color = color, style = androidx.compose.ui.text.TextStyle(
+                fontSize = 16.sp, lineHeight = 16.sp,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both),
+            ))
+        } else FriendsGlyph(color)
     }
-    androidx.compose.foundation.Canvas(Modifier.size(18.dp)) {
+}
+
+@Composable
+private fun FriendsGlyph(color: Color) {
+    androidx.compose.foundation.Canvas(Modifier.size(16.dp)) {
         val w = size.width
         drawCircle(color, radius = w * 0.24f, center = androidx.compose.ui.geometry.Offset(w / 2, w * 0.30f))
         drawArc(color, startAngle = 180f, sweepAngle = 180f, useCenter = true,
