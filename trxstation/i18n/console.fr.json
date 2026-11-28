@@ -954,5 +954,7 @@
   "changes.type_securite": "sécurité",
   "changes.none": "  Aucun changement connu pour ce poste.",
   "changes.no_rig": "Aucun poste configuré : seuls les changements communs sont montrés (menu {menu}).",
-  "changes.unreadable": "Liste des changements illisible : {error}"
+  "changes.unreadable": "Liste des changements illisible : {error}",
+  "changes.upcoming": "[à venir] ",
+  "changes.in_update": "\nCe que cette mise à jour change pour ton poste ({count}) — liste complète au menu {menu} :"
 }

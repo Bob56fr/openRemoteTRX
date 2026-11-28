@@ -1341,6 +1341,7 @@ class Console:
         published = clean_text(release.published_at, 40, single_line=True)[:10]
         self.say(self.banner([self.t("update.9", version=release.version, v=self.t("update.10") if release.prerelease else '', installed=self.installed),
                               clean_text(release.name, 120, single_line=True) + (f" ({published})" if published else "")]))
+        self._update_rig_changes(release.version)
         if len(changes) > 1:
             self.say(self.t("update.11", len=len(changes))
                      + ", ".join(c.version for c in reversed(changes)) + self.t("update.12"))
@@ -1405,19 +1406,17 @@ class Console:
         self._apply(["rollback"], done)
 
     def changes(self) -> None:
-        """Changements pour mon poste (étape 407) : tableau des derniers changements d'openRemoteTRX qui touchent le
-        modèle de station.toml (et, au choix, ceux de tous les postes), date et version. Lecture seule."""
+        """Changements pour mon poste (étapes 407-408) : tableau des derniers changements d'openRemoteTRX qui touchent le
+        modèle de station.toml (et, au choix, ceux de tous les postes), date et version ; liste livrée + liste téléchargée
+        par trx-update-check (changements des versions pas encore installées, marqués « à venir »). Lecture seule."""
         from . import changes as chg
-        from . import config as cfgmod
-        try:
-            model = cfgmod.load_unchecked(self.config)[0].rig.model if self.config.exists() else 0
-        except (OSError, cfgmod.ConfigError):
-            model = 0
         try:
             known = chg.load()
         except (OSError, ValueError) as exc:
             self.say(self.t("changes.unreadable", error=exc))
             return
+        known = chg.merged(known, chg.load_cached(config_state_dir(self.config)))
+        model = self._rig_model()
         if model <= 0:
             wizard_menu = menu_number("assistant")
             self.say(self.t("changes.no_rig", menu=wizard_menu))
@@ -1427,12 +1426,43 @@ class Console:
         if not rows:
             self.say(self.t("changes.none"))
             return
+        self._change_rows(rows)
+
+    def _rig_model(self) -> int:
+        from . import config as cfgmod
+        try:
+            return cfgmod.load_unchecked(self.config)[0].rig.model if self.config.exists() else 0
+        except (OSError, cfgmod.ConfigError):
+            return 0
+
+    def _change_rows(self, rows) -> None:
+        """Lignes du tableau des changements ; ★ = propre au poste ou à sa marque, « à venir » = pas encore installé."""
+        from . import changes as chg
         lang = self.t.lang
         kinds = {"correctif": self.t("changes.type_correctif"), "nouveaute": self.t("changes.type_nouveaute"),
                  "securite": self.t("changes.type_securite")}
+        here = chg.version_key(self.installed) if parse_version(self.installed or "") else None
         for c in rows:
             mark = self.t("changes.mine") if not c.common else ""
-            self.say(f"  {c.date}  {c.version:<9} {kinds[c.type]:<11} {mark}{c.text(lang)}")
+            later = self.t("changes.upcoming") if here is not None and chg.version_key(c.version) > here else ""
+            self.say(f"  {c.date}  {c.version:<9} {kinds[c.type]:<11} {mark}{later}{c.text(lang)}")
+
+    def _update_rig_changes(self, offered: str) -> None:
+        """Menu 7.1 (étape 408) : ce que la mise à jour proposée change pour le poste de la station, d'après la liste
+        téléchargée ; rien si elle ne dit rien de ces versions."""
+        from . import changes as chg
+        if not parse_version(self.installed or ""):
+            return
+        try:
+            known = chg.merged(chg.load(), chg.load_cached(config_state_dir(self.config)))
+        except (OSError, ValueError):
+            return
+        model = self._rig_model()
+        rows = chg.for_model(chg.between(known, self.installed, offered), model) if model > 0 else []
+        if rows:
+            changes_menu = menu_number("changes")
+            self.say(self.t("changes.in_update", count=len(rows), menu=changes_menu))
+            self._change_rows(rows)
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""

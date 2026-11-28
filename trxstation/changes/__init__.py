@@ -9,6 +9,7 @@ poste »). Calculs purs, sans réseau.
 """
 from __future__ import annotations
 
+import json
 import re
 import tomllib
 from dataclasses import dataclass
@@ -87,3 +88,60 @@ def load(path: Path | None = None) -> list[Change]:
 def for_model(changes: list[Change], model: int, common: bool = True, limit: int = LIMIT) -> list[Change]:
     """Changements du poste (et, si `common`, ceux de tous les postes), les plus récents d'abord, `limit` au plus."""
     return [c for c in changes if c.concerns(model) or (common and c.common)][:limit]
+
+
+# ------------------------------------------------------------------ liste publiée (lot 2, étape 408)
+# Copie JSON de changes.toml publiée sur GitHub Pages (scripts/build_changes_doc.py) ; trx-update-check la télécharge
+# avec la recherche de mise à jour et la garde dans <state_dir>/update/changes.json : la station connaît ainsi les
+# changements d'une version AVANT de l'installer (menus 7.1 et 7.4).
+PUBLIC_URL = "https://bob56fr.github.io/openRemoteTRX/changements/changes.json"
+MAX_BYTES = 512 * 1024
+SCHEMA = 1
+
+
+def to_public(changes: list[Change]) -> dict:
+    return {"schema": SCHEMA, "change": [{"date": c.date, "version": c.version, "type": c.type, "postes": list(c.postes),
+                                          **c.texts} for c in changes]}
+
+
+def parse_public(raw: bytes) -> list[Change]:
+    """Liste téléchargée : JSON du bon schéma, chaque entrée validée comme le fichier livré ; ChangesError sinon."""
+    if len(raw) > MAX_BYTES:
+        raise ChangesError("liste trop grande")
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ChangesError("liste illisible") from exc
+    if not isinstance(data, dict) or data.get("schema") != SCHEMA:
+        raise ChangesError("schéma inattendu")
+    return parse(data)
+
+
+def cache_path(state_dir: str | Path) -> Path:
+    return Path(state_dir) / "update" / "changes.json"
+
+
+def load_cached(state_dir: str | Path) -> list[Change]:
+    """Dernière liste téléchargée ; [] si absente ou abîmée (jamais d'exception)."""
+    try:
+        return parse_public(cache_path(state_dir).read_bytes())
+    except (OSError, ChangesError):
+        return []
+
+
+def merged(local: list[Change], cached: list[Change]) -> list[Change]:
+    """Liste livrée + liste téléchargée (plus récente : changements des versions pas encore installées), sans doublon."""
+    seen, out = set(), []
+    for c in [*cached, *local]:
+        key = (c.version, c.texts["fr"])
+        if key not in seen:
+            seen.add(key)
+            out.append(c)
+    out.sort(key=lambda c: (c.date, version_key(c.version)), reverse=True)
+    return out
+
+
+def between(changes: list[Change], installed: str, offered: str) -> list[Change]:
+    """Changements apportés par une mise à jour : version > installée et <= proposée."""
+    low, high = version_key(installed), version_key(offered)
+    return [c for c in changes if low < version_key(c.version) <= high]

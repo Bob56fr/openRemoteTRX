@@ -56,7 +56,7 @@
      "expert": "",
      "modifie": "Nichts (nur lesend).",
      "quand": "Um zu wissen, was sich für Ihr Gerät über die Versionen geändert hat, vor\noder nach einer Aktualisierung.",
-     "role": "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen,\nNeuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der\nVersion, die sie bringt; auf Wunsch auch die für alle Geräte geltenden.\nHöchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke."
+     "role": "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen,\nNeuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der\nVersion, die sie bringt; auf Wunsch auch die für alle Geräte geltenden.\nHöchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke. Änderungen\nveröffentlichter, aber noch nicht installierter Versionen (mit der Suche\nnach Aktualisierungen geladene Liste) sind mit [kommt] markiert, und Menü\n7.1 zeigt sie vor der Installation."
     },
     "clear_safe_mode": {
      "admin": true,
@@ -382,7 +382,7 @@
      "expert": "",
      "modifie": "Nothing (read-only).",
      "quand": "To know what changed for your rig over the versions, before or after an\nupdate.",
-     "role": "Shows as a table the latest openRemoteTRX changes (fixes, new features,\nsafety) that concern YOUR rig model, with the date and the version that\nbrings them; optionally also those valid for all rigs. 50 lines at most; ★ =\nspecific to your rig or its brand."
+     "role": "Shows as a table the latest openRemoteTRX changes (fixes, new features,\nsafety) that concern YOUR rig model, with the date and the version that\nbrings them; optionally also those valid for all rigs. 50 lines at most; ★ =\nspecific to your rig or its brand. Changes of versions published but not yet\ninstalled (list downloaded with the update check) are marked [coming], and\nmenu 7.1 shows them before installing."
     },
     "clear_safe_mode": {
      "admin": true,
@@ -708,7 +708,7 @@
      "expert": "",
      "modifie": "Nada (solo lectura).",
      "quand": "Para saber qué ha cambiado para tu equipo a lo largo de las versiones, antes\no después de una actualización.",
-     "role": "Muestra en una tabla los últimos cambios de openRemoteTRX (correcciones,\nnovedades, seguridad) que afectan a TU modelo de equipo, con la fecha y la\nversión que los trae; si quieres, también los que valen para todos los\nequipos. 50 líneas como máximo; ★ = propio de tu equipo o de su marca."
+     "role": "Muestra en una tabla los últimos cambios de openRemoteTRX (correcciones,\nnovedades, seguridad) que afectan a TU modelo de equipo, con la fecha y la\nversión que los trae; si quieres, también los que valen para todos los\nequipos. 50 líneas como máximo; ★ = propio de tu equipo o de su marca. Los\ncambios de versiones publicadas pero aún no instaladas (lista descargada con\nla búsqueda de actualizaciones) se marcan [próximo], y el menú 7.1 los\nmuestra antes de instalar."
     },
     "clear_safe_mode": {
      "admin": true,
@@ -1034,7 +1034,7 @@
      "expert": "",
      "modifie": "Rien (lecture seule).",
      "quand": "Pour savoir ce qui a changé pour ton poste au fil des versions, avant ou\naprès une mise à jour.",
-     "role": "Montre en tableau les derniers changements d'openRemoteTRX (correctifs,\nnouveautés, sécurité) qui touchent TON modèle de poste, avec la date et la\nversion qui les apporte ; au choix, aussi ceux qui valent pour tous les\npostes. 50 lignes au plus ; ★ = propre à ton poste ou à sa marque."
+     "role": "Montre en tableau les derniers changements d'openRemoteTRX (correctifs,\nnouveautés, sécurité) qui touchent TON modèle de poste, avec la date et la\nversion qui les apporte ; au choix, aussi ceux qui valent pour tous les\npostes. 50 lignes au plus ; ★ = propre à ton poste ou à sa marque. Les\nchangements des versions publiées mais pas encore installées (liste\ntéléchargée avec la recherche de mise à jour) sont marqués [à venir], et le\nmenu 7.1 les montre avant d'installer."
     },
     "clear_safe_mode": {
      "admin": true,

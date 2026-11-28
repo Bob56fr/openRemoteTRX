@@ -954,5 +954,7 @@
   "changes.type_securite": "safety",
   "changes.none": "  No known change for this rig.",
   "changes.no_rig": "No rig configured: only the common changes are shown (menu {menu}).",
-  "changes.unreadable": "List of changes unreadable: {error}"
+  "changes.unreadable": "List of changes unreadable: {error}",
+  "changes.upcoming": "[coming] ",
+  "changes.in_update": "\nWhat this update changes for your rig ({count}) — full list in menu {menu}:"
 }

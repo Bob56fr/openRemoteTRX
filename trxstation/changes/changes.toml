@@ -11,6 +11,16 @@
 
 [[change]]
 date = "2026-11-28"
+version = "0.297.0"
+type = "nouveaute"
+postes = ["*"]
+fr = "Les changements pour votre poste se voient AVANT la mise à jour : menu 7.1 et lignes « à venir » du menu 7.4."
+en = "Changes for your rig are shown BEFORE the update: menu 7.1 and “coming” lines in menu 7.4."
+de = "Die Änderungen für Ihr Gerät erscheinen VOR der Aktualisierung: Menü 7.1 und Zeilen „kommt“ in Menü 7.4."
+es = "Los cambios para su equipo se ven ANTES de la actualización: menú 7.1 y líneas «próximo» del menú 7.4."
+
+[[change]]
+date = "2026-11-28"
 version = "0.296.0"
 type = "nouveaute"
 postes = ["*"]

@@ -954,5 +954,7 @@
   "changes.type_securite": "Sicherheit",
   "changes.none": "  Keine bekannte Änderung für dieses Gerät.",
   "changes.no_rig": "Kein Gerät eingerichtet: nur die gemeinsamen Änderungen werden gezeigt (Menü {menu}).",
-  "changes.unreadable": "Liste der Änderungen nicht lesbar: {error}"
+  "changes.unreadable": "Liste der Änderungen nicht lesbar: {error}",
+  "changes.upcoming": "[kommt] ",
+  "changes.in_update": "\nWas diese Aktualisierung für Ihr Gerät ändert ({count}) — vollständige Liste in Menü {menu}:"
 }

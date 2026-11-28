@@ -391,6 +391,31 @@ def check(*, installed: str = __version__, allow_prerelease: bool = False, fetch
                            app=previous.app if previous else None)
 
 
+def fetch_changes(state_dir: str | Path, fetch: Fetch = http_get) -> bool:
+    """Liste publiée des changements par poste (étape 408) gardée dans <state_dir>/update/changes.json pour les menus
+    7.1 et 7.4. Adresse FIXE de GitHub Pages ; contenu validé entrée par entrée avant d'écrire ; un échec garde
+    l'ancienne copie (jamais d'exception : ce n'est qu'un affichage)."""
+    from .. import changes as chg
+    try:
+        raw = fetch(chg.PUBLIC_URL)
+        chg.parse_public(raw)
+        path = chg.cache_path(state_dir)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".changes-", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(raw)
+            os.chmod(tmp, 0o644)
+            replace_atomic(tmp, path)
+        except BaseException:
+            with contextlib.suppress(OSError):
+                os.unlink(tmp)
+            raise
+        return True
+    except Exception:                             # réseau, contenu refusé, disque : copie précédente gardée
+        return False
+
+
 def main(argv: list[str] | None = None, *, fetch: Fetch = http_get) -> int:
     from .. import config as cfgmod
     from ..paths import default_config_path
@@ -414,6 +439,7 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = http_get) -> int:
     except OSError as exc:
         print(f"État de mise à jour non écrit ({path}) : {exc}", file=sys.stderr)
         return 1
+    fetch_changes(cfg.supervisor.state_dir, fetch)
     if not state.ok:
         print(f"Recherche de mise à jour impossible : {state.error}")
     elif state.release:

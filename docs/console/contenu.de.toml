@@ -204,7 +204,7 @@ admin = true
 expert = "<p>Das Zip abzulegen reicht nicht: es muss hier installiert werden. Bericht: <code>/var/log/trx-remote-install.log</code>.</p>"
 
 [menus.changes]
-role = "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen, Neuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der Version, die sie bringt; auf Wunsch auch die für alle Geräte geltenden. Höchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke."
+role = "Zeigt als Tabelle die letzten Änderungen von openRemoteTRX (Korrekturen, Neuerungen, Sicherheit), die IHR Gerätemodell betreffen, mit Datum und der Version, die sie bringt; auf Wunsch auch die für alle Geräte geltenden. Höchstens 50 Zeilen; ★ = eigen für Ihr Gerät oder seine Marke. Änderungen veröffentlichter, aber noch nicht installierter Versionen (mit der Suche nach Aktualisierungen geladene Liste) sind mit [kommt] markiert, und Menü 7.1 zeigt sie vor der Installation."
 quand = "Um zu wissen, was sich für Ihr Gerät über die Versionen geändert hat, vor oder nach einer Aktualisierung."
 modifie = "Nichts (nur lesend)."
 admin = false

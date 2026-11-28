@@ -338,7 +338,7 @@ admin = true
 expert = "<p>Déposer le zip ne suffit pas : il faut l'installer ici. Compte-rendu : <code>/var/log/trx-remote-install.log</code>.</p>"
 
 [menus.changes]
-role = "Montre en tableau les derniers changements d'openRemoteTRX (correctifs, nouveautés, sécurité) qui touchent TON modèle de poste, avec la date et la version qui les apporte ; au choix, aussi ceux qui valent pour tous les postes. 50 lignes au plus ; ★ = propre à ton poste ou à sa marque."
+role = "Montre en tableau les derniers changements d'openRemoteTRX (correctifs, nouveautés, sécurité) qui touchent TON modèle de poste, avec la date et la version qui les apporte ; au choix, aussi ceux qui valent pour tous les postes. 50 lignes au plus ; ★ = propre à ton poste ou à sa marque. Les changements des versions publiées mais pas encore installées (liste téléchargée avec la recherche de mise à jour) sont marqués [à venir], et le menu 7.1 les montre avant d'installer."
 quand = "Pour savoir ce qui a changé pour ton poste au fil des versions, avant ou après une mise à jour."
 modifie = "Rien (lecture seule)."
 admin = false
